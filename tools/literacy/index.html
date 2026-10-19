@@ -153,6 +153,11 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
 .drow .ds input{width:150px}
 .drow .ph{font-size:14px;color:var(--muted)}
 @media (max-width:620px){.drow{grid-template-columns:64px minmax(0,1fr)}.drow .ds{grid-column:1/-1}}
+.krow{display:grid;grid-template-columns:110px minmax(0,1fr) 120px auto;gap:10px;align-items:center;border-top:1px solid var(--grid);padding-top:8px}
+.krow input,.krow select{border:2px solid var(--ink);border-radius:10px;padding:4px 8px;min-width:0;width:100%}
+.krow.head{border:none;padding:0;font-size:13px;color:var(--muted)}
+@media (max-width:620px){.krow{grid-template-columns:1fr 1fr}.krow.head{display:none}}
+.kidchip small{opacity:.7;margin-left:4px}
 .sheet footer{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 .save{background:var(--green);color:#fff;border:none;border-radius:999px;padding:10px 24px;font-size:18px}
 @media (prefers-reduced-motion:no-preference){.goal,.opt,.lesson{transition:transform .12s}.goal:not(:disabled):hover,.opt:not(:disabled):hover,.lesson:hover{transform:translateY(-2px)}}
@@ -163,6 +168,7 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
   <header class="top">
     <div class="brand"><div class="stamp">識</div><div><small>學習評量平台</small><h1>識字評量</h1></div></div>
     <div class="tools">
+      <button class="ghost" id="openKids">學生名單</button>
       <button class="ghost" id="openDates">教學日期管理</button>
       <button class="ghost" id="openSettings">評量設定</button>
       <a class="ghost" href="../../">回平台首頁</a>
@@ -199,24 +205,24 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
       </section>
 
       <section class="panel" aria-labelledby="h4">
-        <h2 id="h4"><span class="num">4</span>評量哪幾課？</h2>
-        <p class="hint">課次卡片上會顯示目前的評量時機，由「教學日期管理」裡的日期自動判斷。</p>
+        <h2 id="h4"><span class="num">4</span>哪些學生要評量？</h2>
+        <p class="hint">學生的年級在「學生名單」設定，系統會用年級判斷每一課對這位學生是哪個時期。</p>
+        <div class="row" id="kids"></div>
+        <p class="note"><button class="linkbtn" data-open="kids">新增學生或修改年級</button></p>
+      </section>
+
+      <section class="panel" aria-labelledby="h5">
+        <h2 id="h5"><span class="num">5</span>評量哪幾課？</h2>
+        <p class="hint">課次卡片上會顯示所選學生的評量時機。有輸入教學日期的課依日期判斷；沒有的課依學生年級判斷。</p>
         <div class="row" id="books"></div>
         <div class="lessons" id="lessons"></div>
         <div class="status" id="status"></div>
       </section>
 
-      <section class="panel" aria-labelledby="h5">
-        <h2 id="h5"><span class="num">5</span>學生怎麼作答？</h2>
-        <p class="hint">同一份題目可以用不同方式作答。</p>
-        <div class="kinds" id="answers"></div>
-      </section>
-
       <section class="panel" aria-labelledby="h6">
-        <h2 id="h6"><span class="num">6</span>哪些學生要評量？</h2>
-        <p class="hint" id="kidHint"></p>
-        <div class="row" id="kids"></div>
-        <div class="add"><input id="newKid" maxlength="8" placeholder="新增代號，例如 S07"><button class="chip" id="addKid">加入</button></div>
+        <h2 id="h6"><span class="num">6</span>學生怎麼作答？</h2>
+        <p class="hint" id="answerHint">同一份題目可以用不同方式作答。</p>
+        <div class="kinds" id="answers"></div>
       </section>
     </div>
 
@@ -244,9 +250,21 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
 <div class="overlay" id="datesSheet" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dTitle">
     <header><h2 id="dTitle">教學日期管理</h2><button class="ghost" data-close>關閉</button></header>
-    <p class="hint" style="margin:0">每一課設定一次就好，之後評量會自動判斷時機。很久以前教過的課，直接選「上學期」或「上學年」。</p>
+    <p class="hint" style="margin:0">本學期教的課輸入教學日期就好。沒輸入日期的課，系統會比較學生年級和課本年級：例如二上的學生做一下的課，會判斷為「上學期學過」。資源班教低年級課本時，請輸入實際的教學日期。</p>
     <div class="row" id="dBooks"></div>
     <div class="dtable" id="dTable"></div>
+    <footer><button class="save" data-close>完成</button></footer>
+  </div>
+</div>
+
+<!-- 學生名單 -->
+<div class="overlay" id="kidsSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="kTitle">
+    <header><h2 id="kTitle">學生名單</h2><button class="ghost" data-close>關閉</button></header>
+    <p class="hint" style="margin:0">年級填「今年」的年級，之後每年 8 月系統會自動升一個年級。名字可以不填；有填的話只存在這台電腦，不會上傳。</p>
+    <div class="krow head"><span>代號</span><span>名字（選填）</span><span>年級</span><span></span></div>
+    <div id="kTable" style="display:grid;gap:8px"></div>
+    <div class="add"><input id="newKid" maxlength="8" placeholder="新增代號，例如 S07"><button class="chip" id="addKid">加入</button></div>
     <footer><button class="save" data-close>完成</button></footer>
   </div>
 </div>
@@ -307,8 +325,9 @@ const ANSWERS = [
   {id:"present", name:"呈現模式・紙筆", desc:"螢幕只出題，學生寫在紙上，老師改完再登錄", min:1, max:99},
   {id:"qr",      name:"平板掃 QR code", desc:"學生用自己的平板作答，結果傳回老師電腦", off:"第 4 版之後"}
 ];
-const TAUGHT = [["","未設定"],["dates","輸入日期"],["notYet","還沒教"],["lastTerm","上學期教過"],["lastYear","上學年教過"],["earlier","更早以前教過"]];
+const TAUGHT = [["","依學生年級自動判斷"],["dates","輸入教學日期"],["notYet","還沒教"]];
 const PHASES = ["基線期","教學中","教學後","維持期"];
+const GRADES = ["一","二","三","四","五","六"];
 
 const DAY = 864e5;
 const today = new Date(); today.setHours(0,0,0,0);
@@ -318,39 +337,52 @@ const md = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()}`;
 const load = (k, fallback) => { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return v ?? fallback; } catch(e){ return fallback; } };
 const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
 
+/* 學年與學期：8 月到隔年 1 月是上學期，2 月到 7 月是下學期 */
+const M = today.getMonth() + 1;
+const SCHOOL_YEAR = (M >= 8 ? today.getFullYear() : today.getFullYear() - 1) - 1911;
+const TERM = (M >= 8 || M <= 1) ? "上" : "下";
+const termIndex = (grade, term) => (grade - 1) * 2 + (term === "上" ? 0 : 1);
+/* 目前的生字資料都是上學期課本（假設，之後補齊下學期再標示） */
+for(const b of Object.values(BOOKS)) b.term = b.term || "上";
+
 /* 正式評量的標準條件（存在這台電腦） */
 const settings = load("literacy-mock-settings", {choices:"4", hints:["word","pic"], rule:["remove","next","next","reveal"], maintainAfter:7});
 const saveSettings = () => store("literacy-mock-settings", settings);
 
-/* 教學日期：範例為翰林二年級第 1 課剛教完、第 2 課正在教、第 3 課還沒教、第 4 課上學期教過 */
+/* 學生名單：年級記的是設定那一年的年級，之後每學年自動升級 */
+const kids = load("literacy-mock-kids-v1", [
+  {code:"S01", name:"", grade:2, sy:SCHOOL_YEAR}, {code:"S02", name:"", grade:2, sy:SCHOOL_YEAR},
+  {code:"S03", name:"", grade:3, sy:SCHOOL_YEAR}, {code:"S04", name:"", grade:2, sy:SCHOOL_YEAR},
+  {code:"S05", name:"", grade:4, sy:SCHOOL_YEAR}, {code:"S06", name:"", grade:3, sy:SCHOOL_YEAR}
+]);
+const saveKids = () => store("literacy-mock-kids-v1", kids);
+const kidGrade = k => Math.min(6, k.grade + (SCHOOL_YEAR - (k.sy || SCHOOL_YEAR)));
+const kidBy = code => kids.find(k => k.code === code);
+const kidLabel = k => k.name ? `${k.code} ${k.name}` : k.code;
+
+/* 教學日期：範例為翰林二年級第 1 課剛教完、第 2 課正在教、第 3 課還沒教，其餘依年級判斷 */
 const key = (b,n) => b + "-" + n;
-const teach = load("literacy-mock-teach", {
+const teach = load("literacy-mock-teach-v2", {
   [key("h2","1")]: {type:"dates", start: iso(new Date(today - 12*DAY)), end: iso(new Date(today - 3*DAY))},
   [key("h2","2")]: {type:"dates", start: iso(new Date(today - 2*DAY)),  end: iso(new Date(+today + 5*DAY))},
-  [key("h2","3")]: {type:"notYet"},
-  [key("h2","4")]: {type:"lastTerm"}
+  [key("h2","3")]: {type:"notYet"}
 });
-const saveTeach = () => store("literacy-mock-teach", teach);
+const saveTeach = () => store("literacy-mock-teach-v2", teach);
 
 const state = {
   goal:"3", kind:"formal", mode:"acc", limit:"60",
   pChoices:"6", pHints:new Set(["word","sent","pic"]), pRule:["next","next","remove","reveal"],
   book:"h2", lessons:["1"], manual:{}, answer:"turn",
-  kids:new Set(["S01","S02"]), allKids:["S01","S02","S03","S04","S05","S06"]
+  kids:new Set(["S01","S02"])
 };
 let dBook = "h2";
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const bookName = b => `${BOOKS[b].edition} ${BOOKS[b].grade} 年級`;
+const bookName = b => `${BOOKS[b].edition} ${BOOKS[b].grade}${BOOKS[b].term}`;
 
-/* 依教學紀錄判斷評量時機 */
-function autoPhase(t){
-  if(!t || !t.type) return {phase:null, why:"還沒設定教學日期"};
-  if(t.type === "notYet") return {phase:"基線期", why:"還沒教"};
-  if(t.type === "lastTerm") return {phase:"維持期", why:"上學期教過"};
-  if(t.type === "lastYear") return {phase:"維持期", why:"上學年教過"};
-  if(t.type === "earlier") return {phase:"維持期", why:"更早以前教過"};
+/* 依教學日期判斷 */
+function datePhase(t){
   if(!t.start || !t.end) return {phase:null, why:"日期還沒填完整"};
   const s = parse(t.start), e = parse(t.end);
   if(e < s) return {phase:null, why:"結束日早於開始日，請檢查日期"};
@@ -359,8 +391,35 @@ function autoPhase(t){
   const n = Math.round((today - e) / DAY);
   return {phase: n < settings.maintainAfter ? "教學後" : "維持期", why:`教學結束後第 ${n} 天`, days:n};
 }
-const phaseOf = k => state.manual[k] || autoPhase(teach[k]).phase;
-const phases = () => state.lessons.map(n => phaseOf(key(state.book,n)));
+/* 某位學生在某一課的評量時機：有教學日期就用日期，沒有就比較學生年級與課本年級 */
+function autoFor(code, b, n){
+  const t = teach[key(b,n)] || {};
+  if(t.type === "dates") return datePhase(t);
+  const k = kidBy(code); if(!k) return {phase:null, why:""};
+  const d = termIndex(kidGrade(k), TERM) - termIndex(BOOKS[b].grade, BOOKS[b].term);
+  /* 「還沒教」只套用在還沒升過這個年級的學生；高年級學生以前學過，仍依年級判斷 */
+  if(t.type === "notYet" && d <= 0) return {phase:"基線期", why:"還沒教"};
+  if(d < 0) return {phase:"基線期", why:`還沒學到（${GRADES[BOOKS[b].grade-1]}${BOOKS[b].term}的課）`};
+  if(d === 0) return {phase:null, why:"本學期的課，請輸入教學日期"};
+  if(d === 1) return {phase:"維持期", why:"上學期學過"};
+  if(d <= 3) return {phase:"維持期", why:"上學年學過"};
+  return {phase:"維持期", why:"更早以前學過"};
+}
+const phaseFor = (code, b, n) => state.manual[key(b,n)] || autoFor(code, b, n).phase;
+const selKids = () => [...state.kids].filter(kidBy);
+const phases = () => state.lessons.flatMap(n => selKids().map(c => phaseFor(c, state.book, n)));
+/* 把同一課、同一時機的學生合在一起顯示 */
+function groups(b, n){
+  const g = new Map();
+  for(const c of selKids()){
+    const a = autoFor(c, b, n), p = state.manual[key(b,n)] || a.phase;
+    const label = p ? `${p}${!state.manual[key(b,n)] && a.days!=null && (p==="教學後"||p==="維持期") ? `（第 ${a.days} 天）` : ""}` : null;
+    const id = (label || "") + "|" + (state.manual[key(b,n)] ? "手動指定" : a.why);
+    if(!g.has(id)) g.set(id, {label, why: state.manual[key(b,n)] ? "這次手動指定" : a.why, kids:[]});
+    g.get(id).kids.push(c);
+  }
+  return [...g.values()];
+}
 
 /* 這次實際套用的條件 */
 function current(){
@@ -461,8 +520,10 @@ function renderLessons(){
   $("#books").querySelectorAll("button").forEach(btn => btn.onclick = () => { state.book = btn.dataset.b; state.lessons = ["1"]; render(); });
   const L = BOOKS[state.book].lessons;
   $("#lessons").innerHTML = Object.entries(L).map(([n,l]) => {
-    const on = state.lessons.includes(n), ph = phaseOf(key(state.book,n));
-    return `<button class="lesson ${on?"on":""}" data-n="${n}" aria-pressed="${on}"><span class="t"><b>第 ${n} 課</b>${ph?`<span class="pill">${ph}</span>`:`<span class="pill warn">未設定</span>`}</span>
+    const on = state.lessons.includes(n), gs = groups(state.book, n);
+    const pill = !gs.length ? "" : gs.some(g => !g.label) ? `<span class="pill warn">需要日期</span>`
+      : new Set(gs.map(g => g.label.replace(/（.*/, ""))).size > 1 ? `<span class="pill">依學生不同</span>` : `<span class="pill">${gs[0].label.replace(/（.*/, "")}</span>`;
+    return `<button class="lesson ${on?"on":""}" data-n="${n}" aria-pressed="${on}"><span class="t"><b>第 ${n} 課</b>${pill}</span>
       <span class="chars">${esc(l.write)}${l.read?`<span style="opacity:.6">・${esc(l.read)}</span>`:""}</span></button>`;
   }).join("");
   $("#lessons").querySelectorAll("button").forEach(b => b.onclick = () => {
@@ -471,20 +532,20 @@ function renderLessons(){
     else state.lessons = state.lessons.includes(n) ? state.lessons.filter(x => x !== n) : [...state.lessons, n].sort((a,b) => a-b);
     render();
   });
-  /* 已設定的課只顯示一行狀態；還沒設定的課在這裡快速選 */
+  if(!selKids().length){ $("#status").innerHTML = `<p class="note">請先在第 4 步選學生，才能判斷評量時機。</p>`; return; }
   $("#status").innerHTML = state.lessons.map(n => {
-    const k = key(state.book,n), t = teach[k], a = autoPhase(t);
-    if(!t || !t.type) return `<div class="st need" data-k="${k}"><b>第 ${n} 課還沒設定教學日期</b>
-      <span class="group">${[["notYet","還沒教"],["lastTerm","上學期教過"],["lastYear","上學年教過"]].map(([v,x]) => `<button class="chip" data-q="${v}">${x}</button>`).join("")}<button class="chip" data-q="dates">輸入日期…</button></span></div>`;
-    return `<div class="st" data-k="${k}"><b>第 ${n} 課</b><span class="pill">${phaseOf(k)}${state.manual[k]?"（手動）":""}</span><span class="why">${esc(a.why)}</span>
-      <select data-m aria-label="第 ${n} 課這次的評量時機"><option value="">這次照自動判斷</option>${PHASES.map(p => `<option value="${p}" ${state.manual[k]===p?"selected":""}>這次改為：${p}</option>`).join("")}</select>
-      <button class="linkbtn" data-edit>修改教學日期</button></div>`;
+    const k = key(state.book,n), gs = groups(state.book, n), need = gs.some(g => !g.label);
+    const lines = gs.map(g => `<span>${g.kids.map(c => esc(kidLabel(kidBy(c)))).join("、")}：<b>${g.label || "未判斷"}</b> <span class="why">${esc(g.why)}</span></span>`).join("<br>");
+    return `<div class="st ${need?"need":""}" data-k="${k}"><b>第 ${n} 課</b><span style="flex:1 1 260px">${lines}</span>
+      ${need ? `<span class="group"><button class="chip" data-q="notYet">還沒教</button><button class="chip" data-q="dates">輸入教學日期…</button></span>`
+      : `<select data-m aria-label="第 ${n} 課這次的評量時機"><option value="">這次照自動判斷</option>${PHASES.map(p => `<option value="${p}" ${state.manual[k]===p?"selected":""}>這次全部改為：${p}</option>`).join("")}</select>
+      <button class="linkbtn" data-edit>修改教學日期</button>`}</div>`;
   }).join("") || `<p class="note">請先選擇課次。</p>`;
   $("#status").querySelectorAll(".st").forEach(r => {
     const k = r.dataset.k;
     r.querySelectorAll("[data-q]").forEach(b => b.onclick = () => {
-      if(b.dataset.q === "dates"){ teach[k] = {type:"dates"}; saveTeach(); openDates(state.book); }
-      else { teach[k] = {type:b.dataset.q}; saveTeach(); render(); }
+      teach[k] = {type:b.dataset.q}; saveTeach();
+      if(b.dataset.q === "dates") openDates(state.book); else render();
     });
     const m = r.querySelector("[data-m]"); if(m) m.onchange = () => { if(m.value) state.manual[k] = m.value; else delete state.manual[k]; render(); };
     const e = r.querySelector("[data-edit]"); if(e) e.onclick = () => openDates(state.book);
@@ -498,15 +559,34 @@ function renderAnswers(){
 
 function renderKids(){
   const a = ANSWERS.find(x => x.id === state.answer);
-  $("#kidHint").textContent = a.max < 99 ? `用代號，不用真實姓名。「${a.name}」可選 ${a.min}～${a.max} 位。` : "用代號，不用真實姓名。呈現模式可以全班一起，人數不限。";
-  $("#kids").innerHTML = state.allKids.map(k => `<button class="chip ${state.kids.has(k)?"on":""}" data-k="${esc(k)}" aria-pressed="${state.kids.has(k)}">${esc(k)}</button>`).join("");
+  $("#answerHint").textContent = a.max < 99 ? `同一份題目可以用不同方式作答。「${a.name}」可選 ${a.min}～${a.max} 位學生。` : "同一份題目可以用不同方式作答。呈現模式可以全班一起，人數不限。";
+  $("#kids").innerHTML = kids.map(k => `<button class="chip kidchip ${state.kids.has(k.code)?"on":""}" data-k="${esc(k.code)}" aria-pressed="${state.kids.has(k.code)}">${esc(kidLabel(k))}<small>${GRADES[kidGrade(k)-1]}年級</small></button>`).join("");
   $("#kids").querySelectorAll("button").forEach(b => b.onclick = () => { const k = b.dataset.k; state.kids.has(k) ? state.kids.delete(k) : state.kids.add(k); render(); });
+}
+/* 學生名單面板 */
+function renderKidSheet(){
+  $("#kTable").innerHTML = kids.map((k,i) => `<div class="krow" data-i="${i}">
+    <input aria-label="代號" data-f="code" value="${esc(k.code)}" maxlength="8">
+    <input aria-label="名字（選填）" data-f="name" value="${esc(k.name||"")}" maxlength="10" placeholder="可不填">
+    <select aria-label="年級" data-f="grade">${GRADES.map((g,j) => `<option value="${j+1}" ${kidGrade(k)===j+1?"selected":""}>${g}年級</option>`).join("")}</select>
+    <button class="chip" data-del>刪除</button></div>`).join("");
+  $("#kTable").querySelectorAll(".krow").forEach(r => {
+    const k = kids[+r.dataset.i];
+    r.querySelectorAll("[data-f]").forEach(f => f.onchange = () => {
+      if(f.dataset.f === "grade"){ k.grade = +f.value; k.sy = SCHOOL_YEAR; }
+      else if(f.dataset.f === "code"){ const v = f.value.trim(); if(!v || kids.some(x => x !== k && x.code === v)){ f.value = k.code; return; }
+        if(state.kids.delete(k.code)) state.kids.add(v); k.code = v; }
+      else k.name = f.value.trim();
+      saveKids(); render();
+    });
+    r.querySelector("[data-del]").onclick = () => { state.kids.delete(k.code); kids.splice(+r.dataset.i, 1); saveKids(); renderKidSheet(); render(); };
+  });
 }
 $("#addKid").onclick = () => {
   const v = $("#newKid").value.trim();
-  if(!v) return;
-  if(!state.allKids.includes(v)) state.allKids.push(v);
-  state.kids.add(v); $("#newKid").value = ""; render();
+  if(!v || kids.some(k => k.code === v)) return;
+  kids.push({code:v, name:"", grade:2, sy:SCHOOL_YEAR}); state.kids.add(v);
+  $("#newKid").value = ""; saveKids(); renderKidSheet(); render();
 };
 $("#newKid").addEventListener("keydown", e => { if(e.key === "Enter") $("#addKid").click(); });
 
@@ -514,18 +594,19 @@ function renderSummary(){
   const c = current(), g = GOALS.find(x => x.id === state.goal), a = ANSWERS.find(x => x.id === state.answer);
   $("#kindBadge").innerHTML = c.formal ? `<span class="badge">正式評量・納入學習分析</span>` : `<span class="badge prac">練習・另外統計</span>`;
   const lessonText = state.lessons.length ? `${bookName(state.book)}　第 ${state.lessons.join("、")} 課` : null;
-  const ph = state.lessons.map(n => { const k = key(state.book,n), p = phaseOf(k), d = autoPhase(teach[k]);
-    return p ? `第 ${n} 課：${p}${(p==="教學後"||p==="維持期") && d.days!=null && !state.manual[k] ? `（第 ${d.days} 天）` : ""}` : null; });
-  const n = state.kids.size, kidsOk = n >= a.min && n <= a.max;
+  const multi = selKids().length > 1;
+  const ph = state.lessons.flatMap(n => groups(state.book, n).map(g => g.label
+    ? `第 ${n} 課${multi ? `・${g.kids.map(c => esc(kidLabel(kidBy(c)))).join("、")}` : ""}：${g.label}` : null));
+  const n = selKids().length, kidsOk = n >= a.min && n <= a.max;
   const rows = [
     ["評量目標", `目標 ${g.id}　${g.name}`],
     ["評量方式", c.flu ? `流暢性・${LIMITS.find(l => l[0]===state.limit)[1]}・目標每分鐘 ${esc($("#aim").value)} 個` : "正確率模式"],
     ["選項", choiceText(c.choices)],
     ["提示", c.hints.length ? c.hints.map(hintName).join(" → ") : "無提示"],
     ["課次", lessonText],
-    ["評量時機", state.lessons.length && !ph.includes(null) ? ph.join("<br>") : null, "請到第 4 步設定教學日期"],
+    ["評量時機", state.lessons.length && n && !ph.includes(null) ? ph.join("<br>") : null, n ? "請到第 5 步設定教學日期" : "先選學生才能判斷"],
     ["作答模式", a.name],
-    ["學生", n ? (kidsOk ? `${[...state.kids].map(esc).join("、")}（${n} 位）` : null) : null, n ? `「${a.name}」需要 ${a.min}～${a.max} 位，目前 ${n} 位` : "還沒選"]
+    ["學生", n ? (kidsOk ? `${selKids().map(c => esc(kidLabel(kidBy(c)))).join("、")}（${n} 位）` : null) : null, n ? `「${a.name}」需要 ${a.min}～${a.max} 位，目前 ${n} 位` : "還沒選"]
   ];
   $("#sum").innerHTML = rows.map(([t,v,miss]) => `<div><dt>${t}</dt><dd class="${v?"":"miss"}">${v || miss || "還沒選"}</dd></div>`).join("");
   $("#go").disabled = rows.some(r => !r[1]);
@@ -539,7 +620,7 @@ function renderDates(){
   $("#dBooks").innerHTML = BOOK_ORDER.map(b => `<button class="chip ${dBook===b?"on":""}" data-b="${b}">${bookName(b)}</button>`).join("");
   $("#dBooks").querySelectorAll("button").forEach(btn => btn.onclick = () => { dBook = btn.dataset.b; renderDates(); });
   $("#dTable").innerHTML = Object.keys(BOOKS[dBook].lessons).map(n => {
-    const k = key(dBook,n), t = teach[k] || {}, a = autoPhase(t);
+    const k = key(dBook,n), t = teach[k] || {}, a = t.type === "dates" ? datePhase(t) : t.type === "notYet" ? {phase:"基線期", why:"還沒教"} : {phase:null, why:"依每位學生的年級判斷"};
     return `<div class="drow" data-k="${k}"><b>第 ${n} 課</b>
       <select aria-label="第 ${n} 課教學狀態">${TAUGHT.map(([v,x]) => `<option value="${v}" ${(t.type||"")===v?"selected":""}>${x}</option>`).join("")}</select>
       <div class="ds">${t.type === "dates" ? `<input type="date" aria-label="第 ${n} 課開始日" data-s value="${t.start||""}"><span>到</span><input type="date" aria-label="第 ${n} 課結束日" data-e value="${t.end||""}">` : ""}
@@ -576,11 +657,12 @@ function closeSheets(){ document.querySelectorAll(".overlay").forEach(o => o.hid
 function openDates(b){ dBook = b || dBook; renderDates(); openSheet("#datesSheet"); }
 function openSettings(){ renderSettings(); openSheet("#setSheet"); }
 $("#openDates").onclick = () => openDates(state.book);
+$("#openKids").onclick = () => { renderKidSheet(); openSheet("#kidsSheet"); };
 $("#openSettings").onclick = openSettings;
 document.querySelectorAll("[data-close]").forEach(b => b.onclick = closeSheets);
 document.querySelectorAll(".overlay").forEach(o => o.addEventListener("click", e => { if(e.target === o) closeSheets(); }));
 document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets(); });
-document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); });
+document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); if(t && t.dataset.open === "kids"){ renderKidSheet(); openSheet("#kidsSheet"); } });
 
 function render(){ renderGoals(); renderKind(); renderHints(); renderLessons(); renderAnswers(); renderKids(); renderSummary(); }
 render();
