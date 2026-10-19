@@ -160,7 +160,12 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
 .plan{display:grid;gap:10px;background:var(--mint);border-radius:12px;padding:12px 14px}
 .plan label{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .plan select{border:2px solid var(--ink);border-radius:10px;padding:4px 8px}
-.dose{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.svc{display:grid;grid-template-columns:80px minmax(0,1fr) minmax(0,auto);gap:8px 14px;align-items:center;border-top:1px solid var(--grid);padding-top:8px}
+.svc .n{display:flex;gap:12px;flex-wrap:wrap}
+.svc input[type=date]{border:2px solid var(--ink);border-radius:10px;padding:4px 8px}
+.svc .start{font-size:14px;color:var(--muted)}
+@media (max-width:620px){.svc{grid-template-columns:1fr}}
+.plan input[type=checkbox]{width:20px;height:20px;accent-color:var(--green)}
 .kidchip small{opacity:.7;margin-left:4px}
 .sheet footer{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 .save{background:var(--green);color:#fff;border:none;border-radius:999px;padding:10px 24px;font-size:18px}
@@ -265,7 +270,7 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
 <div class="overlay" id="kidsSheet" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="kTitle">
     <header><h2 id="kTitle">學生名單</h2><button class="ghost" data-close>關閉</button></header>
-    <p class="hint" style="margin:0">年級填「今年」的年級，之後每年 8 月系統會自動升一個年級。名字可以不填；有填的話只存在這台電腦，不會上傳。「本學期安排」是選填，記錄課程調整到幾年級和每週上課節數。</p>
+    <p class="hint" style="margin:0">年級填「今年」的年級，之後每年 8 月系統會自動升一個年級。名字可以不填；有填的話只存在這台電腦，不會上傳。「本學期安排」是選填，記錄原班、資源班、學習扶助的每週節數與開始日期。</p>
     <div class="krow head"><span>代號</span><span>名字（選填）</span><span>年級</span><span></span><span></span></div>
     <div id="kTable" style="display:grid;gap:8px"></div>
     <div class="add"><input id="newKid" maxlength="8" placeholder="新增代號，例如 S07"><button class="chip" id="addKid">加入</button></div>
@@ -354,23 +359,30 @@ const settings = load("literacy-mock-settings", {choices:"4", hints:["word","pic
 const saveSettings = () => store("literacy-mock-settings", settings);
 
 /* 學生名單：年級記的是設定那一年的年級，之後每學年自動升級 */
-const kids = load("literacy-mock-kids-v2", [
+const kids = load("literacy-mock-kids-v3", [
   {code:"S01", name:"", grade:2, sy:SCHOOL_YEAR}, {code:"S02", name:"", grade:2, sy:SCHOOL_YEAR},
   {code:"S03", name:"", grade:3, sy:SCHOOL_YEAR}, {code:"S04", name:"", grade:2, sy:SCHOOL_YEAR},
-  {code:"S05", name:"", grade:4, sy:SCHOOL_YEAR, plans:{[`${SCHOOL_YEAR}${TERM}`]:{level:2, pull:5, extra:2}}}, {code:"S06", name:"", grade:3, sy:SCHOOL_YEAR}
+  {code:"S05", name:"", grade:4, sy:SCHOOL_YEAR, plans:{[`${SCHOOL_YEAR}${TERM}`]:{adjust:true, level:2, regular:20, pull:5, extra:2, support:2, supportStart:iso(new Date(today - 10*DAY))}}}, {code:"S06", name:"", grade:3, sy:SCHOOL_YEAR}
 ]);
-const saveKids = () => store("literacy-mock-kids-v2", kids);
+const saveKids = () => store("literacy-mock-kids-v3", kids);
 /* 本學期教學安排（選填，每學期一筆）：level＝課程調整到幾年級，其餘為每週節數 */
 const PLAN_KEY = `${SCHOOL_YEAR}${TERM}`;
-const DOSE = [["pull","資源班抽離"],["extra","資源班外加"],["regular","原班"],["support","學習扶助"]];
+/* 三種課程分開記錄節數，各自可填開始日期（學期中才加入的學生） */
+const SERVICES = [
+  {id:"regular",  name:"原班",     parts:[["regular","每週"]]},
+  {id:"resource", name:"資源班",   parts:[["pull","抽離"],["extra","外加"]]},
+  {id:"support",  name:"學習扶助", parts:[["support","每週"]]}
+];
+const DOSE = SERVICES.flatMap(v => v.parts);
 const planOf = k => (k.plans && k.plans[PLAN_KEY]) || {};
 const dosage = p => DOSE.reduce((s,[id]) => s + (p[id] || 0), 0);
+const adjLevel = k => planOf(k).adjust ? planOf(k).level : null;
 const kidGrade = k => Math.min(6, k.grade + (SCHOOL_YEAR - (k.sy || SCHOOL_YEAR)));
 const kidBy = code => kids.find(k => k.code === code);
 const kidLabel = k => k.name ? `${k.code} ${k.name}` : k.code;
 /* 判斷時機用的「學習年級」：有課程調整就用調整後的年級 */
-const studyGrade = k => planOf(k).level || kidGrade(k);
-const gradeText = k => `${GRADES[kidGrade(k)-1]}年級${planOf(k).level ? `・課程調整到${GRADES[planOf(k).level-1]}年級` : ""}`;
+const studyGrade = k => adjLevel(k) || kidGrade(k);
+const gradeText = k => `${GRADES[kidGrade(k)-1]}年級${adjLevel(k) ? `・課程調整到${GRADES[adjLevel(k)-1]}年級` : ""}`;
 
 /* 教學日期：範例為翰林二年級第 1 課剛教完、第 2 課正在教、第 3 課還沒教，其餘依年級判斷 */
 const key = (b,n) => b + "-" + n;
@@ -584,12 +596,15 @@ function renderKidSheet(){
     <input aria-label="代號" data-f="code" value="${esc(k.code)}" maxlength="8">
     <input aria-label="名字（選填）" data-f="name" value="${esc(k.name||"")}" maxlength="10" placeholder="可不填">
     <select aria-label="年級" data-f="grade">${GRADES.map((g,j) => `<option value="${j+1}" ${kidGrade(k)===j+1?"selected":""}>${g}年級</option>`).join("")}</select>
-    <button class="chip ${p.level || dosage(p) ? "on" : ""}" data-plan aria-expanded="${open}">本學期安排${p.level || dosage(p) ? " ✓" : ""}</button>
+    <button class="chip ${adjLevel(k) || dosage(p) ? "on" : ""}" data-plan aria-expanded="${open}">本學期安排${adjLevel(k) || dosage(p) ? " ✓" : ""}</button>
     <button class="chip" data-del>刪除</button></div>
     ${open ? `<div class="plan" data-i="${i}">
       <p class="note" style="margin:0">${SCHOOL_YEAR} 學年${TERM}學期・選填。每學期分開記錄，換學期時舊資料會保留，分析時用來比較不同安排的效果。</p>
-      <label>課程調整（重整）到 <select data-p="level"><option value="">同原年級</option>${GRADES.map((g,j) => `<option value="${j+1}" ${p.level===j+1?"selected":""}>${g}年級</option>`).join("")}</select></label>
-      <div class="dose">${DOSE.map(([id,t]) => `<label>${t} <input type="number" min="0" max="40" data-p="${id}" value="${p[id] ?? ""}" placeholder="0"> 節／週</label>`).join("")}</div>
+      <label><input type="checkbox" data-adj ${p.adjust?"checked":""}> 課程有調整（重整）到其他年級${p.adjust ? `：<select data-p="level" aria-label="調整到幾年級">${GRADES.map((g,j) => `<option value="${j+1}" ${(p.level||kidGrade(k))===j+1?"selected":""}>${g}年級</option>`).join("")}</select>` : ""}</label>
+      ${SERVICES.map(v => `<div class="svc"><b>${v.name}</b>
+        <span class="n">${v.parts.map(([id,t]) => `<label>${t} <input type="number" min="0" max="40" data-p="${id}" value="${p[id] ?? ""}" placeholder="0" aria-label="${v.name}${t}節數"> 節</label>`).join("")}</span>
+        <label class="start">開始日期（選填）<input type="date" data-d="${v.id}Start" value="${p[v.id+"Start"] || ""}" aria-label="${v.name}開始日期"></label></div>`).join("")}
+      <p class="note" style="margin:0">開始日期留空，代表本學期一開始就有上。學期中才加入的課程請填日期，分析時可以比較加入前後的差異。</p>
     </div>` : ""}`;
   }).join("");
   $("#kTable").querySelectorAll(".krow").forEach(r => {
@@ -606,8 +621,11 @@ function renderKidSheet(){
   });
   $("#kTable").querySelectorAll(".plan").forEach(r => {
     const k = kids[+r.dataset.i];
+    const plan = () => ((k.plans ||= {})[PLAN_KEY] ||= {});
+    r.querySelector("[data-adj]").onchange = e => { const p = plan(); p.adjust = e.target.checked; if(p.adjust && !p.level) p.level = kidGrade(k); saveKids(); renderKidSheet(); render(); };
+    r.querySelectorAll("[data-d]").forEach(f => f.onchange = () => { const p = plan(); if(f.value) p[f.dataset.d] = f.value; else delete p[f.dataset.d]; saveKids(); render(); });
     r.querySelectorAll("[data-p]").forEach(f => f.onchange = () => {
-      const p = ((k.plans ||= {})[PLAN_KEY] ||= {});
+      const p = plan();
       const v = f.value === "" ? undefined : Math.max(0, +f.value);
       if(v === undefined || (f.dataset.p === "level" && !v)) delete p[f.dataset.p]; else p[f.dataset.p] = v;
       saveKids(); renderKidSheet(); render();
