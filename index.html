@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>學習評量平台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@700&display=swap">
+<style>
+/* 平台首頁：配色沿用生字賓果的方格紙風格 */
+:root{
+  --paper:#f5faf6; --line:#d5e8da; --ink:#1f3d36; --muted:#5b7a71;
+  --red:#d64534; --green:#2c7a69; --card:#ffffff;
+  --ui:"Huninn","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --kai:"LXGW WenKai TC","DFKai-SB","BiauKai","標楷體",serif;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:18px;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:48px 48px}
+main{max-width:1000px;margin:0 auto;padding:32px 16px 48px}
+h1{font-family:var(--kai);font-size:clamp(32px,5vw,52px);margin:0 0 8px;letter-spacing:.06em}
+.lead{color:var(--muted);margin:0 0 32px}
+.tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+.tool{display:block;background:var(--card);border:2px solid var(--ink);border-radius:20px;padding:24px;
+  box-shadow:6px 6px 0 var(--ink);color:inherit;text-decoration:none;transition:transform .12s}
+a.tool:hover{transform:translateY(-3px)}
+.tool b{display:block;font-size:26px;margin-bottom:8px}
+.tool span{display:block;color:var(--muted);line-height:1.6}
+.tool .tag{width:fit-content;margin-top:14px;padding:4px 14px;border-radius:999px;background:var(--green);color:#fff;font-size:15px}
+.tool.soon{border-style:dashed;box-shadow:none;opacity:.7}
+.tool.soon .tag{background:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+  <h1>學習評量平台</h1>
+  <p class="lead">選一個小工具開始使用。</p>
+  <div class="tools">
+    <a class="tool" href="tools/bingo/">
+      <b>生字賓果</b>
+      <span>聽語音找出生字，可單人或合作打怪獸，有四種主題。</span>
+      <div class="tag">可使用</div>
+    </a>
+    <div class="tool soon">
+      <b>識字評量</b>
+      <span>依評量目標分階段檢測識字，逐字追蹤學習成果。</span>
+      <div class="tag">開發中</div>
+    </div>
+  </div>
+</main>
+</body>
+</html>
