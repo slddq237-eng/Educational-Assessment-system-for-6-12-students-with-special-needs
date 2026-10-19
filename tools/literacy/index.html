@@ -9,10 +9,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@400;700&display=swap">
 <style>
-/* 版面：沿用生字賓果的生字簿方格紙；左邊五個設定步驟，右邊固定的「本次評量」摘要 */
+/* 版面：沿用生字賓果的生字簿方格紙；左邊六個設定步驟，右邊固定的「本次評量」摘要；評量設定與教學日期放在彈出面板 */
 :root{
   --paper:#f5faf6; --grid:#d5e8da; --ink:#1f3d36; --muted:#5b7a71;
   --red:#d64534; --green:#2c7a69; --mint:#e4f3ec; --card:#ffffff; --amber:#9a6a12; --amber-bg:#fbf1dc;
+  --practice:#6a4fa3; --practice-bg:#efe9fa;
   --ui:"Huninn","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
   --kai:"LXGW WenKai TC","DFKai-SB","BiauKai","標楷體","Kaiti TC",serif;
   color-scheme:light;
@@ -35,8 +36,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   font-family:var(--kai);font-weight:700;font-size:28px;transform:rotate(-12deg);flex:none}
 .brand small{display:block;color:var(--muted);letter-spacing:.12em;font-size:15px}
 .brand h1{margin:0;font-family:var(--kai);font-size:clamp(30px,4vw,46px);letter-spacing:.06em;line-height:1.1}
-.back{color:var(--muted);text-decoration:none;border:2px solid var(--ink);border-radius:999px;padding:8px 18px;color:var(--ink);background:var(--card)}
-.back:hover{background:var(--ink);color:var(--paper)}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.ghost{text-decoration:none;border:2px solid var(--ink);border-radius:999px;padding:8px 18px;color:var(--ink);background:var(--card);font-size:16px}
+.ghost:hover{background:var(--ink);color:var(--paper)}
 .mock{display:flex;gap:10px;align-items:flex-start;background:var(--amber-bg);border:2px dashed var(--amber);color:#5c400a;
   border-radius:14px;padding:10px 16px;margin-bottom:20px;font-size:16px}
 .mock b{white-space:nowrap}
@@ -49,19 +51,21 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .panel h2{margin:0;font-size:clamp(21px,2vw,26px);display:flex;align-items:center;gap:10px;text-wrap:balance}
 .num{width:32px;height:32px;border-radius:50%;background:var(--ink);color:var(--paper);display:inline-grid;place-items:center;font-size:17px;flex:none}
 .hint{color:var(--muted);margin:6px 0 16px;font-size:16px}
-.sub{font-size:15px;color:var(--muted);margin:14px 0 8px;letter-spacing:.06em}
+.sub{font-size:15px;color:var(--muted);margin:18px 0 8px;letter-spacing:.06em}
+.sub:first-of-type{margin-top:0}
 
 /* 評量目標卡 */
 .goals{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
-.goal{position:relative;text-align:left;border:2px solid var(--ink);background:var(--card);border-radius:16px;padding:14px 14px 12px;display:grid;gap:6px;align-content:start}
+.goal{text-align:left;border:2px solid var(--ink);background:var(--card);border-radius:16px;padding:14px 14px 12px;display:grid;gap:6px;align-content:start}
 .goal .order{font-size:13px;color:var(--muted);letter-spacing:.06em}
 .goal b{font-size:20px;line-height:1.3}
 .goal .what{font-size:15px;color:var(--muted)}
 .goal.on{background:var(--green);border-color:var(--green);color:#fff}
 .goal.on .order,.goal.on .what{color:#e3f4ec}
 .goal:disabled{border-style:dashed;opacity:.6;cursor:not-allowed}
-.pill{display:inline-block;width:fit-content;font-size:13px;padding:2px 10px;border-radius:999px;background:var(--mint);color:var(--green)}
+.pill{display:inline-block;width:fit-content;font-size:13px;padding:2px 10px;border-radius:999px;background:var(--mint);color:var(--green);white-space:nowrap}
 .pill.warn{background:var(--amber-bg);color:var(--amber)}
+.pill.prac{background:var(--practice-bg);color:var(--practice)}
 .goal.on .pill{background:rgba(255,255,255,.18);color:#fff}
 
 /* 一般選項 */
@@ -70,21 +74,35 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .opt small{display:block;color:var(--muted);font-size:14px}
 .opt.on{background:var(--green);border-color:var(--green);color:#fff}
 .opt.on small{color:#e3f4ec}
+.opt.on.prac{background:var(--practice);border-color:var(--practice)}
+.opt:disabled{border-style:dashed;opacity:.55;cursor:not-allowed}
+.kinds{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
 .chip{border:2px solid var(--ink);background:var(--card);border-radius:999px;padding:6px 16px;font-size:16px}
 .chip.on{background:var(--ink);color:#fff}
 .chip:disabled{opacity:.35;cursor:not-allowed}
-.fluency{margin-top:14px;padding:14px;border:2px dashed var(--grid);border-radius:14px;display:grid;gap:10px}
-.fluency label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.fluency input{width:80px;border:2px solid var(--ink);border-radius:10px;padding:4px 8px;font-variant-numeric:tabular-nums}
+.box{margin-top:14px;padding:14px;border:2px dashed var(--grid);border-radius:14px;display:grid;gap:10px}
+.box label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;padding:4px 8px;font-variant-numeric:tabular-nums}
+.locked{display:flex;gap:10px;align-items:flex-start;background:var(--mint);border-radius:12px;padding:10px 14px;font-size:16px}
+.locked .lock{font-size:13px;background:var(--green);color:#fff;border-radius:999px;padding:2px 10px;white-space:nowrap;margin-top:2px}
+.linkbtn{background:none;border:none;padding:0;color:var(--green);text-decoration:underline;text-underline-offset:3px;font-size:15px}
 
-/* 提示層級 */
+/* 提示與規則 */
 .levels{display:grid;gap:8px}
 .lv{display:grid;grid-template-columns:76px minmax(0,1fr);gap:10px;align-items:center}
 .lv .n{font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px;text-align:right}
 .lv .who{font-size:13px;color:var(--muted);white-space:nowrap}
 .group{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.note{font-size:15px;color:var(--muted);margin-top:10px}
+.note{font-size:15px;color:var(--muted);margin:10px 0 0}
 .note.warn{color:var(--amber)}
+.ladder{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.ladder li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:center}
+.ladder .k{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ladder select{border:2px solid var(--ink);border-radius:10px;padding:4px 8px;max-width:100%}
+.ladder .fixed{font-size:16px}
+.flow{display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;font-size:15px}
+.flow span.s{background:var(--card);border:1px solid var(--grid);border-radius:8px;padding:2px 8px}
+.flow i{font-style:normal;color:var(--muted)}
 
 /* 課次 */
 .lessons{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:12px}
@@ -93,15 +111,11 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .lesson .chars{display:block;font-family:var(--kai);font-size:20px;letter-spacing:.06em;color:var(--muted);word-break:break-all;margin-top:4px;line-height:1.35}
 .lesson.on{background:var(--mint);border-color:var(--green);box-shadow:inset 0 0 0 2px var(--green)}
 .lesson.on .chars{color:var(--ink)}
-.dates{margin-top:16px;display:grid;gap:10px}
-.dateRow{display:grid;grid-template-columns:90px repeat(2,minmax(0,150px)) minmax(0,1fr);gap:10px;align-items:center;
-  border-top:1px solid var(--grid);padding-top:10px}
-.dateRow input{border:2px solid var(--ink);border-radius:10px;padding:4px 8px;width:100%;min-width:0}
-.dateRow label{font-size:13px;color:var(--muted);display:grid;gap:2px}
-.phase{display:grid;gap:4px}
-.phase select{border:2px solid var(--ink);border-radius:10px;padding:4px 8px;max-width:100%}
-.phase .why{font-size:13px;color:var(--muted)}
-@media (max-width:620px){.dateRow{grid-template-columns:1fr 1fr}.dateRow .lname,.dateRow .phase{grid-column:1/-1}}
+.status{margin-top:16px;display:grid;gap:8px}
+.st{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;border-top:1px solid var(--grid);padding-top:10px}
+.st .why{font-size:14px;color:var(--muted)}
+.st select{border:2px solid var(--ink);border-radius:10px;padding:2px 6px;font-size:15px}
+.st.need{background:var(--amber-bg);border:none;border-radius:12px;padding:10px 12px}
 
 /* 學生 */
 .add{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
@@ -111,6 +125,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .summary{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);background:var(--ink);color:var(--paper);border-radius:20px;padding:22px;display:grid;gap:14px}
 @media (max-width:900px){.summary{position:static}}
 .summary h2{margin:0;font-family:var(--kai);font-size:28px;letter-spacing:.08em}
+.badge{display:inline-block;border-radius:999px;padding:4px 12px;font-size:15px;background:#3f8f7c;color:#fff}
+.badge.prac{background:var(--practice)}
 .summary dl{margin:0;display:grid;gap:10px}
 .summary dt{font-size:13px;color:#a9c7bd;letter-spacing:.08em}
 .summary dd{margin:2px 0 0;font-size:16px}
@@ -121,14 +137,36 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .records{font-size:14px;color:#cfe3dc}
 .records summary{cursor:pointer}
 .records ul{margin:6px 0 0;padding-left:20px}
-@media (prefers-reduced-motion:no-preference){.goal,.opt,.lesson{transition:transform .12s}.goal:not(:disabled):hover,.opt:hover,.lesson:hover{transform:translateY(-2px)}}
+
+/* 彈出面板 */
+.overlay{position:fixed;inset:0;background:rgba(20,40,35,.45);display:grid;place-items:start center;overflow-y:auto;z-index:20;
+  padding-block:calc(env(safe-area-inset-top,0px) + 24px) calc(env(safe-area-inset-bottom,0px) + 24px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sheet{background:var(--card);border:2px solid var(--ink);border-radius:20px;box-shadow:6px 6px 0 var(--ink);width:min(820px,100%);padding:clamp(16px,3vw,28px);display:grid;gap:14px}
+.sheet header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sheet h2{margin:0;font-family:var(--kai);font-size:28px}
+.sheet h3{margin:6px 0 0;font-size:18px}
+.dtable{display:grid;gap:8px}
+.drow{display:grid;grid-template-columns:72px 150px minmax(0,1fr);gap:10px;align-items:center;border-top:1px solid var(--grid);padding-top:8px}
+.drow select,.drow input{border:2px solid var(--ink);border-radius:10px;padding:4px 8px;max-width:100%;min-width:0}
+.drow .ds{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.drow .ds input{width:150px}
+.drow .ph{font-size:14px;color:var(--muted)}
+@media (max-width:620px){.drow{grid-template-columns:64px minmax(0,1fr)}.drow .ds{grid-column:1/-1}}
+.sheet footer{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.save{background:var(--green);color:#fff;border:none;border-radius:999px;padding:10px 24px;font-size:18px}
+@media (prefers-reduced-motion:no-preference){.goal,.opt,.lesson{transition:transform .12s}.goal:not(:disabled):hover,.opt:not(:disabled):hover,.lesson:hover{transform:translateY(-2px)}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <div class="brand"><div class="stamp">識</div><div><small>學習評量平台</small><h1>識字評量</h1></div></div>
-    <a class="back" href="../../">回平台首頁</a>
+    <div class="tools">
+      <button class="ghost" id="openDates">教學日期管理</button>
+      <button class="ghost" id="openSettings">評量設定</button>
+      <a class="ghost" href="../../">回平台首頁</a>
+    </div>
   </header>
   <p class="mock"><b>畫面樣品</b><span>這一版只有老師的設定流程，可以點點看。作答畫面、成績紀錄與分析會在第 1 版之後製作。學生代號都是範例。</span></p>
 
@@ -141,34 +179,42 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
       </section>
 
       <section class="panel" aria-labelledby="h2">
-        <h2 id="h2"><span class="num">2</span>用哪一種評量方式？</h2>
-        <p class="hint">正確率模式看「會不會」；流暢性模式看「熟不熟練、快不快」。</p>
+        <h2 id="h2"><span class="num">2</span>這次是正式評量，還是練習？</h2>
+        <p class="hint">正式評量的條件固定，結果納入學習分析；練習可以自由調整玩法，結果另外統計。</p>
+        <div class="kinds" id="kinds"></div>
+        <p class="sub">評量方式</p>
         <div class="row" id="modes"></div>
-        <div class="fluency" id="fluBox" hidden>
+        <div class="box" id="fluBox" hidden>
           <div class="group"><span>時限</span><span id="limits" class="group"></span></div>
           <label for="aim">流暢目標：每分鐘正確 <input id="aim" type="number" min="1" max="120" value="30"> 個（圖上會畫目標線）</label>
-          <span class="note" style="margin:0">流暢性模式不給提示、答錯不重答，可以一次選好幾課。</span>
         </div>
+        <p class="sub">每題的選項</p>
+        <div id="choiceArea"></div>
       </section>
 
       <section class="panel" aria-labelledby="h3">
-        <h2 id="h3"><span class="num">3</span>給哪些提示？</h2>
-        <p class="hint">可以複選。數字是提示層級，越大代表提示越多；紀錄會存下每題用到的最高層級。</p>
-        <div class="levels" id="levels"></div>
-        <p class="note" id="hintNote"></p>
+        <h2 id="h3"><span class="num">3</span>提示與答錯後的處理</h2>
+        <p class="hint" id="h3hint"></p>
+        <div id="hintArea"></div>
       </section>
 
       <section class="panel" aria-labelledby="h4">
-        <h2 id="h4"><span class="num">4</span>評量哪幾課？目前在哪個時期？</h2>
-        <p class="hint">輸入教學開始日與結束日，系統會依今天的日期自動判斷評量時機，也可以手動改。</p>
+        <h2 id="h4"><span class="num">4</span>評量哪幾課？</h2>
+        <p class="hint">課次卡片上會顯示目前的評量時機，由「教學日期管理」裡的日期自動判斷。</p>
         <div class="row" id="books"></div>
         <div class="lessons" id="lessons"></div>
-        <div class="dates" id="dates"></div>
+        <div class="status" id="status"></div>
       </section>
 
       <section class="panel" aria-labelledby="h5">
-        <h2 id="h5"><span class="num">5</span>哪些學生要評量？</h2>
-        <p class="hint">用代號，不用真實姓名。代號與姓名的對照表只留在老師自己的電腦。</p>
+        <h2 id="h5"><span class="num">5</span>學生怎麼作答？</h2>
+        <p class="hint">同一份題目可以用不同方式作答。</p>
+        <div class="kinds" id="answers"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="h6">
+        <h2 id="h6"><span class="num">6</span>哪些學生要評量？</h2>
+        <p class="hint" id="kidHint"></p>
         <div class="row" id="kids"></div>
         <div class="add"><input id="newKid" maxlength="8" placeholder="新增代號，例如 S07"><button class="chip" id="addKid">加入</button></div>
       </section>
@@ -176,19 +222,49 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 
     <aside class="summary" aria-labelledby="hs">
       <h2 id="hs">本次評量</h2>
+      <span id="kindBadge"></span>
       <dl id="sum"></dl>
       <button class="go" id="go">開始評量</button>
       <div class="done" id="done" hidden>樣品到這裡為止。第 1 版會從這裡進入作答畫面，並開始記錄每一題。</div>
       <details class="records">
         <summary>每一題會記錄哪些資料？</summary>
         <ul>
-          <li>學生代號、目標字、評量目標、評量方式</li>
-          <li>提示層級、全部選項、學生選了哪一個</li>
-          <li>對錯、第一次作答秒數、答對秒數</li>
-          <li>評量時機、教學後天數、日期時間</li>
+          <li>正式評量或練習、評量目標、評量方式</li>
+          <li>選項數、是否刪過選項、提示層級</li>
+          <li>學生代號、目標字、學生選了哪一個、對錯</li>
+          <li>第一次作答秒數、答對秒數</li>
+          <li>評量時機、教學後天數、作答模式、日期時間</li>
         </ul>
       </details>
     </aside>
+  </div>
+</div>
+
+<!-- 教學日期管理 -->
+<div class="overlay" id="datesSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dTitle">
+    <header><h2 id="dTitle">教學日期管理</h2><button class="ghost" data-close>關閉</button></header>
+    <p class="hint" style="margin:0">每一課設定一次就好，之後評量會自動判斷時機。很久以前教過的課，直接選「上學期」或「上學年」。</p>
+    <div class="row" id="dBooks"></div>
+    <div class="dtable" id="dTable"></div>
+    <footer><button class="save" data-close>完成</button></footer>
+  </div>
+</div>
+
+<!-- 評量設定 -->
+<div class="overlay" id="setSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sTitle">
+    <header><h2 id="sTitle">評量設定</h2><button class="ghost" data-close>關閉</button></header>
+    <p class="hint" style="margin:0">這裡是「正式評量」的標準條件。同一位學生每次正式評量都用同一套條件，前後結果才能比較。改了之後，會從下一次評量開始套用。</p>
+    <h3>每題的選項數</h3>
+    <div class="group" id="sChoices"></div>
+    <h3>提示（答錯時依序出現）</h3>
+    <div class="levels" id="sHints"></div>
+    <h3>答錯後的處理</h3>
+    <ol class="ladder" id="sRule"></ol>
+    <h3>維持期</h3>
+    <label for="sMaintain" class="group">教學結束後第 <input id="sMaintain" type="number" min="1" max="60"> 天起算維持期</label>
+    <footer><button class="save" data-close>完成</button></footer>
   </div>
 </div>
 
@@ -202,73 +278,118 @@ const GOALS = [
   {id:"2",  order:"建議第 2 步", name:"看字選圖",  what:"看字或語詞，點出正確的圖片（形 ↔ 義）"},
   {id:"3",  order:"建議第 3 步", name:"形音辨識",  what:"聽「努力的努」，從形近字、同音字、同詞易混字中選出目標字"},
   {id:"4-1",order:"建議第 4 步", name:"部件重組",  what:"看拆開的部件，選出組成的字"},
-  {id:"4-2",order:"建議第 4 步", name:"看提示書寫", what:"在平板或螢幕上寫出目標字", off:"第 4 版開放"}
+  {id:"4-2",order:"建議第 4 步", name:"看提示書寫", what:"寫出目標字；先用紙筆作答、老師登錄", off:"第 4 版開放"}
+];
+const KINDS = [
+  {id:"formal",   name:"正式評量", desc:"條件固定（在「評量設定」調整），結果納入學習分析"},
+  {id:"practice", name:"練習",     desc:"選項、提示、玩法都能自由調整，結果另外統計"}
 ];
 const MODES = [
   {id:"acc", name:"正確率模式", desc:"題目答完為止，看正確率與反應時間"},
   {id:"flu", name:"流暢性模式", desc:"時間到為止，看每分鐘正確幾個"}
 ];
 const LIMITS = [["30","30 秒"],["60","1 分鐘"],["120","2 分鐘"]];
-/* 提示層級草案：0 無提示；1–3 系統給；4–7 老師給（作答時按按鈕記錄） */
+const CHOICES = [["3","3 個"],["4","4 個"],["6","6 個"],["bingo","全課賓果卡"]];
+const choiceText = c => c === "bingo" ? "全課賓果卡" : `${c} 個選項`;
+/* 提示層級草案：0 無提示；1–3 系統給；4–7 老師給（作答畫面上的按鈕） */
 const LEVELS = [
-  {n:0, who:"",       items:[["none","獨立作答，無提示"]]},
-  {n:1, who:"系統",   items:[["word","語詞挖空（○瓜的○）"],["sent","句子"]]},
-  {n:2, who:"系統",   items:[["pic","圖片"],["sound","聲音"]]},
-  {n:3, who:"系統",   items:[["parts","部件"],["mask","遮擋字"],["shape","字形"]]},
-  {n:4, who:"老師按鈕", items:[["oral","口語提示"]]},
-  {n:5, who:"老師按鈕", items:[["model","示範"]]},
-  {n:6, who:"老師按鈕", items:[["phys","肢體提示"]]},
-  {n:7, who:"老師按鈕", items:[["full","完全提示"]]}
+  {n:1, who:"系統", items:[["word","語詞挖空（○瓜的○）"],["sent","句子"]]},
+  {n:2, who:"系統", items:[["pic","圖片"],["sound","聲音"]]},
+  {n:3, who:"系統", items:[["parts","部件"],["mask","遮擋字"],["shape","字形"]]}
 ];
+const TEACHER = "口語提示、示範、肢體提示、完全提示";
+const HINT_ORDER = LEVELS.flatMap(l => l.items.map(i => i[0]));
+const hintName = id => LEVELS.flatMap(l => l.items).find(i => i[0] === id)[1];
+const REACT = {remove:"移除一個錯誤選項", next:"出現下一個提示", reveal:"顯示答案並唸一次，進入下一題"};
+const ANSWERS = [
+  {id:"turn",    name:"大螢幕・輪流",   desc:"1～4 人輪流在同一個螢幕作答", min:1, max:4},
+  {id:"split",   name:"大螢幕・同時",   desc:"螢幕分成 2～4 區，各自作答（需支援多點觸控）", min:2, max:4},
+  {id:"present", name:"呈現模式・紙筆", desc:"螢幕只出題，學生寫在紙上，老師改完再登錄", min:1, max:99},
+  {id:"qr",      name:"平板掃 QR code", desc:"學生用自己的平板作答，結果傳回老師電腦", off:"第 4 版之後"}
+];
+const TAUGHT = [["","未設定"],["dates","輸入日期"],["notYet","還沒教"],["lastTerm","上學期教過"],["lastYear","上學年教過"],["earlier","更早以前教過"]];
 const PHASES = ["基線期","教學中","教學後","維持期"];
-const MAINTAIN_AFTER = 7; /* 教學結束後第 7 天起算維持期（草案，之後可在設定調整） */
 
 const DAY = 864e5;
 const today = new Date(); today.setHours(0,0,0,0);
 const iso = d => new Date(d.getTime() - d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
 const md = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()}`; };
+const load = (k, fallback) => { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return v ?? fallback; } catch(e){ return fallback; } };
+const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
 
-/* 範例狀態：翰林二年級第 1 課剛教完、第 2 課正在教，方便看到自動判斷的效果 */
-const state = {
-  goal:"3", mode:"acc", limit:"60", hints:new Set(["none"]),
-  book:"h2", lessons:["1"], kids:new Set(["S01","S02"]),
-  allKids:["S01","S02","S03","S04","S05","S06"],
-  dates:{}, manual:{}
-};
+/* 正式評量的標準條件（存在這台電腦） */
+const settings = load("literacy-mock-settings", {choices:"4", hints:["word","pic"], rule:["remove","next","next","reveal"], maintainAfter:7});
+const saveSettings = () => store("literacy-mock-settings", settings);
+
+/* 教學日期：範例為翰林二年級第 1 課剛教完、第 2 課正在教、第 3 課還沒教、第 4 課上學期教過 */
 const key = (b,n) => b + "-" + n;
-const sample = {
-  [key("h2","1")]: {start: iso(new Date(today - 12*DAY)), end: iso(new Date(today - 3*DAY))},
-  [key("h2","2")]: {start: iso(new Date(today - 2*DAY)),  end: iso(new Date(+today + 5*DAY))}
+const teach = load("literacy-mock-teach", {
+  [key("h2","1")]: {type:"dates", start: iso(new Date(today - 12*DAY)), end: iso(new Date(today - 3*DAY))},
+  [key("h2","2")]: {type:"dates", start: iso(new Date(today - 2*DAY)),  end: iso(new Date(+today + 5*DAY))},
+  [key("h2","3")]: {type:"notYet"},
+  [key("h2","4")]: {type:"lastTerm"}
+});
+const saveTeach = () => store("literacy-mock-teach", teach);
+
+const state = {
+  goal:"3", kind:"formal", mode:"acc", limit:"60",
+  pChoices:"6", pHints:new Set(["word","sent","pic"]), pRule:["next","next","remove","reveal"],
+  book:"h2", lessons:["1"], manual:{}, answer:"turn",
+  kids:new Set(["S01","S02"]), allKids:["S01","S02","S03","S04","S05","S06"]
 };
-try { const saved = JSON.parse(localStorage.getItem("literacy-mock-dates") || "null"); state.dates = saved || sample; }
-catch(e){ state.dates = sample; }
-const saveDates = () => { try { localStorage.setItem("literacy-mock-dates", JSON.stringify(state.dates)); } catch(e){} };
+let dBook = "h2";
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const bookName = b => `${BOOKS[b].edition} ${BOOKS[b].grade} 年級`;
 
-/* 依教學日期判斷評量時機 */
-function autoPhase(d){
-  if(!d || !d.start || !d.end) return {phase:null, why:"還沒輸入教學日期"};
-  const s = parse(d.start), e = parse(d.end);
+/* 依教學紀錄判斷評量時機 */
+function autoPhase(t){
+  if(!t || !t.type) return {phase:null, why:"還沒設定教學日期"};
+  if(t.type === "notYet") return {phase:"基線期", why:"還沒教"};
+  if(t.type === "lastTerm") return {phase:"維持期", why:"上學期教過"};
+  if(t.type === "lastYear") return {phase:"維持期", why:"上學年教過"};
+  if(t.type === "earlier") return {phase:"維持期", why:"更早以前教過"};
+  if(!t.start || !t.end) return {phase:null, why:"日期還沒填完整"};
+  const s = parse(t.start), e = parse(t.end);
   if(e < s) return {phase:null, why:"結束日早於開始日，請檢查日期"};
-  if(today < s) return {phase:"基線期", why:`今天在教學開始日（${md(d.start)}）之前`};
-  if(today <= e) return {phase:"教學中", why:`今天在教學期間（${md(d.start)}～${md(d.end)}）`};
+  if(today < s) return {phase:"基線期", why:`教學從 ${md(t.start)} 開始`};
+  if(today <= e) return {phase:"教學中", why:`教學期間 ${md(t.start)}～${md(t.end)}`};
   const n = Math.round((today - e) / DAY);
-  if(n < MAINTAIN_AFTER) return {phase:"教學後", why:`教學結束後第 ${n} 天`, days:n};
-  return {phase:"維持期", why:`教學結束後第 ${n} 天`, days:n};
+  return {phase: n < settings.maintainAfter ? "教學後" : "維持期", why:`教學結束後第 ${n} 天`, days:n};
 }
-const phaseOf = k => state.manual[k] || autoPhase(state.dates[k]).phase;
+const phaseOf = k => state.manual[k] || autoPhase(teach[k]).phase;
+const phases = () => state.lessons.map(n => phaseOf(key(state.book,n)));
+
+/* 這次實際套用的條件 */
+function current(){
+  const formal = state.kind === "formal", flu = state.mode === "flu";
+  const base = formal && phases().includes("基線期");
+  const noHelp = flu || base;
+  return {
+    formal, flu, base, noHelp,
+    choices: formal || flu ? settings.choices : state.pChoices,
+    hints: noHelp ? [] : (formal ? settings.hints : HINT_ORDER.filter(h => state.pHints.has(h))),
+    rule: noHelp ? null : (formal ? settings.rule : state.pRule)
+  };
+}
+function ruleFlow(rule, hints){
+  if(!rule) return `<div class="flow"><span class="s">答錯就記錯，進入下一題</span></div>`;
+  let h = 0;
+  return `<div class="flow">${rule.map((r,i) => {
+    let t = REACT[r];
+    if(r === "next") t = hints[h] ? `出現提示：${hintName(hints[h++])}` : "（沒有更多提示）";
+    return `${i?"<i>→</i>":""}<span class="s">錯 ${i+1} 次：${t}</span>`;
+  }).join("")}</div>`;
+}
 
 function renderGoals(){
   const L = BOOKS[state.book].lessons;
   const allConf = Object.values(L).every(l => l.conf);
   const partsLessons = Object.values(L).filter(l => l.parts >= l.total - 1).length;
   const status = {
-    "1":["圖片：部分語詞已有","warn"],
-    "2":["圖片：部分語詞已有","warn"],
+    "1":["圖片：部分語詞已有","warn"], "2":["圖片：部分語詞已有","warn"],
     "3": allConf ? ["形近同音資料：全部課次","ok"] : ["形近同音資料：部分課次","warn"],
     "4-1": partsLessons ? [`部件資料：${partsLessons} 課`,"warn"] : ["部件資料：此版本尚未建置","warn"],
     "4-2":["第 4 版開放","warn"]
@@ -279,7 +400,9 @@ function renderGoals(){
   $("#goals").querySelectorAll("button:not(:disabled)").forEach(b => b.onclick = () => { state.goal = b.dataset.g; render(); });
 }
 
-function renderModes(){
+function renderKind(){
+  $("#kinds").innerHTML = KINDS.map(k => `<button class="opt ${state.kind===k.id?"on":""} ${k.id==="practice"?"prac":""}" data-k="${k.id}" aria-pressed="${state.kind===k.id}">${k.name}<small>${k.desc}</small></button>`).join("");
+  $("#kinds").querySelectorAll("button").forEach(b => b.onclick = () => { state.kind = b.dataset.k; render(); });
   $("#modes").innerHTML = MODES.map(m => `<button class="opt ${state.mode===m.id?"on":""}" data-m="${m.id}" aria-pressed="${state.mode===m.id}">${m.name}<small>${m.desc}</small></button>`).join("");
   $("#modes").querySelectorAll("button").forEach(b => b.onclick = () => {
     state.mode = b.dataset.m;
@@ -289,27 +412,48 @@ function renderModes(){
   $("#fluBox").hidden = state.mode !== "flu";
   $("#limits").innerHTML = LIMITS.map(([v,t]) => `<button class="chip ${state.limit===v?"on":""}" data-l="${v}">${t}</button>`).join("");
   $("#limits").querySelectorAll("button").forEach(b => b.onclick = () => { state.limit = b.dataset.l; render(); });
+
+  const c = current();
+  if(c.formal || c.flu){
+    $("#choiceArea").innerHTML = `<div class="locked"><span class="lock">固定</span><span>${choiceText(settings.choices)}（${c.flu && !c.formal ? "流暢性模式使用標準條件" : "正式評量的標準條件"}）。<button class="linkbtn" data-open="set">到評量設定修改</button></span></div>`;
+  } else {
+    $("#choiceArea").innerHTML = `<div class="group">${CHOICES.map(([v,t]) => `<button class="chip ${state.pChoices===v?"on":""}" data-c="${v}">${t}</button>`).join("")}</div>
+      <p class="note">全課賓果卡：把這一課的生字排成賓果卡，聽到哪個字就點哪個，連成一條線過關。</p>`;
+    $("#choiceArea").querySelectorAll("[data-c]").forEach(b => b.onclick = () => { state.pChoices = b.dataset.c; render(); });
+  }
 }
 
-function renderLevels(){
-  const flu = state.mode === "flu";
-  $("#levels").innerHTML = LEVELS.map(l => `<div class="lv"><span class="n">${l.n}<br><span class="who">${l.who}</span></span>
-    <div class="group">${l.items.map(([id,t]) => `<button class="chip ${state.hints.has(id)?"on":""}" data-h="${id}" ${flu && id!=="none"?"disabled":""} aria-pressed="${state.hints.has(id)}">${t}</button>`).join("")}</div></div>`).join("");
-  $("#levels").querySelectorAll("button:not(:disabled)").forEach(b => b.onclick = () => {
-    const id = b.dataset.h;
-    if(id === "none"){ state.hints = new Set(["none"]); }
-    else {
-      state.hints.delete("none");
-      state.hints.has(id) ? state.hints.delete(id) : state.hints.add(id);
-      if(!state.hints.size) state.hints.add("none");
-    }
-    render();
-  });
-  const phases = state.lessons.map(n => phaseOf(key(state.book,n)));
-  const note = $("#hintNote");
-  if(flu){ note.textContent = "流暢性模式固定為無提示。"; note.className = "note"; }
-  else if(phases.includes("基線期") && !state.hints.has("none")){ note.textContent = "目前是基線期，建議選「無提示」，之後的比較才有意義。"; note.className = "note warn"; }
-  else { note.textContent = "老師提示（4～7）在作答畫面會變成按鈕，老師給了提示就按一下。"; note.className = "note"; }
+function hintChips(set, onToggle, disabled){
+  return LEVELS.map(l => `<div class="lv"><span class="n">${l.n}<br><span class="who">${l.who}</span></span>
+    <div class="group">${l.items.map(([id,t]) => `<button class="chip ${set.has(id)?"on":""}" data-h="${id}" ${disabled?"disabled":""} aria-pressed="${set.has(id)}">${t}</button>`).join("")}</div></div>`).join("")
+    + `<div class="lv"><span class="n">4～7<br><span class="who">老師按鈕</span></span><span class="note" style="margin:0">${TEACHER}：作答畫面上隨時可按，按了就記錄</span></div>`;
+}
+
+function ruleEditor(rule, onChange){
+  return rule.map((r,i) => i === rule.length - 1
+    ? `<li><span class="k">錯 ${i+1} 次</span><span class="fixed">${REACT.reveal}</span></li>`
+    : `<li><span class="k">錯 ${i+1} 次</span><select data-i="${i}" aria-label="答錯第 ${i+1} 次">${["remove","next"].map(v => `<option value="${v}" ${r===v?"selected":""}>${REACT[v]}</option>`).join("")}</select></li>`).join("");
+}
+
+function renderHints(){
+  const c = current(), area = $("#hintArea");
+  if(c.noHelp){
+    $("#h3hint").textContent = c.flu ? "流暢性模式不給提示，答錯不重答。" : "這次包含基線期的課次，正式評量固定為無提示。";
+    area.innerHTML = `<div class="locked"><span class="lock">固定</span><span>無提示・答錯就記錯，進入下一題</span></div>`;
+    return;
+  }
+  if(c.formal){
+    $("#h3hint").textContent = "正式評量使用「評量設定」裡的標準條件，這裡只顯示，不能修改。";
+    area.innerHTML = `<div class="locked"><span class="lock">固定</span><div style="display:grid;gap:8px">${ruleFlow(c.rule, c.hints)}
+      <span class="note" style="margin:0">老師提示（${TEACHER}）可隨時按按鈕記錄。<button class="linkbtn" data-open="set">到評量設定修改</button></span></div></div>`;
+    return;
+  }
+  $("#h3hint").textContent = "練習可以自由選提示和答錯規則。提示會依層級由少到多出現。";
+  area.innerHTML = `<p class="sub">提示</p><div class="levels">${hintChips(state.pHints)}</div>
+    <p class="sub">答錯後的處理</p><ol class="ladder">${ruleEditor(state.pRule)}</ol>
+    <p class="sub">實際順序</p>${ruleFlow(c.rule, c.hints)}`;
+  area.querySelectorAll("[data-h]").forEach(b => b.onclick = () => { const id = b.dataset.h; state.pHints.has(id) ? state.pHints.delete(id) : state.pHints.add(id); render(); });
+  area.querySelectorAll(".ladder select").forEach(s => s.onchange = () => { state.pRule[+s.dataset.i] = s.value; render(); });
 }
 
 function renderLessons(){
@@ -318,7 +462,7 @@ function renderLessons(){
   const L = BOOKS[state.book].lessons;
   $("#lessons").innerHTML = Object.entries(L).map(([n,l]) => {
     const on = state.lessons.includes(n), ph = phaseOf(key(state.book,n));
-    return `<button class="lesson ${on?"on":""}" data-n="${n}" aria-pressed="${on}"><span class="t"><b>第 ${n} 課</b>${ph?`<span class="pill">${ph}</span>`:""}</span>
+    return `<button class="lesson ${on?"on":""}" data-n="${n}" aria-pressed="${on}"><span class="t"><b>第 ${n} 課</b>${ph?`<span class="pill">${ph}</span>`:`<span class="pill warn">未設定</span>`}</span>
       <span class="chars">${esc(l.write)}${l.read?`<span style="opacity:.6">・${esc(l.read)}</span>`:""}</span></button>`;
   }).join("");
   $("#lessons").querySelectorAll("button").forEach(b => b.onclick = () => {
@@ -327,25 +471,34 @@ function renderLessons(){
     else state.lessons = state.lessons.includes(n) ? state.lessons.filter(x => x !== n) : [...state.lessons, n].sort((a,b) => a-b);
     render();
   });
-  $("#dates").innerHTML = state.lessons.length ? state.lessons.map(n => {
-    const k = key(state.book,n), d = state.dates[k] || {}, a = autoPhase(d), cur = phaseOf(k);
-    return `<div class="dateRow" data-k="${k}"><b class="lname">第 ${n} 課</b>
-      <label>教學開始日<input type="date" id="s-${k}" value="${d.start||""}"></label>
-      <label>教學結束日<input type="date" id="e-${k}" value="${d.end||""}"></label>
-      <div class="phase"><select id="p-${k}" aria-label="第 ${n} 課評量時機">
-        <option value="">${a.phase?`自動：${a.phase}`:"請選擇時機"}</option>
-        ${PHASES.map(p => `<option value="${p}" ${state.manual[k]===p?"selected":""}>手動：${p}</option>`).join("")}
-      </select><span class="why">${state.manual[k]?"已手動指定":esc(a.why)}</span></div></div>`;
-  }).join("") : `<p class="note">請先選擇課次。</p>`;
-  $("#dates").querySelectorAll(".dateRow").forEach(r => {
+  /* 已設定的課只顯示一行狀態；還沒設定的課在這裡快速選 */
+  $("#status").innerHTML = state.lessons.map(n => {
+    const k = key(state.book,n), t = teach[k], a = autoPhase(t);
+    if(!t || !t.type) return `<div class="st need" data-k="${k}"><b>第 ${n} 課還沒設定教學日期</b>
+      <span class="group">${[["notYet","還沒教"],["lastTerm","上學期教過"],["lastYear","上學年教過"]].map(([v,x]) => `<button class="chip" data-q="${v}">${x}</button>`).join("")}<button class="chip" data-q="dates">輸入日期…</button></span></div>`;
+    return `<div class="st" data-k="${k}"><b>第 ${n} 課</b><span class="pill">${phaseOf(k)}${state.manual[k]?"（手動）":""}</span><span class="why">${esc(a.why)}</span>
+      <select data-m aria-label="第 ${n} 課這次的評量時機"><option value="">這次照自動判斷</option>${PHASES.map(p => `<option value="${p}" ${state.manual[k]===p?"selected":""}>這次改為：${p}</option>`).join("")}</select>
+      <button class="linkbtn" data-edit>修改教學日期</button></div>`;
+  }).join("") || `<p class="note">請先選擇課次。</p>`;
+  $("#status").querySelectorAll(".st").forEach(r => {
     const k = r.dataset.k;
-    r.querySelector(`#s-${k}`).onchange = e => { (state.dates[k] ||= {}).start = e.target.value; saveDates(); render(); };
-    r.querySelector(`#e-${k}`).onchange = e => { (state.dates[k] ||= {}).end = e.target.value; saveDates(); render(); };
-    r.querySelector(`#p-${k}`).onchange = e => { if(e.target.value) state.manual[k] = e.target.value; else delete state.manual[k]; render(); };
+    r.querySelectorAll("[data-q]").forEach(b => b.onclick = () => {
+      if(b.dataset.q === "dates"){ teach[k] = {type:"dates"}; saveTeach(); openDates(state.book); }
+      else { teach[k] = {type:b.dataset.q}; saveTeach(); render(); }
+    });
+    const m = r.querySelector("[data-m]"); if(m) m.onchange = () => { if(m.value) state.manual[k] = m.value; else delete state.manual[k]; render(); };
+    const e = r.querySelector("[data-edit]"); if(e) e.onclick = () => openDates(state.book);
   });
 }
 
+function renderAnswers(){
+  $("#answers").innerHTML = ANSWERS.map(a => `<button class="opt ${state.answer===a.id?"on":""}" data-a="${a.id}" ${a.off?"disabled":""} aria-pressed="${state.answer===a.id}">${a.name}<small>${a.off?`${a.desc}（${a.off}）`:a.desc}</small></button>`).join("");
+  $("#answers").querySelectorAll("button:not(:disabled)").forEach(b => b.onclick = () => { state.answer = b.dataset.a; render(); });
+}
+
 function renderKids(){
+  const a = ANSWERS.find(x => x.id === state.answer);
+  $("#kidHint").textContent = a.max < 99 ? `用代號，不用真實姓名。「${a.name}」可選 ${a.min}～${a.max} 位。` : "用代號，不用真實姓名。呈現模式可以全班一起，人數不限。";
   $("#kids").innerHTML = state.allKids.map(k => `<button class="chip ${state.kids.has(k)?"on":""}" data-k="${esc(k)}" aria-pressed="${state.kids.has(k)}">${esc(k)}</button>`).join("");
   $("#kids").querySelectorAll("button").forEach(b => b.onclick = () => { const k = b.dataset.k; state.kids.has(k) ? state.kids.delete(k) : state.kids.add(k); render(); });
 }
@@ -358,29 +511,78 @@ $("#addKid").onclick = () => {
 $("#newKid").addEventListener("keydown", e => { if(e.key === "Enter") $("#addKid").click(); });
 
 function renderSummary(){
-  const g = GOALS.find(x => x.id === state.goal);
-  const flu = state.mode === "flu";
-  const hintText = flu ? "無提示" : [...state.hints].map(id => LEVELS.flatMap(l => l.items).find(i => i[0] === id)[1]).join("、");
+  const c = current(), g = GOALS.find(x => x.id === state.goal), a = ANSWERS.find(x => x.id === state.answer);
+  $("#kindBadge").innerHTML = c.formal ? `<span class="badge">正式評量・納入學習分析</span>` : `<span class="badge prac">練習・另外統計</span>`;
   const lessonText = state.lessons.length ? `${bookName(state.book)}　第 ${state.lessons.join("、")} 課` : null;
-  const phaseText = state.lessons.map(n => { const k = key(state.book,n), p = phaseOf(k), a = autoPhase(state.dates[k]);
-    return p ? `第 ${n} 課：${p}${(p==="教學後"||p==="維持期") && a.days!=null && !state.manual[k] ? `（第 ${a.days} 天）` : ""}` : null; });
-  const missingPhase = phaseText.some(x => !x);
+  const ph = state.lessons.map(n => { const k = key(state.book,n), p = phaseOf(k), d = autoPhase(teach[k]);
+    return p ? `第 ${n} 課：${p}${(p==="教學後"||p==="維持期") && d.days!=null && !state.manual[k] ? `（第 ${d.days} 天）` : ""}` : null; });
+  const n = state.kids.size, kidsOk = n >= a.min && n <= a.max;
   const rows = [
     ["評量目標", `目標 ${g.id}　${g.name}`],
-    ["評量方式", flu ? `流暢性模式・${LIMITS.find(l => l[0]===state.limit)[1]}・目標每分鐘 ${esc($("#aim").value)} 個` : "正確率模式"],
-    ["提示", hintText],
+    ["評量方式", c.flu ? `流暢性・${LIMITS.find(l => l[0]===state.limit)[1]}・目標每分鐘 ${esc($("#aim").value)} 個` : "正確率模式"],
+    ["選項", choiceText(c.choices)],
+    ["提示", c.hints.length ? c.hints.map(hintName).join(" → ") : "無提示"],
     ["課次", lessonText],
-    ["評量時機", state.lessons.length && !missingPhase ? phaseText.join("<br>") : null],
-    ["學生", state.kids.size ? `${[...state.kids].map(esc).join("、")}（${state.kids.size} 位）` : null]
+    ["評量時機", state.lessons.length && !ph.includes(null) ? ph.join("<br>") : null, "請到第 4 步設定教學日期"],
+    ["作答模式", a.name],
+    ["學生", n ? (kidsOk ? `${[...state.kids].map(esc).join("、")}（${n} 位）` : null) : null, n ? `「${a.name}」需要 ${a.min}～${a.max} 位，目前 ${n} 位` : "還沒選"]
   ];
-  $("#sum").innerHTML = rows.map(([t,v]) => `<div><dt>${t}</dt><dd class="${v?"":"miss"}">${v || (t==="評量時機"?"請輸入教學日期或手動選擇":"還沒選")}</dd></div>`).join("");
+  $("#sum").innerHTML = rows.map(([t,v,miss]) => `<div><dt>${t}</dt><dd class="${v?"":"miss"}">${v || miss || "還沒選"}</dd></div>`).join("");
   $("#go").disabled = rows.some(r => !r[1]);
   $("#done").hidden = true;
 }
 $("#go").onclick = () => { $("#done").hidden = false; };
 $("#aim").addEventListener("input", renderSummary);
 
-function render(){ renderGoals(); renderModes(); renderLevels(); renderLessons(); renderKids(); renderSummary(); }
+/* 教學日期管理面板 */
+function renderDates(){
+  $("#dBooks").innerHTML = BOOK_ORDER.map(b => `<button class="chip ${dBook===b?"on":""}" data-b="${b}">${bookName(b)}</button>`).join("");
+  $("#dBooks").querySelectorAll("button").forEach(btn => btn.onclick = () => { dBook = btn.dataset.b; renderDates(); });
+  $("#dTable").innerHTML = Object.keys(BOOKS[dBook].lessons).map(n => {
+    const k = key(dBook,n), t = teach[k] || {}, a = autoPhase(t);
+    return `<div class="drow" data-k="${k}"><b>第 ${n} 課</b>
+      <select aria-label="第 ${n} 課教學狀態">${TAUGHT.map(([v,x]) => `<option value="${v}" ${(t.type||"")===v?"selected":""}>${x}</option>`).join("")}</select>
+      <div class="ds">${t.type === "dates" ? `<input type="date" aria-label="第 ${n} 課開始日" data-s value="${t.start||""}"><span>到</span><input type="date" aria-label="第 ${n} 課結束日" data-e value="${t.end||""}">` : ""}
+      <span class="ph">${a.phase ? `目前：${a.phase}・${esc(a.why)}` : esc(a.why)}</span></div></div>`;
+  }).join("");
+  $("#dTable").querySelectorAll(".drow").forEach(r => {
+    const k = r.dataset.k;
+    r.querySelector("select").onchange = e => { teach[k] = e.target.value ? {...(teach[k]||{}), type:e.target.value} : {}; saveTeach(); renderDates(); render(); };
+    const s = r.querySelector("[data-s]"), en = r.querySelector("[data-e]");
+    if(s) s.onchange = () => { teach[k].start = s.value; saveTeach(); renderDates(); render(); };
+    if(en) en.onchange = () => { teach[k].end = en.value; saveTeach(); renderDates(); render(); };
+  });
+}
+
+/* 評量設定面板 */
+function renderSettings(){
+  $("#sChoices").innerHTML = CHOICES.filter(c => c[0] !== "bingo").map(([v,t]) => `<button class="chip ${settings.choices===v?"on":""}" data-c="${v}">${t}</button>`).join("");
+  $("#sChoices").querySelectorAll("button").forEach(b => b.onclick = () => { settings.choices = b.dataset.c; saveSettings(); renderSettings(); render(); });
+  const set = new Set(settings.hints);
+  $("#sHints").innerHTML = hintChips(set);
+  $("#sHints").querySelectorAll("[data-h]").forEach(b => b.onclick = () => {
+    const id = b.dataset.h; set.has(id) ? set.delete(id) : set.add(id);
+    settings.hints = HINT_ORDER.filter(h => set.has(h)); saveSettings(); renderSettings(); render();
+  });
+  $("#sRule").innerHTML = ruleEditor(settings.rule);
+  $("#sRule").querySelectorAll("select").forEach(s => s.onchange = () => { settings.rule[+s.dataset.i] = s.value; saveSettings(); render(); });
+  $("#sMaintain").value = settings.maintainAfter;
+}
+$("#sMaintain").onchange = e => { const v = Math.max(1, Math.min(60, +e.target.value || 7)); settings.maintainAfter = v; saveSettings(); renderSettings(); render(); };
+
+let lastFocus = null;
+function openSheet(id){ lastFocus = document.activeElement; $(id).hidden = false; $(id).querySelector("[data-close]").focus(); }
+function closeSheets(){ document.querySelectorAll(".overlay").forEach(o => o.hidden = true); if(lastFocus) lastFocus.focus(); }
+function openDates(b){ dBook = b || dBook; renderDates(); openSheet("#datesSheet"); }
+function openSettings(){ renderSettings(); openSheet("#setSheet"); }
+$("#openDates").onclick = () => openDates(state.book);
+$("#openSettings").onclick = openSettings;
+document.querySelectorAll("[data-close]").forEach(b => b.onclick = closeSheets);
+document.querySelectorAll(".overlay").forEach(o => o.addEventListener("click", e => { if(e.target === o) closeSheets(); }));
+document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets(); });
+document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); });
+
+function render(){ renderGoals(); renderKind(); renderHints(); renderLessons(); renderAnswers(); renderKids(); renderSummary(); }
 render();
 </script>
 
