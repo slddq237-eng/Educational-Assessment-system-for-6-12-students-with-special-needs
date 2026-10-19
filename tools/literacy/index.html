@@ -111,7 +111,9 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
 .lesson .chars{display:block;font-family:var(--kai);font-size:20px;letter-spacing:.06em;color:var(--muted);word-break:break-all;margin-top:4px;line-height:1.35}
 .lesson.on{background:var(--mint);border-color:var(--green);box-shadow:inset 0 0 0 2px var(--green)}
 .lesson.on .chars{color:var(--ink)}
-.status{margin-top:16px;display:grid;gap:8px}
+.status{margin-top:8px;display:grid;gap:8px}
+.time{margin:0;display:flex;gap:6px;flex-wrap:wrap;align-items:baseline}
+.time b{font-size:20px;color:var(--green)}
 .st{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;border-top:1px solid var(--grid);padding-top:10px}
 .st .why{font-size:14px;color:var(--muted)}
 .st select{border:2px solid var(--ink);border-radius:10px;padding:2px 6px;font-size:15px}
@@ -222,10 +224,17 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
 
       <section class="panel" aria-labelledby="h5">
         <h2 id="h5"><span class="num">5</span>評量哪幾課？</h2>
-        <p class="hint">課次卡片上會顯示所選學生的評量時機。有輸入教學日期的課依日期判斷；沒有的課依學生年級判斷。</p>
-        <div class="row" id="books"></div>
+        <p class="hint">先選版本，再選年級和課次。課次卡片上會顯示所選學生的評量時機。</p>
+        <p class="sub">版本</p>
+        <div class="row" id="eds"></div>
+        <p class="sub">年級</p>
+        <div class="group" id="books"></div>
+        <p class="sub">課次（可複選）</p>
         <div class="lessons" id="lessons"></div>
+        <p class="note" id="picked"></p>
         <div class="status" id="status"></div>
+        <p class="sub">出題</p>
+        <div class="box" id="quiz" style="margin-top:0"></div>
       </section>
 
       <section class="panel" aria-labelledby="h6">
@@ -396,7 +405,7 @@ const saveTeach = () => store("literacy-mock-teach-v2", teach);
 const state = {
   goal:"3", kind:"formal", mode:"acc", limit:"60",
   pChoices:"6", pHints:new Set(["word","sent","pic"]), pRule:["next","next","remove","reveal"],
-  book:"h2", lessons:["1"], manual:{}, answer:"turn",
+  ed:"翰林", book:"h2", lessons:["h2-1"], qCount:null, qMethod:"even", manual:{}, answer:"turn",
   kids:new Set(["S01","S02"])
 };
 let dBook = "h2";
@@ -431,7 +440,7 @@ function autoFor(code, b, n){
 }
 const phaseFor = (code, b, n) => state.manual[key(b,n)] || autoFor(code, b, n).phase;
 const selKids = () => [...state.kids].filter(kidBy);
-const phases = () => state.lessons.flatMap(n => selKids().map(c => phaseFor(c, state.book, n)));
+const phases = () => state.lessons.flatMap(k => { const [b,n] = k.split("-"); return selKids().map(c => phaseFor(c, b, n)); });
 /* 把同一課、同一時機的學生合在一起顯示 */
 function groups(b, n){
   const g = new Map();
@@ -489,7 +498,6 @@ function renderKind(){
   $("#modes").innerHTML = MODES.map(m => `<button class="opt ${state.mode===m.id?"on":""}" data-m="${m.id}" aria-pressed="${state.mode===m.id}">${m.name}<small>${m.desc}</small></button>`).join("");
   $("#modes").querySelectorAll("button").forEach(b => b.onclick = () => {
     state.mode = b.dataset.m;
-    if(state.mode === "acc" && state.lessons.length > 1) state.lessons = [state.lessons[0]];
     render();
   });
   $("#fluBox").hidden = state.mode !== "flu";
@@ -539,41 +547,105 @@ function renderHints(){
   area.querySelectorAll(".ladder select").forEach(s => s.onchange = () => { state.pRule[+s.dataset.i] = s.value; render(); });
 }
 
+const splitKey = k => k.split("-");
+const EDITIONS = [...new Set(BOOK_ORDER.map(b => BOOKS[b].edition))];
+const lessonSize = k => { const [b,n] = splitKey(k); return BOOKS[b].lessons[n].total; };
+/* 依版本分組顯示已選課次，例如「翰林 2上 第 1、2 課」 */
+function lessonsText(){
+  const by = new Map();
+  for(const k of state.lessons){ const [b,n] = splitKey(k); if(!by.has(b)) by.set(b, []); by.get(b).push(n); }
+  return [...by].map(([b,ns]) => `${bookName(b)} 第 ${ns.sort((x,y) => x-y).join("、")} 課`).join("；");
+}
 function renderLessons(){
-  $("#books").innerHTML = BOOK_ORDER.map(b => `<button class="opt ${state.book===b?"on":""}" data-b="${b}" aria-pressed="${state.book===b}">${bookName(b)}</button>`).join("");
-  $("#books").querySelectorAll("button").forEach(btn => btn.onclick = () => { state.book = btn.dataset.b; state.lessons = ["1"]; render(); });
+  $("#eds").innerHTML = EDITIONS.map(e => `<button class="opt ${state.ed===e?"on":""}" data-e="${e}" aria-pressed="${state.ed===e}">${e}</button>`).join("");
+  $("#eds").querySelectorAll("button").forEach(btn => btn.onclick = () => { state.ed = btn.dataset.e; state.book = BOOK_ORDER.find(b => BOOKS[b].edition === state.ed); render(); });
+  const books = BOOK_ORDER.filter(b => BOOKS[b].edition === state.ed);
+  $("#books").innerHTML = books.map(b => `<button class="chip ${state.book===b?"on":""}" data-b="${b}" aria-pressed="${state.book===b}">${GRADES[BOOKS[b].grade-1]}年級${BOOKS[b].term}學期</button>`).join("");
+  $("#books").querySelectorAll("button").forEach(btn => btn.onclick = () => { state.book = btn.dataset.b; render(); });
   const L = BOOKS[state.book].lessons;
   $("#lessons").innerHTML = Object.entries(L).map(([n,l]) => {
-    const on = state.lessons.includes(n), gs = groups(state.book, n);
+    const k = key(state.book,n), on = state.lessons.includes(k), gs = groups(state.book, n);
     const pill = !gs.length ? "" : gs.some(g => !g.label) ? `<span class="pill warn">需要日期</span>`
       : new Set(gs.map(g => g.label.replace(/（.*/, ""))).size > 1 ? `<span class="pill">依學生不同</span>` : `<span class="pill">${gs[0].label.replace(/（.*/, "")}</span>`;
     return `<button class="lesson ${on?"on":""}" data-n="${n}" aria-pressed="${on}"><span class="t"><b>第 ${n} 課</b>${pill}</span>
       <span class="chars">${esc(l.write)}${l.read?`<span style="opacity:.6">・${esc(l.read)}</span>`:""}</span></button>`;
   }).join("");
   $("#lessons").querySelectorAll("button").forEach(b => b.onclick = () => {
-    const n = b.dataset.n;
-    if(state.mode === "acc") state.lessons = [n];
-    else state.lessons = state.lessons.includes(n) ? state.lessons.filter(x => x !== n) : [...state.lessons, n].sort((a,b) => a-b);
+    const k = key(state.book, b.dataset.n);
+    state.lessons = state.lessons.includes(k) ? state.lessons.filter(x => x !== k) : [...state.lessons, k];
     render();
   });
+  $("#picked").innerHTML = state.lessons.length ? `已選：${esc(lessonsText())}　<button class="linkbtn" id="clearLessons">全部清除</button>` : "還沒選課次，可以選好幾課，也可以跨版本。";
+  if($("#clearLessons")) $("#clearLessons").onclick = () => { state.lessons = []; render(); };
   if(!selKids().length){ $("#status").innerHTML = `<p class="note">請先在第 4 步選學生，才能判斷評量時機。</p>`; return; }
-  $("#status").innerHTML = state.lessons.map(n => {
-    const k = key(state.book,n), gs = groups(state.book, n), need = gs.some(g => !g.label);
+  $("#status").innerHTML = state.lessons.map(k => {
+    const [b,n] = splitKey(k), gs = groups(b, n), need = gs.some(g => !g.label);
     const lines = gs.map(g => `<span>${g.kids.map(c => esc(kidLabel(kidBy(c)))).join("、")}：<b>${g.label || "未判斷"}</b> <span class="why">${esc(g.why)}</span></span>`).join("<br>");
-    return `<div class="st ${need?"need":""}" data-k="${k}"><b>第 ${n} 課</b><span style="flex:1 1 260px">${lines}</span>
+    return `<div class="st ${need?"need":""}" data-k="${k}"><b>${bookName(b)} 第 ${n} 課</b><span style="flex:1 1 260px">${lines}</span>
       ${need ? `<span class="group"><button class="chip" data-q="notYet">還沒教</button><button class="chip" data-q="dates">輸入教學日期…</button></span>`
       : `<select data-m aria-label="第 ${n} 課這次的評量時機"><option value="">這次照自動判斷</option>${PHASES.map(p => `<option value="${p}" ${state.manual[k]===p?"selected":""}>這次全部改為：${p}</option>`).join("")}</select>
       <button class="linkbtn" data-edit>修改教學日期</button>`}</div>`;
-  }).join("") || `<p class="note">請先選擇課次。</p>`;
+  }).join("");
   $("#status").querySelectorAll(".st").forEach(r => {
-    const k = r.dataset.k;
-    r.querySelectorAll("[data-q]").forEach(b => b.onclick = () => {
-      teach[k] = {type:b.dataset.q}; saveTeach();
-      if(b.dataset.q === "dates") openDates(state.book); else render();
+    const k = r.dataset.k, b = splitKey(k)[0];
+    r.querySelectorAll("[data-q]").forEach(btn => btn.onclick = () => {
+      teach[k] = {type:btn.dataset.q}; saveTeach();
+      if(btn.dataset.q === "dates") openDates(b); else render();
     });
     const m = r.querySelector("[data-m]"); if(m) m.onchange = () => { if(m.value) state.manual[k] = m.value; else delete state.manual[k]; render(); };
-    const e = r.querySelector("[data-edit]"); if(e) e.onclick = () => openDates(state.book);
+    const e = r.querySelector("[data-edit]"); if(e) e.onclick = () => openDates(b);
   });
+}
+
+/* 出題設定：題數、出題方式、預估時間 */
+const METHODS = [
+  {id:"even",  name:"平均隨機", desc:"每一課平均抽字，順序隨機"},
+  {id:"weak",  name:"常錯優先", desc:"先出常答錯、反應慢的字", need:"需要累積作答紀錄（第 1 版開始記錄）"},
+  {id:"freq",  name:"字頻優先", desc:"先出常用字", need:"需要匯入字頻資料"}
+];
+const SEC_PER_ITEM = {turn:8, split:8, present:15};
+/* 一課的量：所選版本每課生字數的平均 */
+function oneLesson(){
+  const books = [...new Set(state.lessons.map(k => splitKey(k)[0]))];
+  const sizes = books.flatMap(b => Object.values(BOOKS[b].lessons).map(l => l.total));
+  return sizes.length ? Math.round(sizes.reduce((a,b) => a+b, 0) / sizes.length) : 0;
+}
+function quizPlan(){
+  const pool = state.lessons.reduce((s,k) => s + lessonSize(k), 0);
+  const count = Math.min(pool, state.qCount ?? oneLesson());
+  /* 平均分配到每一課；除不盡的題數給字比較多的課 */
+  const order = [...state.lessons].sort((a,b) => lessonSize(b) - lessonSize(a));
+  const per = new Map(state.lessons.map(k => [k, 0]));
+  let left = count;
+  while(left > 0){ let moved = false;
+    for(const k of order){ if(left && per.get(k) < lessonSize(k)){ per.set(k, per.get(k)+1); left--; moved = true; } }
+    if(!moved) break; }
+  const method = state.kind === "formal" ? "even" : state.qMethod;
+  const n = Math.max(1, selKids().length);
+  const sec = count * (SEC_PER_ITEM[state.answer] || 8) * (state.answer === "turn" ? n : 1);
+  return {pool, count, per, method, sec, n};
+}
+const minutes = s => s < 60 ? "不到 1 分鐘" : `約 ${Math.ceil(s / 30) / 2} 分鐘`;
+function renderQuiz(){
+  const box = $("#quiz");
+  if(!state.lessons.length){ box.innerHTML = `<p class="note" style="margin:0">選好課次後，這裡會設定題數。</p>`; return; }
+  if(state.mode === "flu"){ box.innerHTML = `<div class="locked"><span class="lock">流暢性</span><span>在 ${LIMITS.find(l => l[0]===state.limit)[1]} 內，從所選課次的 ${quizPlan().pool} 個字隨機連續出題，題數不固定。</span></div>`; return; }
+  const q = quizPlan(), one = oneLesson();
+  const manyBooks = new Set(state.lessons.map(k => splitKey(k)[0])).size > 1;
+  const perText = state.lessons.length > 1 ? [...q.per].map(([k,v]) => `${manyBooks ? bookName(splitKey(k)[0]) + " " : ""}第 ${splitKey(k)[1]} 課 ${v} 字`).join("、") : "";
+  box.innerHTML = `
+    <label class="group" for="qCount">題數 <input id="qCount" type="number" min="1" max="${q.pool}" value="${q.count}"> 題
+      <button class="chip ${q.count===Math.min(one,q.pool)?"on":""}" data-qc="one">一課的量（${one} 字）</button>
+      <button class="chip ${q.count===q.pool?"on":""}" data-qc="all">全部 ${q.pool} 字</button></label>
+    ${perText ? `<p class="note" style="margin:0">平均分配：${perText}</p>` : ""}
+    <div class="group"><span>出題方式</span>${state.kind === "formal"
+      ? `<span class="locked" style="padding:4px 12px"><span class="lock">固定</span>平均隨機（正式評量固定，避免只挑難字讓正確率偏低）</span>`
+      : METHODS.map(m => `<button class="chip ${q.method===m.id?"on":""}" data-qm="${m.id}" title="${m.desc}">${m.name}</button>`).join("")}</div>
+    ${state.kind !== "formal" && METHODS.find(m => m.id===q.method).need ? `<p class="note warn" style="margin:0">${METHODS.find(m => m.id===q.method).desc}。${METHODS.find(m => m.id===q.method).need}，目前會先用平均隨機。</p>` : ""}
+    <p class="time"><b>${minutes(q.sec)}</b>　<span class="note" style="margin:0">${state.answer === "turn" && q.n > 1 ? `${q.n} 位學生輪流，每人 ${q.count} 題，` : ""}每題約 ${SEC_PER_ITEM[state.answer] || 8} 秒估算</span></p>`;
+  $("#qCount").onchange = e => { const v = Math.max(1, Math.min(q.pool, +e.target.value || 1)); state.qCount = v; render(); };
+  box.querySelectorAll("[data-qc]").forEach(b => b.onclick = () => { state.qCount = b.dataset.qc === "all" ? q.pool : null; render(); });
+  box.querySelectorAll("[data-qm]").forEach(b => b.onclick = () => { state.qMethod = b.dataset.qm; render(); });
 }
 
 function renderAnswers(){
@@ -643,10 +715,12 @@ $("#newKid").addEventListener("keydown", e => { if(e.key === "Enter") $("#addKid
 function renderSummary(){
   const c = current(), g = GOALS.find(x => x.id === state.goal), a = ANSWERS.find(x => x.id === state.answer);
   $("#kindBadge").innerHTML = c.formal ? `<span class="badge">正式評量・納入學習分析</span>` : `<span class="badge prac">練習・另外統計</span>`;
-  const lessonText = state.lessons.length ? `${bookName(state.book)}　第 ${state.lessons.join("、")} 課` : null;
+  const lessonText = state.lessons.length ? esc(lessonsText()) : null;
+  const q = quizPlan();
+  const quizText = !state.lessons.length ? null : c.flu ? `時限內隨機出題（${q.pool} 字）` : `${q.count} 題・${METHODS.find(m => m.id===q.method).name}・${minutes(q.sec)}`;
   const multi = selKids().length > 1;
-  const ph = state.lessons.flatMap(n => groups(state.book, n).map(g => g.label
-    ? `第 ${n} 課${multi ? `・${g.kids.map(c => esc(kidLabel(kidBy(c)))).join("、")}` : ""}：${g.label}` : null));
+  const ph = state.lessons.flatMap(k => { const [b,n] = splitKey(k); return groups(b, n).map(g => g.label
+    ? `${state.lessons.length > 1 ? `${bookName(b)} ` : ""}第 ${n} 課${multi ? `・${g.kids.map(c => esc(kidLabel(kidBy(c)))).join("、")}` : ""}：${g.label}` : null); });
   const n = selKids().length, kidsOk = n >= a.min && n <= a.max;
   const rows = [
     ["評量目標", `目標 ${g.id}　${g.name}`],
@@ -654,6 +728,7 @@ function renderSummary(){
     ["選項", choiceText(c.choices)],
     ["提示", c.hints.length ? c.hints.map(hintName).join(" → ") : "無提示"],
     ["課次", lessonText],
+    ["題目", quizText],
     ["評量時機", state.lessons.length && n && !ph.includes(null) ? ph.join("<br>") : null, n ? "請到第 5 步設定教學日期" : "先選學生才能判斷"],
     ["作答模式", a.name],
     ["學生", n ? (kidsOk ? `${selKids().map(c => esc(kidLabel(kidBy(c)))).join("、")}（${n} 位）` : null) : null, n ? `「${a.name}」需要 ${a.min}～${a.max} 位，目前 ${n} 位` : "還沒選"]
@@ -714,7 +789,7 @@ document.querySelectorAll(".overlay").forEach(o => o.addEventListener("click", e
 document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets(); });
 document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); if(t && t.dataset.open === "kids"){ renderKidSheet(); openSheet("#kidsSheet"); } });
 
-function render(){ renderGoals(); renderKind(); renderHints(); renderLessons(); renderAnswers(); renderKids(); renderSummary(); }
+function render(){ renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderKids(); renderSummary(); }
 render();
 </script>
 
