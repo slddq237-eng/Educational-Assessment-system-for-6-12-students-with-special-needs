@@ -7,7 +7,7 @@
 | 工具 | 資料夾 | 狀態 |
 |---|---|---|
 | 生字賓果 | `tools/bingo/` | 可使用 |
-| 識字評量 | `tools/literacy/` | 開發中，規格見規格書 |
+| 識字評量 | `tools/literacy/` | 第 1 版：目標 3 形音辨識、大螢幕輪流作答、作答紀錄與 Excel 匯出 |
 
 ## 資料夾說明
 
@@ -15,7 +15,10 @@
 index.html        平台首頁（工具選單）
 tools/
   bingo/          生字賓果遊戲
-  literacy/       識字評量（開發中）
+  literacy/       識字評量
+    index.html    畫面
+    data.js       生字資料（複製自生字賓果）
+    app.js        程式本體（分段附中文說明）
 ```
 
 ## 合作規則
