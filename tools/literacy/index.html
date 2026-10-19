@@ -94,7 +94,7 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
 .lv .who{font-size:13px;color:var(--muted);white-space:nowrap}
 .group{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .note{font-size:15px;color:var(--muted);margin:10px 0 0}
-.note.warn{color:var(--amber)}
+.note.warn,.note .warn{color:var(--amber)}
 .ladder{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .ladder li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:center}
 .ladder .k{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -599,11 +599,12 @@ function renderLessons(){
 
 /* 出題設定：題數、出題方式、預估時間 */
 const METHODS = [
-  {id:"even",  name:"平均隨機", desc:"每一課平均抽字，順序隨機"},
+  {id:"even",  name:"平均隨機", desc:"20% 常用字＋80% 各課平均隨機"},
   {id:"weak",  name:"常錯優先", desc:"先出常答錯、反應慢的字", need:"需要累積作答紀錄（第 1 版開始記錄）"},
   {id:"freq",  name:"字頻優先", desc:"先出常用字", need:"需要匯入字頻資料"}
 ];
 const SEC_PER_ITEM = {turn:8, split:8, present:15};
+const FREQ_SHARE = 0.2; /* 平均隨機中先出常用字的比例 */
 /* 一課的量：所選版本每課生字數的平均 */
 function oneLesson(){
   const books = [...new Set(state.lessons.map(k => splitKey(k)[0]))];
@@ -612,36 +613,50 @@ function oneLesson(){
 }
 function quizPlan(){
   const pool = state.lessons.reduce((s,k) => s + lessonSize(k), 0);
-  const count = Math.min(pool, state.qCount ?? oneLesson());
-  /* 平均分配到每一課；除不盡的題數給字比較多的課 */
+  const one = Math.min(oneLesson(), pool);
+  const count = Math.min(pool, state.qCount ?? one);
+  const isAll = count === pool, isDefault = count === one;
+  /* 題數等於一課的量（預設）或全部出題時，不需要選出題方式；正式評量固定平均隨機 */
+  const canChoose = state.kind !== "formal" && !isAll && !isDefault;
+  const method = isAll ? "all" : canChoose ? state.qMethod : "even";
+  /* 平均隨機：20% 先取所選課次中字頻最高的字，其餘 80% 平均分到各課隨機抽 */
+  const freqN = method === "even" ? Math.round(count * FREQ_SHARE) : 0;
   const order = [...state.lessons].sort((a,b) => lessonSize(b) - lessonSize(a));
   const per = new Map(state.lessons.map(k => [k, 0]));
-  let left = count;
+  let left = method === "all" || method === "even" ? count - freqN : 0;
   while(left > 0){ let moved = false;
     for(const k of order){ if(left && per.get(k) < lessonSize(k)){ per.set(k, per.get(k)+1); left--; moved = true; } }
     if(!moved) break; }
-  const method = state.kind === "formal" ? "even" : state.qMethod;
   const n = Math.max(1, selKids().length);
   const sec = count * (SEC_PER_ITEM[state.answer] || 8) * (state.answer === "turn" ? n : 1);
-  return {pool, count, per, method, sec, n};
+  return {pool, one, count, isAll, isDefault, canChoose, method, freqN, per, sec, n};
 }
+const methodName = m => m === "all" ? "全部出題" : METHODS.find(x => x.id === m).name;
 const minutes = s => s < 60 ? "不到 1 分鐘" : `約 ${Math.ceil(s / 30) / 2} 分鐘`;
 function renderQuiz(){
   const box = $("#quiz");
   if(!state.lessons.length){ box.innerHTML = `<p class="note" style="margin:0">選好課次後，這裡會設定題數。</p>`; return; }
   if(state.mode === "flu"){ box.innerHTML = `<div class="locked"><span class="lock">流暢性</span><span>在 ${LIMITS.find(l => l[0]===state.limit)[1]} 內，從所選課次的 ${quizPlan().pool} 個字隨機連續出題，題數不固定。</span></div>`; return; }
-  const q = quizPlan(), one = oneLesson();
+  const q = quizPlan();
   const manyBooks = new Set(state.lessons.map(k => splitKey(k)[0])).size > 1;
-  const perText = state.lessons.length > 1 ? [...q.per].map(([k,v]) => `${manyBooks ? bookName(splitKey(k)[0]) + " " : ""}第 ${splitKey(k)[1]} 課 ${v} 字`).join("、") : "";
+  const perText = [...q.per].filter(([,v]) => v).map(([k,v]) => `${manyBooks ? bookName(splitKey(k)[0]) + " " : ""}第 ${splitKey(k)[1]} 課 ${v}`).join("、");
+  let how;
+  if(q.isAll) how = `<p class="note" style="margin:0">所選課次的 ${q.pool} 個字全部出題，順序隨機，不需要選出題方式。</p>`;
+  else {
+    const head = q.canChoose
+      ? `<div class="group"><span>出題方式</span>${METHODS.map(m => `<button class="chip ${q.method===m.id?"on":""}" data-qm="${m.id}">${m.name}</button>`).join("")}</div>`
+      : `<div class="locked"><span class="lock">${q.isDefault ? "預設" : "固定"}</span><span>平均隨機${q.isDefault ? "。改變題數後，練習可以選其他出題方式" : "（正式評量固定，避免只挑難字讓正確率偏低）"}</span></div>`;
+    const m = METHODS.find(x => x.id === q.method);
+    const detail = q.method === "even"
+      ? `<p class="note" style="margin:0">常用字 ${q.freqN} 題（所選課次中字頻最高的字，讓學生先有成功經驗）＋ 平均隨機 ${q.count - q.freqN} 題${perText ? `（${perText}）` : ""}。<br><span class="warn">字頻資料匯入前，常用字的部分暫時也用隨機。</span></p>`
+      : `<p class="note warn" style="margin:0">${m.desc}。${m.need}，目前會先用平均隨機。</p>`;
+    how = head + detail;
+  }
   box.innerHTML = `
     <label class="group" for="qCount">題數 <input id="qCount" type="number" min="1" max="${q.pool}" value="${q.count}"> 題
-      <button class="chip ${q.count===Math.min(one,q.pool)?"on":""}" data-qc="one">一課的量（${one} 字）</button>
-      <button class="chip ${q.count===q.pool?"on":""}" data-qc="all">全部 ${q.pool} 字</button></label>
-    ${perText ? `<p class="note" style="margin:0">平均分配：${perText}</p>` : ""}
-    <div class="group"><span>出題方式</span>${state.kind === "formal"
-      ? `<span class="locked" style="padding:4px 12px"><span class="lock">固定</span>平均隨機（正式評量固定，避免只挑難字讓正確率偏低）</span>`
-      : METHODS.map(m => `<button class="chip ${q.method===m.id?"on":""}" data-qm="${m.id}" title="${m.desc}">${m.name}</button>`).join("")}</div>
-    ${state.kind !== "formal" && METHODS.find(m => m.id===q.method).need ? `<p class="note warn" style="margin:0">${METHODS.find(m => m.id===q.method).desc}。${METHODS.find(m => m.id===q.method).need}，目前會先用平均隨機。</p>` : ""}
+      <button class="chip ${q.isDefault?"on":""}" data-qc="one">一課的量（${q.one} 字）</button>
+      <button class="chip ${q.isAll?"on":""}" data-qc="all">全部 ${q.pool} 字</button></label>
+    ${how}
     <p class="time"><b>${minutes(q.sec)}</b>　<span class="note" style="margin:0">${state.answer === "turn" && q.n > 1 ? `${q.n} 位學生輪流，每人 ${q.count} 題，` : ""}每題約 ${SEC_PER_ITEM[state.answer] || 8} 秒估算</span></p>`;
   $("#qCount").onchange = e => { const v = Math.max(1, Math.min(q.pool, +e.target.value || 1)); state.qCount = v; render(); };
   box.querySelectorAll("[data-qc]").forEach(b => b.onclick = () => { state.qCount = b.dataset.qc === "all" ? q.pool : null; render(); });
@@ -717,7 +732,7 @@ function renderSummary(){
   $("#kindBadge").innerHTML = c.formal ? `<span class="badge">正式評量・納入學習分析</span>` : `<span class="badge prac">練習・另外統計</span>`;
   const lessonText = state.lessons.length ? esc(lessonsText()) : null;
   const q = quizPlan();
-  const quizText = !state.lessons.length ? null : c.flu ? `時限內隨機出題（${q.pool} 字）` : `${q.count} 題・${METHODS.find(m => m.id===q.method).name}・${minutes(q.sec)}`;
+  const quizText = !state.lessons.length ? null : c.flu ? `時限內隨機出題（${q.pool} 字）` : `${q.count} 題・${methodName(q.method)}・${minutes(q.sec)}`;
   const multi = selKids().length > 1;
   const ph = state.lessons.flatMap(k => { const [b,n] = splitKey(k); return groups(b, n).map(g => g.label
     ? `${state.lessons.length > 1 ? `${bookName(b)} ` : ""}第 ${n} 課${multi ? `・${g.kids.map(c => esc(kidLabel(kidBy(c)))).join("、")}` : ""}：${g.label}` : null); });
