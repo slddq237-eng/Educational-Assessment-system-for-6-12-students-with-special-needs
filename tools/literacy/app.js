@@ -195,9 +195,52 @@ function ruleFlow(rule, hints){
 }
 
 /* =========================================================
-   4. 設定畫面（六個步驟與右邊的摘要）
+   4. 設定畫面（快速開始的三張卡片、進階設定的六個步驟、右邊的摘要）
    每個 renderXXX() 負責重畫一個步驟；任何設定改變都呼叫 render() 全部重畫。
    ========================================================= */
+/* ---------- 快速開始 ----------
+   給不想研究細節的老師：選一張卡片，系統自動填好進階設定。
+   每一次作答都會存下來；卡片上標示這次的紀錄是否列入學習分析。 */
+const PRESETS = [
+  {id:"class", name:"課堂練習", desc:"答錯會出現提示幫忙，適合上課時練習。", rec:"紀錄會存下來，不列入學習分析", off:true,
+   why:"練習時多一點提示，學生比較有成功經驗。這些紀錄另外統計，不會影響小考的成績分析。",
+   apply:() => Object.assign(state, {kind:"practice", mode:"acc", pChoices:"4", pHints:new Set(["word","sent","pic","parts"]), pRule:["next","next","remove","reveal"]})},
+  {id:"test", name:"小考檢測", desc:"條件固定、提示較少，看學生真正會多少。", rec:"紀錄會存下來，列入學習分析",
+   why:"每次小考的條件都一樣，前後成績才能比較，看得出教學有沒有效果。",
+   apply:() => Object.assign(state, {kind:"formal", mode:"acc"})},
+  {id:"timed", name:"計時挑戰", desc:"1 分鐘內答對越多越好，看學生熟不熟練。", rec:"紀錄會存下來，列入學習分析",
+   why:"認得字之後，還要認得快，讀起文章才會順。每分鐘答對幾個，可以看出熟練的程度。",
+   apply:() => Object.assign(state, {kind:"formal", mode:"flu", limit:"60"})}
+];
+let ui = load("literacy-ui", "quick");      /* 這台電腦上次用的是快速開始還是進階設定 */
+state.preset = "class";
+const isQuick = () => ui === "quick";
+function applyPreset(id){
+  state.preset = id;
+  Object.assign(state, {goal:"3", answer:"turn", qCount:null, qMethod:"even"});
+  PRESETS.find(p => p.id === id).apply();
+}
+function setUi(mode){
+  ui = mode; store("literacy-ui", ui);
+  document.body.classList.toggle("quick", isQuick());
+  $("#uiQuick").setAttribute("aria-pressed", isQuick()); $("#uiAdv").setAttribute("aria-pressed", !isQuick());
+  if(isQuick()) applyPreset(state.preset);
+  render();
+}
+$("#uiQuick").onclick = () => setUi("quick");
+$("#uiAdv").onclick = () => setUi("adv");
+function renderPresets(){
+  $("#presets").innerHTML = PRESETS.map(p => `<button class="preset ${state.preset===p.id?"on":""}" data-p="${p.id}" aria-pressed="${state.preset===p.id}">
+      <b>${p.name}</b><span class="d">${p.desc}</span><span class="rec ${p.off?"off":""}">${p.rec}</span></button>`).join("")
+    + `<details class="why presetwhy" style="grid-column:1/-1"><summary>這三種有什麼不同？</summary>${PRESETS.map(p => `<p><b>${p.name}</b>：${p.why}</p>`).join("")}</details>`;
+  $("#presets").querySelectorAll("[data-p]").forEach(b => b.onclick = () => { applyPreset(b.dataset.p); render(); });
+}
+/* 依目前看得到的步驟，重新編號 1、2、3… */
+function renumber(){
+  let i = 0;
+  document.querySelectorAll("#setup .steps > section").forEach(sec => { if(getComputedStyle(sec).display !== "none") sec.querySelector(".num").textContent = ++i; });
+}
+
 function renderGoals(){
   const L = BOOKS[state.book].lessons;
   const allConf = Object.values(L).every(l => l.conf);
@@ -361,6 +404,8 @@ function renderQuiz(){
   if(!state.lessons.length){ box.innerHTML = `<p class="note" style="margin:0">選好課次後，這裡會設定題數。</p>`; return; }
   if(state.mode === "flu"){ box.innerHTML = `<div class="locked"><span class="lock">流暢性</span><span>在 ${LIMITS.find(l => l[0]===state.limit)[1]} 內，從所選課次的 ${quizPlan().pool} 個字隨機連續出題，題數不固定。</span></div>`; return; }
   const q = quizPlan();
+  /* 快速開始只顯示題數和時間；要改題數請到進階設定 */
+  if(isQuick()){ box.innerHTML = `<p class="time"><b>${q.count} 題，${minutes(q.sec)}</b><span class="note" style="margin:0">${selKids().length > 1 ? "（學生輪流作答）" : ""}要改題數，請切換到「進階設定」。</span></p>`; return; }
   const manyBooks = new Set(state.lessons.map(k => splitKey(k)[0])).size > 1;
   const perText = [...q.per].filter(([,v]) => v).map(([k,v]) => `${manyBooks ? bookName(splitKey(k)[0]) + " " : ""}第 ${splitKey(k)[1]} 課 ${v}`).join("、");
   let how;
@@ -458,6 +503,22 @@ $("#newKid").addEventListener("keydown", e => { if(e.key === "Enter") $("#addKid
 
 function renderSummary(){
   const c = current(), g = GOALS.find(x => x.id === state.goal), a = ANSWERS.find(x => x.id === state.answer);
+  /* 快速開始：只列老師需要知道的四件事，不需要評量時機也能開始 */
+  if(isQuick()){
+    const p = PRESETS.find(x => x.id === state.preset), q = quizPlan(), n = selKids().length;
+    $("#kindBadge").innerHTML = `<span class="badge ${p.off?"prac":""}">${p.rec}</span>`;
+    const rows = [
+      ["今天做什麼", `${p.name}（聽音找字）`],
+      ["學生", n && n <= 4 ? selKids().map(c => esc(kidLabel(kidBy(c)))).join("、") : null, n ? "一次最多 4 位學生" : "還沒選"],
+      ["課次", state.lessons.length ? esc(lessonsText()) : null],
+      ["時間", !state.lessons.length ? null : c.flu ? `每位學生 ${LIMITS.find(l => l[0]===state.limit)[1]}` : `${q.count} 題，${minutes(q.sec)}`]
+    ];
+    $("#sum").innerHTML = rows.map(([t,v,miss]) => `<div><dt>${t}</dt><dd class="${v?"":"miss"}">${v || miss || "還沒選"}</dd></div>`).join("");
+    $("#go").disabled = rows.some(r => !r[1]);
+    $("#go").textContent = "開始";
+    return;
+  }
+  $("#go").textContent = "開始評量";
   $("#kindBadge").innerHTML = c.formal ? `<span class="badge">正式評量・納入學習分析</span>` : `<span class="badge prac">練習・另外統計</span>`;
   const lessonText = state.lessons.length ? esc(lessonsText()) : null;
   const q = quizPlan();
@@ -536,7 +597,7 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets()
 document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); if(t && t.dataset.open === "kids"){ renderKidSheet(); openSheet("#kidsSheet"); } });
 $("#openRecords").onclick = () => { renderRecSheet(); openSheet("#recSheet"); };
 
-function render(){ renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderKids(); renderSummary(); }
+function render(){ renderPresets(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderKids(); renderSummary(); renumber(); }
 
 /* =========================================================
    6. 作答紀錄的存取
@@ -985,5 +1046,5 @@ $("#recClear").onclick = e => {
   clearRecords(); renderRecSheet(); $("#recMsg").textContent = "已清除全部作答紀錄。";
 };
 
-/* 全部準備好後，畫出設定畫面 */
-render();
+/* 全部準備好後，畫出設定畫面（依上次用的模式） */
+setUi(ui);

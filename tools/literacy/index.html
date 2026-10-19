@@ -171,6 +171,27 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
 .plan input[type=checkbox]{width:20px;height:20px;accent-color:var(--green)}
 .kidchip small{opacity:.7;margin-left:4px}
 .sheet footer{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+
+/* ---------- 快速開始／進階設定 ---------- */
+body.quick .adv-only{display:none!important}
+body:not(.quick) .quick-only{display:none!important}
+body.quick .lesson .pill{display:none}
+.seg{display:inline-flex;border:2px solid var(--ink);border-radius:999px;overflow:hidden;background:var(--card)}
+.seg button{border:none;background:none;padding:8px 16px;font-size:16px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.presets{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.preset{text-align:left;border:3px solid var(--ink);background:var(--card);border-radius:18px;padding:16px;display:grid;gap:8px;align-content:start}
+.preset b{font-size:24px}
+.preset .d{color:var(--muted);font-size:16px}
+.preset .rec{font-size:14px;border-radius:8px;padding:4px 10px;background:var(--mint);color:var(--green);width:fit-content}
+.preset .rec.off{background:var(--practice-bg);color:var(--practice)}
+.preset.on{background:var(--green);border-color:var(--green);color:#fff}
+.preset.on .d{color:#e3f4ec}
+.preset.on .rec{background:rgba(255,255,255,.2);color:#fff}
+details.why{margin:0 0 14px;font-size:15px;color:var(--muted)}
+details.why summary{cursor:pointer;color:var(--green);width:fit-content}
+details.why p{margin:6px 0 0;max-width:65ch;line-height:1.6}
+.presetwhy{display:grid;gap:6px;margin-top:12px}
 .save{background:var(--green);color:#fff;border:none;border-radius:999px;padding:10px 24px;font-size:18px}
 
 
@@ -225,31 +246,43 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 @media (prefers-reduced-motion:no-preference){.goal,.opt,.lesson{transition:transform .12s}.goal:not(:disabled):hover,.opt:not(:disabled):hover,.lesson:hover{transform:translateY(-2px)}}
 </style>
 </head>
-<body>
+<body class="quick">
 <!-- =================== 設定畫面 =================== -->
 <div class="wrap" id="setup">
   <header class="top">
     <div class="brand"><div class="stamp">識</div><div><small>學習評量平台</small><h1>識字評量</h1></div></div>
     <div class="tools">
+      <div class="seg" role="group" aria-label="畫面模式">
+        <button id="uiQuick" aria-pressed="true">快速開始</button><button id="uiAdv" aria-pressed="false">進階設定</button>
+      </div>
       <button class="ghost" id="openRecords">作答紀錄</button>
       <button class="ghost" id="openKids">學生名單</button>
-      <button class="ghost" id="openDates">教學日期管理</button>
-      <button class="ghost" id="openSettings">評量設定</button>
+      <button class="ghost adv-only" id="openDates">教學日期管理</button>
+      <button class="ghost adv-only" id="openSettings">評量設定</button>
       <a class="ghost" href="../../">回平台首頁</a>
     </div>
   </header>
-  <p class="mock"><b>第 1 版</b><span>目前可以使用「目標 3 形音辨識」與「大螢幕輪流作答」，其他目標與作答模式會在之後的版本開放。作答紀錄存在這台電腦的瀏覽器，請定期到「作答紀錄」備份。</span></p>
+  <p class="mock"><b>第 1 版</b><span>目前可以使用「聽音找字」（目標 3 形音辨識）。作答紀錄存在這台電腦的瀏覽器，請定期到「作答紀錄」下載備份檔。</span></p>
   <p class="banner" id="dbWarn" hidden>這台電腦的瀏覽器不允許存檔（可能是無痕視窗），這次的作答紀錄關掉網頁就會消失，請在結束後匯出 Excel。</p>
 
   <div class="layout">
     <div class="steps">
-      <section class="panel" aria-labelledby="h1">
+      <!-- 快速開始：三張卡片，選了就自動套用設定 -->
+      <section class="panel quick-only" aria-labelledby="hq">
+        <h2 id="hq"><span class="num">1</span>今天要做什麼？</h2>
+        <p class="hint">選一個就好，其他設定系統會幫你填好。每一次的作答都會存下來。</p>
+        <div class="presets" id="presets"></div>
+      </section>
+
+      <section class="panel adv-only" aria-labelledby="h1">
         <h2 id="h1"><span class="num">1</span>今天要評量哪一個目標？</h2>
         <p class="hint">建議依 1 → 4 的順序，但可以自由選擇。</p>
+        <details class="why"><summary>為什麼建議這個順序？</summary>
+          <p>學生要先懂一個詞的意思（聽音選圖），認字才有意義；接著把字形和意思連起來（看字選圖），再分辨長得像、唸起來像的字（形音辨識），最後注意字的細部（部件、書寫）。順序只是建議，可以依學生的狀況調整。</p></details>
         <div class="goals" id="goals"></div>
       </section>
 
-      <section class="panel" aria-labelledby="h2">
+      <section class="panel adv-only" aria-labelledby="h2">
         <h2 id="h2"><span class="num">2</span>這次是正式評量，還是練習？</h2>
         <p class="hint">正式評量的條件固定，結果納入學習分析；練習可以自由調整玩法，結果另外統計。</p>
         <div class="kinds" id="kinds"></div>
@@ -263,22 +296,23 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
         <div id="choiceArea"></div>
       </section>
 
-      <section class="panel" aria-labelledby="h3">
+      <section class="panel adv-only" aria-labelledby="h3">
         <h2 id="h3"><span class="num">3</span>提示與答錯後的處理</h2>
         <p class="hint" id="h3hint"></p>
         <div id="hintArea"></div>
       </section>
 
       <section class="panel" aria-labelledby="h4">
-        <h2 id="h4"><span class="num">4</span>哪些學生要評量？</h2>
-        <p class="hint">學生的年級在「學生名單」設定，系統會用年級判斷每一課對這位學生是哪個時期。</p>
+        <h2 id="h4"><span class="num">4</span><span class="adv-only">哪些學生要評量？</span><span class="quick-only">誰要做？</span></h2>
+        <p class="hint adv-only">學生的年級在「學生名單」設定，系統會用年級判斷每一課對這位學生是哪個時期。</p>
+        <p class="hint quick-only">點選要做的學生，最多 4 位輪流。</p>
         <div class="row" id="kids"></div>
         <p class="note"><button class="linkbtn" data-open="kids">新增學生或修改年級</button></p>
       </section>
 
       <section class="panel" aria-labelledby="h5">
-        <h2 id="h5"><span class="num">5</span>評量哪幾課？</h2>
-        <p class="hint">先選版本，再選年級和課次。課次卡片上會顯示所選學生的評量時機。</p>
+        <h2 id="h5"><span class="num">5</span><span class="adv-only">評量哪幾課？</span><span class="quick-only">練哪幾課？</span></h2>
+        <p class="hint">先選版本，再選年級和課次。<span class="adv-only">課次卡片上會顯示所選學生的評量時機。</span></p>
         <p class="sub">版本</p>
         <div class="row" id="eds"></div>
         <p class="sub">年級</p>
@@ -286,12 +320,12 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
         <p class="sub">課次（可複選）</p>
         <div class="lessons" id="lessons"></div>
         <p class="note" id="picked"></p>
-        <div class="status" id="status"></div>
+        <div class="status adv-only" id="status"></div>
         <p class="sub">出題</p>
         <div class="box" id="quiz" style="margin-top:0"></div>
       </section>
 
-      <section class="panel" aria-labelledby="h6">
+      <section class="panel adv-only" aria-labelledby="h6">
         <h2 id="h6"><span class="num">6</span>學生怎麼作答？</h2>
         <p class="hint" id="answerHint">同一份題目可以用不同方式作答。</p>
         <div class="kinds" id="answers"></div>
@@ -299,12 +333,12 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
     </div>
 
     <aside class="summary" aria-labelledby="hs">
-      <h2 id="hs">本次評量</h2>
+      <h2 id="hs"><span class="adv-only">本次評量</span><span class="quick-only">準備好了</span></h2>
       <span id="kindBadge"></span>
       <dl id="sum"></dl>
       <button class="go" id="go">開始評量</button>
       
-      <details class="records">
+      <details class="records adv-only">
         <summary>每一題會記錄哪些資料？</summary>
         <ul>
           <li>正式評量或練習、評量目標、評量方式</li>
