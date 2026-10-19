@@ -153,10 +153,14 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
 .drow .ds input{width:150px}
 .drow .ph{font-size:14px;color:var(--muted)}
 @media (max-width:620px){.drow{grid-template-columns:64px minmax(0,1fr)}.drow .ds{grid-column:1/-1}}
-.krow{display:grid;grid-template-columns:110px minmax(0,1fr) 120px auto;gap:10px;align-items:center;border-top:1px solid var(--grid);padding-top:8px}
+.krow{display:grid;grid-template-columns:100px minmax(0,1fr) 110px auto auto;gap:10px;align-items:center;border-top:1px solid var(--grid);padding-top:8px}
 .krow input,.krow select{border:2px solid var(--ink);border-radius:10px;padding:4px 8px;min-width:0;width:100%}
 .krow.head{border:none;padding:0;font-size:13px;color:var(--muted)}
 @media (max-width:620px){.krow{grid-template-columns:1fr 1fr}.krow.head{display:none}}
+.plan{display:grid;gap:10px;background:var(--mint);border-radius:12px;padding:12px 14px}
+.plan label{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.plan select{border:2px solid var(--ink);border-radius:10px;padding:4px 8px}
+.dose{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
 .kidchip small{opacity:.7;margin-left:4px}
 .sheet footer{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 .save{background:var(--green);color:#fff;border:none;border-radius:999px;padding:10px 24px;font-size:18px}
@@ -261,8 +265,8 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
 <div class="overlay" id="kidsSheet" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="kTitle">
     <header><h2 id="kTitle">學生名單</h2><button class="ghost" data-close>關閉</button></header>
-    <p class="hint" style="margin:0">年級填「今年」的年級，之後每年 8 月系統會自動升一個年級。名字可以不填；有填的話只存在這台電腦，不會上傳。</p>
-    <div class="krow head"><span>代號</span><span>名字（選填）</span><span>年級</span><span></span></div>
+    <p class="hint" style="margin:0">年級填「今年」的年級，之後每年 8 月系統會自動升一個年級。名字可以不填；有填的話只存在這台電腦，不會上傳。「本學期安排」是選填，記錄課程調整到幾年級和每週上課節數。</p>
+    <div class="krow head"><span>代號</span><span>名字（選填）</span><span>年級</span><span></span><span></span></div>
     <div id="kTable" style="display:grid;gap:8px"></div>
     <div class="add"><input id="newKid" maxlength="8" placeholder="新增代號，例如 S07"><button class="chip" id="addKid">加入</button></div>
     <footer><button class="save" data-close>完成</button></footer>
@@ -350,15 +354,23 @@ const settings = load("literacy-mock-settings", {choices:"4", hints:["word","pic
 const saveSettings = () => store("literacy-mock-settings", settings);
 
 /* 學生名單：年級記的是設定那一年的年級，之後每學年自動升級 */
-const kids = load("literacy-mock-kids-v1", [
+const kids = load("literacy-mock-kids-v2", [
   {code:"S01", name:"", grade:2, sy:SCHOOL_YEAR}, {code:"S02", name:"", grade:2, sy:SCHOOL_YEAR},
   {code:"S03", name:"", grade:3, sy:SCHOOL_YEAR}, {code:"S04", name:"", grade:2, sy:SCHOOL_YEAR},
-  {code:"S05", name:"", grade:4, sy:SCHOOL_YEAR}, {code:"S06", name:"", grade:3, sy:SCHOOL_YEAR}
+  {code:"S05", name:"", grade:4, sy:SCHOOL_YEAR, plans:{[`${SCHOOL_YEAR}${TERM}`]:{level:2, pull:5, extra:2}}}, {code:"S06", name:"", grade:3, sy:SCHOOL_YEAR}
 ]);
-const saveKids = () => store("literacy-mock-kids-v1", kids);
+const saveKids = () => store("literacy-mock-kids-v2", kids);
+/* 本學期教學安排（選填，每學期一筆）：level＝課程調整到幾年級，其餘為每週節數 */
+const PLAN_KEY = `${SCHOOL_YEAR}${TERM}`;
+const DOSE = [["pull","資源班抽離"],["extra","資源班外加"],["regular","原班"],["support","學習扶助"]];
+const planOf = k => (k.plans && k.plans[PLAN_KEY]) || {};
+const dosage = p => DOSE.reduce((s,[id]) => s + (p[id] || 0), 0);
 const kidGrade = k => Math.min(6, k.grade + (SCHOOL_YEAR - (k.sy || SCHOOL_YEAR)));
 const kidBy = code => kids.find(k => k.code === code);
 const kidLabel = k => k.name ? `${k.code} ${k.name}` : k.code;
+/* 判斷時機用的「學習年級」：有課程調整就用調整後的年級 */
+const studyGrade = k => planOf(k).level || kidGrade(k);
+const gradeText = k => `${GRADES[kidGrade(k)-1]}年級${planOf(k).level ? `・課程調整到${GRADES[planOf(k).level-1]}年級` : ""}`;
 
 /* 教學日期：範例為翰林二年級第 1 課剛教完、第 2 課正在教、第 3 課還沒教，其餘依年級判斷 */
 const key = (b,n) => b + "-" + n;
@@ -396,7 +408,7 @@ function autoFor(code, b, n){
   const t = teach[key(b,n)] || {};
   if(t.type === "dates") return datePhase(t);
   const k = kidBy(code); if(!k) return {phase:null, why:""};
-  const d = termIndex(kidGrade(k), TERM) - termIndex(BOOKS[b].grade, BOOKS[b].term);
+  const d = termIndex(studyGrade(k), TERM) - termIndex(BOOKS[b].grade, BOOKS[b].term);
   /* 「還沒教」只套用在還沒升過這個年級的學生；高年級學生以前學過，仍依年級判斷 */
   if(t.type === "notYet" && d <= 0) return {phase:"基線期", why:"還沒教"};
   if(d < 0) return {phase:"基線期", why:`還沒學到（${GRADES[BOOKS[b].grade-1]}${BOOKS[b].term}的課）`};
@@ -560,26 +572,46 @@ function renderAnswers(){
 function renderKids(){
   const a = ANSWERS.find(x => x.id === state.answer);
   $("#answerHint").textContent = a.max < 99 ? `同一份題目可以用不同方式作答。「${a.name}」可選 ${a.min}～${a.max} 位學生。` : "同一份題目可以用不同方式作答。呈現模式可以全班一起，人數不限。";
-  $("#kids").innerHTML = kids.map(k => `<button class="chip kidchip ${state.kids.has(k.code)?"on":""}" data-k="${esc(k.code)}" aria-pressed="${state.kids.has(k.code)}">${esc(kidLabel(k))}<small>${GRADES[kidGrade(k)-1]}年級</small></button>`).join("");
+  $("#kids").innerHTML = kids.map(k => `<button class="chip kidchip ${state.kids.has(k.code)?"on":""}" data-k="${esc(k.code)}" aria-pressed="${state.kids.has(k.code)}">${esc(kidLabel(k))}<small>${gradeText(k)}</small></button>`).join("");
   $("#kids").querySelectorAll("button").forEach(b => b.onclick = () => { const k = b.dataset.k; state.kids.has(k) ? state.kids.delete(k) : state.kids.add(k); render(); });
 }
 /* 學生名單面板 */
+let openPlan = null;
 function renderKidSheet(){
-  $("#kTable").innerHTML = kids.map((k,i) => `<div class="krow" data-i="${i}">
+  $("#kTable").innerHTML = kids.map((k,i) => {
+    const p = planOf(k), open = openPlan === k.code;
+    return `<div class="krow" data-i="${i}">
     <input aria-label="代號" data-f="code" value="${esc(k.code)}" maxlength="8">
     <input aria-label="名字（選填）" data-f="name" value="${esc(k.name||"")}" maxlength="10" placeholder="可不填">
     <select aria-label="年級" data-f="grade">${GRADES.map((g,j) => `<option value="${j+1}" ${kidGrade(k)===j+1?"selected":""}>${g}年級</option>`).join("")}</select>
-    <button class="chip" data-del>刪除</button></div>`).join("");
+    <button class="chip ${p.level || dosage(p) ? "on" : ""}" data-plan aria-expanded="${open}">本學期安排${p.level || dosage(p) ? " ✓" : ""}</button>
+    <button class="chip" data-del>刪除</button></div>
+    ${open ? `<div class="plan" data-i="${i}">
+      <p class="note" style="margin:0">${SCHOOL_YEAR} 學年${TERM}學期・選填。每學期分開記錄，換學期時舊資料會保留，分析時用來比較不同安排的效果。</p>
+      <label>課程調整（重整）到 <select data-p="level"><option value="">同原年級</option>${GRADES.map((g,j) => `<option value="${j+1}" ${p.level===j+1?"selected":""}>${g}年級</option>`).join("")}</select></label>
+      <div class="dose">${DOSE.map(([id,t]) => `<label>${t} <input type="number" min="0" max="40" data-p="${id}" value="${p[id] ?? ""}" placeholder="0"> 節／週</label>`).join("")}</div>
+    </div>` : ""}`;
+  }).join("");
   $("#kTable").querySelectorAll(".krow").forEach(r => {
     const k = kids[+r.dataset.i];
     r.querySelectorAll("[data-f]").forEach(f => f.onchange = () => {
       if(f.dataset.f === "grade"){ k.grade = +f.value; k.sy = SCHOOL_YEAR; }
       else if(f.dataset.f === "code"){ const v = f.value.trim(); if(!v || kids.some(x => x !== k && x.code === v)){ f.value = k.code; return; }
-        if(state.kids.delete(k.code)) state.kids.add(v); k.code = v; }
+        if(state.kids.delete(k.code)) state.kids.add(v); if(openPlan === k.code) openPlan = v; k.code = v; }
       else k.name = f.value.trim();
       saveKids(); render();
     });
+    r.querySelector("[data-plan]").onclick = () => { openPlan = openPlan === k.code ? null : k.code; renderKidSheet(); };
     r.querySelector("[data-del]").onclick = () => { state.kids.delete(k.code); kids.splice(+r.dataset.i, 1); saveKids(); renderKidSheet(); render(); };
+  });
+  $("#kTable").querySelectorAll(".plan").forEach(r => {
+    const k = kids[+r.dataset.i];
+    r.querySelectorAll("[data-p]").forEach(f => f.onchange = () => {
+      const p = ((k.plans ||= {})[PLAN_KEY] ||= {});
+      const v = f.value === "" ? undefined : Math.max(0, +f.value);
+      if(v === undefined || (f.dataset.p === "level" && !v)) delete p[f.dataset.p]; else p[f.dataset.p] = v;
+      saveKids(); renderKidSheet(); render();
+    });
   });
 }
 $("#addKid").onclick = () => {
