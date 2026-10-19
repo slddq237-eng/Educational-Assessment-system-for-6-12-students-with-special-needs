@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>識字評量</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@400;700&display=swap">
+<style>
+/* 版面：沿用生字賓果的生字簿方格紙；左邊五個設定步驟，右邊固定的「本次評量」摘要 */
+:root{
+  --paper:#f5faf6; --grid:#d5e8da; --ink:#1f3d36; --muted:#5b7a71;
+  --red:#d64534; --green:#2c7a69; --mint:#e4f3ec; --card:#ffffff; --amber:#9a6a12; --amber-bg:#fbf1dc;
+  --ui:"Huninn","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --kai:"LXGW WenKai TC","DFKai-SB","BiauKai","標楷體","Kaiti TC",serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:17px;line-height:1.5;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:48px 48px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding-block:24px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* 頂列 */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.brand{display:flex;align-items:center;gap:14px}
+.stamp{width:56px;height:56px;border:4px solid var(--red);color:var(--red);border-radius:50%;display:grid;place-items:center;
+  font-family:var(--kai);font-weight:700;font-size:28px;transform:rotate(-12deg);flex:none}
+.brand small{display:block;color:var(--muted);letter-spacing:.12em;font-size:15px}
+.brand h1{margin:0;font-family:var(--kai);font-size:clamp(30px,4vw,46px);letter-spacing:.06em;line-height:1.1}
+.back{color:var(--muted);text-decoration:none;border:2px solid var(--ink);border-radius:999px;padding:8px 18px;color:var(--ink);background:var(--card)}
+.back:hover{background:var(--ink);color:var(--paper)}
+.mock{display:flex;gap:10px;align-items:flex-start;background:var(--amber-bg);border:2px dashed var(--amber);color:#5c400a;
+  border-radius:14px;padding:10px 16px;margin-bottom:20px;font-size:16px}
+.mock b{white-space:nowrap}
+
+/* 主版面 */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}}
+.steps{display:grid;gap:20px;min-width:0}
+.panel{background:var(--card);border:2px solid var(--ink);border-radius:20px;padding:clamp(16px,2.4vw,28px);box-shadow:5px 5px 0 var(--ink);min-width:0}
+.panel h2{margin:0;font-size:clamp(21px,2vw,26px);display:flex;align-items:center;gap:10px;text-wrap:balance}
+.num{width:32px;height:32px;border-radius:50%;background:var(--ink);color:var(--paper);display:inline-grid;place-items:center;font-size:17px;flex:none}
+.hint{color:var(--muted);margin:6px 0 16px;font-size:16px}
+.sub{font-size:15px;color:var(--muted);margin:14px 0 8px;letter-spacing:.06em}
+
+/* 評量目標卡 */
+.goals{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.goal{position:relative;text-align:left;border:2px solid var(--ink);background:var(--card);border-radius:16px;padding:14px 14px 12px;display:grid;gap:6px;align-content:start}
+.goal .order{font-size:13px;color:var(--muted);letter-spacing:.06em}
+.goal b{font-size:20px;line-height:1.3}
+.goal .what{font-size:15px;color:var(--muted)}
+.goal.on{background:var(--green);border-color:var(--green);color:#fff}
+.goal.on .order,.goal.on .what{color:#e3f4ec}
+.goal:disabled{border-style:dashed;opacity:.6;cursor:not-allowed}
+.pill{display:inline-block;width:fit-content;font-size:13px;padding:2px 10px;border-radius:999px;background:var(--mint);color:var(--green)}
+.pill.warn{background:var(--amber-bg);color:var(--amber)}
+.goal.on .pill{background:rgba(255,255,255,.18);color:#fff}
+
+/* 一般選項 */
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.opt{border:2px solid var(--ink);background:var(--card);border-radius:14px;padding:10px 18px;text-align:left}
+.opt small{display:block;color:var(--muted);font-size:14px}
+.opt.on{background:var(--green);border-color:var(--green);color:#fff}
+.opt.on small{color:#e3f4ec}
+.chip{border:2px solid var(--ink);background:var(--card);border-radius:999px;padding:6px 16px;font-size:16px}
+.chip.on{background:var(--ink);color:#fff}
+.chip:disabled{opacity:.35;cursor:not-allowed}
+.fluency{margin-top:14px;padding:14px;border:2px dashed var(--grid);border-radius:14px;display:grid;gap:10px}
+.fluency label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fluency input{width:80px;border:2px solid var(--ink);border-radius:10px;padding:4px 8px;font-variant-numeric:tabular-nums}
+
+/* 提示層級 */
+.levels{display:grid;gap:8px}
+.lv{display:grid;grid-template-columns:76px minmax(0,1fr);gap:10px;align-items:center}
+.lv .n{font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px;text-align:right}
+.lv .who{font-size:13px;color:var(--muted);white-space:nowrap}
+.group{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.note{font-size:15px;color:var(--muted);margin-top:10px}
+.note.warn{color:var(--amber)}
+
+/* 課次 */
+.lessons{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:12px}
+.lesson{text-align:left;border:2px solid var(--ink);background:var(--card);border-radius:14px;padding:10px 14px}
+.lesson .t{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.lesson .chars{display:block;font-family:var(--kai);font-size:20px;letter-spacing:.06em;color:var(--muted);word-break:break-all;margin-top:4px;line-height:1.35}
+.lesson.on{background:var(--mint);border-color:var(--green);box-shadow:inset 0 0 0 2px var(--green)}
+.lesson.on .chars{color:var(--ink)}
+.dates{margin-top:16px;display:grid;gap:10px}
+.dateRow{display:grid;grid-template-columns:90px repeat(2,minmax(0,150px)) minmax(0,1fr);gap:10px;align-items:center;
+  border-top:1px solid var(--grid);padding-top:10px}
+.dateRow input{border:2px solid var(--ink);border-radius:10px;padding:4px 8px;width:100%;min-width:0}
+.dateRow label{font-size:13px;color:var(--muted);display:grid;gap:2px}
+.phase{display:grid;gap:4px}
+.phase select{border:2px solid var(--ink);border-radius:10px;padding:4px 8px;max-width:100%}
+.phase .why{font-size:13px;color:var(--muted)}
+@media (max-width:620px){.dateRow{grid-template-columns:1fr 1fr}.dateRow .lname,.dateRow .phase{grid-column:1/-1}}
+
+/* 學生 */
+.add{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.add input{border:2px solid var(--ink);border-radius:999px;padding:6px 14px;width:220px;max-width:100%}
+
+/* 摘要 */
+.summary{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);background:var(--ink);color:var(--paper);border-radius:20px;padding:22px;display:grid;gap:14px}
+@media (max-width:900px){.summary{position:static}}
+.summary h2{margin:0;font-family:var(--kai);font-size:28px;letter-spacing:.08em}
+.summary dl{margin:0;display:grid;gap:10px}
+.summary dt{font-size:13px;color:#a9c7bd;letter-spacing:.08em}
+.summary dd{margin:2px 0 0;font-size:16px}
+.summary .miss{color:#ffb4a8}
+.go{background:var(--red);color:#fff;border:none;border-radius:999px;padding:14px 20px;font-size:21px;box-shadow:0 4px 0 #8f2a1e}
+.go:disabled{opacity:.4;cursor:not-allowed}
+.done{background:#2a5048;border-radius:12px;padding:12px 14px;font-size:15px}
+.records{font-size:14px;color:#cfe3dc}
+.records summary{cursor:pointer}
+.records ul{margin:6px 0 0;padding-left:20px}
+@media (prefers-reduced-motion:no-preference){.goal,.opt,.lesson{transition:transform .12s}.goal:not(:disabled):hover,.opt:hover,.lesson:hover{transform:translateY(-2px)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><div class="stamp">識</div><div><small>學習評量平台</small><h1>識字評量</h1></div></div>
+    <a class="back" href="../../">回平台首頁</a>
+  </header>
+  <p class="mock"><b>畫面樣品</b><span>這一版只有老師的設定流程，可以點點看。作答畫面、成績紀錄與分析會在第 1 版之後製作。學生代號都是範例。</span></p>
+
+  <div class="layout">
+    <div class="steps">
+      <section class="panel" aria-labelledby="h1">
+        <h2 id="h1"><span class="num">1</span>今天要評量哪一個目標？</h2>
+        <p class="hint">建議依 1 → 4 的順序，但可以自由選擇。</p>
+        <div class="goals" id="goals"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="h2">
+        <h2 id="h2"><span class="num">2</span>用哪一種評量方式？</h2>
+        <p class="hint">正確率模式看「會不會」；流暢性模式看「熟不熟練、快不快」。</p>
+        <div class="row" id="modes"></div>
+        <div class="fluency" id="fluBox" hidden>
+          <div class="group"><span>時限</span><span id="limits" class="group"></span></div>
+          <label for="aim">流暢目標：每分鐘正確 <input id="aim" type="number" min="1" max="120" value="30"> 個（圖上會畫目標線）</label>
+          <span class="note" style="margin:0">流暢性模式不給提示、答錯不重答，可以一次選好幾課。</span>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="h3">
+        <h2 id="h3"><span class="num">3</span>給哪些提示？</h2>
+        <p class="hint">可以複選。數字是提示層級，越大代表提示越多；紀錄會存下每題用到的最高層級。</p>
+        <div class="levels" id="levels"></div>
+        <p class="note" id="hintNote"></p>
+      </section>
+
+      <section class="panel" aria-labelledby="h4">
+        <h2 id="h4"><span class="num">4</span>評量哪幾課？目前在哪個時期？</h2>
+        <p class="hint">輸入教學開始日與結束日，系統會依今天的日期自動判斷評量時機，也可以手動改。</p>
+        <div class="row" id="books"></div>
+        <div class="lessons" id="lessons"></div>
+        <div class="dates" id="dates"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="h5">
+        <h2 id="h5"><span class="num">5</span>哪些學生要評量？</h2>
+        <p class="hint">用代號，不用真實姓名。代號與姓名的對照表只留在老師自己的電腦。</p>
+        <div class="row" id="kids"></div>
+        <div class="add"><input id="newKid" maxlength="8" placeholder="新增代號，例如 S07"><button class="chip" id="addKid">加入</button></div>
+      </section>
+    </div>
+
+    <aside class="summary" aria-labelledby="hs">
+      <h2 id="hs">本次評量</h2>
+      <dl id="sum"></dl>
+      <button class="go" id="go">開始評量</button>
+      <div class="done" id="done" hidden>樣品到這裡為止。第 1 版會從這裡進入作答畫面，並開始記錄每一題。</div>
+      <details class="records">
+        <summary>每一題會記錄哪些資料？</summary>
+        <ul>
+          <li>學生代號、目標字、評量目標、評量方式</li>
+          <li>提示層級、全部選項、學生選了哪一個</li>
+          <li>對錯、第一次作答秒數、答對秒數</li>
+          <li>評量時機、教學後天數、日期時間</li>
+        </ul>
+      </details>
+    </aside>
+  </div>
+</div>
+
+<script>
+/* 生字資料：複製自生字賓果（conf＝有形近同音字資料，parts＝有部件資料的字數） */
+const BOOKS = {"2":{"edition":"南一","grade":2,"lessons":{"1":{"write":"呼白雲柔前游噴美麗柱試吸用力哇又第功","read":"擠","conf":true,"parts":0,"total":19},"2":{"write":"爬梯紙條線像身生迫及待站沿頂格哪才最","read":"","conf":true,"parts":0,"total":18},"3":{"write":"勇教室棵葉克服害怕努完事倒時黑低聲故","read":"跌騎","conf":true,"parts":0,"total":20},"4":{"write":"塊圓形芝麻餅咬飯做課洗澡拾整包遊戲剩","read":"","conf":true,"parts":0,"total":18},"5":{"write":"蟲森動物王坐午停座急百科全原從此管種","read":"橋圖館","conf":true,"parts":0,"total":21},"6":{"write":"自己沙撿垃圾眼膠對牠安吧如該留便減少","read":"灘塑","conf":true,"parts":0,"total":20},"7":{"write":"等兔撞農夫夏剛趕路幸運以耕守夜晚北搖","read":"","conf":true,"parts":1,"total":18},"8":{"write":"角腳渴鹿喝影意卻獅追被枝掙脫速度直救","read":"瘦嚇","conf":true,"parts":0,"total":20},"9":{"write":"赤國熱宮涼踩毯暖馬壞難定更隨主法於舒","read":"燙蹺","conf":true,"parts":1,"total":20},"10":{"write":"群靜抬非趣近堆棉遠景忽聽揮慢依捨放假","read":"","conf":true,"parts":3,"total":18},"11":{"write":"湯今至妹升陽因期盯米團粉南黃真呵接牛","read":"糯變","conf":true,"parts":1,"total":20},"12":{"write":"野本模型蜜蜂蝴蝶飛活圖筆料湖調迷逛兒","read":"盤","conf":true,"parts":0,"total":19}}},"3":{"edition":"康軒","grade":3,"lessons":{"1":{"write":"字舟灑載航忌妒失讓","read":"","conf":true,"parts":0,"total":9},"2":{"write":"窗戶名板答案專穫賽已傘似追喊","read":"歪霧晃亂","conf":true,"parts":0,"total":18},"3":{"write":"由暴迷岸撞扶店闆機料實繞留觀","read":"獅","conf":true,"parts":0,"total":15},"4":{"write":"擺露懷準射刺痛使毒欺負感遇危","read":"葵丑觸","conf":true,"parts":0,"total":17},"5":{"write":"球練習努總段利壓秒整該必通場","read":"導貴絲綁鬆翩","conf":true,"parts":1,"total":20},"6":{"write":"非關澡怕奮應平毛肚蓋柔揉副膠","read":"喵茸黏","conf":true,"parts":0,"total":17},"7":{"write":"統商古阿婆鐵硬愈蒼坡憶夕盪網","read":"嚼","conf":true,"parts":0,"total":15},"8":{"write":"育博史型功敗守護勇兵附瞭頂標","read":"荷蘭鄭駐炮","conf":true,"parts":0,"total":19},"9":{"write":"蓮溼族別式造語層植或釣智慧態","read":"鞍蝦","conf":true,"parts":0,"total":16},"10":{"write":"里狐兄密呀踢泥棄酸鴉肉塊計壯","read":"萬狸葡萄","conf":true,"parts":0,"total":18},"11":{"write":"曲悅拜訪免離漫盼枯鑽悟拆盛隨","read":"築顯恍極","conf":true,"parts":0,"total":18},"12":{"write":"農羨慕仿冠優雅救淚松咬羽易揮","read":"啼啞脖齒髒掌","conf":true,"parts":2,"total":20}}},"4":{"edition":"康軒","grade":4,"lessons":{"1":{"write":"泳般姿滑遨緩陀螺轉躍煩串溜耳鷹","read":"","conf":true,"parts":14,"total":15},"2":{"write":"招糧姐爭警偷繩依捨束暫幸湯拋則","read":"","conf":true,"parts":15,"total":15},"3":{"write":"邀遙熟巧彈曾揮彼喧優弧社與投秒","read":"","conf":true,"parts":14,"total":15},"4":{"write":"偕醫命奉獻療衛藥治翻嶺捐宿堂濃","read":"","conf":true,"parts":15,"total":15},"5":{"write":"凱勒業勵寧視注憑蓓蕾何毯適繽盡","read":"","conf":true,"parts":14,"total":15},"6":{"write":"秀朗登穆瑪峰母酷磨攀訓谷稱氧響","read":"","conf":true,"parts":14,"total":15},"7":{"write":"咖哩印甩材醬義麵郁壽未薄烙沾醋","read":"","conf":true,"parts":0,"total":15},"8":{"write":"臨樓頸代濟阻尼器震京晴塔訊吉橋","read":"","conf":true,"parts":0,"total":15},"9":{"write":"泰華尚逛埃羅勢窪堤防潮鬱划佛廟","read":"","conf":true,"parts":0,"total":15},"10":{"write":"幻旋瞬驗芝盜邁龐榮富扁牙困搓遍","read":"","conf":true,"parts":0,"total":15},"11":{"write":"背錶鎖鑰匙汁示迫袋盒扇遲掉深哭","read":"","conf":true,"parts":0,"total":15},"12":{"write":"妻耐革倍謎鐘靈鎚嘖足蹈蹦內賣敲","read":"","conf":true,"parts":0,"total":15}}},"h2":{"edition":"翰林","grade":2,"lessons":{"1":{"write":"候難電閃躲冷颳烏雲密布傾盆充滿放晴虹麗現","read":"","conf":true,"parts":0,"total":20},"2":{"write":"始卻望希新師老辦怎道知熟轉為因緊舞掛最習失消","read":"","conf":true,"parts":2,"total":22},"3":{"write":"臣只穿歡喜王國驚領袖改點件享分讓法方發計設越","read":"","conf":true,"parts":0,"total":22},"4":{"write":"聲聞呱蛙蟆蝦猜影乖果如抓擔近靠別頂明證瓜袋腦","read":"","conf":true,"parts":0,"total":22},"5":{"write":"邊海灘沙注愛蟹螃遠退印留橫丫腳夕麗挖","read":"","conf":true,"parts":1,"total":18},"6":{"write":"月叢頭盡林竹屋散飯晚奶聚那睛眼暗旁溪顆成","read":"","conf":true,"parts":1,"total":20},"7":{"write":"奇活郊食樣盒當便祖味香筒捲南安平保節清客粄艾","read":"","conf":true,"parts":0,"total":22},"8":{"write":"形圓紹介搶軟變米紙白種各線蝦材舉更聽接菜","read":"","conf":true,"parts":0,"total":20},"9":{"write":"澡沖黃蒸浴熱粒哪蔔蘿通蔬蛋苔名胖飄淡黏細","read":"","conf":true,"parts":0,"total":20},"10":{"write":"讀表減嘴嘟百搖答謎識認突趕題數哥對口異","read":"","conf":true,"parts":0,"total":19},"11":{"write":"閒刻立扇門怪仔闖馬慌擠力報播主耳妖底西東巴竟","read":"","conf":true,"parts":0,"total":22},"12":{"write":"念鵝詠詩波撥掌浮項曲脖伸指歲首作肚倒翻隻體身","read":"","conf":true,"parts":1,"total":22}}}};
+const BOOK_ORDER = ["h2","2","3","4"];
+
+const GOALS = [
+  {id:"1",  order:"建議第 1 步", name:"聽音選圖",  what:"聽語詞，點出正確的圖片（音 ↔ 義）"},
+  {id:"2",  order:"建議第 2 步", name:"看字選圖",  what:"看字或語詞，點出正確的圖片（形 ↔ 義）"},
+  {id:"3",  order:"建議第 3 步", name:"形音辨識",  what:"聽「努力的努」，從形近字、同音字、同詞易混字中選出目標字"},
+  {id:"4-1",order:"建議第 4 步", name:"部件重組",  what:"看拆開的部件，選出組成的字"},
+  {id:"4-2",order:"建議第 4 步", name:"看提示書寫", what:"在平板或螢幕上寫出目標字", off:"第 4 版開放"}
+];
+const MODES = [
+  {id:"acc", name:"正確率模式", desc:"題目答完為止，看正確率與反應時間"},
+  {id:"flu", name:"流暢性模式", desc:"時間到為止，看每分鐘正確幾個"}
+];
+const LIMITS = [["30","30 秒"],["60","1 分鐘"],["120","2 分鐘"]];
+/* 提示層級草案：0 無提示；1–3 系統給；4–7 老師給（作答時按按鈕記錄） */
+const LEVELS = [
+  {n:0, who:"",       items:[["none","獨立作答，無提示"]]},
+  {n:1, who:"系統",   items:[["word","語詞挖空（○瓜的○）"],["sent","句子"]]},
+  {n:2, who:"系統",   items:[["pic","圖片"],["sound","聲音"]]},
+  {n:3, who:"系統",   items:[["parts","部件"],["mask","遮擋字"],["shape","字形"]]},
+  {n:4, who:"老師按鈕", items:[["oral","口語提示"]]},
+  {n:5, who:"老師按鈕", items:[["model","示範"]]},
+  {n:6, who:"老師按鈕", items:[["phys","肢體提示"]]},
+  {n:7, who:"老師按鈕", items:[["full","完全提示"]]}
+];
+const PHASES = ["基線期","教學中","教學後","維持期"];
+const MAINTAIN_AFTER = 7; /* 教學結束後第 7 天起算維持期（草案，之後可在設定調整） */
+
+const DAY = 864e5;
+const today = new Date(); today.setHours(0,0,0,0);
+const iso = d => new Date(d.getTime() - d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
+const md = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()}`; };
+
+/* 範例狀態：翰林二年級第 1 課剛教完、第 2 課正在教，方便看到自動判斷的效果 */
+const state = {
+  goal:"3", mode:"acc", limit:"60", hints:new Set(["none"]),
+  book:"h2", lessons:["1"], kids:new Set(["S01","S02"]),
+  allKids:["S01","S02","S03","S04","S05","S06"],
+  dates:{}, manual:{}
+};
+const key = (b,n) => b + "-" + n;
+const sample = {
+  [key("h2","1")]: {start: iso(new Date(today - 12*DAY)), end: iso(new Date(today - 3*DAY))},
+  [key("h2","2")]: {start: iso(new Date(today - 2*DAY)),  end: iso(new Date(+today + 5*DAY))}
+};
+try { const saved = JSON.parse(localStorage.getItem("literacy-mock-dates") || "null"); state.dates = saved || sample; }
+catch(e){ state.dates = sample; }
+const saveDates = () => { try { localStorage.setItem("literacy-mock-dates", JSON.stringify(state.dates)); } catch(e){} };
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const bookName = b => `${BOOKS[b].edition} ${BOOKS[b].grade} 年級`;
+
+/* 依教學日期判斷評量時機 */
+function autoPhase(d){
+  if(!d || !d.start || !d.end) return {phase:null, why:"還沒輸入教學日期"};
+  const s = parse(d.start), e = parse(d.end);
+  if(e < s) return {phase:null, why:"結束日早於開始日，請檢查日期"};
+  if(today < s) return {phase:"基線期", why:`今天在教學開始日（${md(d.start)}）之前`};
+  if(today <= e) return {phase:"教學中", why:`今天在教學期間（${md(d.start)}～${md(d.end)}）`};
+  const n = Math.round((today - e) / DAY);
+  if(n < MAINTAIN_AFTER) return {phase:"教學後", why:`教學結束後第 ${n} 天`, days:n};
+  return {phase:"維持期", why:`教學結束後第 ${n} 天`, days:n};
+}
+const phaseOf = k => state.manual[k] || autoPhase(state.dates[k]).phase;
+
+function renderGoals(){
+  const L = BOOKS[state.book].lessons;
+  const allConf = Object.values(L).every(l => l.conf);
+  const partsLessons = Object.values(L).filter(l => l.parts >= l.total - 1).length;
+  const status = {
+    "1":["圖片：部分語詞已有","warn"],
+    "2":["圖片：部分語詞已有","warn"],
+    "3": allConf ? ["形近同音資料：全部課次","ok"] : ["形近同音資料：部分課次","warn"],
+    "4-1": partsLessons ? [`部件資料：${partsLessons} 課`,"warn"] : ["部件資料：此版本尚未建置","warn"],
+    "4-2":["第 4 版開放","warn"]
+  };
+  $("#goals").innerHTML = GOALS.map(g => `<button class="goal ${state.goal===g.id?"on":""}" data-g="${g.id}" ${g.off?"disabled":""} aria-pressed="${state.goal===g.id}">
+      <span class="order">${g.order}・目標 ${g.id}</span><b>${g.name}</b><span class="what">${g.what}</span>
+      <span class="pill ${status[g.id][1]==="warn"?"warn":""}">${status[g.id][0]}</span></button>`).join("");
+  $("#goals").querySelectorAll("button:not(:disabled)").forEach(b => b.onclick = () => { state.goal = b.dataset.g; render(); });
+}
+
+function renderModes(){
+  $("#modes").innerHTML = MODES.map(m => `<button class="opt ${state.mode===m.id?"on":""}" data-m="${m.id}" aria-pressed="${state.mode===m.id}">${m.name}<small>${m.desc}</small></button>`).join("");
+  $("#modes").querySelectorAll("button").forEach(b => b.onclick = () => {
+    state.mode = b.dataset.m;
+    if(state.mode === "acc" && state.lessons.length > 1) state.lessons = [state.lessons[0]];
+    render();
+  });
+  $("#fluBox").hidden = state.mode !== "flu";
+  $("#limits").innerHTML = LIMITS.map(([v,t]) => `<button class="chip ${state.limit===v?"on":""}" data-l="${v}">${t}</button>`).join("");
+  $("#limits").querySelectorAll("button").forEach(b => b.onclick = () => { state.limit = b.dataset.l; render(); });
+}
+
+function renderLevels(){
+  const flu = state.mode === "flu";
+  $("#levels").innerHTML = LEVELS.map(l => `<div class="lv"><span class="n">${l.n}<br><span class="who">${l.who}</span></span>
+    <div class="group">${l.items.map(([id,t]) => `<button class="chip ${state.hints.has(id)?"on":""}" data-h="${id}" ${flu && id!=="none"?"disabled":""} aria-pressed="${state.hints.has(id)}">${t}</button>`).join("")}</div></div>`).join("");
+  $("#levels").querySelectorAll("button:not(:disabled)").forEach(b => b.onclick = () => {
+    const id = b.dataset.h;
+    if(id === "none"){ state.hints = new Set(["none"]); }
+    else {
+      state.hints.delete("none");
+      state.hints.has(id) ? state.hints.delete(id) : state.hints.add(id);
+      if(!state.hints.size) state.hints.add("none");
+    }
+    render();
+  });
+  const phases = state.lessons.map(n => phaseOf(key(state.book,n)));
+  const note = $("#hintNote");
+  if(flu){ note.textContent = "流暢性模式固定為無提示。"; note.className = "note"; }
+  else if(phases.includes("基線期") && !state.hints.has("none")){ note.textContent = "目前是基線期，建議選「無提示」，之後的比較才有意義。"; note.className = "note warn"; }
+  else { note.textContent = "老師提示（4～7）在作答畫面會變成按鈕，老師給了提示就按一下。"; note.className = "note"; }
+}
+
+function renderLessons(){
+  $("#books").innerHTML = BOOK_ORDER.map(b => `<button class="opt ${state.book===b?"on":""}" data-b="${b}" aria-pressed="${state.book===b}">${bookName(b)}</button>`).join("");
+  $("#books").querySelectorAll("button").forEach(btn => btn.onclick = () => { state.book = btn.dataset.b; state.lessons = ["1"]; render(); });
+  const L = BOOKS[state.book].lessons;
+  $("#lessons").innerHTML = Object.entries(L).map(([n,l]) => {
+    const on = state.lessons.includes(n), ph = phaseOf(key(state.book,n));
+    return `<button class="lesson ${on?"on":""}" data-n="${n}" aria-pressed="${on}"><span class="t"><b>第 ${n} 課</b>${ph?`<span class="pill">${ph}</span>`:""}</span>
+      <span class="chars">${esc(l.write)}${l.read?`<span style="opacity:.6">・${esc(l.read)}</span>`:""}</span></button>`;
+  }).join("");
+  $("#lessons").querySelectorAll("button").forEach(b => b.onclick = () => {
+    const n = b.dataset.n;
+    if(state.mode === "acc") state.lessons = [n];
+    else state.lessons = state.lessons.includes(n) ? state.lessons.filter(x => x !== n) : [...state.lessons, n].sort((a,b) => a-b);
+    render();
+  });
+  $("#dates").innerHTML = state.lessons.length ? state.lessons.map(n => {
+    const k = key(state.book,n), d = state.dates[k] || {}, a = autoPhase(d), cur = phaseOf(k);
+    return `<div class="dateRow" data-k="${k}"><b class="lname">第 ${n} 課</b>
+      <label>教學開始日<input type="date" id="s-${k}" value="${d.start||""}"></label>
+      <label>教學結束日<input type="date" id="e-${k}" value="${d.end||""}"></label>
+      <div class="phase"><select id="p-${k}" aria-label="第 ${n} 課評量時機">
+        <option value="">${a.phase?`自動：${a.phase}`:"請選擇時機"}</option>
+        ${PHASES.map(p => `<option value="${p}" ${state.manual[k]===p?"selected":""}>手動：${p}</option>`).join("")}
+      </select><span class="why">${state.manual[k]?"已手動指定":esc(a.why)}</span></div></div>`;
+  }).join("") : `<p class="note">請先選擇課次。</p>`;
+  $("#dates").querySelectorAll(".dateRow").forEach(r => {
+    const k = r.dataset.k;
+    r.querySelector(`#s-${k}`).onchange = e => { (state.dates[k] ||= {}).start = e.target.value; saveDates(); render(); };
+    r.querySelector(`#e-${k}`).onchange = e => { (state.dates[k] ||= {}).end = e.target.value; saveDates(); render(); };
+    r.querySelector(`#p-${k}`).onchange = e => { if(e.target.value) state.manual[k] = e.target.value; else delete state.manual[k]; render(); };
+  });
+}
+
+function renderKids(){
+  $("#kids").innerHTML = state.allKids.map(k => `<button class="chip ${state.kids.has(k)?"on":""}" data-k="${esc(k)}" aria-pressed="${state.kids.has(k)}">${esc(k)}</button>`).join("");
+  $("#kids").querySelectorAll("button").forEach(b => b.onclick = () => { const k = b.dataset.k; state.kids.has(k) ? state.kids.delete(k) : state.kids.add(k); render(); });
+}
+$("#addKid").onclick = () => {
+  const v = $("#newKid").value.trim();
+  if(!v) return;
+  if(!state.allKids.includes(v)) state.allKids.push(v);
+  state.kids.add(v); $("#newKid").value = ""; render();
+};
+$("#newKid").addEventListener("keydown", e => { if(e.key === "Enter") $("#addKid").click(); });
+
+function renderSummary(){
+  const g = GOALS.find(x => x.id === state.goal);
+  const flu = state.mode === "flu";
+  const hintText = flu ? "無提示" : [...state.hints].map(id => LEVELS.flatMap(l => l.items).find(i => i[0] === id)[1]).join("、");
+  const lessonText = state.lessons.length ? `${bookName(state.book)}　第 ${state.lessons.join("、")} 課` : null;
+  const phaseText = state.lessons.map(n => { const k = key(state.book,n), p = phaseOf(k), a = autoPhase(state.dates[k]);
+    return p ? `第 ${n} 課：${p}${(p==="教學後"||p==="維持期") && a.days!=null && !state.manual[k] ? `（第 ${a.days} 天）` : ""}` : null; });
+  const missingPhase = phaseText.some(x => !x);
+  const rows = [
+    ["評量目標", `目標 ${g.id}　${g.name}`],
+    ["評量方式", flu ? `流暢性模式・${LIMITS.find(l => l[0]===state.limit)[1]}・目標每分鐘 ${esc($("#aim").value)} 個` : "正確率模式"],
+    ["提示", hintText],
+    ["課次", lessonText],
+    ["評量時機", state.lessons.length && !missingPhase ? phaseText.join("<br>") : null],
+    ["學生", state.kids.size ? `${[...state.kids].map(esc).join("、")}（${state.kids.size} 位）` : null]
+  ];
+  $("#sum").innerHTML = rows.map(([t,v]) => `<div><dt>${t}</dt><dd class="${v?"":"miss"}">${v || (t==="評量時機"?"請輸入教學日期或手動選擇":"還沒選")}</dd></div>`).join("");
+  $("#go").disabled = rows.some(r => !r[1]);
+  $("#done").hidden = true;
+}
+$("#go").onclick = () => { $("#done").hidden = false; };
+$("#aim").addEventListener("input", renderSummary);
+
+function render(){ renderGoals(); renderModes(); renderLevels(); renderLessons(); renderKids(); renderSummary(); }
+render();
+</script>
+
+</body>
+</html>
