@@ -127,7 +127,7 @@ let G = null;
 const SPEAKER_SVG = `<svg viewBox="0 0 24 24" width="55%" height="55%" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>`;
 
 function showScreen(id){
-  for(const s of ["#setup", "#pick", "#play", "#result", "#book"]) $(s).hidden = s !== id;
+  for(const s of ["#setup", "#pick", "#play", "#result", "#book", "#teacher"]) $(s).hidden = s !== id;
   window.scrollTo(0, 0);
 }
 
@@ -258,7 +258,8 @@ function endItem(passed, correctSec, revealed){
     /* 當時的條件（研究用的進階比較會用到）：提示設定、答錯規則用代碼存，Excel 再翻成中文 */
     hintSet: G.hints.join(","), rule: G.noHelp ? "none" : G.rule.join(","), layout: G.layout,
     theme: G.theme, game: G.game, reward: "",
-    fontScale: settings.fontScale, rate: settings.rate, sfx: settings.sfx
+    fontScale: settings.fontScale, rate: settings.rate, sfx: settings.sfx,
+    aim: G.mode === "flu" ? G.aim : ""   /* 流暢性的目標（每分鐘幾個），老師專區畫目標線用 */
   };
   saveRecord(rec);
   const t = G.tally[it.kid];

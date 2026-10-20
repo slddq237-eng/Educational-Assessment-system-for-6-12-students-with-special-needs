@@ -78,7 +78,7 @@ const COLS = [
   ["主題", r => r.theme ? themeName(r.theme) : "無"], ["遊戲玩法", r => r.game || "無"], ["獎勵", r => r.reward || "無"],
   ["中途結束（不列入分析）", r => yesNo(r.quit)],
   ["作答字的大小", r => r.fontScale ? (FONT_SIZES.find(f => f[0] === r.fontScale) || [, r.fontScale])[1] : "未記錄"],
-  ["唸讀速度", r => r.rate ?? "未記錄"], ["音效", r => r.sfx === undefined ? "未記錄" : r.sfx ? "開" : "關"]
+  ["唸讀速度", r => r.rate ?? "未記錄"], ["流暢目標（每分鐘）", r => r.aim || ""], ["音效", r => r.sfx === undefined ? "未記錄" : r.sfx ? "開" : "關"]
 ];
 const fileDate = t => { const d = new Date(t); return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}_${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}`; };
 function exportXlsx(list, filename, msgSel){
