@@ -279,6 +279,63 @@ details.why p{margin:6px 0 0;max-width:65ch;line-height:1.6}
 .rcard .rname2{display:flex;align-items:center;gap:10px}
 .rcard .rname2 .av{--s:48px}
 .rcard .sticker{grid-column:1/-1;justify-self:start}
+/* ---------- 老師專區 ---------- */
+/* 圖表顏色：一條線用第 1 色；進階比較最多 8 組，依固定順序（已用色盲檢查工具驗證） */
+#teacher{--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--s8:#e34948;--hair:#e1e0d9;--axis:#c3c2b7}
+.tpanel{background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:14px 18px;margin-top:14px;display:grid;gap:10px}
+.trow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.trow .tl,.row .tl{min-width:5.5em;font-size:15px;color:var(--muted)}
+.trow select,.trow input,.pivotform select,.pivotform input{border:2px solid var(--ink);border-radius:10px;padding:4px 8px;background:var(--card)}
+.trow .sep{width:1px;height:24px;background:var(--grid);margin:0 4px}
+.ttitle{margin:0;font-size:22px}
+.tstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.tstat{background:var(--mint);border-radius:14px;padding:10px 14px;display:grid;gap:2px}
+.tstat span{font-size:14px;color:var(--muted)}
+.tstat b{font-size:28px;line-height:1.2}
+.tstat small{font-size:13px;color:var(--muted)}
+.chartbox{position:relative;max-width:100%}
+.chartbox svg{width:100%;height:auto;display:block;font-family:var(--ui)}
+.chartbox .grid{stroke:var(--hair);stroke-width:1}
+.chartbox .ax{fill:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.chartbox .line{fill:none;stroke:var(--s1);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chartbox .dot{fill:var(--s1);stroke:var(--card);stroke-width:2;cursor:pointer}
+.chartbox .dot.on,.chartbox .dot:focus{r:7;outline:none}
+.chartbox .cross{stroke:var(--axis);stroke-width:1}
+.chartbox .phaseline{stroke:var(--ink);stroke-width:1.5;stroke-dasharray:5 4}
+.chartbox .phasename{fill:var(--ink);font-size:13px;font-weight:700}
+.chartbox .event{stroke:var(--amber);stroke-width:1.5}
+.chartbox .aim{stroke:var(--amber);stroke-width:1.5}
+.chartbox .eventname{fill:var(--amber);font-size:12px}
+.chartbox .endlabel{fill:var(--ink);font-size:14px;font-weight:700}
+.chartbox .bar{fill:var(--s1)}
+.chartbox .bar.faint{opacity:.4}
+.chartbox .barhit{cursor:pointer;outline:none}
+.chartbox .barhit.on .bar,.chartbox .barhit:focus .bar{filter:brightness(1.15)}
+.chartbox .barname{fill:var(--ink);font-size:14px}
+.chartbox .barval{fill:var(--ink);font-size:13px;font-variant-numeric:tabular-nums}
+.ttip{position:absolute;transform:translate(-50%,calc(-100% - 10px));background:var(--ink);color:#fff;border-radius:8px;padding:6px 10px;font-size:14px;white-space:nowrap;pointer-events:none;z-index:2}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.tdetail summary{cursor:pointer;color:var(--green);font-weight:700}
+.charlink{border:none;background:none;padding:0 2px;font:inherit;font-family:var(--kai);font-size:1.25em;color:var(--green);text-decoration:underline;cursor:pointer}
+.classgrid td,.classgrid th{text-align:center;padding:4px 6px}
+.classgrid th.ch{font-family:var(--kai);font-size:20px}
+.classgrid .cellbtn{font-family:var(--ui);font-size:14px;text-decoration:none;color:var(--ink);display:grid;line-height:1.1;margin:auto}
+.classgrid .cellbtn small{font-size:11px;color:var(--muted)}
+.classgrid td.c1{background:#fff}.classgrid td.c2{background:#e6f0fc}.classgrid td.c3{background:#cde2fb}.classgrid td.c4{background:#9ec5f4}
+.classgrid td.na{color:var(--grid)}
+.pivotform{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:end}
+.pivotform label{display:grid;gap:2px;font-size:14px;color:var(--muted)}
+.pivotform label.chk{display:flex;align-items:center;gap:6px;color:var(--ink)}
+table.pivot td{text-align:center;vertical-align:middle}
+table.pivot td b{display:block}
+table.pivot td small{color:var(--muted);font-size:12px}
+table.pivot td.faint{opacity:.45}
+table.pivot tr.tot th,table.pivot tr.tot td{border-top:2px solid var(--ink)}
+.savedcmp{display:inline-flex}.savedcmp .x{padding:4px 8px;margin-left:-4px}
+#pName{border:2px solid var(--ink);border-radius:10px;padding:4px 8px}
+.sheet.wide{width:min(1100px,100%)}
+.sheet > *{min-width:0}
 /* ---------- 選主題、貼紙簿 ---------- */
 .pickwho{display:flex;flex-wrap:wrap;gap:14px;font-size:24px}
 .pickwho .pk{display:inline-flex;align-items:center;gap:8px}
@@ -308,6 +365,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
       <div class="seg" role="group" aria-label="畫面模式">
         <button id="uiQuick" aria-pressed="true">快速開始</button><button id="uiAdv" aria-pressed="false">進階設定</button>
       </div>
+      <button class="ghost" id="openTeacher">老師專區</button>
       <button class="ghost" id="openBook">貼紙簿</button>
       <button class="ghost" id="openView">畫面與聲音</button>
       <button class="ghost" id="openRecords">作答紀錄</button>
@@ -459,6 +517,27 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
   <div class="themes" id="themes"></div>
 </div>
 
+<!-- =================== 老師專區 =================== -->
+<div class="wrap" id="teacher" hidden>
+  <header class="top"><div class="brand"><div class="stamp">師</div><div><small>識字評量</small><h1>老師專區</h1></div></div>
+    <button class="ghost" id="teacherBack">回到設定</button></header>
+  <div class="row" id="tTabs" role="group" aria-label="老師專區分頁"></div>
+  <section class="card tpanel">
+    <div id="tMenu"></div>
+    <div id="tRangeBox"><div id="tRange"></div></div>
+  </section>
+  <section class="card tpanel" id="tResult" aria-live="polite"></section>
+</div>
+
+<!-- 逐字學習紀錄 -->
+<div class="overlay" id="charSheet" hidden>
+  <div class="sheet wide" role="dialog" aria-modal="true" aria-labelledby="cTitle">
+    <header><h2 id="cTitle">學習紀錄</h2><button class="ghost" data-close>關閉</button></header>
+    <div id="cBody"></div>
+    <footer><span class="note" id="cMsg" style="margin:0"></span><button class="ghost" id="cExport">匯出（Excel）</button><button class="save" data-close>完成</button></footer>
+  </div>
+</div>
+
 <!-- =================== 貼紙簿（學生看） =================== -->
 <div class="wrap" id="book" hidden>
   <header class="top"><div class="brand"><div class="stamp">貼</div><div><small>識字評量</small><h1>貼紙簿</h1></div></div>
@@ -533,12 +612,14 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <!-- 平台共用：主題與貼紙、每位學生的收藏與頭像 -->
 <script src="../../shared/themes.js"></script>
 <script src="../../shared/rewards.js"></script>
-<!-- 程式本體：分成六個檔案，順序不能換（說明見 app.js 開頭） -->
+<!-- 程式本體：分成八個檔案，順序不能換（說明見 app.js 開頭） -->
 <script src="data.js"></script>
 <script src="setup.js"></script>
 <script src="records.js"></script>
 <script src="play.js"></script>
 <script src="collect.js"></script>
+<script src="teacher.js"></script>
+<script src="pivot.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
