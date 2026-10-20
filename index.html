@@ -31,12 +31,28 @@ a.tool:hover{transform:translateY(-3px)}
 .tool .tag{width:fit-content;margin-top:14px;padding:4px 14px;border-radius:999px;background:var(--green);color:#fff;font-size:15px}
 .tool.soon{border-style:dashed;box-shadow:none;opacity:.7}
 .tool.soon .tag{background:var(--muted)}
+/* 最後更新：每次合併新功能就改日期和「這次更新了什麼」（見 CLAUDE.md） */
+.news{background:var(--card);border:2px dashed var(--line);border-radius:16px;padding:10px 18px;margin:0 0 24px;color:var(--muted);font-size:16px}
+.news summary{cursor:pointer;color:var(--ink)}
+.news summary b{color:var(--green)}
+.news ul{margin:8px 0 2px;padding-left:1.3em;line-height:1.7}
+footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:15px;display:flex;gap:8px 20px;flex-wrap:wrap}
+footer a{color:var(--green)}
 </style>
 </head>
 <body>
 <main>
   <h1>學習評量平台</h1>
   <p class="lead">選一個小工具開始使用。</p>
+  <details class="news" id="news">
+    <summary>最後更新：<b><time datetime="2026-10-20">2026-10-20</time></b>（點開看這次更新了什麼）</summary>
+    <ul>
+      <li>識字評量：學扶前後測卡片與快速指南（改成重點式，附示範動畫）、右上角計時、換人提醒改成畫面＋提示音。</li>
+      <li>識字評量：打怪獸（一個人自己打、多人合作打）、練習的血量模式（愛心）。</li>
+      <li>識字評量老師專區：分析教學、「這張圖怎麼看？」、進階分析一鍵範例。</li>
+      <li>新增「資料與隱私說明」；唸學生名字時只用電腦內建語音。</li>
+    </ul>
+  </details>
   <div class="tools">
     <a class="tool" href="tools/bingo/">
       <b>生字賓果</b>
@@ -59,6 +75,10 @@ a.tool:hover{transform:translateY(-3px)}
       <div class="tag">第 1 版</div>
     </a>
   </div>
+  <footer>
+    <a href="privacy.html">資料與隱私說明</a>
+    <span>學生資料只存在老師自己電腦的瀏覽器，不會上傳；換電腦前請先下載備份檔。</span>
+  </footer>
 </main>
 </body>
 </html>

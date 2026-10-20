@@ -54,6 +54,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .panel h2{margin:0;font-size:clamp(21px,2vw,26px);display:flex;align-items:center;gap:10px;text-wrap:balance}
 .num{width:32px;height:32px;border-radius:50%;background:var(--ink);color:var(--paper);display:inline-grid;place-items:center;font-size:17px;flex:none}
 .hint{color:var(--muted);margin:6px 0 16px;font-size:16px}
+.warnbar{background:#fbf1dc;border:2px dashed #9a6a12;border-radius:14px;padding:10px 16px;color:#5c400a;margin:0 0 16px;font-size:16px}
 .sub{font-size:15px;color:var(--muted);margin:18px 0 8px;letter-spacing:.06em}
 .sub:first-of-type{margin-top:0}
 
@@ -544,6 +545,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
       <a class="ghost" href="../../">回平台首頁</a>
     </div>
   </header>
+  <p class="warnbar" id="voiceWarn" role="alert" hidden>這台電腦找不到中文語音，題目不會唸出來（作答還是可以進行）。請改用 Chrome 或 Edge，或在電腦的「語音」設定加裝中文（台灣）語音後重新整理。</p>
   <p class="mock"><b>第 1 版</b><span>目前可以使用「聽音找字」（目標 3 形音辨識）。作答前可以選主題，完成後抽貼紙，貼紙收在「貼紙簿」。作答紀錄存在這台電腦的瀏覽器，請定期到「作答紀錄」下載備份檔。</span></p>
   <p class="banner" id="dbWarn" hidden>這台電腦的瀏覽器不允許存檔（可能是無痕視窗），這次的作答紀錄關掉網頁就會消失，請在結束後匯出 Excel。</p>
 
@@ -744,6 +746,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
     <h3>多人輪流的換人提醒</h3>
     <div class="group" id="vTurn"></div>
     <div class="group"><button class="chip" id="vTryTurn">試聽換人</button><span class="note" style="margin:0">畫面一定會顯示大頭像和「換 ○○」。提示音要開著上面的「音效」才會響。</span></div>
+    <p class="note" style="margin:0" id="vTurnMsg">為了保護學生個資，唸名字只用這台電腦內建的中文語音（不會把名字送到網路上）；找不到內建語音時，改成只播提示音。</p>
     <footer><button class="save" data-close>完成</button></footer>
   </div>
 </div>

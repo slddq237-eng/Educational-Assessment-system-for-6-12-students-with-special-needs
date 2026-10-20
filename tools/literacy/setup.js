@@ -465,7 +465,12 @@ $("#vClock").onchange = e => { settings.clockPractice = e.target.checked; saveSe
 $("#vTryRight").onclick = () => sfx.right(true);
 $("#vTryWrong").onclick = () => sfx.wrong(true);
 /* 試聽換人：照目前選的方式播一次 */
-$("#vTryTurn").onclick = () => { const s = settings.turnStyle || "chime"; if(s === "chime" || s === "both") sfx.turn(true); if(s === "voice" || s === "both") setTimeout(() => speak("換小明"), s === "both" ? 450 : 0); };
+$("#vTryTurn").onclick = () => { const s = settings.turnStyle || "chime"; if(s === "chime" || s === "both") sfx.turn(true); if(s === "voice" || s === "both") setTimeout(() => { if(!speak("換小明", null, null, true)){ if(s === "voice") sfx.turn(true); $("#vTurnMsg").textContent = "這台電腦找不到內建的中文語音，為了保護學生個資不唸名字，改成只播提示音。"; } }, s === "both" ? 450 : 0); };
+
+/* 找不到中文語音時，在設定畫面上方提醒（語音清單是慢慢載入的，等一下再檢查） */
+function checkVoice(){ $("#voiceWarn").hidden = "speechSynthesis" in window && hasZhVoice(); }
+setTimeout(checkVoice, 1500);
+if("speechSynthesis" in window) speechSynthesis.addEventListener && speechSynthesis.addEventListener("voiceschanged", () => setTimeout(checkVoice, 0));
 $("#openView").onclick = () => { renderView(); openSheet("#viewSheet"); };
 applyDisplay();
 $("#sRate").oninput = e => { settings.rate = +e.target.value; $("#sRateV").textContent = `${settings.rate} 倍`; saveSettings(); };
