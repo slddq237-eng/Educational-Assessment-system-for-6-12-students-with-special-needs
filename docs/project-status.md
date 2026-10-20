@@ -1,7 +1,7 @@
 # 專案現況與決策紀錄
 
 給接手這個 repo 的 Claude（和人）看的交接文件。開工前請先讀完，改完重要決策後請更新這份文件。
-最後更新：2026-10-20（匯入字頻資料）
+最後更新：2026-10-20（新增關於我們頁）
 
 ## 1. 專案在做什麼
 
@@ -291,16 +291,16 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
 
 ## 4-1. 資料來源與授權清單（2026-10-20 建立）
 
-新資料（課本、字頻、圖片、聲音、字型、程式元件）進 repo 前，先在這裡和規格書「資料來源、授權與隱私」加一列。之後的「關於我們」頁依這份清單列出處。
+新資料（課本、字頻、圖片、聲音、字型、程式元件）進 repo 前，先在這裡和規格書「資料來源、授權與隱私」加一列，並同步更新「關於我們」頁（`about.html`，2026-10-20 建立）。
 
 | 資料 | 位置 | 來源 | 授權 | 狀態 |
 |---|---|---|---|---|
 | 課本生字、語詞、例句、形近字 | `shared/lessons.js` | 各出版社課本、維護者提供的生字表與字音字形檔；部分由 Claude 擬定 | 出版社著作權，未取得授權 | 只放字表與短語詞；待討論 |
 | 部件拆解 | `shared/parts.js`、`docs/parts-table.xlsx` | cjkvi-ids（CHISE） | GPLv2 | 已標示 |
-| 字頻總表 | `shared/freq.js` | 教育部語文成果網「表一：字頻總表」（BIAU1，5,731 字） | 維護者確認可用，須在「關於我們」列出處 | 2026-10-20 匯入；待列入關於我們 |
+| 字頻總表 | `shared/freq.js` | 教育部語文成果網「表一：字頻總表」（BIAU1，5,731 字） | 維護者確認可用，須在「關於我們」列出處 | 2026-10-20 匯入；已列入關於我們 |
 | 注音字型 | `tools/bingo/` | ButTaiwan/bpmfvs | 漢字 CC BY 4.0、其餘 SIL OFL 1.1 | 已標示 |
-| 網頁字型 Huninn、LXGW WenKai TC | 各頁面（Google Fonts） | Google Fonts | SIL OFL 1.1 | 待列入關於我們 |
-| SheetJS 0.18.5 | 各頁面（cdnjs） | SheetJS | Apache 2.0 | 待列入關於我們 |
+| 網頁字型 Huninn、LXGW WenKai TC | 各頁面（Google Fonts） | Google Fonts | SIL OFL 1.1 | 已列入關於我們 |
+| SheetJS 0.18.5 | 各頁面（cdnjs） | SheetJS | Apache 2.0 | 已列入關於我們 |
 
 隱私需要額外處理的資料（姓名、照片、作答紀錄、備份檔、語音、對外連線）見規格書同一節的表二。
 
