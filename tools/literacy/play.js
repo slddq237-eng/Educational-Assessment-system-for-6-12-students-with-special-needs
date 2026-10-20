@@ -31,10 +31,14 @@ function pickItems(code, q){
     };
     return shuffle(shuffle(pool).sort((a, b) => score(b) - score(a)).slice(0, q.count));
   }
+  /* 依字頻排名排序（shared/freq.js）：常用的在前；查不到排名的字放最後，維持原本的隨機順序 */
+  const rank = it => (typeof FREQ !== "undefined" && FREQ[it.c]) || Infinity;
+  const byFreq = list => [...list].sort((a, b) => rank(a) - rank(b));
   const rest = shuffle([...pool]);
-  if(q.method === "freq") return rest.slice(0, q.count);   /* 字頻資料匯入前先隨機 */
-  /* 平均隨機：先取常用字（練習才有，字頻資料匯入前先隨機），再依每課分配的題數抽 */
-  const take = rest.splice(0, q.freqN).map(it => ({...it, boost:true}));
+  if(q.method === "freq") return shuffle(byFreq(rest).slice(0, q.count));
+  /* 平均隨機：先取所選課次中字頻最高的字（練習才有），再依每課分配的題數抽 */
+  const take = byFreq(rest).slice(0, q.freqN).map(it => ({...it, boost:true}));
+  take.forEach(t => rest.splice(rest.findIndex(it => it.c === t.c && it.k === t.k), 1));
   for(const [k, n] of q.per){
     const fromK = rest.filter(it => it.k === k).slice(0, n);
     take.push(...fromK);
