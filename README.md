@@ -32,8 +32,9 @@ tools/
     play.js       出題、作答畫面、結果畫面
     collect.js    選主題、頭像、得到貼紙、貼紙簿
     teacher.js    老師專區（一位學生的圖表、全班總表、逐字學習紀錄）
-    pivot.js      老師專區的進階比較（樞紐分析表）
+    pivot.js      老師專區的進階分析（樞紐分析表）
     guide.html    學扶前後測快速指南（可列印成一張 A4）
+    analysis-guide.html  分析教學：老師專區怎麼看、名詞解釋、進階分析範例
     app.js        程式入口（說明各檔案的載入順序）
   prep/           備課分析（讀取 shared/lessons.js、shared/parts.js）
 ```

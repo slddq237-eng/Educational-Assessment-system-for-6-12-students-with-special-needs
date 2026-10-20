@@ -344,7 +344,7 @@ function endItem(passed, correctSec, revealed){
     teacherPrompt: cur.teacher ? TEACHER_BTNS.find(t => t[0] === cur.teacher)[1] : "",
     firstSec: cur.firstSec, correctSec: passed ? correctSec : null,
     phase: phaseFor(it.kid, b, n) || "", daysAfter: state.rtiKeys.includes(key(b,n)) ? rtiDays(key(b,n)) : state.manual[key(b,n)] ? "" : (a.days ?? ""),
-    /* 當時的條件（研究用的進階比較會用到）：提示設定、答錯規則用代碼存，Excel 再翻成中文 */
+    /* 當時的條件（研究用的進階分析會用到）：提示設定、答錯規則用代碼存，Excel 再翻成中文 */
     hintSet: G.hints.join(","), rule: G.noHelp ? "none" : G.rule.join(","), layout: G.layout,
     theme: G.theme, game: G.game, reward: "",
     fontScale: settings.fontScale, rate: settings.rate, sfx: settings.sfx,

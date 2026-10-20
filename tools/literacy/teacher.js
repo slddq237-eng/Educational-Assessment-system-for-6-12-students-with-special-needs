@@ -1,6 +1,7 @@
 /* =========================================================
    識字評量：老師專區（teacher.js）
-   三個分頁：一位學生（選單逐步選，每次一張圖或一張表）、全班總表、進階比較（在 pivot.js）。
+   三個分頁：一位學生（選單逐步選，每次一張圖或一張表）、全班總表、進階分析（在 pivot.js）。
+   每個分頁上方有「這一頁怎麼用？」，結果下方有「這張圖怎麼看？」；完整說明在 analysis-guide.html（分析教學）。
    原則（2026-10-20 定案）：
    - 分析一律用「時期」（基線期／教學中／教學後／維持期），用的是作答當下記下的時期。
    - 「中途結束」的紀錄一律不算；預設只看正式評量。
@@ -116,7 +117,8 @@ const chipRow = (list, cur, key, extra = () => "") => list.map(([v, t]) => `<but
 function kidsWithData(){ const have = new Set(records.filter(r => !r.quit).map(r => r.kid)); return kids.filter(k => have.has(k.code)); }
 
 function renderTeacher(){
-  $("#tTabs").innerHTML = chipRow([["one","一位學生"],["class","全班總表"],["pivot","進階比較（研究用）"]], T.tab, "ttab");
+  $("#tTabs").innerHTML = chipRow([["one","一位學生"],["class","全班總表"],["pivot","進階分析（研究用）"]], T.tab, "ttab");
+  renderTabHelp();
   $("#tTabs").querySelectorAll("[data-ttab]").forEach(b => b.onclick = () => { T.tab = b.dataset.ttab; saveT(); renderTeacher(); });
   const withData = kidsWithData();
   if(!kidBy(T.kid) && withData.length) T.kid = withData[0].code;
@@ -125,6 +127,31 @@ function renderTeacher(){
   if(T.tab === "one") renderOne();
   else if(T.tab === "class") renderClass();
   else renderPivot();
+}
+
+/* 每個分頁上方的「這一頁怎麼用？」：平常收起來，打開後記住（換分頁也維持打開） */
+const TAB_HELP = {
+  one: ["看一位學生的進步。由上往下選：看誰 → 看什麼 → 怎麼看，下面再選日期和課次範圍。", [
+    "<b>正確率</b>＝第一次就點對的比例（越高越好）；<b>反應時間</b>＝題目唸完到答對的秒數（越短越熟）；<b>流暢性</b>＝計時挑戰每分鐘答對幾個。",
+    "<b>依時期比較</b>最直接看介入有沒有效：基線期（還沒教）→ 教學中 → 教學後 → 維持期（教完 7 天以上）。",
+    "結果區的「看明細」是圖上每個數字的表格；任何一個字都可以點，看那個字的每一次作答。",
+    "找不到資料時，先把日期改成「全部」、性質改成「全部」。"], "one"],
+  class: ["一眼看全班：每一列是一位學生，每一欄是一個字。", [
+    "格子大字＝第一次就答對的比例，小字＝作答次數；藍色越深越好，「—」＝還沒考過。",
+    "直著看一欄：全班都淺色的字，可能字本身難或教學要調整；橫著看一列：哪位學生需要個別加強。",
+    "點格子看那位學生那個字的每一次作答。"], "class"],
+  pivot: ["自己決定怎麼分組比較，做法像 Excel 的樞紐分析表：先選要算的數字（指標），再選怎麼分組（列、欄）。", [
+    "不知道怎麼選？先按上方的<b>範例</b>，每個範例都附「這在回答什麼、怎麼看」。",
+    "<b>列</b>＝表格每一橫列是一組；<b>欄</b>＝每一直欄是一組（可以不選）；每一格是那一組的數字，小字是用了幾筆紀錄。",
+    "<b>篩選</b>＝只留下某一種紀錄（例如只看小明）；<b>分組</b>＝全部留下、分開算。",
+    "淡色格子筆數太少，數字容易因為多對一題就大變，僅供參考。"], "pivot"]
+};
+function renderTabHelp(){
+  const [lead, list, anchor] = TAB_HELP[T.tab], el = $("#tHelp");
+  el.innerHTML = `<summary>這一頁怎麼用？</summary><p>${lead}</p><ul>${list.map(x => `<li>${x}</li>`).join("")}</ul>
+    <p><a href="analysis-guide.html#${anchor}" target="_blank" rel="noopener">看完整的分析教學（名詞解釋、範例）</a></p>`;
+  el.open = !!T.helpOpen;
+  el.ontoggle = () => { if(T.helpOpen !== el.open){ T.helpOpen = el.open; saveT(); } };
 }
 
 /* 範圍選單（一位學生、全班總表共用） */
@@ -172,6 +199,7 @@ function renderOne(){
   $("#tMenu").querySelectorAll("[data-ttop]").forEach(b => b.onclick = () => { T.top = b.dataset.ttop; re(); });
   const rs = withData.length ? filtered() : [];
   const out = rs.length ? (M.kind === "trend" ? trendView(rs, M.id) : LIST_VIEWS[M.id](rs)) : null;
+  if(out) out.howto = howTo(M);
   showResult(out, rs.length ? "" : withData.length ? "這個範圍裡沒有紀錄。可以把日期改成「全部」，或把性質改成「全部」。" : "");
 }
 
@@ -184,12 +212,33 @@ function showResult(out, empty){
     <div class="tstats">${out.tiles.map(([label, value, sub]) => `<div class="tstat"><span>${esc(label)}</span><b>${esc(value)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</div>`).join("")}</div>
     <div class="tchart">${out.chart || ""}</div>
     ${out.note ? `<p class="note">${out.note}</p>` : ""}
+    ${out.howto ? `<details class="why howto"><summary>這張圖怎麼看？</summary>${out.howto}</details>` : ""}
     <details class="tdetail" ${out.open ? "open" : ""}><summary>看明細（表格）</summary>${detailTable(out.cols, out.rows)}</details>
     <div class="row" style="margin-top:12px"><button class="ghost" id="tExport">匯出這個畫面（Excel）</button><span class="note" id="tMsg" style="margin:0"></span></div>`;
   if(!out) return;
   bindChart($("#tResult"));
   $("#tResult").querySelectorAll("[data-char]").forEach(el => el.onclick = () => openCharLog(el.dataset.kid || T.kid, el.dataset.char));
   $("#tExport").onclick = () => exportRows(out.cols, out.rows, out.title, "#tMsg");
+}
+/* 「這張圖怎麼看？」：依看什麼、怎麼看給不同的說明 */
+function howTo(M){
+  const better = {acc:"越高越好", sec:"越低越好（越快越熟）", flu:"越高越好"}[M.id];
+  const more = a => `<p><a href="analysis-guide.html#${a}" target="_blank" rel="noopener">更多說明</a></p>`;
+  if(M.kind === "trend"){
+    if(T.view === "lesson") return `<p>每一條是一課，長度是那一課全部作答合起來的${esc(M.name)}（${better}）。括號是用了幾題。比較哪一課比較難，可以優先複習。</p>${more("one")}`;
+    if(T.view === "phase") return `<p>每一條是一個時期，${esc(M.name)}${better}。理想的樣子：基線期低 → 教學中升高 → 教學後更高 → 維持期仍然高（學了有記住）。</p>
+      <p>括號是筆數；某個時期只有幾題時，數字容易大幅變動，先多評量幾次再下結論。時期是作答當下判斷的。</p>${more("one")}`;
+    return `<p>一個點＝一次評量（流暢性是一回合），${esc(M.name)}${better}。虛線＝時期改變的地方，上方標時期；直線＝本學期安排的學扶、資源班開始日${M.id === "flu" ? "；水平線＝目標每分鐘幾個" : ""}。滑鼠移到點上看數字。</p>
+      <ul><li><b>水準</b>：每個時期大約在多高？</li><li><b>趨勢</b>：時期裡的點往上、持平還是往下？基線期已經一直往上的話，很難說進步是教學造成的。</li>
+      <li><b>穩定</b>：點有沒有忽高忽低？基線期最好至少 3 次而且穩定。</li><li><b>立即效果</b>：教學開始後頭幾個點，是不是馬上和基線期不同。</li></ul>${more("one")}`;
+  }
+  return {
+    gap: `<p>依間隔天數分組，每一條是那一組第一次就答對的比例。間隔越長、比例掉越多，表示越需要早一點複習。「教學前或教學中」那一組可以當對照。</p>`,
+    miss: `<p>錯誤率最高的字排最前面（第一次就選錯的比例），一樣時作答次數多的在前。看「最常選錯成」：同音字多要加強聽音辨字，形近字多要比較字形。點字看每一次作答。</p>`,
+    freq: `<p>常用字依字頻排名排序，條越長錯越多。先確保最常用的字都會。</p>`,
+    etype: `<p>第一次選錯時，選到哪一類的字。同音多→多做聽音辨字、用語詞區分；形近多→比較字形、部件；同詞易混多→語詞裡每個字的位置還不穩。</p>`,
+    hint: `<p>每一題用到的最高提示：0＝不用提示，1～3＝系統給，4～7＝老師按的按鈕。介入有效時，「0 不用提示」的比例應該越來越高。</p>`
+  }[M.id] + more("lists");
 }
 /* 明細表：cols＝[[標題, 取值函式, 可以點的字？]] */
 function detailTable(cols, rows){
