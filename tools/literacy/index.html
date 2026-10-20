@@ -194,6 +194,8 @@ body.quick .lesson .pill{display:none}
 .preset{text-align:left;border:3px solid var(--ink);background:var(--card);border-radius:18px;padding:16px;display:grid;gap:8px;align-content:start}
 .preset b{font-size:24px}
 .preset .d{color:var(--muted);font-size:16px}
+.rtibox{display:grid;gap:8px;border:3px dashed var(--green);border-radius:16px;padding:12px 16px;background:var(--mint)}
+.rtibox b{font-size:20px}
 .preset .rec{font-size:14px;border-radius:8px;padding:4px 10px;background:var(--mint);color:var(--green);width:fit-content}
 .preset .rec.off{background:var(--practice-bg);color:var(--practice)}
 .preset.on{background:var(--green);border-color:var(--green);color:#fff}
@@ -260,7 +262,8 @@ details.why p{margin:6px 0 0;max-width:65ch;line-height:1.6}
 .tbar .chip{font-size:15px;padding:4px 12px}
 .tbar .chip.on{background:var(--amber);border-color:var(--amber)}
 .who .av{--s:1.5em}
-.pdeco{display:inline-flex}.pdeco svg{width:52px;height:52px}
+.pdeco{display:inline-flex}
+.pclock{font-size:clamp(20px,2.2vw,28px);font-variant-numeric:tabular-nums;background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:999px;padding:4px 16px;margin-left:auto}.pdeco svg{width:52px;height:52px}
 /* 主題外觀：只換顏色（變數定義在 shared/themes.css），選項的大小、位置、字型都不變；作答中不播動畫 */
 #play[data-skin] .who{background:var(--cardbg);color:var(--cardink)}
 #play[data-skin] .progress,#play[data-skin] .tbar,#play[data-skin] .prompt .note{color:var(--stageink)}
@@ -382,6 +385,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
       <div class="seg" role="group" aria-label="畫面模式">
         <button id="uiQuick" aria-pressed="true">快速開始</button><button id="uiAdv" aria-pressed="false">進階設定</button>
       </div>
+      <a class="ghost" href="guide.html" target="_blank" rel="noopener">使用說明</a>
       <button class="ghost" id="openTeacher">老師專區</button>
       <button class="ghost" id="openBook">貼紙簿</button>
       <button class="ghost" id="openView">畫面與聲音</button>
@@ -518,6 +522,8 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
     <ol class="ladder" id="sRule"></ol>
     <h3>主題與貼紙</h3>
     <label class="group"><input type="checkbox" id="sTheme" style="width:20px;height:20px;accent-color:var(--green)"> 正式評量也使用主題和貼紙</label>
+    <label class="group"><input type="checkbox" id="sClock" style="width:20px;height:20px;accent-color:var(--green)"> 正式評量也在右上角顯示計時</label>
+    <p class="note" style="margin:0">計時預設不顯示：看到時間在跑，有的學生會趕著亂點、有的會緊張變慢。要開的話，從基線期起都開著，前後才能比較。</p>
     <p class="note" style="margin:0">建議開啟，而且從基線期起不要再改：主題只換畫面顏色，每完成一次評量抽一張貼紙、不論對錯。如果評量到一半才開始用，分不清進步是因為教學還是因為貼紙。練習一律使用。</p>
     <h3>維持期</h3>
     <label for="sMaintain" class="group">教學結束後第 <input id="sMaintain" type="number" min="1" max="60"> 天起算維持期</label>
@@ -577,8 +583,14 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
     <h3>唸讀速度</h3>
     <div class="group"><input id="sRate" type="range" min="0.5" max="1.2" step="0.05" aria-label="唸讀速度"><span id="sRateV"></span><button class="chip" id="sTest">試聽「努力的努」</button></div>
     <h3>音效</h3>
-    <label class="group"><input type="checkbox" id="vSfx" style="width:20px;height:20px;accent-color:var(--green)"> 答對、答錯、得到貼紙時播放音效</label>
+    <label class="group"><input type="checkbox" id="vSfx" style="width:20px;height:20px;accent-color:var(--green)"> 答對、答錯、換人、得到貼紙時播放音效</label>
     <div class="group"><button class="chip" id="vTryRight">試聽答對</button><button class="chip" id="vTryWrong">試聽答錯</button></div>
+    <h3>計時</h3>
+    <label class="group"><input type="checkbox" id="vClock" style="width:20px;height:20px;accent-color:var(--green)"> 練習時在右上角顯示計時</label>
+    <p class="note" style="margin:0">正式評量要不要顯示計時，在「評量設定」調整（預設不顯示）。</p>
+    <h3>多人輪流的換人提醒</h3>
+    <div class="group" id="vTurn"></div>
+    <div class="group"><button class="chip" id="vTryTurn">試聽換人</button><span class="note" style="margin:0">畫面一定會顯示大頭像和「換 ○○」。提示音要開著上面的「音效」才會響。</span></div>
     <footer><button class="save" data-close>完成</button></footer>
   </div>
 </div>
@@ -586,7 +598,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <!-- =================== 作答畫面 =================== -->
 <div id="play" hidden>
   <div class="play">
-    <div class="pbar"><div class="who" id="pWho"></div><span class="progress" id="pProg"></span><span class="pdeco" id="pDeco" aria-hidden="true"></span><button class="ghost" id="pQuit">結束</button></div>
+    <div class="pbar"><div class="who" id="pWho"></div><span class="progress" id="pProg"></span><span class="pdeco" id="pDeco" aria-hidden="true"></span><span class="pclock" id="pClock" hidden></span><button class="ghost" id="pQuit">結束</button></div>
     <div class="timer" id="pTimer" hidden><i></i></div>
     <div id="pBody"></div>
   </div>

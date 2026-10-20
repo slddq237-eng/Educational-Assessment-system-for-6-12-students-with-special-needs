@@ -110,7 +110,8 @@ function note(f, t0, dur, type, vol){
 const sfx = {
   right(force){ if(settings.sfx || force) [523, 659, 784].forEach((f, i) => note(f, i * 0.08, 0.3, "triangle", 0.22)); },
   wrong(force){ if(settings.sfx || force){ note(220, 0, 0.16, "square", 0.09); note(165, 0.17, 0.26, "square", 0.09); } },
-  turn(){ if(settings.sfx){ note(784, 0, 0.25, "sine", 0.18); note(587, 0.22, 0.4, "sine", 0.18); } },
+  /* 換人提示音：三個往上跳的小音「叮嚨咚」，輕快可愛 */
+  turn(force){ if(settings.sfx || force){ note(988, 0, 0.12, "triangle", 0.16); note(1319, 0.1, 0.14, "triangle", 0.16); note(1568, 0.2, 0.32, "sine", 0.13); } },
   fanfare(){ if(settings.sfx){ [523, 659, 784, 1047].forEach((f, i) => note(f, i * 0.11, 0.35, "triangle", 0.2)); [523, 659, 784].forEach(f => note(f, 0.5, 1.1, "sine", 0.1)); } }
 };
 /* 答對時選項旁邊冒出一圈小星星（只在被點的選項上，0.6 秒，不影響計時與版面） */
@@ -147,6 +148,7 @@ function startSession(){
     quitArm: false
   };
   applySkin(G.theme);
+  startClockShow();
   if(G.mode === "flu"){ G.turn = 0; showScreen("#play"); showReady(); return; }
   /* 正確率模式：每位學生各抽一份題目，再交錯排成輪流順序 */
   const lists = list.map(code => pickItems(code, q).map(it => ({...it, kid:code})));
@@ -155,6 +157,25 @@ function startSession(){
   G.pos = 0;
   showScreen("#play");
   nextItem();
+}
+
+/* ---------- 右上角計時 ----------
+   正確率模式：顯示這次評量已經用了多久（分:秒）；流暢性模式：顯示這一回合還剩幾秒。
+   練習看「畫面與聲音」的設定（預設顯示），正式評量看「評量設定」（預設不顯示）。每筆紀錄記下有沒有顯示（clock）。 */
+const mmss = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+function startClockShow(){
+  const g = G;
+  g.clock = g.mode === "flu" || (g.kind === "formal" ? !!settings.clockFormal : settings.clockPractice !== false);
+  g.started = performance.now();
+  const el = $("#pClock"); el.hidden = !g.clock; el.textContent = "";
+  if(!g.clock) return;
+  const tick = () => {
+    if(G !== g || g.over){ el.hidden = true; return; }
+    if(g.mode === "flu") el.textContent = g.round && !g.round.over ? `⏱ 剩 ${Math.max(0, Math.ceil((g.round.end - performance.now()) / 1000))} 秒` : "";
+    else el.textContent = `⏱ ${mmss((performance.now() - g.started) / 1000)}`;
+    setTimeout(tick, 250);
+  };
+  tick();
 }
 
 /* 畫上方的學生名字與進度 */
@@ -175,7 +196,7 @@ function nextItem(){
 }
 
 /* ---------- 3-1 換人過場 ----------
-   畫面中間放大頭像和大字「換 ○○」，唸一次名字，停約 1.6 秒再出題，讓學生有時間換位置。
+   畫面中間放大頭像和大字「換 ○○」，播提示音（或依設定唸名字），停約 1.6 秒再出題，讓學生有時間換位置。
    計時從題目唸完才開始，這段停頓不會算進反應時間。正式評量、練習都一樣。 */
 const TURN_MS = 1600;
 function turnCard(code, first, then){
@@ -184,8 +205,10 @@ function turnCard(code, first, then){
   $("#pProg").textContent = "";
   $("#pBody").innerHTML = `<div class="turncard" role="status"><div class="turnav">${Rewards.avatarHtml(code)}</div>
     <h2>${first ? `先從 ${esc(name)} 開始` : `換 ${esc(name)}`}！</h2><p class="note" style="margin:0">請 ${esc(name)} 準備好</p></div>`;
-  sfx.turn();
-  speak(`${first ? "先從" : "換"}${name}`);
+  /* 提醒方式看「畫面與聲音」的設定：預設只有提示音，選了才唸名字 */
+  const style = settings.turnStyle || "chime";
+  if(style === "chime" || style === "both") sfx.turn();
+  if(style === "voice" || style === "both") setTimeout(() => { if(G === g && !g.over) speak(`${first ? "先從" : "換"}${name}`); }, style === "both" ? 450 : 0);
   setTimeout(() => { if(G === g && !g.over) then(); }, TURN_MS);
 }
 
@@ -320,12 +343,13 @@ function endItem(passed, correctSec, revealed){
     hintLevel: Math.max(sysLevel, cur.teacher), hints: cur.shown.map(hintName).join("、"),
     teacherPrompt: cur.teacher ? TEACHER_BTNS.find(t => t[0] === cur.teacher)[1] : "",
     firstSec: cur.firstSec, correctSec: passed ? correctSec : null,
-    phase: phaseFor(it.kid, b, n) || "", daysAfter: state.manual[key(b,n)] ? "" : (a.days ?? ""),
+    phase: phaseFor(it.kid, b, n) || "", daysAfter: state.rtiKeys.includes(key(b,n)) ? rtiDays(key(b,n)) : state.manual[key(b,n)] ? "" : (a.days ?? ""),
     /* 當時的條件（研究用的進階比較會用到）：提示設定、答錯規則用代碼存，Excel 再翻成中文 */
     hintSet: G.hints.join(","), rule: G.noHelp ? "none" : G.rule.join(","), layout: G.layout,
     theme: G.theme, game: G.game, reward: "",
     fontScale: settings.fontScale, rate: settings.rate, sfx: settings.sfx,
-    aim: G.mode === "flu" ? G.aim : ""   /* 流暢性的目標（每分鐘幾個），老師專區畫目標線用 */
+    aim: G.mode === "flu" ? G.aim : "",   /* 流暢性的目標（每分鐘幾個），老師專區畫目標線用 */
+    clock: !!G.clock                       /* 作答時右上角有沒有顯示計時 */
   };
   saveRecord(rec);
   const t = G.tally[it.kid];
