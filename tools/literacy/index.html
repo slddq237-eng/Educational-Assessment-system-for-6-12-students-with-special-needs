@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@400;700&display=swap">
+<!-- 平台共用的主題外觀、頭像、貼紙樣式 -->
+<link rel="stylesheet" href="../../shared/themes.css">
 <style>
 /* 版面：沿用生字賓果的生字簿方格紙。
    設定畫面：左邊六個步驟，右邊固定的「本次評量」摘要；評量設定、教學日期、學生名單、作答紀錄放在彈出面板。
@@ -157,10 +159,18 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
 .drow .ds input{width:150px}
 .drow .ph{font-size:14px;color:var(--muted)}
 @media (max-width:620px){.drow{grid-template-columns:64px minmax(0,1fr)}.drow .ds{grid-column:1/-1}}
-.krow{display:grid;grid-template-columns:100px minmax(0,1fr) 110px auto auto;gap:10px;align-items:center;border-top:1px solid var(--grid);padding-top:8px}
+.krow{display:grid;grid-template-columns:52px 100px minmax(0,1fr) 110px 140px 76px;gap:10px;align-items:center;border-top:1px solid var(--grid);padding-top:8px}
 .krow input,.krow select{border:2px solid var(--ink);border-radius:10px;padding:4px 8px;min-width:0;width:100%}
 .krow.head{border:none;padding:0;font-size:13px;color:var(--muted)}
-@media (max-width:620px){.krow{grid-template-columns:1fr 1fr}.krow.head{display:none}}
+@media (max-width:620px){.krow{grid-template-columns:52px 1fr 1fr}.krow.head{display:none}}
+.avedit{border:none;background:none;padding:0;border-radius:50%}
+.avedit .av{--s:48px}
+.avpick{display:grid;gap:10px;background:var(--mint);border-radius:12px;padding:12px 14px}
+.avgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px}
+.avbtn{border:3px solid transparent;background:var(--card);border-radius:14px;padding:6px 4px;display:grid;justify-items:center;gap:2px;font-size:14px}
+.avbtn .av{--s:56px}
+.avbtn.on{border-color:var(--green)}
+.kidchip .av{--s:28px;margin-right:6px}
 .plan{display:grid;gap:10px;background:var(--mint);border-radius:12px;padding:12px 14px}
 .plan label{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .plan select{border:2px solid var(--ink);border-radius:10px;padding:4px 8px}
@@ -229,12 +239,31 @@ details.why p{margin:6px 0 0;max-width:65ch;line-height:1.6}
 .tbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;font-size:15px;color:var(--muted)}
 .tbar .chip{font-size:15px;padding:4px 12px}
 .tbar .chip.on{background:var(--amber);border-color:var(--amber)}
+.who .av{--s:1.5em}
+.pdeco{display:inline-flex}.pdeco svg{width:52px;height:52px}
+/* 主題外觀：只換顏色（變數定義在 shared/themes.css），選項的大小、位置、字型都不變；作答中不播動畫 */
+#play[data-skin] .who{background:var(--cardbg);color:var(--cardink)}
+#play[data-skin] .progress,#play[data-skin] .tbar,#play[data-skin] .prompt .note{color:var(--stageink)}
+#play[data-skin] .opt-big{background:var(--cardbg);color:var(--cardink);border-color:var(--cardink);box-shadow:0 6px 0 var(--cardink)}
+#play[data-skin] .opt-big.right{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 6px 0 #1c5246}
+#play[data-skin] .hintbox .h{background:var(--cardbg);color:var(--cardink)}
+#play[data-skin] .timer{background:var(--soft)}
 .ready{flex:1;display:grid;place-items:center;text-align:center;gap:16px}
 .ready h2{font-family:var(--kai);font-size:clamp(36px,5vw,64px);margin:0}
 /* ---------- 結果與紀錄 ---------- */
 .res{display:grid;gap:14px}
 .rcard{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;align-items:center;border:2px solid var(--ink);border-radius:16px;padding:14px 18px;background:var(--card)}
 .rcard b{font-size:22px}
+.rcard .rname2{display:flex;align-items:center;gap:10px}
+.rcard .rname2 .av{--s:48px}
+.rcard .sticker{grid-column:1/-1;justify-self:start}
+/* ---------- 選主題、貼紙簿 ---------- */
+.pickwho{display:flex;flex-wrap:wrap;gap:14px;font-size:24px}
+.pickwho .pk{display:inline-flex;align-items:center;gap:8px}
+.pickwho .av{--s:56px}
+.booksec h2{margin:0 0 10px;font-size:22px}
+.booksec h2 small{color:var(--muted);font-weight:400;font-size:16px}
+.card.booksec{background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:14px 18px;margin-top:14px}
 .rcard .big{font-size:30px;font-family:var(--kai);color:var(--green);font-variant-numeric:tabular-nums}
 .rcard .sm{grid-column:1/-1;color:var(--muted);font-size:15px}
 .tablewrap{overflow-x:auto}
@@ -256,6 +285,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
       <div class="seg" role="group" aria-label="畫面模式">
         <button id="uiQuick" aria-pressed="true">快速開始</button><button id="uiAdv" aria-pressed="false">進階設定</button>
       </div>
+      <button class="ghost" id="openBook">貼紙簿</button>
       <button class="ghost" id="openRecords">作答紀錄</button>
       <button class="ghost" id="openKids">學生名單</button>
       <button class="ghost adv-only" id="openDates">教學日期管理</button>
@@ -263,7 +293,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
       <a class="ghost" href="../../">回平台首頁</a>
     </div>
   </header>
-  <p class="mock"><b>第 1 版</b><span>目前可以使用「聽音找字」（目標 3 形音辨識）。作答紀錄存在這台電腦的瀏覽器，請定期到「作答紀錄」下載備份檔。</span></p>
+  <p class="mock"><b>第 1 版</b><span>目前可以使用「聽音找字」（目標 3 形音辨識）。作答前可以選主題，完成後抽貼紙，貼紙收在「貼紙簿」。作答紀錄存在這台電腦的瀏覽器，請定期到「作答紀錄」下載備份檔。</span></p>
   <p class="banner" id="dbWarn" hidden>這台電腦的瀏覽器不允許存檔（可能是無痕視窗），這次的作答紀錄關掉網頁就會消失，請在結束後匯出 Excel。</p>
 
   <div class="layout">
@@ -369,7 +399,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="kTitle">
     <header><h2 id="kTitle">學生名單</h2><button class="ghost" data-close>關閉</button></header>
     <p class="hint" style="margin:0">年級填「今年」的年級，之後每年 8 月系統會自動升一個年級。名字建議填寫：學生作答時畫面會顯示名字，比代號好認（沒填就顯示代號）。名字只存在這台電腦，不會上傳。「本學期安排」是選填，記錄原班、資源班、學習扶助的每週節數與開始日期。</p>
-    <div class="krow head"><span>代號</span><span>名字（建議填）</span><span>年級</span><span></span><span></span></div>
+    <div class="krow head"><span>頭像</span><span>代號</span><span>名字（建議填）</span><span>年級</span><span></span><span></span></div>
     <div id="kTable" style="display:grid;gap:8px"></div>
     <div class="add"><input id="newKid" maxlength="8" placeholder="新增代號，例如 S07"><button class="chip" id="addKid">加入</button></div>
     <footer><button class="save" data-close>完成</button></footer>
@@ -389,16 +419,36 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
     <ol class="ladder" id="sRule"></ol>
     <h3>唸讀速度</h3>
     <div class="group"><input id="sRate" type="range" min="0.5" max="1.2" step="0.05" aria-label="唸讀速度"><span id="sRateV"></span><button class="chip" id="sTest">試聽「努力的努」</button></div>
+    <h3>主題與貼紙</h3>
+    <label class="group"><input type="checkbox" id="sTheme" style="width:20px;height:20px;accent-color:var(--green)"> 正式評量也使用主題和貼紙</label>
+    <p class="note" style="margin:0">建議開啟，而且從基線期起不要再改：主題只換畫面顏色，每完成一次評量抽一張貼紙、不論對錯。如果評量到一半才開始用，分不清進步是因為教學還是因為貼紙。練習一律使用。</p>
     <h3>維持期</h3>
     <label for="sMaintain" class="group">教學結束後第 <input id="sMaintain" type="number" min="1" max="60"> 天起算維持期</label>
     <footer><button class="save" data-close>完成</button></footer>
   </div>
 </div>
 
+<!-- =================== 選主題（學生選） =================== -->
+<div class="wrap" id="pick" hidden>
+  <header class="top"><div class="brand"><div class="stamp">選</div><div><small>識字評量</small><h1>選一個你喜歡的主題！</h1></div></div>
+    <button class="ghost" id="pickBack">回到設定</button></header>
+  <div class="pickwho" id="pickWho"></div>
+  <p class="hint" id="pickHint"></p>
+  <div class="themes" id="themes"></div>
+</div>
+
+<!-- =================== 貼紙簿（學生看） =================== -->
+<div class="wrap" id="book" hidden>
+  <header class="top"><div class="brand"><div class="stamp">貼</div><div><small>識字評量</small><h1>貼紙簿</h1></div></div>
+    <button class="ghost" id="bookBack">回到設定</button></header>
+  <div class="row" id="bookNames"></div>
+  <div id="bookBody"></div>
+</div>
+
 <!-- =================== 作答畫面 =================== -->
 <div id="play" hidden>
   <div class="play">
-    <div class="pbar"><div class="who" id="pWho"></div><span class="progress" id="pProg"></span><button class="ghost" id="pQuit">結束</button></div>
+    <div class="pbar"><div class="who" id="pWho"></div><span class="progress" id="pProg"></span><span class="pdeco" id="pDeco" aria-hidden="true"></span><button class="ghost" id="pQuit">結束</button></div>
     <div class="timer" id="pTimer" hidden><i></i></div>
     <div id="pBody"></div>
   </div>
@@ -438,11 +488,15 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- 生字資料：平台共用的教材資料（shared/lessons.js） -->
 <script src="../../shared/lessons.js"></script>
-<!-- 程式本體：分成五個檔案，順序不能換（說明見 app.js 開頭） -->
+<!-- 平台共用：主題與貼紙、每位學生的收藏與頭像 -->
+<script src="../../shared/themes.js"></script>
+<script src="../../shared/rewards.js"></script>
+<!-- 程式本體：分成六個檔案，順序不能換（說明見 app.js 開頭） -->
 <script src="data.js"></script>
 <script src="setup.js"></script>
 <script src="records.js"></script>
 <script src="play.js"></script>
+<script src="collect.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

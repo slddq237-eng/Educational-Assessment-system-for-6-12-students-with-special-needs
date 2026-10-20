@@ -81,7 +81,8 @@ const TERM = (M >= 8 || M <= 1) ? "上" : "下";
 const termIndex = (grade, term) => (grade - 1) * 2 + (term === "上" ? 0 : 1);
 
 /* 正式評量的標準條件（存在這台電腦） */
-const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove","next","next","reveal"], maintainAfter:7, rate:0.85},
+/* formalTheme：正式評量也用主題和貼紙（預設要用；從基線期起每次都一樣，前後才能比較） */
+const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove","next","next","reveal"], maintainAfter:7, rate:0.85, formalTheme:true},
   load("literacy-settings", {}));
 const saveSettings = () => store("literacy-settings", settings);
 
@@ -118,6 +119,7 @@ const teach = load("literacy-teach", {});
 const saveTeach = () => store("literacy-teach", teach);
 
 const state = {
+  theme:"",   /* 這次選的主題（作答前在選主題畫面選） */
   goal:"3", kind:"formal", mode:"acc", limit:"60",
   pChoices:"6", pHints:new Set(["word","sent","pic"]), pRule:["next","next","remove","reveal"],
   ed:"翰林", book:"h2", lessons:[], qCount:null, qMethod:"even", manual:{}, answer:"turn",
