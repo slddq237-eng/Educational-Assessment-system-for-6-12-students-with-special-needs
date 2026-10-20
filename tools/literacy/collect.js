@@ -22,6 +22,11 @@ function chooseTheme(){
     ? `<span class="note" style="margin:0">${play ? "這次會打怪獸（評量設定）：打敗怪獸得到的就是這次的貼紙。" : ""}</span>`
     : `<span class="tl">玩法</span>${chipRow([["1", `打怪獸（${list.length > 1 ? "大家合作" : "自己打"}）`], ["0", "只換顏色"]], play ? "1" : "0", "pgame")}`;
   $("#pickGame").querySelectorAll("[data-pgame]").forEach(b => b.onclick = () => { settings.practiceGame = b.dataset.pgame === "1"; saveSettings(); chooseTheme(); });
+  /* 血量模式（3-3b）：只在練習的正確率模式；合作打怪獸時全組共用，其他時候每人各自 */
+  const hp = heartsAllowed() ? +settings.practiceHearts || 0 : 0;
+  $("#pickHearts").innerHTML = !heartsAllowed() ? "" : `<span class="tl">愛心</span>${chipRow([["0", "不用"], ...HEART_CHOICES.map(n => [String(n), `${n} 顆`])], String(hp), "phearts")}
+    ${hp ? `<span class="note" style="margin:0">答錯少一顆、連續答對 3 題補一顆，用完就結束${list.length > 1 ? (play ? "（大家共用）" : "（每人各自）") : ""}</span>` : ""}`;
+  $("#pickHearts").querySelectorAll("[data-phearts]").forEach(b => b.onclick = () => { settings.practiceHearts = +b.dataset.phearts; saveSettings(); chooseTheme(); });
   const LINE = id => play ? Themes.THEMES[id].line : `可以得到${Themes.THEMES[id].name}的貼紙`;
   $("#pickWho").innerHTML = list.map(k => `<span class="pk">${Rewards.avatarHtml(k.code)}${esc(kidShow(k))}</span>`).join("");
   $("#pickHint").textContent = list.length > 1 ? "大家一起決定，要去哪裡冒險？" : "你想去哪裡冒險？";

@@ -294,8 +294,8 @@ details.howto{margin:10px 0 0}
 .stamp2{position:absolute;right:4%;bottom:4%;width:32%;aspect-ratio:1;opacity:.9}
 .stamp2 .av{--s:100%;border-width:2px}
 /* ---------- 3-3 打怪獸場景（移植自生字賓果）：只在題目之間的固定長度過場出現 ---------- */
-#pickGame{align-items:center;margin:0 0 16px}
-#pickGame:empty{display:none}
+#pickGame,#pickHearts{align-items:center;margin:0 0 16px}
+#pickGame:empty,#pickHearts:empty{display:none}
 #pScene{flex:1;min-height:0;display:grid;align-content:center;justify-items:center;gap:10px}
 #pScene[hidden]{display:none}
 .scenecap{font-size:clamp(22px,2.2vw,34px);font-weight:700;display:flex;align-items:center;gap:12px}
@@ -422,6 +422,20 @@ details.howto{margin:10px 0 0}
 @keyframes flick{to{transform:scale(.85,1.15) rotate(4deg)}}
 .scn .chef.cheer{animation:cheer .45s ease-in-out 6 alternate}
 @media (prefers-reduced-motion:reduce){.scn *,.scn{animation:none!important;transition:none!important}}
+/* ---------- 3-3b 血量模式：上方一排愛心，答錯少一顆（碎掉），連對 3 題補一顆 ---------- */
+.hearts{display:inline-flex;gap:2px;font-size:clamp(22px,2.2vw,30px);line-height:1;background:var(--card);border-radius:999px;padding:4px 12px}
+.hearts i{font-style:normal;color:#e2304a;display:inline-block}
+.hearts i.empty{color:#c9c2c4;filter:grayscale(1)}
+@media (prefers-reduced-motion:no-preference){
+  .hearts i.lose{animation:hlose .7s}
+  .hearts i.gain{animation:hgain .7s cubic-bezier(.2,1.6,.4,1)}
+}
+@keyframes hlose{0%{transform:scale(1.4);color:#e2304a}50%{transform:rotate(-20deg) scale(.8)}100%{transform:none}}
+@keyframes hgain{0%{transform:scale(0)}70%{transform:scale(1.5)}100%{transform:none}}
+.hpout{display:grid;justify-items:center;align-content:center;gap:10px;flex:1;text-align:center}
+.hpout .big{font-size:clamp(60px,9vw,120px);line-height:1}
+.hpout h2{font-size:clamp(30px,3.4vw,48px);margin:0}
+.hpout .note{color:inherit;opacity:.85;font-size:20px}
 .bbanner{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);z-index:30;background:#f5b400;color:#3a2f12;font-family:var(--kai);font-weight:700;
   font-size:clamp(48px,8vw,110px);padding:10px 48px;border-radius:28px;border:5px solid #3a2f12;pointer-events:none}
 @media (prefers-reduced-motion:no-preference){.bbanner{animation:bpop 1.7s ease-out forwards}}
@@ -674,6 +688,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
   <div class="pickwho" id="pickWho"></div>
   <p class="hint" id="pickHint"></p>
   <div class="row gamerow" id="pickGame"></div>
+  <div class="row gamerow" id="pickHearts"></div>
   <div class="themes" id="themes"></div>
 </div>
 
@@ -736,7 +751,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <!-- =================== 作答畫面 =================== -->
 <div id="play" hidden>
   <div class="play">
-    <div class="pbar"><div class="who" id="pWho"></div><span class="progress" id="pProg"></span><span class="pdeco" id="pDeco" aria-hidden="true"></span><span class="pclock" id="pClock" hidden></span><button class="ghost" id="pQuit">結束</button></div>
+    <div class="pbar"><div class="who" id="pWho"></div><span class="progress" id="pProg"></span><span class="pdeco" id="pDeco" aria-hidden="true"></span><span class="hearts" id="pHearts" hidden></span><span class="pclock" id="pClock" hidden></span><button class="ghost" id="pQuit">結束</button></div>
     <div class="timer" id="pTimer" hidden><i></i></div>
     <div id="pBody"></div>
     <div id="pScene" hidden aria-live="polite"></div>

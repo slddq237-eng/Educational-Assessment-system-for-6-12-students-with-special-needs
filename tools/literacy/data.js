@@ -93,7 +93,9 @@ const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove
   /* 作答時右上角顯示計時：練習預設顯示；正式評量預設不顯示（可能讓學生緊張、影響反應時間），在評量設定打開 */
   clockPractice:true, clockFormal:false,
   /* 打怪獸（3-3）：練習預設要玩（選主題畫面可以改）；正式評量預設不玩，在評量設定打開，從基線期起維持同一個設定 */
-  practiceGame:true, formalGame:false},
+  practiceGame:true, formalGame:false,
+  /* 血量模式（3-3b，只在練習）：開始前選幾顆愛心，0＝不用 */
+  practiceHearts:0},
   load("literacy-settings", {}));
 const saveSettings = () => store("literacy-settings", settings);
 
