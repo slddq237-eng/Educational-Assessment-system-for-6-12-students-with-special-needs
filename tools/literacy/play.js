@@ -70,7 +70,12 @@ function hintHtml(id, c, b){
   if(id === "sent"){ const t = sentOf(c, b); return t ? `<div class="h sent">${esc(t.replaceAll(c, "（　）"))}</div>` : ""; }
   if(id === "pic") return PICS[c] ? `<div class="pic" role="img" aria-label="圖片提示">${PICS[c]}</div>` : "";
   if(id === "sound") return `<div class="h">再慢慢唸一次</div>`;
-  if(id === "parts") return PARTS[c] ? `<div class="h">${esc(PARTS[c].split(/\s+/).join(" ＋ "))}</div>` : "";
+  if(id === "parts"){
+    /* 部件：先用 lessons.js 的 PARTS（人工整理），沒有再用 parts.js 的 PARTS_AUTO（自動拆解）；
+       拆得不適合教學的字，在 PARTS 補一筆人工拆法就會蓋過自動的 */
+    const p = PARTS[c] || (typeof PARTS_AUTO !== "undefined" && PARTS_AUTO[c]);
+    return p ? `<div class="h">${esc(p.split(/\s+/).join(" ＋ "))}</div>` : "";
+  }
   if(id === "mask") return `<div class="maskch" aria-label="遮住一半的字">${esc(c)}</div>`;
   if(id === "shape") return `<div class="ghostch" aria-label="淡淡的字形">${esc(c)}</div>`;
   return "";
