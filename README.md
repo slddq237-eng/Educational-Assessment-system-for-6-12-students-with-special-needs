@@ -18,7 +18,7 @@ docs/
 shared/
   lessons.js      共用教材資料：生字、語詞、例句、部件、形近同音字
 tools/
-  bingo/          生字賓果遊戲（目前教材資料仍寫在自己的檔案裡）
+  bingo/          生字賓果遊戲（讀取 shared/lessons.js）
   literacy/       識字評量（讀取 shared/lessons.js）
     index.html    畫面
     app.js        程式本體（分段附中文說明）
