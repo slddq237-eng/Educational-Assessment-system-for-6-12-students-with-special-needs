@@ -16,11 +16,19 @@
 /* =========================================================
    1. 基本設定與小工具
    ========================================================= */
-const BOOK_ORDER = ["h2","2","3","4"];   /* 畫面上課本的排列順序 */
+/* 畫面上課本的排列順序：依版本、年級、學期自動排序，新增課本時不用改程式 */
+const EDITION_ORDER = ["翰林", "南一", "康軒"];
+const edRank = e => { const i = EDITION_ORDER.indexOf(e); return i < 0 ? 99 : i; };
+const BOOK_ORDER = Object.keys(BOOKS).sort((a, b) => edRank(BOOKS[a].edition) - edRank(BOOKS[b].edition)
+  || BOOKS[a].grade - BOOKS[b].grade || (BOOKS[a].term === "下") - (BOOKS[b].term === "下"));
+/* 干擾字：各版本自己的資料（CONF_ED）優先，沒有再用共用的 CONF */
+const confOf = (c, b) => ((typeof CONF_ED !== "undefined" && CONF_ED[b]) || {})[c] || CONF[c];
+/* 課次名稱：第 0 課是課前單元（例如康軒一上的「真簡單」），直接顯示單元名稱 */
+const lessonName = (b, n) => n === "0" ? (BOOKS[b].lessons[n].title || "課前單元") : `第 ${n} 課`;
 /* 幫每一課算好：總字數、是否每個字都有形近同音資料、有部件資料的字數 */
-for(const b of Object.values(BOOKS)) for(const L of Object.values(b.lessons)){
+for(const [bk, b] of Object.entries(BOOKS)) for(const L of Object.values(b.lessons)){
   const chars = [...(L.write + L.read)];
-  L.total = chars.length; L.conf = chars.every(c => CONF[c]); L.parts = chars.filter(c => PARTS[c]).length;
+  L.total = chars.length; L.conf = chars.every(c => confOf(c, bk)); L.parts = chars.filter(c => PARTS[c]).length;
 }
 
 const GOALS = [
@@ -319,7 +327,9 @@ const lessonSize = k => { const [b,n] = splitKey(k); return BOOKS[b].lessons[n].
 function lessonsText(){
   const by = new Map();
   for(const k of state.lessons){ const [b,n] = splitKey(k); if(!by.has(b)) by.set(b, []); by.get(b).push(n); }
-  return [...by].map(([b,ns]) => `${bookName(b)} 第 ${ns.sort((x,y) => x-y).join("、")} 課`).join("；");
+  return [...by].map(([b,ns]) => { ns.sort((x,y) => x-y);
+    const pre = ns.filter(n => n === "0").map(n => lessonName(b, n)), rest = ns.filter(n => n !== "0");
+    return `${bookName(b)} ${[...pre, rest.length ? `第 ${rest.join("、")} 課` : ""].filter(Boolean).join("、")}`; }).join("；");
 }
 function renderLessons(){
   $("#eds").innerHTML = EDITIONS.map(e => `<button class="opt ${state.ed===e?"on":""}" data-e="${e}" aria-pressed="${state.ed===e}">${e}</button>`).join("");
@@ -332,7 +342,7 @@ function renderLessons(){
     const k = key(state.book,n), on = state.lessons.includes(k), gs = groups(state.book, n);
     const pill = !gs.length ? "" : gs.some(g => !g.label) ? `<span class="pill warn">需要日期</span>`
       : new Set(gs.map(g => g.label.replace(/（.*/, ""))).size > 1 ? `<span class="pill">依學生不同</span>` : `<span class="pill">${gs[0].label.replace(/（.*/, "")}</span>`;
-    return `<button class="lesson ${on?"on":""}" data-n="${n}" aria-pressed="${on}"><span class="t"><b>第 ${n} 課</b>${pill}</span>
+    return `<button class="lesson ${on?"on":""}" data-n="${n}" aria-pressed="${on}"><span class="t"><b>${esc(lessonName(state.book, n))}</b>${pill}</span>${l.title && n !== "0" ? `<span class="ltitle">${esc(l.title)}</span>` : ""}
       <span class="chars">${esc(l.write)}${l.read?`<span style="opacity:.6">・${esc(l.read)}</span>`:""}</span></button>`;
   }).join("");
   $("#lessons").querySelectorAll("button").forEach(b => b.onclick = () => {
@@ -346,7 +356,7 @@ function renderLessons(){
   $("#status").innerHTML = state.lessons.map(k => {
     const [b,n] = splitKey(k), gs = groups(b, n), need = gs.some(g => !g.label);
     const lines = gs.map(g => `<span>${g.kids.map(c => esc(kidLabel(kidBy(c)))).join("、")}：<b>${g.label || "未判斷"}</b> <span class="why">${esc(g.why)}</span></span>`).join("<br>");
-    return `<div class="st ${need?"need":""}" data-k="${k}"><b>${bookName(b)} 第 ${n} 課</b><span style="flex:1 1 260px">${lines}</span>
+    return `<div class="st ${need?"need":""}" data-k="${k}"><b>${bookName(b)} ${esc(lessonName(b, n))}</b><span style="flex:1 1 260px">${lines}</span>
       ${need ? `<span class="group"><button class="chip" data-q="notYet">還沒教</button><button class="chip" data-q="dates">輸入教學日期…</button></span>`
       : `<select data-m aria-label="第 ${n} 課這次的評量時機"><option value="">這次照自動判斷</option>${PHASES.map(p => `<option value="${p}" ${state.manual[k]===p?"selected":""}>這次全部改為：${p}</option>`).join("")}</select>
       <button class="linkbtn" data-edit>修改教學日期</button>`}</div>`;
@@ -407,7 +417,7 @@ function renderQuiz(){
   /* 快速開始只顯示題數和時間；要改題數請到進階設定 */
   if(isQuick()){ box.innerHTML = `<p class="time"><b>${q.count} 題，${minutes(q.sec)}</b><span class="note" style="margin:0">${selKids().length > 1 ? "（學生輪流作答）" : ""}要改題數，請切換到「進階設定」。</span></p>`; return; }
   const manyBooks = new Set(state.lessons.map(k => splitKey(k)[0])).size > 1;
-  const perText = [...q.per].filter(([,v]) => v).map(([k,v]) => `${manyBooks ? bookName(splitKey(k)[0]) + " " : ""}第 ${splitKey(k)[1]} 課 ${v}`).join("、");
+  const perText = [...q.per].filter(([,v]) => v).map(([k,v]) => `${manyBooks ? bookName(splitKey(k)[0]) + " " : ""}${lessonName(...splitKey(k))} ${v}`).join("、");
   let how;
   if(q.isAll) how = `<p class="note" style="margin:0">所選課次的 ${q.pool} 個字全部出題，順序隨機，不需要選出題方式。</p>`;
   else {
@@ -525,7 +535,7 @@ function renderSummary(){
   const quizText = !state.lessons.length ? null : c.flu ? `時限內隨機出題（${q.pool} 字）` : `${q.count} 題・${methodName(q.method)}・${minutes(q.sec)}`;
   const multi = selKids().length > 1;
   const ph = state.lessons.flatMap(k => { const [b,n] = splitKey(k); return groups(b, n).map(g => g.label
-    ? `${state.lessons.length > 1 ? `${bookName(b)} ` : ""}第 ${n} 課${multi ? `・${g.kids.map(c => esc(kidLabel(kidBy(c)))).join("、")}` : ""}：${g.label}` : null); });
+    ? `${state.lessons.length > 1 ? `${bookName(b)} ` : ""}${lessonName(b, n)}${multi ? `・${g.kids.map(c => esc(kidLabel(kidBy(c)))).join("、")}` : ""}：${g.label}` : null); });
   const n = selKids().length, kidsOk = n >= a.min && n <= a.max;
   const rows = [
     ["評量目標", `目標 ${g.id}　${g.name}`],
@@ -550,7 +560,7 @@ function renderDates(){
   $("#dBooks").querySelectorAll("button").forEach(btn => btn.onclick = () => { dBook = btn.dataset.b; renderDates(); });
   $("#dTable").innerHTML = Object.keys(BOOKS[dBook].lessons).map(n => {
     const k = key(dBook,n), t = teach[k] || {}, a = t.type === "dates" ? datePhase(t) : t.type === "notYet" ? {phase:"基線期", why:"還沒教"} : {phase:null, why:"依每位學生的年級判斷"};
-    return `<div class="drow" data-k="${k}"><b>第 ${n} 課</b>
+    return `<div class="drow" data-k="${k}"><b>${esc(lessonName(dBook, n))}</b>
       <select aria-label="第 ${n} 課教學狀態">${TAUGHT.map(([v,x]) => `<option value="${v}" ${(t.type||"")===v?"selected":""}>${x}</option>`).join("")}</select>
       <div class="ds">${t.type === "dates" ? `<input type="date" aria-label="第 ${n} 課開始日" data-s value="${t.start||""}"><span>到</span><input type="date" aria-label="第 ${n} 課結束日" data-e value="${t.end||""}">` : ""}
       <span class="ph">${a.phase ? `目前：${a.phase}・${esc(a.why)}` : esc(a.why)}</span></div></div>`;
@@ -683,7 +693,7 @@ function pickItems(code, q){
 /* 組選項：先放 1 個同詞易混字（例如「新聞」的「聞」），再輪流放同音字、形近字，不夠用課文字補 */
 function makeOptions(c, k, n){
   const b = splitKey(k)[0];
-  const [sound = "", shape = ""] = CONF[c] || [];
+  const [sound = "", shape = ""] = confOf(c, b) || [];
   const used = new Set([c]), out = [];
   const add = (x, type) => { if(x && isHan(x) && !used.has(x) && out.length < n - 1){ used.add(x); out.push({ch:x, type}); } };
   add(shuffle([...wordOf(c, b)].filter(x => x !== c))[0], "同詞易混");
@@ -977,7 +987,7 @@ const COLS = [
   ["評量目標", r => `目標 ${r.goal}`], ["評量方式", r => r.mode === "flu" ? "流暢性" : "正確率"],
   ["時限（秒）", r => r.timeLimit], ["作答模式", r => (ANSWERS.find(a => a.id === r.answer) || {}).name || r.answer],
   ["出題方式", r => r.method === "all" ? "全部出題" : (METHODS.find(m => m.id === r.method) || {}).name || r.method],
-  ["課本", r => r.bookName], ["課次", r => r.lesson], ["目標字", r => r.char], ["語詞", r => r.word],
+  ["課本", r => r.bookName], ["課次", r => BOOKS[r.book] && BOOKS[r.book].lessons[r.lesson] ? lessonName(r.book, r.lesson) : r.lesson], ["目標字", r => r.char], ["語詞", r => r.word],
   ["常用字加題", r => yesNo(r.boost)], ["選項數", r => r.choices], ["全部選項", r => r.options],
   ["第一次選的字", r => r.firstPick], ["第一次就答對", r => yesNo(r.firstCorrect)], ["錯誤類型", r => r.errorType],
   ["最後答對", r => yesNo(r.passed)], ["顯示答案", r => yesNo(r.revealed)], ["答錯次數", r => r.wrongCount],

@@ -1,7 +1,7 @@
 # 專案現況與決策紀錄
 
 給接手這個 repo 的 Claude（和人）看的交接文件。開工前請先讀完，改完重要決策後請更新這份文件。
-最後更新：2026-10-19
+最後更新：2026-10-20
 
 ## 1. 專案在做什麼
 
@@ -59,7 +59,13 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
 
 ## 4. 資料怎麼存
 
-- 教材：`shared/lessons.js`（BOOKS、WORDS、WORDS_ED、SENT、SENT_ED、PICS、PARTS、CONF）。目前生字資料假設都是上學期課本，待確認。
+- 教材：`shared/lessons.js`（BOOKS、WORDS、WORDS_ED、SENT、SENT_ED、PICS、PARTS、CONF、CONF_ED、POLY_ED）。
+  - 目前課本：翰林 2上、南一 2上、康軒 1上、康軒 3上、康軒 4上。賓果原有的四本假設都是上學期，待確認。
+  - 新增課本的做法：在檔案最後加一段 `BOOKS.<代號> = {...}`，並視需要加 `WORDS_ED`、`SENT_ED`、`CONF_ED`、`POLY_ED`。識字評量會自動依版本、年級、學期排序，不用改程式。
+  - `CONF_ED`：各版本自己的干擾字，優先於共用 `CONF`，避免影響其他版本。
+  - `POLY_ED`：多音字（字 → 各唸法的例詞），保留給之後的多音字題型。
+  - 第 0 課＝課前單元（例如康軒一上「真簡單」數字一到十），畫面直接顯示單元名稱；課次可有 `title`。
+  - 康軒一上（2026-10-20）：語詞優先用課本語詞，其次用字音字形檔例詞，其餘 18 字及數字單元由 Claude 擬定並經維護者確認；形近字 27 字來自字音字形檔，其餘為擬定。
 - 學生名單、教學日期、評量設定：瀏覽器 localStorage（`literacy-kids`、`literacy-teach`、`literacy-settings`、`literacy-ui`）。
 - 作答紀錄：瀏覽器 IndexedDB（資料庫 `literacy`、store `records`），每題一筆，欄位見 `tools/literacy/app.js` 第 9 段的 COLS。
 - 只存在老師自己的電腦＋瀏覽器；靠「下載備份檔（.json）」與「從備份檔還原」搬移。第 4 版規劃改用線上資料庫。
