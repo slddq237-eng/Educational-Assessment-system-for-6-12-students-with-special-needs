@@ -105,7 +105,10 @@ const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove
   /* 血量模式（3-3b，只在練習）：開始前選幾顆愛心，0＝不用 */
   practiceHearts:0,
   /* 練習的選項加注音（3-4）：選主題畫面可以改；正式評量的選項一律不加（會變成看注音找字） */
-  practiceBpmf:false},
+  practiceBpmf:false,
+  /* 報讀提示：語詞、句子提示旁的小喇叭，按了念出完整語詞或句子。練習在選主題畫面開關（預設開）；
+     正式評量看「評量設定」（預設關，從基線期起維持同一個設定）；部件重組（4-1）一律沒有 */
+  practiceRead:true, formalRead:false},
   load("literacy-settings", {}));
 const saveSettings = () => store("literacy-settings", settings);
 
