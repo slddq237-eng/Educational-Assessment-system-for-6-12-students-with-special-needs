@@ -101,14 +101,16 @@ function orderValues(dim, values){
 function computePivot(){
   const rs = pivotRecords(), fn = PMETRICS[P.metric][1];
   const rowOf = DIMS[P.row][1], colOf = P.col ? DIMS[P.col][1] : () => "全部";
-  const cells = new Map();
-  for(const r of rs){ const k = rowOf(r) + "\u0001" + colOf(r); if(!cells.has(k)) cells.set(k, []); cells.get(k).push(r); }
-  let rows = orderValues(P.row, new Set(rs.map(rowOf)));
-  const cols = P.col ? orderValues(P.col, new Set(rs.map(colOf))) : ["全部"];
+  /* 每筆紀錄只分組一次：格子、每一列、每一欄各自的紀錄先收好，合計和排序直接用，不用每次重掃全部紀錄 */
+  const cells = new Map(), byRow = new Map(), byCol = new Map();
+  const push = (m, k, r) => { if(!m.has(k)) m.set(k, []); m.get(k).push(r); };
+  for(const r of rs){ const rv = rowOf(r), cv = colOf(r); push(cells, rv + "\u0001" + cv, r); push(byRow, rv, r); push(byCol, cv, r); }
+  let rows = orderValues(P.row, byRow.keys());
+  const cols = P.col ? orderValues(P.col, byCol.keys()) : ["全部"];
   const get = (rv, cv) => { const list = cells.get(rv + "\u0001" + cv); return list ? fn(list) : null; };
-  const total = rv => fn(rs.filter(r => rowOf(r) === rv));
+  const memo = new Map(), total = rv => { if(!memo.has(rv)) memo.set(rv, fn(byRow.get(rv) || [])); return memo.get(rv); };
   if(P.sort !== "name") rows = rows.slice().sort((a, b) => { const x = total(a).v ?? -1, y = total(b).v ?? -1; return P.sort === "desc" ? y - x : x - y; });
-  return {rs, rows, cols, get, total, colTotal: cv => fn(rs.filter(r => colOf(r) === cv)), all: fn(rs)};
+  return {rs, rows, cols, get, total, colTotal: cv => fn(byCol.get(cv) || []), all: fn(rs)};
 }
 
 /* =========================================================

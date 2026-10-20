@@ -426,7 +426,9 @@ function endItem(passed, correctSec, revealed){
   if(G.mode === "flu"){
     if(rec.firstCorrect) G.round.correct++; else G.round.wrong++;
     $("#pProg").textContent = `答對 ${G.round.correct} 個`;
-    setTimeout(() => { if(G && !G.round.over) newItem(nextFluItem()); }, rec.firstCorrect ? 300 : 600);
+    /* 只接著出「這一回合」的下一題：回合結束後換下一位很快按開始時，不會多出一題到別人的回合 */
+    const g = G, rd = G.round;
+    setTimeout(() => { if(G === g && g.round === rd && !rd.over) newItem(nextFluItem()); }, rec.firstCorrect ? 300 : 600);
     return;
   }
   G.pos++;
