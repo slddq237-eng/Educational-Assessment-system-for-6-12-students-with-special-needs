@@ -21,9 +21,10 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
 
 ## 2. 合作規則（也寫在 CLAUDE.md）
 
-- 分資料夾負責；`shared/`、首頁 `index.html`、`README.md`、`CLAUDE.md`、`docs/` 是共用檔案，改前提醒維護者告知夥伴，PR 說明要標出。
-- 開工前檢查是否有未合併的 PR 動到同一批檔案。
-- 新功能開分支、發 PR；不直接推 main。
+- 分資料夾負責；`shared/`、首頁 `index.html`、`privacy.html`、`README.md`、`CLAUDE.md`、`docs/` 是共用檔案，改前提醒維護者告知夥伴，PR 說明要標出。
+- 開工前到 GitHub 的 Pull requests 檢查是否有未合併的 PR 動到同一批檔案（Files changed）；有的話先說好誰先改。
+- 開工就先發草稿 PR（2026-10-20 維護者決定），讓 PR 清單成為「誰正在改哪裡」的即時看板；做完再改成可合併。人多了之後（3～5 人）再加 GitHub Projects 看板與 CODEOWNERS，更多人時加 GitHub Actions 自動提醒同檔案衝突（規格書「合作規則」、待決問題 H 類）。
+- 新功能開分支、發 PR；不直接推 main。原則上由另一位確認再合併；維護者明確要求直接合併時可以，仍要告知夥伴。
 - 純前端、無建置工具。repo 公開：嚴禁把學生姓名、照片、成績寫進任何檔案。
 - 維護者是新手：回覆用繁體中文，術語附白話解釋；程式碼每個段落開頭加中文說明（不逐行註解）。
 
