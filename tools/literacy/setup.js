@@ -97,11 +97,10 @@ function renumber(){
 function renderGoals(){
   const L = BOOKS[state.book].lessons;
   const allConf = Object.values(L).every(l => l.conf);
-  const partsLessons = Object.values(L).filter(l => l.parts >= l.total - 1).length;
   const status = {
     "1":["圖片：部分語詞已有","warn"], "2":["圖片：部分語詞已有","warn"],
     "3": allConf ? ["形近同音資料：全部課次","ok"] : ["形近同音資料：部分課次","warn"],
-    "4-1": partsLessons ? [`部件資料：${partsLessons} 課`,"warn"] : ["部件資料：此版本尚未建置","warn"],
+    "4-1":["部件資料：全部課次","ok"],   /* 拆不開的字改用切塊，每個字都能出題 */
     "4-2":["第 4 版開放","warn"]
   };
   $("#goals").innerHTML = GOALS.map(g => `<button class="goal ${state.goal===g.id?"on":""}" data-g="${g.id}" ${g.off?"disabled":""} aria-pressed="${state.goal===g.id}">
