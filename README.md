@@ -26,6 +26,8 @@ shared/
   rewards.js      每位學生的貼紙收藏與頭像（存在這台電腦）
   parts.js        自動產生的部件拆解（所有生字＋部件再往下拆）
   freq.js         字頻排名（教育部字頻總表，5,731 字）
+  bpmf.js         破音字讀音表（自動產生，見 docs/scripts/make_bpmf.py；新增課本後要重新產生）
+  fonts/          注音字型（字嗨注音標楷子集，依課本拆成幾個檔，用到才下載）
 tools/
   bingo/          生字賓果遊戲（讀取 shared/lessons.js）
   literacy/       識字評量（讀取 shared/lessons.js）

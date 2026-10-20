@@ -9,6 +9,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@400;700&display=swap">
 <!-- 平台共用的主題外觀、頭像、貼紙樣式 -->
 <link rel="stylesheet" href="../../shared/themes.css">
+<!-- 注音字型（3-4）：語詞、句子提示和練習的選項加注音；畫面用到注音時才會下載 -->
+<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css">
 <style>
 /* 版面：沿用生字賓果的生字簿方格紙。
    設定畫面：左邊六個步驟，右邊固定的「本次評量」摘要；評量設定、教學日期、學生名單、作答紀錄放在彈出面板。
@@ -302,8 +304,11 @@ details.howto{margin:10px 0 0}
 .stamp2{position:absolute;right:4%;bottom:4%;width:32%;aspect-ratio:1;opacity:.9}
 .stamp2 .av{--s:100%;border-width:2px}
 /* ---------- 3-3 打怪獸場景（移植自生字賓果）：只在題目之間的固定長度過場出現 ---------- */
-#pickGame,#pickHearts{align-items:center;margin:0 0 16px}
-#pickGame:empty,#pickHearts:empty{display:none}
+#pickGame,#pickHearts,#pickBpmf{align-items:center;margin:0 0 16px}
+#pickGame:empty,#pickHearts:empty,#pickBpmf:empty{display:none}
+/* 注音（3-4）：字的右邊有注音；注音字型只有一種粗細 */
+.bpmf,.hintbox .h.bpmf,.opt-big.bpmf{font-family:"BpmfKai",var(--kai);font-weight:400}
+.hintbox .h.sent.bpmf{font-size:calc(clamp(24px,2.6vw,34px) * var(--fs,1))}   /* 句子加注音時字放大，注音才看得清楚 */
 #pScene{flex:1;min-height:0;display:grid;align-content:center;justify-items:center;gap:10px}
 #pScene[hidden]{display:none}
 .scenecap{font-size:clamp(22px,2.2vw,34px);font-weight:700;display:flex;align-items:center;gap:12px}
@@ -709,6 +714,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
   <p class="hint" id="pickHint"></p>
   <div class="row gamerow" id="pickGame"></div>
   <div class="row gamerow" id="pickHearts"></div>
+  <div class="row gamerow" id="pickBpmf"></div>
   <div class="themes" id="themes"></div>
 </div>
 
@@ -813,6 +819,8 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- 生字資料：平台共用的教材資料（shared/lessons.js） -->
 <script src="../../shared/lessons.js"></script>
+<!-- 注音讀音表（shared/bpmf.js）：語詞、例句裡的破音字該念哪一個音 -->
+<script src="../../shared/bpmf.js"></script>
 <!-- 字頻：教育部字頻總表（shared/freq.js），練習的常用字、字頻優先、老師專區高字頻生字會用到 -->
 <script src="../../shared/freq.js"></script>
 <!-- 自動部件拆解（shared/parts.js）：部件提示在 lessons.js 的 PARTS 沒有這個字時才用 -->

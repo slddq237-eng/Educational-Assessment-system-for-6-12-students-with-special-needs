@@ -85,8 +85,9 @@ const regroupHtml = c => { const p = partsOf(c); return p ? shuffle([...p]).map(
 const HINT_LEVEL = {word:1, sent:1, pic:2, sound:2, parts:3, mask:3, shape:3};
 const TEACHER_BTNS = [[4,"口語提示"],[5,"示範"],[6,"肢體提示"],[7,"完全提示"]];
 function hintHtml(id, c, b){
-  if(id === "word"){ const w = wordOf(c, b); return w ? `<div class="h">${esc(w.replaceAll(c, "○"))}的○</div>` : ""; }
-  if(id === "sent"){ const t = sentOf(c, b); return t ? `<div class="h sent">${esc(t.replaceAll(c, "（　）"))}</div>` : ""; }
+  /* 語詞、句子提示加注音（3-4）：目標字挖空，不會看到它的注音；破音字依 shared/bpmf.js 的讀音 */
+  if(id === "word"){ const w = wordOf(c, b); return w ? `<div class="h bpmf">${esc(Bpmf.blank(w, c, "○"))}的○</div>` : ""; }
+  if(id === "sent"){ const t = sentOf(c, b); return t ? `<div class="h sent bpmf">${esc(Bpmf.blank(t, c, "（　）"))}</div>` : ""; }
   if(id === "pic") return PICS[c] ? `<div class="pic" role="img" aria-label="圖片提示">${PICS[c]}</div>` : "";
   if(id === "sound") return `<div class="h">再慢慢唸一次</div>`;
   if(id === "parts"){
@@ -179,6 +180,8 @@ function startSession(){
     choices: bingoOK(c) ? 0 : +c.choices, layout: bingoOK(c) ? "bingo" : "cards", boards: {},
     /* 主題（在選主題畫面選的，""＝不用主題）、要不要給貼紙；遊戲玩法（3-3 打怪獸：solo 自己打、coop 合作，""＝不玩） */
     theme: state.theme || "", rewards: useRewards(), game: "",
+    /* 選項加注音（3-4）：只在練習，選主題畫面決定；正式評量一律不加 */
+    bpmf: state.kind !== "formal" && !!settings.practiceBpmf,
     tally: Object.fromEntries(list.map(k => [k, {n:0, first:0, passed:0, secs:[], wrong:0}])),
     quitArm: false
   };
@@ -308,7 +311,7 @@ function newItem(it){
         <div class="hintbox" id="hintbox" aria-live="polite"></div>
       </div>
       <div class="optsbox"><div class="opts ${board ? "bingo" : ""}" style="--cols:${cols};--rows:${rows}">
-        ${G.cur.opts.map((o, i) => `<button class="opt-big${cellClass(i)}" data-i="${i}" ${board && board.marks.has(i) ? "disabled" : ""}>${esc(o.ch)}${board && board.marks.has(i) ? stamp : ""}</button>`).join("")}
+        ${G.cur.opts.map((o, i) => `<button class="opt-big${cellClass(i)}${G.bpmf ? " bpmf" : ""}" data-i="${i}" ${board && board.marks.has(i) ? "disabled" : ""}>${esc(G.bpmf ? Bpmf.char(o.ch, b) : o.ch)}${board && board.marks.has(i) ? stamp : ""}</button>`).join("")}
       </div></div>
     </div>
     ${G.noHelp ? "" : `<div class="tbar"><span>老師提示紀錄：</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
@@ -401,7 +404,7 @@ function endItem(passed, correctSec, revealed){
     phase: phaseFor(it.kid, b, n) || "", daysAfter: state.rtiKeys.includes(key(b,n)) ? rtiDays(key(b,n)) : state.manual[key(b,n)] ? "" : (a.days ?? ""),
     /* 當時的條件（研究用的進階分析會用到）：提示設定、答錯規則用代碼存，Excel 再翻成中文 */
     hintSet: G.hints.join(","), rule: G.noHelp ? "none" : G.rule.join(","), layout: G.layout,
-    theme: G.theme, game: G.game, reward: "",
+    theme: G.theme, game: G.game, reward: "", bpmf: !!G.bpmf,
     fontScale: settings.fontScale, rate: settings.rate, sfx: settings.sfx,
     aim: G.mode === "flu" ? G.aim : "",   /* 流暢性的目標（每分鐘幾個），老師專區畫目標線用 */
     clock: !!G.clock,                      /* 作答時右上角有沒有顯示計時 */
