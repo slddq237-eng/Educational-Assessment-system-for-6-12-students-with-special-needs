@@ -239,6 +239,13 @@ details.howto{margin:10px 0 0}
 .hintbox .h.sent{font-size:calc(clamp(20px,2vw,28px) * var(--fs,1));line-height:1.5;text-align:left}
 .hintbox .pic{font-size:clamp(56px,7vw,96px);line-height:1}
 .hintbox .ghostch{font-family:var(--kai);font-size:calc(clamp(64px,8vw,120px) * var(--fs,1));opacity:.25;line-height:1}
+/* 部件拼圖的題目（一塊一塊的部件）、拆不開的字的切塊（每塊是字的 1/4，用 outline 畫框才不會擠到字） */
+.pieces{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:.25em;font-family:var(--kai);line-height:1}
+.pieces.big{font-size:calc(clamp(56px,8vw,110px) * var(--fs,1))}
+.ptile{display:inline-grid;place-items:center;min-width:1.2em;height:1.2em;padding:0 .1em;background:var(--cardbg,var(--card));color:var(--cardink,inherit);border:3px dashed var(--green);border-radius:.2em}
+.cut{display:inline-block;position:relative;width:.5em;height:.5em;overflow:hidden;margin:.12em;transform:rotate(var(--r));outline:2px dashed var(--green);outline-offset:2px;background:var(--cardbg,var(--card));color:var(--cardink,inherit)}
+.cut>span{position:absolute;left:calc(var(--x) * -.5em);top:calc(var(--y) * -.5em);width:1em;height:1em;line-height:1;text-align:center}
+.hintbox .h.pieces{font-size:calc(clamp(48px,6vw,80px) * var(--fs,1));display:flex}
 .hintbox .maskch{font-family:var(--kai);font-size:calc(clamp(64px,8vw,120px) * var(--fs,1));line-height:1;clip-path:inset(0 0 50% 0)}
 /* 選項：--cols、--rows 由程式給；--cell＝一格的邊長，取「寬放得下」和「高放得下」中較小的那個 */
 .optsbox{container-type:size;min-height:0;min-width:0}

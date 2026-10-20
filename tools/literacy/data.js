@@ -16,10 +16,18 @@ const BOOK_ORDER = Object.keys(BOOKS).sort((a, b) => edRank(BOOKS[a].edition) - 
 const confOf = (c, b) => ((typeof CONF_ED !== "undefined" && CONF_ED[b]) || {})[c] || CONF[c];
 /* 課次名稱：第 0 課是課前單元（例如康軒一上的「真簡單」），直接顯示單元名稱 */
 const lessonName = (b, n) => n === "0" ? (BOOKS[b].lessons[n].title || "課前單元") : `第 ${n} 課`;
-/* 幫每一課算好：總字數、是否每個字都有形近同音資料、有部件資料的字數 */
+/* 部件：先用 lessons.js 的 PARTS（人工整理），沒有再用 parts.js 的 PARTS_AUTO（自動拆解）。
+   拆成 2 個以上、而且不含字本身才算「拆得開」；拆不開（獨體字、只拆出一塊、PARTS 寫成自己）回傳 null，
+   部件提示和部件拼圖會改成把字切成碎塊（見 play.js 的 cutHtml），不會直接顯示答案 */
+function partsOf(c){
+  const p = PARTS[c] || (typeof PARTS_AUTO !== "undefined" && PARTS_AUTO[c]);
+  const list = p ? p.split(/\s+/).filter(Boolean) : [];
+  return list.length >= 2 && !list.includes(c) ? list : null;
+}
+/* 幫每一課算好：總字數、是否每個字都有形近同音資料、拆得開的字數 */
 for(const [bk, b] of Object.entries(BOOKS)) for(const L of Object.values(b.lessons)){
   const chars = [...(L.write + L.read)];
-  L.total = chars.length; L.conf = chars.every(c => confOf(c, bk)); L.parts = chars.filter(c => PARTS[c]).length;
+  L.total = chars.length; L.conf = chars.every(c => confOf(c, bk)); L.parts = chars.filter(c => partsOf(c)).length;
 }
 
 const GOALS = [
