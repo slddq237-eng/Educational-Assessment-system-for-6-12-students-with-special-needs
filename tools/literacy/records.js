@@ -33,11 +33,14 @@ function loadRecords(){
 function saveRecord(r){
   records.push(r);
   if(!recDb) return;
-  try { const q = recDb.transaction(REC_STORE, "readwrite").objectStore(REC_STORE).add(r); q.onsuccess = () => { r.id = q.result; }; } catch(e){}
+  try { const q = recDb.transaction(REC_STORE, "readwrite").objectStore(REC_STORE).add(r); q.onsuccess = () => { r.id = q.result; if(r.dirty) updateRecord(r); }; } catch(e){}
 }
-/* 改一筆已經存好的紀錄（例如結果畫面抽到貼紙後，把獎勵寫進去） */
+/* 改一筆已經存好的紀錄（例如寫進抽到的貼紙、標成中途結束）。
+   剛存的紀錄可能還在寫入中（還沒有 id），先做記號，寫好後再補存一次。 */
 function updateRecord(r){
-  if(!recDb || r.id == null) return;
+  if(!recDb) return;
+  if(r.id == null){ r.dirty = true; return; }
+  delete r.dirty;
   try { recDb.transaction(REC_STORE, "readwrite").objectStore(REC_STORE).put(r); } catch(e){}
 }
 function clearRecords(){
@@ -72,7 +75,10 @@ const COLS = [
   ["答錯規則", r => r.rule === undefined ? "未記錄" : r.rule === "none" ? "答錯就記錯" : r.rule.split(",").map(x => RULE_SHORT[x] || x).join("→")],
   ["第一次作答秒數", r => r.firstSec], ["答對秒數", r => r.correctSec ?? ""],
   ["評量時機", r => r.phase], ["教學後天數", r => r.daysAfter],
-  ["主題", r => r.theme ? themeName(r.theme) : "無"], ["遊戲玩法", r => r.game || "無"], ["獎勵", r => r.reward || "無"]
+  ["主題", r => r.theme ? themeName(r.theme) : "無"], ["遊戲玩法", r => r.game || "無"], ["獎勵", r => r.reward || "無"],
+  ["中途結束（不列入分析）", r => yesNo(r.quit)],
+  ["作答字的大小", r => r.fontScale ? (FONT_SIZES.find(f => f[0] === r.fontScale) || [, r.fontScale])[1] : "未記錄"],
+  ["唸讀速度", r => r.rate ?? "未記錄"], ["音效", r => r.sfx === undefined ? "未記錄" : r.sfx ? "開" : "關"]
 ];
 const fileDate = t => { const d = new Date(t); return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}_${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}`; };
 function exportXlsx(list, filename, msgSel){
@@ -93,9 +99,9 @@ function renderRecSheet(){
   $("#recInfo").textContent = recDb ? `這台電腦共有 ${records.length} 筆作答紀錄、${sessions.length} 次評量。` : "這台電腦的瀏覽器不允許存檔，只看得到這次打開網頁後的紀錄。";
   $("#recTable").innerHTML = sessions.length ? `<thead><tr><th>日期</th><th>學生</th><th>性質</th><th>方式</th><th>題數</th><th>第一次就答對</th></tr></thead><tbody>${
     sessions.slice(0, 50).map(([sid, rs]) => {
-      const first = rs.filter(r => r.firstCorrect).length;
+      const first = rs.filter(r => r.firstCorrect).length, quit = rs.some(r => r.quit);
       return `<tr><td>${new Date(sid).toLocaleString("zh-TW", {hour12:false, month:"numeric", day:"numeric", hour:"2-digit", minute:"2-digit"})}</td>
-        <td>${esc([...new Set(rs.map(r => r.kid))].join("、"))}</td><td>${rs[0].kind === "formal" ? "正式" : "練習"}</td>
+        <td>${esc([...new Set(rs.map(r => r.kid))].join("、"))}</td><td>${rs[0].kind === "formal" ? "正式" : "練習"}${quit ? "・<span class=\"warn\">中途結束</span>" : ""}</td>
         <td>${rs[0].mode === "flu" ? "流暢性" : "正確率"}</td><td>${rs.length}</td><td>${Math.round(first / rs.length * 100)}%</td></tr>`;
     }).join("")}</tbody>` : `<tbody><tr><td>還沒有作答紀錄。</td></tr></tbody>`;
   $("#recMsg").textContent = "";

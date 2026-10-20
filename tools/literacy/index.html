@@ -203,39 +203,59 @@ details.why{margin:0 0 14px;font-size:15px;color:var(--muted)}
 details.why summary{cursor:pointer;color:var(--green);width:fit-content}
 details.why p{margin:6px 0 0;max-width:65ch;line-height:1.6}
 .presetwhy{display:grid;gap:6px;margin-top:12px}
+/* 設定畫面大小（畫面與聲音面板調整）；作答畫面另外依螢幕自動調整 */
+.wrap,.sheet{zoom:var(--uiz,1)}
+.fsdemo{font-family:var(--kai);font-size:calc(96px * var(--fs,1));line-height:1.1;border:4px solid var(--ink);border-radius:20px;width:max-content;padding:4px 18px;background:var(--card)}
 .save{background:var(--green);color:#fff;border:none;border-radius:999px;padding:10px 24px;font-size:18px}
 
 
 /* ---------- 作答畫面（投影用，字要大） ---------- */
-.play{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;gap:16px;padding-block:16px 24px;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1200px;margin:0 auto}
+/* 作答畫面固定一整頁高（不用捲動、不用縮小瀏覽器）；選項的大小跟著螢幕的寬和高自動算 */
+.play{height:100vh;height:100dvh;min-height:480px;display:flex;flex-direction:column;gap:12px;padding-block:14px 18px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1600px;margin:0 auto}
 .pbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .who{display:flex;align-items:center;gap:10px;background:var(--ink);color:var(--paper);border-radius:999px;padding:8px 22px;font-size:clamp(22px,2.6vw,34px)}
 .progress{font-size:20px;color:var(--muted);font-variant-numeric:tabular-nums}
 .timer{height:14px;border-radius:999px;background:var(--grid);overflow:hidden}
 .timer i{display:block;height:100%;background:var(--red);width:100%}
-.stage{flex:1;display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:clamp(16px,3vw,40px);align-items:center}
-@media (max-width:760px){.stage{grid-template-columns:minmax(0,1fr)}}
-.prompt{display:grid;justify-items:center;gap:14px;text-align:center}
-.speaker{width:clamp(120px,14vw,200px);aspect-ratio:1;max-width:100%;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:clamp(48px,6vw,80px);box-shadow:0 8px 0 #8f2a1e}
+#pBody{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+.stage{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:clamp(16px,3vw,40px);align-items:stretch}
+.prompt{display:grid;justify-items:center;align-content:center;gap:14px;text-align:center;min-height:0;overflow:auto}
+@media (max-width:760px){.play{height:auto;min-height:100dvh}.stage{grid-template-columns:minmax(0,1fr)}.optsbox{height:min(100vw - 32px,62dvh)}}
+.speaker{width:clamp(110px,min(14vw,22vh),200px);aspect-ratio:1;max-width:100%;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:clamp(48px,6vw,80px);box-shadow:0 8px 0 #8f2a1e}
 .speaker:active{transform:translateY(4px);box-shadow:0 4px 0 #8f2a1e}
 .speaker.talk{animation:pulse 1s ease-in-out infinite}
 @keyframes pulse{50%{transform:scale(1.06)}}
 .hintbox{display:grid;gap:10px;justify-items:center;min-height:2em}
-.hintbox .h{background:var(--card);border:2px dashed var(--green);border-radius:14px;padding:8px 16px;font-family:var(--kai);font-size:clamp(24px,3vw,40px)}
-.hintbox .h.sent{font-size:clamp(20px,2vw,28px);line-height:1.5;text-align:left}
+.hintbox .h{background:var(--card);border:2px dashed var(--green);border-radius:14px;padding:8px 16px;font-family:var(--kai);font-size:calc(clamp(24px,3vw,40px) * var(--fs,1))}
+.hintbox .h.sent{font-size:calc(clamp(20px,2vw,28px) * var(--fs,1));line-height:1.5;text-align:left}
 .hintbox .pic{font-size:clamp(56px,7vw,96px);line-height:1}
-.hintbox .ghostch{font-family:var(--kai);font-size:clamp(80px,10vw,140px);opacity:.25;line-height:1}
-.hintbox .maskch{font-family:var(--kai);font-size:clamp(80px,10vw,140px);line-height:1;clip-path:inset(0 0 50% 0)}
-.opts{display:grid;gap:clamp(10px,1.6vw,20px)}
-.opt-big{aspect-ratio:1;max-width:100%;border:4px solid var(--ink);background:var(--card);border-radius:24px;font-family:var(--kai);font-size:clamp(56px,8vw,120px);line-height:1;box-shadow:0 6px 0 var(--ink);position:relative}
+.hintbox .ghostch{font-family:var(--kai);font-size:calc(clamp(64px,8vw,120px) * var(--fs,1));opacity:.25;line-height:1}
+.hintbox .maskch{font-family:var(--kai);font-size:calc(clamp(64px,8vw,120px) * var(--fs,1));line-height:1;clip-path:inset(0 0 50% 0)}
+/* 選項：--cols、--rows 由程式給；--cell＝一格的邊長，取「寬放得下」和「高放得下」中較小的那個 */
+.optsbox{container-type:size;min-height:0;min-width:0}
+.opts{--gap:16px;--cell:min(calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols)), calc((100cqh - (var(--rows) - 1) * var(--gap) - 10px) / var(--rows)));
+  height:100%;display:grid;gap:var(--gap);grid-template-columns:repeat(var(--cols),var(--cell));grid-auto-rows:var(--cell);justify-content:center;align-content:center}
+.opt-big{width:var(--cell);height:var(--cell);border:4px solid var(--ink);background:var(--card);border-radius:24px;font-family:var(--kai);
+  font-size:min(calc(var(--cell) * .42 * var(--fs,1)), calc(var(--cell) * .78));line-height:1;box-shadow:0 6px 0 var(--ink);position:relative}
 .opt-big:disabled{cursor:default}
 .opt-big.wrong{opacity:.4;box-shadow:none;border-style:dashed}
 .opt-big.wrong::after{content:"✕";position:absolute;inset:0;display:grid;place-items:center;color:var(--red);font-family:var(--ui);font-size:.9em}
 .opt-big.right{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 6px 0 #1c5246}
 .opt-big.show{outline:6px solid var(--green);outline-offset:4px}
-@media (prefers-reduced-motion:no-preference){.opt-big.shake{animation:shake .35s}}
+/* 答對：選項彈一下＋一圈小星星；答錯：搖一搖、閃紅色再變淡。都只發生在被點的那個選項上，不改版面、不延後下一題 */
+.burst{position:absolute;inset:0;pointer-events:none;display:grid;place-items:center}
+.burst i{position:absolute;font-style:normal;color:#ffc93c;font-size:calc(var(--cell) * .14);opacity:0;text-shadow:0 0 6px rgba(255,255,255,.8)}
+@media (prefers-reduced-motion:no-preference){
+  .opt-big.shake{animation:shake .35s}
+  .opt-big.wrong.shake{animation:shake .35s,nope .55s}
+  .opt-big.right{animation:yay .45s cubic-bezier(.2,1.6,.4,1)}
+  .burst i{animation:fly .65s ease-out}
+}
 @keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+@keyframes nope{0%{opacity:1;background:#ffcfc7;border-color:var(--red)}70%{opacity:1;background:#ffcfc7;border-color:var(--red)}100%{opacity:.4}}
+@keyframes yay{40%{transform:scale(1.1)}100%{transform:none}}
+@keyframes fly{0%{opacity:1;transform:rotate(var(--a)) translateY(calc(var(--cell) * -.3))}100%{opacity:0;transform:rotate(var(--a)) translateY(calc(var(--cell) * -.62)) scale(.6)}}
 .tbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;font-size:15px;color:var(--muted)}
 .tbar .chip{font-size:15px;padding:4px 12px}
 .tbar .chip.on{background:var(--amber);border-color:var(--amber)}
@@ -244,6 +264,8 @@ details.why p{margin:6px 0 0;max-width:65ch;line-height:1.6}
 /* 主題外觀：只換顏色（變數定義在 shared/themes.css），選項的大小、位置、字型都不變；作答中不播動畫 */
 #play[data-skin] .who{background:var(--cardbg);color:var(--cardink)}
 #play[data-skin] .progress,#play[data-skin] .tbar,#play[data-skin] .prompt .note{color:var(--stageink)}
+#play[data-skin] .tbar .chip{color:var(--ink)}
+#play[data-skin] .tbar .chip.on{color:#fff}
 #play[data-skin] .opt-big{background:var(--cardbg);color:var(--cardink);border-color:var(--cardink);box-shadow:0 6px 0 var(--cardink)}
 #play[data-skin] .opt-big.right{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 6px 0 #1c5246}
 #play[data-skin] .hintbox .h{background:var(--cardbg);color:var(--cardink)}
@@ -268,6 +290,7 @@ details.why p{margin:6px 0 0;max-width:65ch;line-height:1.6}
 .rcard .sm{grid-column:1/-1;color:var(--muted);font-size:15px}
 .tablewrap{overflow-x:auto}
 table.rec{border-collapse:collapse;width:100%;font-size:15px;font-variant-numeric:tabular-nums}
+table.rec .warn{color:var(--amber)}
 table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;text-align:left;white-space:nowrap}
 .danger{background:var(--card);color:var(--red);border:2px solid var(--red);border-radius:999px;padding:8px 18px}
 .danger.armed{background:var(--red);color:#fff}
@@ -286,6 +309,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
         <button id="uiQuick" aria-pressed="true">快速開始</button><button id="uiAdv" aria-pressed="false">進階設定</button>
       </div>
       <button class="ghost" id="openBook">貼紙簿</button>
+      <button class="ghost" id="openView">畫面與聲音</button>
       <button class="ghost" id="openRecords">作答紀錄</button>
       <button class="ghost" id="openKids">學生名單</button>
       <button class="ghost adv-only" id="openDates">教學日期管理</button>
@@ -417,8 +441,6 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
     <div class="levels" id="sHints"></div>
     <h3>答錯後的處理</h3>
     <ol class="ladder" id="sRule"></ol>
-    <h3>唸讀速度</h3>
-    <div class="group"><input id="sRate" type="range" min="0.5" max="1.2" step="0.05" aria-label="唸讀速度"><span id="sRateV"></span><button class="chip" id="sTest">試聽「努力的努」</button></div>
     <h3>主題與貼紙</h3>
     <label class="group"><input type="checkbox" id="sTheme" style="width:20px;height:20px;accent-color:var(--green)"> 正式評量也使用主題和貼紙</label>
     <p class="note" style="margin:0">建議開啟，而且從基線期起不要再改：主題只換畫面顏色，每完成一次評量抽一張貼紙、不論對錯。如果評量到一半才開始用，分不清進步是因為教學還是因為貼紙。練習一律使用。</p>
@@ -443,6 +465,26 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
     <button class="ghost" id="bookBack">回到設定</button></header>
   <div class="row" id="bookNames"></div>
   <div id="bookBody"></div>
+</div>
+
+<!-- 畫面與聲音（每台電腦自己的設定，快速開始也看得到） -->
+<div class="overlay" id="viewSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="vTitle">
+    <header><h2 id="vTitle">畫面與聲音</h2><button class="ghost" data-close>關閉</button></header>
+    <p class="hint" style="margin:0">這些設定只存在這台電腦。改了會從下一題開始套用，並記在每一筆作答紀錄裡。</p>
+    <h3>作答畫面的字</h3>
+    <div class="group" id="vFont"></div>
+    <div class="fsdemo" id="vFontDemo" aria-hidden="true">字</div>
+    <p class="note" style="margin:0">選項會自動配合螢幕大小，一打開就是一整頁；這裡調的是選項裡「字」的大小。</p>
+    <h3>設定畫面的大小</h3>
+    <div class="group" id="vUi"></div>
+    <h3>唸讀速度</h3>
+    <div class="group"><input id="sRate" type="range" min="0.5" max="1.2" step="0.05" aria-label="唸讀速度"><span id="sRateV"></span><button class="chip" id="sTest">試聽「努力的努」</button></div>
+    <h3>音效</h3>
+    <label class="group"><input type="checkbox" id="vSfx" style="width:20px;height:20px;accent-color:var(--green)"> 答對、答錯、得到貼紙時播放音效</label>
+    <div class="group"><button class="chip" id="vTryRight">試聽答對</button><button class="chip" id="vTryWrong">試聽答錯</button></div>
+    <footer><button class="save" data-close>完成</button></footer>
+  </div>
 </div>
 
 <!-- =================== 作答畫面 =================== -->
