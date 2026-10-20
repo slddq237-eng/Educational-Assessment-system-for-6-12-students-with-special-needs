@@ -221,7 +221,8 @@ function renderLessons(){
 const METHODS = [
   {id:"even",  name:"平均隨機", desc:"各課平均隨機；練習時加入 20% 常用字"},
   {id:"weak",  name:"常錯優先", desc:"先出常答錯、反應慢的字", need:"需要累積作答紀錄（第 1 版開始記錄）"},
-  {id:"freq",  name:"字頻優先", desc:"先出常用字", need:"需要匯入字頻資料"}
+  {id:"freq",  name:"字頻優先", desc:"先出常用字", need:"需要匯入字頻資料", ok:() => typeof FREQ !== "undefined",
+   okText:"所選課次中，依教育部字頻總表排名最常用的字先出，出題順序打散"}
 ];
 const SEC_PER_ITEM = {turn:8, split:8, present:15};
 const FREQ_SHARE = 0.2; /* 平均隨機中先出常用字的比例 */
@@ -273,7 +274,9 @@ function renderQuiz(){
     const detail = q.method === "even" && !q.freqN
       ? `<p class="note" style="margin:0">每個字被抽到的機會相同${perText ? `（${perText}）` : ""}。正式評量不額外加常用字，成績才能代表整課的程度。</p>`
       : q.method === "even"
-      ? `<p class="note" style="margin:0">常用字 ${q.freqN} 題（所選課次中字頻最高的字，多複習、先有成功經驗）＋ 平均隨機 ${q.count - q.freqN} 題${perText ? `（${perText}）` : ""}。<br><span class="warn">字頻資料匯入前，常用字的部分暫時也用隨機。</span></p>`
+      ? `<p class="note" style="margin:0">常用字 ${q.freqN} 題（所選課次中字頻最高的字，多複習、先有成功經驗）＋ 平均隨機 ${q.count - q.freqN} 題${perText ? `（${perText}）` : ""}。${typeof FREQ === "undefined" ? `<br><span class="warn">字頻資料匯入前，常用字的部分暫時也用隨機。</span>` : ""}</p>`
+      : m.ok && m.ok()
+      ? `<p class="note" style="margin:0">${m.okText}。</p>`
       : `<p class="note warn" style="margin:0">${m.desc}。${m.need}，目前會先用平均隨機。</p>`;
     how = head + detail;
   }
