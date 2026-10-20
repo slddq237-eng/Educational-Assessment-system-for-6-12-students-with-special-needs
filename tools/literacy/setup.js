@@ -82,8 +82,8 @@ function renderKind(){
   if(c.formal || c.flu){
     $("#choiceArea").innerHTML = `<div class="locked"><span class="lock">固定</span><span>${choiceText(settings.choices)}（${c.flu && !c.formal ? "流暢性模式使用標準條件" : "正式評量的標準條件"}）。<button class="linkbtn" data-open="set">到評量設定修改</button></span></div>`;
   } else {
-    $("#choiceArea").innerHTML = `<div class="group">${CHOICES.map(([v,t]) => `<button class="chip ${state.pChoices===v?"on":""}" data-c="${v}" ${v==="bingo"?"disabled":""}>${t}</button>`).join("")}</div>
-      <p class="note">全課賓果卡：把這一課的生字排成賓果卡，聽到哪個字就點哪個，連成一條線過關。</p>`;
+    $("#choiceArea").innerHTML = `<div class="group">${CHOICES.map(([v,t]) => `<button class="chip ${state.pChoices===v?"on":""}" data-c="${v}" ${v==="bingo" && state.mode==="flu"?"disabled":""}>${t}</button>`).join("")}</div>
+      <p class="note">全課賓果卡：把這一課的生字排成賓果卡，聽到哪個字就點哪個，答對的格子蓋章，連成一條線有慶祝。只用在練習；正式評量一律用固定的選項卡。</p>`;
     $("#choiceArea").querySelectorAll("[data-c]").forEach(b => b.onclick = () => { state.pChoices = b.dataset.c; render(); });
   }
 }

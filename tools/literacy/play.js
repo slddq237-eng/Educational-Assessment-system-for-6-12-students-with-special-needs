@@ -110,6 +110,7 @@ function note(f, t0, dur, type, vol){
 const sfx = {
   right(force){ if(settings.sfx || force) [523, 659, 784].forEach((f, i) => note(f, i * 0.08, 0.3, "triangle", 0.22)); },
   wrong(force){ if(settings.sfx || force){ note(220, 0, 0.16, "square", 0.09); note(165, 0.17, 0.26, "square", 0.09); } },
+  turn(){ if(settings.sfx){ note(784, 0, 0.25, "sine", 0.18); note(587, 0.22, 0.4, "sine", 0.18); } },
   fanfare(){ if(settings.sfx){ [523, 659, 784, 1047].forEach((f, i) => note(f, i * 0.11, 0.35, "triangle", 0.2)); [523, 659, 784].forEach(f => note(f, 0.5, 1.1, "sine", 0.1)); } }
 };
 /* 答對時選項旁邊冒出一圈小星星（只在被點的選項上，0.6 秒，不影響計時與版面） */
@@ -137,9 +138,11 @@ function startSession(){
     session: Date.now(), cfg: c, q, kids: list,
     goal: state.goal, kind: state.kind, mode: state.mode, answer: state.answer,
     limit: +state.limit, aim: +$("#aim").value || 30, lessons: [...state.lessons],
-    noHelp: c.noHelp, rule: c.rule || [], hints: c.hints, choices: +c.choices,
-    /* 主題（在選主題畫面選的，""＝不用主題）、要不要給貼紙；遊戲玩法與版面第 3 階段才會用到 */
-    theme: state.theme || "", rewards: useRewards(), game: "", layout: "cards",
+    noHelp: c.noHelp, rule: c.rule || [], hints: c.hints,
+    /* 版面：選項卡，或全課賓果卡（只在練習；正式評量、流暢性一律是選項卡，選項版面不能變） */
+    choices: bingoOK(c) ? 0 : +c.choices, layout: bingoOK(c) ? "bingo" : "cards", boards: {},
+    /* 主題（在選主題畫面選的，""＝不用主題）、要不要給貼紙；遊戲玩法第 3 階段才會用到 */
+    theme: state.theme || "", rewards: useRewards(), game: "",
     tally: Object.fromEntries(list.map(k => [k, {n:0, first:0, passed:0, secs:[], wrong:0}])),
     quitArm: false
   };
@@ -163,25 +166,74 @@ function drawBar(it){
 }
 
 function nextItem(){
+  if(G.over) return;   /* 已經按「結束」了，不要再出題（避免結果畫面還在唸題目） */
   if(G.pos >= G.queue.length) return finish();
-  newItem(G.queue[G.pos]);
+  const it = G.queue[G.pos], prev = G.queue[G.pos - 1];
+  /* 多人輪流時，換到另一位學生先出現換人畫面 */
+  if(G.kids.length > 1 && (!prev || prev.kid !== it.kid)) return turnCard(it.kid, !prev, () => newItem(it));
+  newItem(it);
+}
+
+/* ---------- 3-1 換人過場 ----------
+   畫面中間放大頭像和大字「換 ○○」，唸一次名字，停約 1.6 秒再出題，讓學生有時間換位置。
+   計時從題目唸完才開始，這段停頓不會算進反應時間。正式評量、練習都一樣。 */
+const TURN_MS = 1600;
+function turnCard(code, first, then){
+  const k = kidBy(code), name = k ? kidShow(k) : code, g = G;
+  $("#pWho").innerHTML = `${Rewards.avatarHtml(code)}輪到 ${esc(name)}`;
+  $("#pProg").textContent = "";
+  $("#pBody").innerHTML = `<div class="turncard" role="status"><div class="turnav">${Rewards.avatarHtml(code)}</div>
+    <h2>${first ? `先從 ${esc(name)} 開始` : `換 ${esc(name)}`}！</h2><p class="note" style="margin:0">請 ${esc(name)} 準備好</p></div>`;
+  sfx.turn();
+  speak(`${first ? "先從" : "換"}${name}`);
+  setTimeout(() => { if(G === g && !g.over) then(); }, TURN_MS);
+}
+
+/* ---------- 3-2 全課賓果卡（只在練習） ----------
+   一課的字排成賓果卡（不夠排滿就用別課的字補），聽到哪個字就點哪個。
+   答對的格子蓋上學生的頭像，連成一條線（橫、直、斜）會跳出「連線！」。每位學生每一課各有自己的卡。 */
+const bingoOK = c => c.choices === "bingo" && !c.formal && !c.flu;
+const gridFor = n => n <= 9 ? [3,3] : n <= 16 ? [4,4] : n <= 20 ? [5,4] : n <= 25 ? [5,5] : n <= 30 ? [6,5] : [6,6];
+function bingoBoard(kid, k){
+  const id = kid + "|" + k;
+  if(!G.boards[id]){
+    const own = [...new Set(charsOf(k))].slice(0, 36), [cols, rows] = gridFor(own.length);
+    const fill = shuffle(ALL_CHARS.filter(c => !own.includes(c))).slice(0, cols * rows - own.length);
+    const lines = [];
+    for(let r = 0; r < rows; r++) lines.push(Array.from({length:cols}, (_, c) => r * cols + c));
+    for(let c = 0; c < cols; c++) lines.push(Array.from({length:rows}, (_, r) => r * cols + c));
+    if(rows === cols){ lines.push(Array.from({length:rows}, (_, i) => i * cols + i)); lines.push(Array.from({length:rows}, (_, i) => i * cols + cols - 1 - i)); }
+    G.boards[id] = {cells: shuffle([...own, ...fill]), cols, rows, lines, marks:new Set(), done:new Set()};
+  }
+  return G.boards[id];
+}
+/* 賓果卡上每個字和目標字的關係，用來記錄「錯誤類型」 */
+function optType(c, x, k){
+  const b = splitKey(k)[0], [sound = "", shape = ""] = confOf(c, b) || [];
+  if(x === c) return "答案";
+  if(wordOf(c, b).includes(x)) return "同詞易混";
+  if(sound.includes(x)) return "同音";
+  if(shape.includes(x)) return "形近";
+  return charsOf(k).includes(x) ? "課文字" : "其他字";
 }
 
 /* 準備一題：組選項、畫畫面、唸題目；唸完才開始計時 */
 function newItem(it){
-  const b = splitKey(it.k)[0];
-  G.cur = {it, b, opts: makeOptions(it.c, it.k, G.choices), wrong:0, firstPick:null, firstSec:null,
-           shown:[], hintPos:0, teacher:0, t0:null, tShown:performance.now(), done:false};
+  const b = splitKey(it.k)[0], board = G.layout === "bingo" ? bingoBoard(it.kid, it.k) : null;
+  G.cur = {it, b, board, opts: board ? board.cells.map(ch => ({ch, type: optType(it.c, ch, it.k)})) : makeOptions(it.c, it.k, G.choices),
+           wrong:0, firstPick:null, firstSec:null, shown:[], hintPos:0, teacher:0, t0:null, tShown:performance.now(), done:false};
   drawBar(it);
-  const cols = G.choices === 4 ? 2 : 3, rows = Math.ceil(G.choices / cols);
+  const cols = board ? board.cols : G.choices === 4 ? 2 : 3, rows = board ? board.rows : Math.ceil(G.choices / cols);
+  const stamp = board ? `<span class="stamp2" aria-hidden="true">${Rewards.avatarHtml(it.kid)}</span>` : "";
+  const cellClass = i => !board ? "" : board.marks.has(i) ? ` marked${[...board.done].some(L => board.lines[L].includes(i)) ? " win" : ""}` : "";
   $("#pBody").innerHTML = `<div class="stage">
       <div class="prompt">
         <button class="speaker" id="speaker" aria-label="再聽一次">${SPEAKER_SVG}</button>
         <span class="note" style="margin:0">聽聽看，是哪一個字？</span>
         <div class="hintbox" id="hintbox" aria-live="polite"></div>
       </div>
-      <div class="optsbox"><div class="opts" style="--cols:${cols};--rows:${rows}">
-        ${G.cur.opts.map((o, i) => `<button class="opt-big" data-i="${i}">${esc(o.ch)}</button>`).join("")}
+      <div class="optsbox"><div class="opts ${board ? "bingo" : ""}" style="--cols:${cols};--rows:${rows}">
+        ${G.cur.opts.map((o, i) => `<button class="opt-big${cellClass(i)}" data-i="${i}" ${board && board.marks.has(i) ? "disabled" : ""}>${esc(o.ch)}${board && board.marks.has(i) ? stamp : ""}</button>`).join("")}
       </div></div>
     </div>
     ${G.noHelp ? "" : `<div class="tbar"><span>老師提示紀錄：</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
@@ -203,6 +255,7 @@ function pick(i, btn){
   if(cur.firstPick === null){ cur.firstPick = o; cur.firstSec = sec; }
   if(o.type === "答案"){
     btn.classList.add("right"); btn.insertAdjacentHTML("beforeend", BURST); sfx.right();
+    if(cur.board) bingoMark(i);
     return endItem(true, sec);
   }
   cur.wrong++;
@@ -211,6 +264,19 @@ function pick(i, btn){
   const act = G.rule[cur.wrong - 1] || "reveal";
   if(act === "next") showNextHint();
   if(act === "reveal") reveal();
+}
+
+/* 賓果卡蓋章、檢查有沒有新的連線 */
+function bingoMark(i){
+  const B = G.cur.board;
+  B.marks.add(i);
+  const fresh = B.lines.map((L, n) => n).filter(n => !B.done.has(n) && B.lines[n].every(x => B.marks.has(x)));
+  if(!fresh.length) return;
+  fresh.forEach(n => { B.done.add(n); B.lines[n].forEach(x => { const el = $(`#pBody .opt-big[data-i="${x}"]`); if(el) el.classList.add("win"); }); });
+  G.cur.line = true;
+  const ban = document.createElement("div"); ban.className = "bbanner"; ban.textContent = fresh.length > 1 ? `連成 ${fresh.length} 條線！` : "連線！";
+  $("#play").appendChild(ban); setTimeout(() => ban.remove(), 1700);
+  setTimeout(() => sfx.fanfare(), 250);
 }
 
 /* 依提示順序顯示下一個「有資料」的提示 */
@@ -271,7 +337,7 @@ function endItem(passed, correctSec, revealed){
     return;
   }
   G.pos++;
-  setTimeout(() => { if(G) nextItem(); }, passed ? 900 : revealed ? 2200 : 1000);
+  setTimeout(() => { if(G) nextItem(); }, passed ? (cur.line ? 1800 : 900) : revealed ? 2200 : 1000);
 }
 
 /* ---------- 流暢性模式：一位學生一回合 ---------- */
@@ -280,7 +346,7 @@ function showReady(){
   $("#pWho").innerHTML = `${Rewards.avatarHtml(code)}輪到 ${esc(k ? kidShow(k) : code)}`;
   $("#pProg").textContent = "";
   $("#pTimer").hidden = true;
-  $("#pBody").innerHTML = `<div class="ready"><h2>${esc(k ? kidShow(k) : code)}，準備好了嗎？</h2>
+  $("#pBody").innerHTML = `<div class="ready"><div class="turnav">${Rewards.avatarHtml(code)}</div><h2>${G.turn ? "換 " : ""}${esc(k ? kidShow(k) : code)}，準備好了嗎？</h2>
     <p class="note" style="margin:0">${LIMITS.find(l => +l[0] === G.limit)[1]}內，聽到哪個字就點哪個，越多越好！</p>
     <button class="go" id="roundGo">開始</button></div>`;
   $("#roundGo").onclick = startRound;
@@ -321,7 +387,9 @@ function endRound(){
 /* 結束按鈕：按兩次才結束，避免學生誤觸 */
 $("#pQuit").onclick = () => {
   if(!G) return;
-  if(!G.quitArm){ G.quitArm = true; $("#pQuit").textContent = "再按一次結束"; setTimeout(() => { if(G){ G.quitArm = false; $("#pQuit").textContent = "結束"; } }, 3000); return; }
+  /* 3 秒內沒按第二次就取消；只取消「這一次」評量的，避免上一次的計時器把新的一次也取消 */
+  const g = G;
+  if(!g.quitArm){ g.quitArm = true; $("#pQuit").textContent = "再按一次結束"; setTimeout(() => { if(G === g && !g.over){ g.quitArm = false; $("#pQuit").textContent = "結束"; } }, 3000); return; }
   if(G.round) G.round.over = true;
   G.quit = true;
   finish();
@@ -332,6 +400,8 @@ $("#pQuit").onclick = () => {
    10. 結果畫面
    ========================================================= */
 function finish(){
+  if(G.over) return;
+  G.over = true;   /* 之後還在排隊的出題、換人畫面都會停下來 */
   try { speechSynthesis.cancel(); } catch(e){}
   $("#pTimer").hidden = true; $("#pQuit").textContent = "結束";
   const g = G;
