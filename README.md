@@ -8,7 +8,7 @@
 |---|---|---|
 | 生字賓果 | `tools/bingo/` | 可使用 |
 | 識字評量 | `tools/literacy/` | 第 1 版：目標 3 形音辨識、大螢幕輪流作答、作答紀錄與 Excel 匯出 |
-| 備課分析 | `tools/prep/` | 第 1 版：依課次／段考範圍統計常見部件、列出學過的舊字、匯出 Excel；字頻待資料匯入 |
+| 備課分析 | `tools/prep/` | 第 1 版：依課次／段考範圍統計常見部件、列出學過的舊字、字頻排序（教育部字頻總表）、匯出 Excel |
 
 ## 資料夾說明
 
@@ -24,6 +24,7 @@ shared/
   themes.css      主題配色、頭像、貼紙的樣式
   rewards.js      每位學生的貼紙收藏與頭像（存在這台電腦）
   parts.js        自動產生的部件拆解（所有生字＋部件再往下拆）
+  freq.js         字頻排名（教育部字頻總表，5,731 字）
 tools/
   bingo/          生字賓果遊戲（讀取 shared/lessons.js）
   literacy/       識字評量（讀取 shared/lessons.js）
