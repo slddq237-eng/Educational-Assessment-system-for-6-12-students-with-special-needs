@@ -9,8 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@400;700&display=swap">
 <style>
 /* 學扶前後測快速指南：給學習扶助、資源班老師的重點說明，可以直接列印成一張 A4。
-   版面沿用識字評量的方格紙。每個步驟旁邊有「示範動畫」：仿照真的畫面，滑鼠自己移過去點，紅圈標出要點哪裡。
-   列印時不印示範動畫；電腦設定「減少動態效果」時，改成不動的圖，用數字標出點的順序。 */
+   版面沿用識字評量的方格紙。每個步驟旁邊有「示範動畫」（demo.css、demo.js，分析教學也用）。 */
 :root{
   --paper:#f5faf6; --grid:#d5e8da; --ink:#1f3d36; --muted:#5b7a71;
   --red:#d64534; --green:#2c7a69; --mint:#e4f3ec; --card:#ffffff; --amber:#9a6a12; --amber-bg:#fbf1dc;
@@ -53,51 +52,10 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
 .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;align-items:start}
 @media (max-width:760px){.two{grid-template-columns:minmax(0,1fr)}}
 
-/* ---------- 示範動畫：仿照的小畫面 ---------- */
-.demo{margin:0}
-.screen{position:relative;overflow:hidden;background:var(--paper);border:2px solid var(--grid);border-radius:12px;padding:10px;font-size:13px;line-height:1.4;user-select:none}
-.screen .bar{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;margin-bottom:8px}
-.screen .lab{color:var(--muted);font-size:12px;margin:6px 0 3px}
-.screen .grp{display:flex;gap:5px;flex-wrap:wrap}
-.m{position:relative;display:inline-block;border:1.5px solid var(--ink);border-radius:999px;padding:2px 9px;background:#fff;white-space:nowrap;transition:background .2s,color .2s}
-.m.on{background:var(--green);border-color:var(--green);color:#fff}
-.m.go{background:var(--red);border-color:var(--red);color:#fff;font-weight:700;padding:4px 14px}
-.m.box{border-radius:8px}
-.m.pc{border-radius:10px;padding:5px 8px;font-weight:700}
-.m.field{border-radius:6px;border-color:var(--grid);color:var(--ink);min-width:4em}
-.sheet{background:#fff;border:1.5px solid var(--ink);border-radius:10px;padding:8px}
-.sheet .row{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
-.av{width:22px;height:22px;border-radius:50%;background:#f6c56b;display:inline-block}
-.bars{display:flex;gap:12px;align-items:flex-end;height:84px;padding:4px 6px 0;border-bottom:1.5px solid var(--muted)}
-.bars div{width:38px;background:#2a78d6;border-radius:4px 4px 0 0;position:relative}
-.bars div span{position:absolute;top:-17px;left:0;right:0;text-align:center;font-size:11px;color:var(--ink)}
-.bars + .grp{gap:12px;padding:2px 6px;font-size:11px;color:var(--muted)}
-.bars + .grp span{width:38px;text-align:center}
-.tag{display:block;text-align:right;margin-top:6px;font-size:11px;color:var(--muted)}
-/* 之後才出現的部分：先佔位置（畫面不會跳動），點了才顯示 */
-.later{transition:opacity .35s}
-.later:not(.in){visibility:hidden;opacity:0}
-/* 滑鼠游標與紅圈 */
-.cur{position:absolute;left:92%;top:92%;width:22px;height:22px;pointer-events:none;z-index:3;transition:left .8s ease-in-out,top .8s ease-in-out}
-.cur svg{width:100%;height:100%;display:block;transition:transform .12s}
-.cur.press svg{transform:scale(.8)}
-.ring{position:absolute;width:40px;height:40px;margin:-20px 0 0 -20px;border:3px solid var(--red);border-radius:50%;pointer-events:none;z-index:2;
-  transition:left .3s,top .3s;animation:pulse 1s ease-out infinite}
-.ring[hidden]{display:none}
-@keyframes pulse{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.35);opacity:.15}}
-.cap{min-height:2.8em;margin:8px 2px 0;font-size:16px}
-.cap b{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;font-size:14px;margin-right:6px}
-.ctl{display:flex;gap:6px;margin-top:4px}
-.ctl button{border:1.5px solid var(--muted);border-radius:999px;background:#fff;color:var(--ink);font:inherit;font-size:14px;padding:2px 12px;cursor:pointer}
-/* 不動的版本（電腦設定減少動態效果）：每個要點的地方標上順序數字 */
-.badge{display:none}
-.demo.static .badge{display:inline-grid;place-items:center;position:absolute;top:-9px;right:-9px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;font-size:11px;font-weight:700;z-index:2}
-.demo.static .ctl,.demo.static .cur,.demo.static .ring{display:none}
-
 @media print{
   body{background:#fff;font-size:12.5px}
   main{padding:0;max-width:none}
-  .nav,.demo{display:none}
+  .nav{display:none}
   .two{grid-template-columns:1fr}
   .flow{gap:6px}
   .flow a,.card{border-width:1px;padding:6px 10px}
@@ -108,6 +66,7 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
   @page{size:A4;margin:12mm}
 }
 </style>
+<link rel="stylesheet" href="demo.css">
 </head>
 <body>
 <main>
@@ -140,7 +99,7 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
         </ol>
         <p class="note">字的大小、唸讀速度在右上角「畫面與聲音」調整（選填）。</p>
       </div>
-      <figure class="demo" data-demo="first">
+      <figure class="walk" data-demo="first">
         <div class="screen" aria-hidden="true">
           <div class="bar"><span class="m">老師專區</span><span class="m">作答紀錄</span><span class="m" data-t="kids">學生名單</span></div>
           <div class="sheet later" data-later="1">
@@ -169,7 +128,7 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
         </ol>
         <p class="note">選項數、提示、答錯規則都已固定，不用設定。教學前不給提示。</p>
       </div>
-      <figure class="demo" data-demo="each">
+      <figure class="walk" data-demo="each">
         <div class="screen" aria-hidden="true">
           <div class="lab">今天要做什麼？</div>
           <div class="grp"><span class="m pc box on" data-on>課堂練習</span><span class="m pc box">小考檢測</span><span class="m pc box" data-t="rti">學扶前後測</span><span class="m pc box">計時挑戰</span></div>
@@ -213,7 +172,7 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
         </ol>
         <p class="note">「依時間」是折線圖，會標出學扶開始日。每個畫面都能匯出 Excel。名詞和其他圖的看法見<a href="analysis-guide.html">分析教學</a>。</p>
       </div>
-      <figure class="demo" data-demo="report">
+      <figure class="walk" data-demo="report">
         <div class="screen" aria-hidden="true">
           <div class="bar"><span class="m" data-t="teacher">老師專區</span><span class="m">貼紙簿</span><span class="m">學生名單</span></div>
           <div class="later" data-later="1">
@@ -248,9 +207,7 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
 </main>
 
 <script>
-/* ---------- 示範動畫的腳本 ----------
-   每一步：t＝要點的地方（data-t），say＝下方說明，show＝點了之後出現哪一塊（data-later）。
-   點下去的按鈕會變成選取的顏色（同一列只留一個）。 */
+/* ---------- 示範動畫的步驟（畫面與播放方式在 demo.css、demo.js） ---------- */
 const DEMOS = {
   first: [
     {t:"kids", say:"按右上角「學生名單」", show:"1", keep:true},
@@ -273,73 +230,7 @@ const DEMOS = {
     {t:"phase", say:"怎麼看：選「依時期比較」，前測和後測並排", show:"2"}
   ]
 };
-const CURSOR = '<svg viewBox="0 0 24 24"><path d="M4 2l15 11-6.5 1.2L16 21l-3 1.4-3.4-6.9L4 20z" fill="#fff" stroke="#1f3d36" stroke-width="1.6" stroke-linejoin="round"/></svg>';
-const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-document.querySelectorAll(".demo").forEach(demo => {
-  const scr = demo.querySelector(".screen"), cap = demo.querySelector(".cap"), steps = DEMOS[demo.dataset.demo];
-  const target = s => scr.querySelector(`[data-t="${s.t}"]`);
-
-  /* 不動的版本：全部顯示，用數字標出點的順序 */
-  if(reduced){
-    demo.classList.add("static");
-    scr.querySelectorAll(".later").forEach(e => e.classList.add("in"));
-    steps.forEach((s, n) => target(s).insertAdjacentHTML("beforeend", `<span class="badge">${n + 1}</span>`));
-    cap.textContent = "照紅色數字的順序點。";
-    return;
-  }
-
-  const cur = document.createElement("div"); cur.className = "cur"; cur.innerHTML = CURSOR;
-  const ring = document.createElement("div"); ring.className = "ring"; ring.hidden = true;
-  scr.append(ring, cur);
-  let i = 0, timer = null, playing = true, onScreen = false;
-  const pauseBtn = demo.querySelector('[data-act="pause"]');
-
-  /* 回到一開始的樣子 */
-  function reset(){
-    i = 0; ring.hidden = true;
-    scr.querySelectorAll(".later").forEach(e => e.classList.remove("in"));
-    scr.querySelectorAll(".on").forEach(e => e.classList.remove("on"));
-    scr.querySelectorAll("[data-on]").forEach(e => e.classList.add("on"));
-    cur.style.left = "92%"; cur.style.top = "92%";
-  }
-  /* 某個按鈕的中心點（相對於小畫面） */
-  function center(el){
-    const a = scr.getBoundingClientRect(), b = el.getBoundingClientRect();
-    return [b.left - a.left + b.width / 2, b.top - a.top + b.height / 2];
-  }
-  /* 一步：紅圈先出現在要點的地方 → 游標移過去 → 點下去 → 停一下再做下一步 */
-  function step(){
-    if(i >= steps.length){ timer = setTimeout(() => { reset(); step(); }, 2500); return; }
-    const s = steps[i], el = target(s), [x, y] = center(el);
-    cap.innerHTML = `<b>${i + 1}</b>${s.say}`;
-    ring.hidden = false; ring.style.left = x + "px"; ring.style.top = y + "px";
-    cur.style.left = (x - 4) + "px"; cur.style.top = (y - 2) + "px";
-    timer = setTimeout(() => {
-      cur.classList.add("press"); setTimeout(() => cur.classList.remove("press"), 180);
-      if(!s.keep){
-        el.parentElement.querySelectorAll(".on").forEach(e => e.classList.remove("on"));
-        el.classList.add("on");
-      }
-      if(s.show) scr.querySelector(`[data-later="${s.show}"]`).classList.add("in");
-      i++;
-      timer = setTimeout(step, 1700);
-    }, 1100);
-  }
-  function stop(){ clearTimeout(timer); timer = null; }
-  function run(){ if(playing && onScreen && !timer) step(); }
-
-  pauseBtn.onclick = () => {
-    playing = !playing; pauseBtn.textContent = playing ? "暫停" : "播放";
-    if(playing) run(); else stop();
-  };
-  demo.querySelector('[data-act="replay"]').onclick = () => {
-    stop(); reset(); playing = true; pauseBtn.textContent = "暫停"; run();
-  };
-  /* 只在捲到看得到的時候播放，省電腦資源 */
-  new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; if(onScreen) run(); else stop(); }).observe(demo);
-  reset(); cap.innerHTML = `<b>1</b>${steps[0].say}`;
-});
 </script>
+<script src="demo.js"></script>
 </body>
 </html>
