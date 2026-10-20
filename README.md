@@ -18,6 +18,7 @@ privacy.html      資料與隱私說明（給學校、家長、老師看）
 about.html        關於我們：平台介紹、資料來源與出處（加入新的外部資料時要一起改）
 docs/
   project-status.md  專案現況與決策紀錄（交接用）
+  research-method-spec.md  識字教學單一受試研究方法規格書（實驗設計、分析分層）
 shared/
   lessons.js      共用教材資料：生字、語詞、例句、部件、形近同音字
   themes.js       共用主題與貼紙（海洋、太空、恐龍、甜點；取自生字賓果）
