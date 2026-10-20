@@ -18,7 +18,7 @@ const confOf = (c, b) => ((typeof CONF_ED !== "undefined" && CONF_ED[b]) || {})[
 const lessonName = (b, n) => n === "0" ? (BOOKS[b].lessons[n].title || "課前單元") : `第 ${n} 課`;
 /* 部件：先用 lessons.js 的 PARTS（人工整理），沒有再用 parts.js 的 PARTS_AUTO（自動拆解）。
    拆成 2 個以上、而且不含字本身才算「拆得開」；拆不開（獨體字、只拆出一塊、PARTS 寫成自己）回傳 null，
-   部件提示和部件拼圖會改成把字切成碎塊（見 play.js 的 cutHtml），不會直接顯示答案 */
+   部件提示和部件重組會改成把字切成碎塊（見 play.js 的 cutHtml），不會直接顯示答案 */
 function partsOf(c){
   const p = PARTS[c] || (typeof PARTS_AUTO !== "undefined" && PARTS_AUTO[c]);
   const list = p ? p.split(/\s+/).filter(Boolean) : [];
@@ -34,7 +34,7 @@ const GOALS = [
   {id:"1",  order:"建議第 1 步", name:"聽音選圖",  what:"聽語詞，點出正確的圖片（音 ↔ 義）", off:"第 2 版開放"},
   {id:"2",  order:"建議第 2 步", name:"看字選圖",  what:"看字或語詞，點出正確的圖片（形 ↔ 義）", off:"第 2 版開放"},
   {id:"3",  order:"建議第 3 步", name:"形音辨識",  what:"聽「努力的努」，從形近字、同音字、同詞易混字中選出目標字"},
-  {id:"4-1",order:"建議第 4 步", name:"部件拼圖",  what:"看拆開的部件，選出拼起來的字"},
+  {id:"4-1",order:"建議第 4 步", name:"部件重組",  what:"看拆開的部件，選出組成的字"},
   {id:"4-2",order:"建議第 4 步", name:"看提示書寫", what:"寫出目標字；先用紙筆作答、老師登錄", off:"第 4 版開放"}
 ];
 const KINDS = [
