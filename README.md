@@ -15,6 +15,7 @@
 ```
 index.html        平台首頁（工具選單、最後更新日期）
 privacy.html      資料與隱私說明（給學校、家長、老師看）
+LICENSE           授權條款（MIT，範圍見下方「授權說明」）
 docs/
   project-status.md  專案現況與決策紀錄（交接用）
 shared/
@@ -72,6 +73,20 @@ tools/
 
 ## 授權說明
 
-生字賓果使用的注音字型改自 But Ko「ㄅ字嗨注音標楷」（[bpmfvs](https://github.com/ButTaiwan/bpmfvs)），漢字部分 CC BY 4.0，其餘 SIL OFL 1.1。
+### 本專案自己寫的程式：MIT
 
-`shared/parts.js` 的部件拆解改自 [cjkvi-ids](https://github.com/cjkvi/cjkvi-ids)（衍生自 CHISE 專案），依 GPLv2 授權。
+本專案自己寫的程式碼（HTML、CSS、JavaScript）採用 [MIT 授權](LICENSE)：任何人都可以免費使用、修改、再發布，只要保留版權聲明與授權條文；程式「照現狀」提供，不負擔保責任。
+
+**生字賓果（`tools/bingo/`）例外**：這個資料夾是夥伴的作品，授權方式**待夥伴確認**，確認前不在 MIT 範圍內。
+
+### 不在 MIT 範圍內的教材與第三方資料
+
+下列資料各有自己的授權，**不因本專案採用 MIT 而改變**；要拿去用的人須自行遵守原本的授權。清單以 `docs/project-status.md` 的「資料來源與授權清單」為準。
+
+| 資料 | 位置 | 來源 | 授權 |
+|---|---|---|---|
+| 課本生字、語詞、例句、形近字 | `shared/lessons.js` | 各出版社課本、維護者整理；部分由 Claude 擬定 | 課本內容屬各出版社著作權，未取得授權，僅供教學參考 |
+| 部件拆解 | `shared/parts.js`、`docs/parts-table.xlsx` | 改自 [cjkvi-ids](https://github.com/cjkvi/cjkvi-ids)（衍生自 CHISE 專案） | GPLv2 |
+| 注音字型（嵌在 `tools/bingo/index.html`） | `tools/bingo/` | 改自 But Ko「ㄅ字嗨注音標楷」（[bpmfvs](https://github.com/ButTaiwan/bpmfvs)） | 漢字部分 CC BY 4.0，其餘 SIL OFL 1.1 |
+| 網頁字型 Huninn、LXGW WenKai TC | 各頁面（從 Google Fonts 載入，不在 repo 裡） | Google Fonts | SIL OFL 1.1 |
+| SheetJS 0.18.5（匯出 Excel） | 各頁面（從 cdnjs 載入，不在 repo 裡） | SheetJS | Apache 2.0 |
