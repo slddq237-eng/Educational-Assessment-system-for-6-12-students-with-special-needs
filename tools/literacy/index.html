@@ -204,6 +204,11 @@ body.quick .lesson .pill{display:none}
 details.why{margin:0 0 14px;font-size:15px;color:var(--muted)}
 details.why summary{cursor:pointer;color:var(--green);width:fit-content}
 details.why p{margin:6px 0 0;max-width:65ch;line-height:1.6}
+details.why ul,details.why ol{margin:6px 0 0;padding-left:1.4em;max-width:75ch;line-height:1.6}
+details.thelp{background:var(--card);border:2px dashed var(--grid);border-radius:14px;padding:8px 14px;margin:0 0 12px}
+details.howto{margin:10px 0 0}
+.exnote{background:var(--mint);border-radius:12px;padding:8px 14px;margin:0 0 10px;font-size:15px;line-height:1.6}
+.plain{font-size:15px;color:var(--muted);margin:0 0 10px;line-height:1.6}
 .presetwhy{display:grid;gap:6px;margin-top:12px}
 /* 設定畫面大小（畫面與聲音面板調整）；作答畫面另外依螢幕自動調整 */
 .wrap,.sheet{zoom:var(--uiz,1)}
@@ -300,7 +305,7 @@ details.why p{margin:6px 0 0;max-width:65ch;line-height:1.6}
 .rcard .rname2 .av{--s:48px}
 .rcard .sticker{grid-column:1/-1;justify-self:start}
 /* ---------- 老師專區 ---------- */
-/* 圖表顏色：一條線用第 1 色；進階比較最多 8 組，依固定順序（已用色盲檢查工具驗證） */
+/* 圖表顏色：一條線用第 1 色；進階分析最多 8 組，依固定順序（已用色盲檢查工具驗證） */
 #teacher{--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--s8:#e34948;--hair:#e1e0d9;--axis:#c3c2b7}
 .tpanel{background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:14px 18px;margin-top:14px;display:grid;gap:10px}
 .trow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -543,8 +548,9 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <!-- =================== 老師專區 =================== -->
 <div class="wrap" id="teacher" hidden>
   <header class="top"><div class="brand"><div class="stamp">師</div><div><small>識字評量</small><h1>老師專區</h1></div></div>
-    <button class="ghost" id="teacherBack">回到設定</button></header>
+    <div class="row"><a class="ghost" href="analysis-guide.html" target="_blank" rel="noopener">分析教學</a><button class="ghost" id="teacherBack">回到設定</button></div></header>
   <div class="row" id="tTabs" role="group" aria-label="老師專區分頁"></div>
+  <details class="why thelp" id="tHelp"></details>
   <section class="card tpanel">
     <div id="tMenu"></div>
     <div id="tRangeBox"><div id="tRange"></div></div>

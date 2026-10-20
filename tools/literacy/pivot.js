@@ -1,5 +1,5 @@
 /* =========================================================
-   識字評量：進階比較（pivot.js）
+   識字評量：進階分析（pivot.js）
    給有研究需求的老師交叉比對，做法像 Excel 的「樞紐分析表」：
    選一個指標，選「列」（第 1 個分組）和「欄」（第 2 個分組，可不選），系統算出每一格的數字。
    每一格都附上筆數；筆數太少的格子變淡，提醒「資料太少，僅供參考」。
@@ -7,7 +7,7 @@
    ========================================================= */
 
 /* =========================================================
-   21. 進階比較：可以分組的欄位、可以算的指標
+   21. 進階分析：可以分組的欄位、可以算的指標
    ========================================================= */
 const weekOf = r => { const d = parse(dayOf(r)); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return `${iso(d)} 那週`; };
 const freqGroup = r => { const f = hasFreq() && FREQ[r.char]; return !f ? "沒有字頻資料" : f <= 100 ? "前 100 名" : f <= 300 ? "101～300 名" : f <= 1000 ? "301～1000 名" : "1000 名以後"; };
@@ -55,12 +55,32 @@ const PMETRICS = {
   after:   ["平均教學後天數（間隔）", rs => avgOf(rs, r => r.daysAfter === "" ? NaN : +r.daysAfter), " 天"],
   prev:    ["平均距上次評量天數（間隔）", rs => avgOf(rs, r => prevGap(r) ?? NaN), " 天"]
 };
+/* 範例：一鍵套用常見的比較，附「這在回答什麼、怎麼看」（說明也寫在 analysis-guide.html 第 6 節） */
+const PIVOT_BASE = {col:"", kind:"formal", from:"", to:"", f1:"", v1:"", f2:"", v2:"", firstOnly:false, minN:5, sort:"name", chart:"bar"};
+const PIVOT_EXAMPLES = [
+  {id:"effect", name:"介入有沒有效", cfg:{metric:"acc", row:"phase", col:"kid"},
+    read:"看每一欄（每位學生）從基線期到教學後、維持期有沒有升高。維持期還很高＝學了有記住。"},
+  {id:"speed", name:"有沒有越來越熟練", cfg:{metric:"sec", row:"phase", col:"kid"},
+    read:"正確率已經很高時，答對秒數變短代表更自動化。"},
+  {id:"hard", name:"哪些字最難", cfg:{metric:"err", row:"char", sort:"desc", minN:3},
+    read:"排在最上面、又不是淡色的字，是學生最容易錯的字。點字可以看是誰錯、選成什麼。"},
+  {id:"etype", name:"常犯哪一種錯", cfg:{metric:"n", row:"etype", col:"phase"},
+    read:"每一欄是一個時期，「第一次就對」應該越來越多；某一類錯誤一直很多，教學可以針對它。"},
+  {id:"forget", name:"學完多久會忘", cfg:{metric:"acc", row:"gapAfter", chart:"line"},
+    read:"線往右下掉得越快，越需要早一點複習。「教學前或教學中」那一組是對照。"},
+  {id:"start", name:"起點能力", cfg:{metric:"acc", row:"lesson", col:"kid", firstOnly:true},
+    read:"每個字只看第一次遇到時的表現，比較不受練習次數影響，適合安排教學順序。"},
+  {id:"theme", name:"主題會不會影響表現", cfg:{metric:"sec", row:"theme", f1:"phase", v1:"基線期"},
+    read:"同一時期裡，各主題的數字應該差不多；差很多時要想想主題是不是讓學生分心。"},
+  {id:"hints", name:"哪種提示方法較有幫助", cfg:{metric:"hintUse", row:"hintSet", f1:"phase", v1:"教學中"},
+    read:"只能當參考：提示方法不是隨機分配的，差異也可能來自不同學生或不同課。"}
+];
 const PIVOT_UI = "literacy-pivot", PIVOT_SAVED = "literacy-pivots";
-const P = Object.assign({metric:"acc", row:"phase", col:"", kind:"formal", from:"", to:"", f1:"", v1:"", f2:"", v2:"", firstOnly:false, minN:5, sort:"name", chart:"bar"}, load(PIVOT_UI, {}));
+const P = Object.assign({metric:"acc", row:"phase", ...PIVOT_BASE, ex:""}, load(PIVOT_UI, {}));
 const saveP = () => store(PIVOT_UI, P);
 
 /* =========================================================
-   22. 進階比較：篩選、分組、計算
+   22. 進階分析：篩選、分組、計算
    ========================================================= */
 function pivotRecords(){
   let rs = records.filter(r => !r.quit && (P.kind === "both" || r.kind === P.kind)
@@ -88,7 +108,7 @@ function computePivot(){
 }
 
 /* =========================================================
-   23. 進階比較：畫面
+   23. 進階分析：畫面
    ========================================================= */
 const opt = (list, cur, blank) => (blank ? `<option value="">${blank}</option>` : "") + list.map(([v, t]) => `<option value="${v}" ${cur === v ? "selected" : ""}>${esc(t)}</option>`).join("");
 function renderPivot(){
@@ -97,7 +117,10 @@ function renderPivot(){
   const base = records.filter(r => !r.quit);
   const valuesOf = f => f ? orderValues(f, new Set(base.map(DIMS[f][1]))).map(v => [v, v]) : [];
   const saved = load(PIVOT_SAVED, []);
-  $("#tMenu").innerHTML = `<div class="pivotform">
+  const ex = PIVOT_EXAMPLES.find(e => e.id === P.ex);
+  $("#tMenu").innerHTML = `<div class="trow" style="margin-bottom:10px"><span class="tl">範例</span>${chipRow(PIVOT_EXAMPLES.map(e => [e.id, e.name]), P.ex, "pex")}</div>
+    ${ex ? `<div class="exnote"><b>範例：${esc(ex.name)}</b>　${esc(ex.read)}套用後可以再自己改下面的選項。</div>` : ""}
+    <div class="pivotform">
     <label>指標<select id="pMetric">${opt(Object.entries(PMETRICS).map(([k, m]) => [k, m[0]]), P.metric)}</select></label>
     <label>列（第 1 個分組）<select id="pRow">${opt(dims, P.row)}</select></label>
     <label>欄（第 2 個分組）<select id="pCol">${opt(dims.filter(d => d[0] !== P.row), P.col, "不分組")}</select></label>
@@ -113,9 +136,11 @@ function renderPivot(){
     </div>
     <div class="trow"><span class="tl">我的比較</span>${saved.map((s, i) => `<span class="savedcmp"><button class="chip" data-pload="${i}">${esc(s.name)}</button><button class="chip x" data-pdel="${i}" aria-label="刪除「${esc(s.name)}」">✕</button></span>`).join("")}
       <input id="pName" maxlength="20" placeholder="替這個比較取名字"><button class="chip" id="pSave">存成我的比較</button></div>`;
-  const set = (id, k, f = v => v) => { const el = $(id); if(el) el.onchange = e => { P[k] = f(e.target.type === "checkbox" ? e.target.checked : e.target.value); if(k === "f1") P.v1 = ""; if(k === "f2") P.v2 = ""; if(k === "row" && P.col === P.row) P.col = ""; saveP(); renderPivot(); }; };
+  const set = (id, k, f = v => v) => { const el = $(id); if(el) el.onchange = e => { P[k] = f(e.target.type === "checkbox" ? e.target.checked : e.target.value); if(k === "f1") P.v1 = ""; if(k === "f2") P.v2 = ""; if(k === "row" && P.col === P.row) P.col = ""; P.ex = ""; saveP(); renderPivot(); }; };
   set("#pMetric", "metric"); set("#pRow", "row"); set("#pCol", "col"); set("#pKind", "kind"); set("#pFrom", "from"); set("#pTo", "to");
   set("#pF1", "f1"); set("#pV1", "v1"); set("#pF2", "f2"); set("#pV2", "v2"); set("#pSort", "sort"); set("#pMin", "minN", Number); set("#pFirst", "firstOnly");
+  $("#tMenu").querySelectorAll("[data-pex]").forEach(b => b.onclick = () => { const e = PIVOT_EXAMPLES.find(x => x.id === b.dataset.pex);
+    Object.assign(P, PIVOT_BASE, e.cfg, {ex:e.id}); saveP(); renderPivot(); });
   $("#pSave").onclick = () => { const name = $("#pName").value.trim(); if(!name) return $("#pName").focus();
     const list = load(PIVOT_SAVED, []).filter(s => s.name !== name); list.push({name, cfg:{...P}}); store(PIVOT_SAVED, list); renderPivot(); };
   $("#tMenu").querySelectorAll("[data-pload]").forEach(b => b.onclick = () => { Object.assign(P, load(PIVOT_SAVED, [])[+b.dataset.pload].cfg); saveP(); renderPivot(); });
@@ -135,6 +160,7 @@ function drawPivot(){
   const foot = P.col ? `<tr class="tot"><th>合計</th>${R.cols.map(cv => cellTd(R.colTotal(cv))).join("")}${cellTd(R.all)}</tr>` : "";
   const canChart = R.cols.length <= 8 && R.rows.length <= 40;
   $("#tResult").innerHTML = `<h3 class="ttitle">${esc(M[0])}：依${esc(DIMS[P.row][0])}${P.col ? `×${esc(DIMS[P.col][0])}` : ""}</h3>
+    <p class="plain">${pivotPlain(R)}</p>
     <div class="tstats"><div class="tstat"><span>符合條件的紀錄</span><b>${R.rs.length} 筆</b><small>${P.kind === "formal" ? "正式評量" : P.kind === "practice" ? "練習" : "正式＋練習"}，不含中途結束</small></div>
       <div class="tstat"><span>整體${esc(M[0])}</span><b>${show(R.all)}</b><small>${R.all.n} 筆</small></div>
       <div class="tstat"><span>分組</span><b>${R.rows.length} × ${R.cols.length}</b><small>列 × 欄</small></div></div>
@@ -149,10 +175,20 @@ function drawPivot(){
   $("#pExport").onclick = () => {
     const table = R.rows.map(rv => Object.fromEntries([[DIMS[P.row][0], rv], ...R.cols.flatMap(cv => { const c = R.get(rv, cv); return [[`${cv}（${M[0]}）`, c && c.v != null ? c.v : ""], [`${cv}（筆數）`, c ? c.n : 0]]; })]));
     const raw = R.rs.map(r => Object.fromEntries(COLS.map(([h, f]) => [h, f(r)])));
-    exportSheet(table, "比較結果", `識字評量_進階比較_${fileDate(Date.now())}.xlsx`, "#pMsg", [{name:"原始紀錄", rows: raw}]);
+    exportSheet(table, "比較結果", `識字評量_進階分析_${fileDate(Date.now())}.xlsx`, "#pMsg", [{name:"原始紀錄", rows: raw}]);
   };
 }
-/* 進階比較的字：可能有好幾位學生，點了先問看哪一位 */
+/* 用白話說明目前的設定（例：在正式評量、小明的 120 筆紀錄裡，依「時期」分成 4 列，每一格算「第一次就答對率」） */
+function pivotPlain(R){
+  const kind = {formal:"正式評量", practice:"練習", both:"正式評量和練習"}[P.kind];
+  const date = P.from || P.to ? `、${P.from || "最早"}～${P.to || "現在"}` : "";
+  const flt = [[P.f1, P.v1], [P.f2, P.v2]].filter(([f, v]) => f && v).map(([f, v]) => `「${DIMS[f][0]}」是「${v}」`);
+  const first = P.firstOnly ? "（每位學生每個字只算第一次作答）" : "";
+  return `在${esc(kind)}${esc(date)}${flt.length ? "、" + esc(flt.join("而且")) : ""}的 ${R.rs.length} 筆紀錄${first}裡，依「${esc(DIMS[P.row][0])}」分成 ${R.rows.length} 列`
+    + (P.col ? `、再依「${esc(DIMS[P.col][0])}」分成 ${R.cols.length} 欄` : "")
+    + `，每一格算「${esc(PMETRICS[P.metric][0])}」。` + (P.col ? "「合計」是那一列或那一欄的紀錄全部合起來算，不是把格子平均。" : "");
+}
+/* 進階分析的字：可能有好幾位學生，點了先問看哪一位 */
 const charLinkAny = c => `<button class="charlink" data-char="${esc(c)}">${esc(c)}</button>`;
 function openCharAll(c){
   const who = [...new Set(pivotRecords().filter(r => r.char === c).map(r => r.kid))];
