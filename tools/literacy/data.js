@@ -37,6 +37,9 @@ const MODES = [
   {id:"acc", name:"正確率模式", desc:"題目答完為止，看正確率與反應時間"},
   {id:"flu", name:"流暢性模式", desc:"時間到為止，看每分鐘正確幾個"}
 ];
+/* 畫面與聲音：作答畫面字的大小、設定畫面的大小（數字是放大倍數） */
+const FONT_SIZES = [["0.8","小"],["1","標準"],["1.2","大"],["1.4","特大"]];
+const UI_SIZES = [["0.85","小"],["1","標準"],["1.15","大"]];
 const LIMITS = [["30","30 秒"],["60","1 分鐘"],["120","2 分鐘"]];
 const CHOICES = [["3","3 個"],["4","4 個"],["6","6 個"],["bingo","全課賓果卡（第 2 版）"]];
 const choiceText = c => c === "bingo" ? "全課賓果卡" : `${c} 個選項`;
@@ -81,8 +84,10 @@ const TERM = (M >= 8 || M <= 1) ? "上" : "下";
 const termIndex = (grade, term) => (grade - 1) * 2 + (term === "上" ? 0 : 1);
 
 /* 正式評量的標準條件（存在這台電腦） */
-/* formalTheme：正式評量也用主題和貼紙（預設要用；從基線期起每次都一樣，前後才能比較） */
-const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove","next","next","reveal"], maintainAfter:7, rate:0.85, formalTheme:true},
+/* formalTheme：正式評量也用主題和貼紙（預設要用；從基線期起每次都一樣，前後才能比較）
+   畫面與聲音（每台電腦自己的設定）：fontScale 作答畫面字的大小、uiScale 設定畫面大小、rate 唸讀速度、sfx 音效開關 */
+const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove","next","next","reveal"], maintainAfter:7, rate:0.85, formalTheme:true,
+  fontScale:"1", uiScale:"1", sfx:true},
   load("literacy-settings", {}));
 const saveSettings = () => store("literacy-settings", settings);
 

@@ -23,7 +23,7 @@ function pickItems(code, q){
   if(q.method === "weak"){
     /* 常錯優先：依這位學生過去的紀錄，錯得多、反應慢的字先出；沒考過的字排中間 */
     const score = it => {
-      const rs = records.filter(r => r.kid === code && r.char === it.c && r.goal === "3");
+      const rs = records.filter(r => r.kid === code && r.char === it.c && r.goal === "3" && !r.quit);
       if(!rs.length) return 0.5;
       const wrong = rs.filter(r => !r.firstCorrect).length / rs.length;
       const sec = rs.reduce((s, r) => s + Math.min(r.correctSec ?? 10, 10), 0) / rs.length;
@@ -90,17 +90,30 @@ function speak(text, onend, rate){
     speechSynthesis.speak(u);
   } catch(e){ setTimeout(done, 300); }
 }
-/* 答對、答錯的短音效 */
+/* 音效（取自生字賓果的做法，用瀏覽器直接合成，不需要音檔）：
+   答對＝三個音往上的「叮叮叮」；答錯＝兩聲往下的「嗶嗶」，比較明顯；得到貼紙＝一小段歡呼音樂。
+   「畫面與聲音」可以關掉音效（語音唸題不受影響）；面板裡的「試聽」按鈕不管開關都會出聲。 */
 let actx = null;
-function tone(ok){
+function ac(){
+  try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if(actx.state === "suspended") actx.resume(); } catch(e){ actx = null; }
+  return actx;
+}
+function note(f, t0, dur, type, vol){
+  const c = ac(); if(!c) return;
   try {
-    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-    const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
-    o.frequency.value = ok ? 880 : 220;
-    g.gain.setValueAtTime(0.15, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-    o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 0.3);
+    const o = c.createOscillator(), g = c.createGain(), t = c.currentTime + t0;
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t + dur + 0.05);
   } catch(e){}
 }
+const sfx = {
+  right(force){ if(settings.sfx || force) [523, 659, 784].forEach((f, i) => note(f, i * 0.08, 0.3, "triangle", 0.22)); },
+  wrong(force){ if(settings.sfx || force){ note(220, 0, 0.16, "square", 0.09); note(165, 0.17, 0.26, "square", 0.09); } },
+  fanfare(){ if(settings.sfx){ [523, 659, 784, 1047].forEach((f, i) => note(f, i * 0.11, 0.35, "triangle", 0.2)); [523, 659, 784].forEach(f => note(f, 0.5, 1.1, "sine", 0.1)); } }
+};
+/* 答對時選項旁邊冒出一圈小星星（只在被點的選項上，0.6 秒，不影響計時與版面） */
+const BURST = `<span class="burst" aria-hidden="true">${Array.from({length:8}, (_, i) => `<i style="--a:${i * 45}deg">✦</i>`).join("")}</span>`;
 
 
 /* =========================================================
@@ -160,16 +173,16 @@ function newItem(it){
   G.cur = {it, b, opts: makeOptions(it.c, it.k, G.choices), wrong:0, firstPick:null, firstSec:null,
            shown:[], hintPos:0, teacher:0, t0:null, tShown:performance.now(), done:false};
   drawBar(it);
-  const cols = G.choices === 4 ? 2 : 3;
+  const cols = G.choices === 4 ? 2 : 3, rows = Math.ceil(G.choices / cols);
   $("#pBody").innerHTML = `<div class="stage">
       <div class="prompt">
         <button class="speaker" id="speaker" aria-label="再聽一次">${SPEAKER_SVG}</button>
         <span class="note" style="margin:0">聽聽看，是哪一個字？</span>
         <div class="hintbox" id="hintbox" aria-live="polite"></div>
       </div>
-      <div class="opts" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">
+      <div class="optsbox"><div class="opts" style="--cols:${cols};--rows:${rows}">
         ${G.cur.opts.map((o, i) => `<button class="opt-big" data-i="${i}">${esc(o.ch)}</button>`).join("")}
-      </div>
+      </div></div>
     </div>
     ${G.noHelp ? "" : `<div class="tbar"><span>老師提示紀錄：</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
   $("#pBody").querySelectorAll(".opt-big").forEach(btn => btn.onclick = () => pick(+btn.dataset.i, btn));
@@ -189,11 +202,11 @@ function pick(i, btn){
   const o = cur.opts[i], sec = Math.round((performance.now() - (cur.t0 || cur.tShown)) / 100) / 10;
   if(cur.firstPick === null){ cur.firstPick = o; cur.firstSec = sec; }
   if(o.type === "答案"){
-    btn.classList.add("right"); tone(true);
+    btn.classList.add("right"); btn.insertAdjacentHTML("beforeend", BURST); sfx.right();
     return endItem(true, sec);
   }
   cur.wrong++;
-  btn.classList.add("wrong", "shake"); btn.disabled = true; tone(false);
+  btn.classList.add("wrong", "shake"); btn.disabled = true; sfx.wrong();
   if(G.mode === "flu" || G.noHelp) return endItem(false, null);
   const act = G.rule[cur.wrong - 1] || "reveal";
   if(act === "next") showNextHint();
@@ -244,7 +257,8 @@ function endItem(passed, correctSec, revealed){
     phase: phaseFor(it.kid, b, n) || "", daysAfter: state.manual[key(b,n)] ? "" : (a.days ?? ""),
     /* 當時的條件（研究用的進階比較會用到）：提示設定、答錯規則用代碼存，Excel 再翻成中文 */
     hintSet: G.hints.join(","), rule: G.noHelp ? "none" : G.rule.join(","), layout: G.layout,
-    theme: G.theme, game: G.game, reward: ""
+    theme: G.theme, game: G.game, reward: "",
+    fontScale: settings.fontScale, rate: settings.rate, sfx: settings.sfx
   };
   saveRecord(rec);
   const t = G.tally[it.kid];
@@ -308,6 +322,7 @@ $("#pQuit").onclick = () => {
   if(!G) return;
   if(!G.quitArm){ G.quitArm = true; $("#pQuit").textContent = "再按一次結束"; setTimeout(() => { if(G){ G.quitArm = false; $("#pQuit").textContent = "結束"; } }, 3000); return; }
   if(G.round) G.round.over = true;
+  G.quit = true;
   finish();
 };
 
@@ -319,9 +334,17 @@ function finish(){
   try { speechSynthesis.cancel(); } catch(e){}
   $("#pTimer").hidden = true; $("#pQuit").textContent = "結束";
   const g = G;
-  $("#rTitle").textContent = "完成了！";
+  /* 哪些學生做完了：正確率模式＝自己的題目都答完；流暢性模式＝自己那一回合時間到。
+     按「結束」提早離開時，沒做完的學生這次的紀錄標成「中途結束」（不列入分析），也不抽貼紙。 */
+  g.done = new Set(g.kids.filter(code => g.mode === "flu" ? g.tally[code].roundCorrect !== undefined
+    : g.queue.filter(x => x.kid === code).length === g.tally[code].n));
+  const left = g.kids.filter(code => !g.done.has(code));
+  if(left.length) records.filter(r => r.session === g.session && left.includes(r.kid)).forEach(r => { r.quit = true; updateRecord(r); });
+  $("#rTitle").textContent = left.length ? "這次先到這裡" : "完成了！";
   $("#rList").innerHTML = g.kids.map(code => {
     const t = g.tally[code], k = kidBy(code), name = esc(k ? kidShow(k) : code);
+    if(!g.done.has(code)) return `<div class="rcard" data-kid="${esc(code)}"><b class="rname2">${Rewards.avatarHtml(code)}${name}</b><span class="big">沒有做完</span>
+      <span class="sm">這次中途結束，紀錄不列入分析，也沒有貼紙。下次做完就可以抽貼紙喔！</span></div>`;
     if(g.mode === "flu"){
       const perMin = Math.round((t.roundCorrect || 0) * 60 / g.limit);
       return `<div class="rcard" data-kid="${esc(code)}"><b class="rname2">${Rewards.avatarHtml(code)}${name}</b><span class="big">每分鐘 ${perMin} 個</span>
@@ -331,7 +354,8 @@ function finish(){
     return `<div class="rcard" data-kid="${esc(code)}"><b class="rname2">${Rewards.avatarHtml(code)}${name}</b><span class="big">${t.first} / ${t.n}</span>
       <span class="sm">第一次就答對 ${t.first} 題${t.n ? `（${Math.round(t.first / t.n * 100)}%）` : ""}，最後答對 ${t.passed} 題，答對平均 ${avg} 秒</span></div>`;
   }).join("") || `<p class="note">這次沒有作答紀錄。</p>`;
-  $("#rNote").textContent = g.kind === "formal" ? "這次是正式評量，結果會納入學習分析。" : "這次是練習，結果另外統計。";
+  $("#rNote").textContent = (g.kind === "formal" ? "這次是正式評量，做完的結果會納入學習分析。" : "這次是練習，結果另外統計。")
+    + (left.length ? "沒有做完的紀錄會保留，但標成「中途結束」，不列入分析。" : "");
   showScreen("#result");
   giveStickers(g);   /* 每位有作答的學生抽一張貼紙（見 collect.js） */
 }

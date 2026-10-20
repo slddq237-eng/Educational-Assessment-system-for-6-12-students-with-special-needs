@@ -3,7 +3,7 @@
    主題外觀與貼紙圖形在 shared/themes.js，每位學生的收藏與頭像在 shared/rewards.js，
    這個檔案只負責識字評量裡的畫面。
    規則（2026-10-20 定案）：主題只換外觀，計時、提示、答錯規則都不變；作答中不播動畫；
-   每完成一次評量抽一張貼紙，不論對錯；正式評量從基線期起每次都一樣。
+   每完成一次評量抽一張貼紙，不論對錯；中途結束不給；正式評量從基線期起每次都一樣。
    ========================================================= */
 
 /* =========================================================
@@ -59,7 +59,7 @@ function bindAvatarPanel(box, done){
 
 /* =========================================================
    13. 得到貼紙（結果畫面）
-   每位這次有作答的學生各抽一張；抽到什麼記在這位學生這次的最後一筆作答紀錄（「獎勵」欄）。
+   每位這次有做完的學生各抽一張（中途按「結束」、沒做完的不給）；抽到什麼記在這位學生這次的最後一筆作答紀錄（「獎勵」欄）。
    ========================================================= */
 const VERB = id => (Themes.GACHA_VERB || {})[id] || "得到了";
 function giveStickers(g){
@@ -67,7 +67,7 @@ function giveStickers(g){
   g.awarded = true;
   const got = [];
   for(const code of g.kids){
-    if(!g.tally[code].n) continue;   /* 一題都沒做就不給 */
+    if(!g.done.has(code)) continue;   /* 沒做完（中途按結束）就不給 */
     const theme = g.theme || Themes.ids[Math.floor(Math.random() * Themes.ids.length)];
     const idx = Rewards.award(code, theme, {tool:"識字評量", session:g.session});
     const text = Themes.stickerName(theme, idx);
@@ -94,7 +94,8 @@ function showReveals(list){
     <button class="go" data-ok>收進貼紙簿</button></div>`;
   document.body.appendChild(box);
   box.querySelector("[data-ok]").focus();
-  speak(`${name}${VERB(theme)}${t.stickers[idx][1]}！`);
+  sfx.fanfare();
+  setTimeout(() => speak(`${name}${VERB(theme)}${t.stickers[idx][1]}！`), 600);
   box.querySelector("[data-ok]").onclick = () => { box.remove(); showReveals(list.slice(1)); };
 }
 

@@ -394,8 +394,27 @@ function renderSettings(){
   $("#sRule").querySelectorAll("select").forEach(s => s.onchange = () => { settings.rule[+s.dataset.i] = s.value; saveSettings(); render(); });
   $("#sMaintain").value = settings.maintainAfter;
   $("#sTheme").checked = settings.formalTheme;
-  $("#sRate").value = settings.rate; $("#sRateV").textContent = `${settings.rate} 倍`;
 }
+/* 畫面與聲音面板 */
+function renderView(){
+  const chips = (list, cur, key) => list.map(([v, t]) => `<button class="chip ${cur === v ? "on" : ""}" data-${key}="${v}" aria-pressed="${cur === v}">${t}</button>`).join("");
+  $("#vFont").innerHTML = chips(FONT_SIZES, settings.fontScale, "fs");
+  $("#vUi").innerHTML = chips(UI_SIZES, settings.uiScale, "ui");
+  $("#vFont").querySelectorAll("[data-fs]").forEach(b => b.onclick = () => { settings.fontScale = b.dataset.fs; saveSettings(); applyDisplay(); renderView(); });
+  $("#vUi").querySelectorAll("[data-ui]").forEach(b => b.onclick = () => { settings.uiScale = b.dataset.ui; saveSettings(); applyDisplay(); renderView(); });
+  $("#sRate").value = settings.rate; $("#sRateV").textContent = `${settings.rate} 倍`;
+  $("#vSfx").checked = settings.sfx;
+}
+/* 把字的大小、畫面大小套到整個網頁（CSS 變數 --fs、--uiz） */
+function applyDisplay(){
+  document.documentElement.style.setProperty("--fs", settings.fontScale);
+  document.documentElement.style.setProperty("--uiz", settings.uiScale);
+}
+$("#vSfx").onchange = e => { settings.sfx = e.target.checked; saveSettings(); };
+$("#vTryRight").onclick = () => sfx.right(true);
+$("#vTryWrong").onclick = () => sfx.wrong(true);
+$("#openView").onclick = () => { renderView(); openSheet("#viewSheet"); };
+applyDisplay();
 $("#sRate").oninput = e => { settings.rate = +e.target.value; $("#sRateV").textContent = `${settings.rate} 倍`; saveSettings(); };
 $("#sTest").onclick = () => speak("努力的努");
 $("#sTheme").onchange = e => { settings.formalTheme = e.target.checked; saveSettings(); };
