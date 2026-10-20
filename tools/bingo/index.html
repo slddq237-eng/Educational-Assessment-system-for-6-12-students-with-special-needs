@@ -40,6 +40,8 @@ button:focus-visible,input:focus-visible,label:focus-visible{outline:4px solid v
   font-family:var(--kai);font-weight:700;font-size:28px;transform:rotate(-12deg);flex:none}
 .ghost{background:transparent;border:2px solid var(--ink);border-radius:999px;padding:10px 20px;font-size:18px}
 .ghost:hover{background:var(--ink);color:var(--paper)}
+/* 回平台首頁（2026-10-20 維護者要求加上）：每個畫面上方都有，回到平台的工具清單 */
+a.ghost{display:inline-block;text-decoration:none;color:var(--ink)}
 
 /* ---------- 頭像 ---------- */
 .av{--s:2.4em;width:var(--s);height:var(--s);border-radius:50%;overflow:hidden;display:inline-grid;place-items:center;flex:none;
@@ -461,6 +463,7 @@ table .muted td{color:var(--muted);background:#f3f3f3}
     <div class="row">
       <button class="ghost" id="btnStickers">貼紙簿</button>
       <button class="ghost" id="btnTeacher">老師專區</button>
+      <a class="ghost" href="../../">回平台首頁</a>
     </div>
   </div>
   <div id="dbNote"></div>
@@ -507,7 +510,7 @@ table .muted td{color:var(--muted);background:#f3f3f3}
 
 <!-- =================== 結果 =================== -->
 <section id="result" class="screen" hidden>
-  <div class="topbar"><div class="brand"><div class="stamp">讚</div><h1 id="rTitle">完成了！</h1></div></div>
+  <div class="topbar"><div class="brand"><div class="stamp">讚</div><h1 id="rTitle">完成了！</h1></div><a class="ghost" href="../../">回平台首頁</a></div>
   <div class="results" id="rList"></div>
   <div class="nav" style="max-width:1200px">
     <button class="back" id="rHome">回到首頁</button>
@@ -517,13 +520,13 @@ table .muted td{color:var(--muted);background:#f3f3f3}
 
 <!-- =================== 貼紙簿 =================== -->
 <section id="stickers" class="screen" hidden>
-  <div class="topbar"><div class="brand"><div class="stamp">貼</div><h1>貼紙簿</h1></div><button class="ghost" id="sBack">回首頁</button></div>
+  <div class="topbar"><div class="brand"><div class="stamp">貼</div><h1>貼紙簿</h1></div><div class="row"><button class="ghost" id="sBack">回首頁</button><a class="ghost" href="../../">回平台首頁</a></div></div>
   <div class="panel"><div class="names" id="sNames"></div><div id="sBook" style="margin-top:18px"></div></div>
 </section>
 
 <!-- =================== 老師專區 =================== -->
 <section id="teacher" class="screen" hidden>
-  <div class="topbar"><div class="brand"><div class="stamp">師</div><h1>老師專區</h1></div><button class="ghost" id="tBack">回首頁</button></div>
+  <div class="topbar"><div class="brand"><div class="stamp">師</div><h1>老師專區</h1></div><div class="row"><button class="ghost" id="tBack">回首頁</button><a class="ghost" href="../../">回平台首頁</a></div></div>
   <div class="tgrid">
     <div class="panel" style="box-shadow:4px 4px 0 var(--ink)">
       <h2 style="font-size:24px">學生</h2>
