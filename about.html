@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>關於我們</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@700&display=swap">
+<style>
+/* 關於我們：平台介紹、資料來源與出處。內容對應 docs/project-status.md「資料來源與授權清單」
+   和規格書「資料來源、授權與隱私」表一；加入新的外部資料時，這一頁要一起改。
+   樣式沿用 privacy.html。 */
+:root{
+  --paper:#f5faf6; --line:#d5e8da; --ink:#1f3d36; --muted:#5b7a71;
+  --red:#d64534; --green:#2c7a69; --mint:#e4f3ec; --card:#ffffff; --amber:#9a6a12; --amber-bg:#fbf1dc;
+  --ui:"Huninn","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --kai:"LXGW WenKai TC","DFKai-SB","BiauKai","標楷體",serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:17px;line-height:1.7;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:48px 48px}
+main{max-width:900px;margin:0 auto;padding:28px 16px 48px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--kai);font-size:clamp(30px,4.5vw,44px);margin:0;letter-spacing:.04em}
+.lead{color:var(--muted);margin:6px 0 18px}
+.btn{display:inline-block;border:2px solid var(--ink);border-radius:999px;padding:8px 18px;background:var(--card);color:var(--ink);text-decoration:none;font:inherit;font-size:16px;cursor:pointer}
+.nav{display:flex;gap:8px;flex-wrap:wrap}
+.card{background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:16px 20px;margin:0 0 16px}
+.card h2{margin:0 0 8px;font-size:22px}
+.card p{margin:6px 0}
+a{color:var(--green)}
+ul{margin:6px 0;padding-left:1.4em}
+li{margin:4px 0}
+table{border-collapse:collapse;width:100%;font-size:16px}
+th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:normal;font-size:14px}
+td:first-child{font-weight:700}
+.note{color:var(--muted);font-size:15px}
+/* 手機（窄螢幕）：表格改成一筆一塊，資料名稱當標題 */
+@media (max-width:600px){
+  table,tbody,tr,td{display:block;width:100%}
+  tr:first-child{display:none}
+  tr{border-bottom:1px solid var(--line);padding:8px 0}
+  td{border:0;padding:2px 0}
+  td:first-child{font-size:17px}
+  td:nth-child(2)::before{content:"用在：";color:var(--muted)}
+  td:nth-child(3)::before{content:"出處：";color:var(--muted)}
+  td:nth-child(4)::before{content:"授權：";color:var(--muted)}
+}
+@media print{ body{background:#fff;font-size:13px} .nav{display:none} .card{break-inside:avoid;border-width:1px} @page{size:A4;margin:12mm} }
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>關於我們</h1>
+      <p class="lead">這個平台是誰做的、用了哪些資料，以及資料的出處與授權。</p></div>
+    <div class="nav"><a class="btn" href="./">回平台首頁</a></div>
+  </div>
+
+  <!-- 平台介紹 -->
+  <section class="card">
+    <h2>這個平台</h2>
+    <p>給 6～12 歲特殊需求學生使用的線上教學與評量小工具，由兩位特教老師在 AI 程式助手 Claude（Anthropic 公司開發）的協助下製作，免費提供老師使用。</p>
+    <p>平台不需要註冊帳號，學生資料只存在老師自己電腦的瀏覽器，詳見<a href="privacy.html">資料與隱私說明</a>。</p>
+    <p>程式碼公開在 <a href="https://github.com/slddq237-eng/Educational-Assessment-system-for-6-12-students-with-special-needs" target="_blank" rel="noopener">GitHub</a>。本平台自己寫的程式採用 <a href="https://github.com/slddq237-eng/Educational-Assessment-system-for-6-12-students-with-special-needs/blob/main/LICENSE" target="_blank" rel="noopener">MIT 授權</a>（生字賓果的授權待原作者確認）；下方的外部資料不在 MIT 範圍內，各依原本的授權。</p>
+  </section>
+
+  <!-- 資料來源與出處：每一列對應 project-status.md 的資料來源清單 -->
+  <section class="card">
+    <h2>資料來源與出處</h2>
+    <p>平台用到的外部資料如下，感謝這些單位與作者的分享。這些資料各有自己的授權，不屬於本平台。</p>
+    <table>
+      <tr><th>資料</th><th>用在哪裡</th><th>出處</th><th>授權</th></tr>
+      <tr><td>字頻總表</td><td>識字評量的常用字、字頻優先出題、高字頻生字；備課分析的字頻</td>
+        <td>教育部《國語文教育叢書》字頻統計<a href="https://language.moe.gov.tw/001/Upload/files/SITE_CONTENT/M0001/PIN/biau1.htm" target="_blank" rel="noopener">「表一：字頻總表」</a>（教育部語文成果網）</td>
+        <td>依教育部規定使用並標示出處</td></tr>
+      <tr><td>課本生字、語詞</td><td>識字評量、生字賓果、備課分析的題目</td>
+        <td>翰林、南一、康軒國語課本；部分語詞、例句由維護老師整理或 Claude 擬定</td>
+        <td>課本內容的著作權屬於各出版社；平台只收錄生字表與短語詞，供教學評量使用</td></tr>
+      <tr><td>部件拆解</td><td>備課分析的部件排行</td>
+        <td><a href="https://github.com/cjkvi/cjkvi-ids" target="_blank" rel="noopener">cjkvi-ids</a>（衍生自 CHISE 專案）</td>
+        <td>GPLv2</td></tr>
+      <tr><td>注音字型</td><td>生字賓果的注音模式</td>
+        <td>But Ko「ㄅ字嗨注音標楷」（<a href="https://github.com/ButTaiwan/bpmfvs" target="_blank" rel="noopener">bpmfvs</a>）</td>
+        <td>漢字部分 CC BY 4.0，其餘 SIL OFL 1.1</td></tr>
+      <tr><td>網頁字型</td><td>所有頁面的中文字</td>
+        <td>Huninn（jf 粉圓體）、LXGW WenKai TC（霞鶩文楷），由 <a href="https://fonts.google.com/" target="_blank" rel="noopener">Google Fonts</a> 提供</td>
+        <td>SIL OFL 1.1</td></tr>
+      <tr><td>Excel 匯出元件</td><td>匯出作答紀錄、分析結果</td>
+        <td><a href="https://sheetjs.com/" target="_blank" rel="noopener">SheetJS</a> 0.18.5，由 cdnjs 提供</td>
+        <td>Apache 2.0</td></tr>
+    </table>
+    <p class="note">「授權」是作者允許別人怎麼使用這份資料的規定。CC BY 4.0、SIL OFL 1.1、GPLv2、Apache 2.0 都允許免費使用，條件是要標示出處或保留授權說明。</p>
+  </section>
+
+  <!-- 聯絡 -->
+  <section class="card">
+    <h2>發現問題或有建議</h2>
+    <p>請用<a href="https://docs.google.com/forms/d/e/1FAIpQLScnFyeAG8XBN8MkyNuwnHVfjQb1KY29TkAzrU3-nEsCIoZWwA/viewform" target="_blank" rel="noopener">問題回報表單</a>（Google 表單，會開新分頁；請勿填學生資料）。資料出處有錯誤或遺漏，也歡迎告訴我們。</p>
+  </section>
+</main>
+</body>
+</html>

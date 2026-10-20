@@ -15,6 +15,7 @@
 ```
 index.html        平台首頁（工具選單、最後更新日期）
 privacy.html      資料與隱私說明（給學校、家長、老師看）
+about.html        關於我們：平台介紹、資料來源與出處（加入新的外部資料時要一起改）
 LICENSE           授權條款（MIT，範圍見下方「授權說明」）
 docs/
   project-status.md  專案現況與決策紀錄（交接用）
