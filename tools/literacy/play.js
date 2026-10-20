@@ -148,6 +148,7 @@ function startSession(){
     quitArm: false
   };
   applySkin(G.theme);
+  startClockShow();
   if(G.mode === "flu"){ G.turn = 0; showScreen("#play"); showReady(); return; }
   /* 正確率模式：每位學生各抽一份題目，再交錯排成輪流順序 */
   const lists = list.map(code => pickItems(code, q).map(it => ({...it, kid:code})));
@@ -156,6 +157,25 @@ function startSession(){
   G.pos = 0;
   showScreen("#play");
   nextItem();
+}
+
+/* ---------- 右上角計時 ----------
+   正確率模式：顯示這次評量已經用了多久（分:秒）；流暢性模式：顯示這一回合還剩幾秒。
+   練習看「畫面與聲音」的設定（預設顯示），正式評量看「評量設定」（預設不顯示）。每筆紀錄記下有沒有顯示（clock）。 */
+const mmss = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+function startClockShow(){
+  const g = G;
+  g.clock = g.mode === "flu" || (g.kind === "formal" ? !!settings.clockFormal : settings.clockPractice !== false);
+  g.started = performance.now();
+  const el = $("#pClock"); el.hidden = !g.clock; el.textContent = "";
+  if(!g.clock) return;
+  const tick = () => {
+    if(G !== g || g.over){ el.hidden = true; return; }
+    if(g.mode === "flu") el.textContent = g.round && !g.round.over ? `⏱ 剩 ${Math.max(0, Math.ceil((g.round.end - performance.now()) / 1000))} 秒` : "";
+    else el.textContent = `⏱ ${mmss((performance.now() - g.started) / 1000)}`;
+    setTimeout(tick, 250);
+  };
+  tick();
 }
 
 /* 畫上方的學生名字與進度 */
@@ -328,7 +348,8 @@ function endItem(passed, correctSec, revealed){
     hintSet: G.hints.join(","), rule: G.noHelp ? "none" : G.rule.join(","), layout: G.layout,
     theme: G.theme, game: G.game, reward: "",
     fontScale: settings.fontScale, rate: settings.rate, sfx: settings.sfx,
-    aim: G.mode === "flu" ? G.aim : ""   /* 流暢性的目標（每分鐘幾個），老師專區畫目標線用 */
+    aim: G.mode === "flu" ? G.aim : "",   /* 流暢性的目標（每分鐘幾個），老師專區畫目標線用 */
+    clock: !!G.clock                       /* 作答時右上角有沒有顯示計時 */
   };
   saveRecord(rec);
   const t = G.tally[it.kid];

@@ -439,6 +439,7 @@ function renderSettings(){
   $("#sRule").querySelectorAll("select").forEach(s => s.onchange = () => { settings.rule[+s.dataset.i] = s.value; saveSettings(); render(); });
   $("#sMaintain").value = settings.maintainAfter;
   $("#sTheme").checked = settings.formalTheme;
+  $("#sClock").checked = !!settings.clockFormal;
 }
 /* 畫面與聲音面板 */
 function renderView(){
@@ -449,6 +450,7 @@ function renderView(){
   $("#vUi").querySelectorAll("[data-ui]").forEach(b => b.onclick = () => { settings.uiScale = b.dataset.ui; saveSettings(); applyDisplay(); renderView(); });
   $("#sRate").value = settings.rate; $("#sRateV").textContent = `${settings.rate} 倍`;
   $("#vSfx").checked = settings.sfx;
+  $("#vClock").checked = settings.clockPractice !== false;
   $("#vTurn").innerHTML = chips(TURN_STYLES, settings.turnStyle || "chime", "turn");
   $("#vTurn").querySelectorAll("[data-turn]").forEach(b => b.onclick = () => { settings.turnStyle = b.dataset.turn; saveSettings(); renderView(); });
 }
@@ -458,6 +460,7 @@ function applyDisplay(){
   document.documentElement.style.setProperty("--uiz", settings.uiScale);
 }
 $("#vSfx").onchange = e => { settings.sfx = e.target.checked; saveSettings(); };
+$("#vClock").onchange = e => { settings.clockPractice = e.target.checked; saveSettings(); };
 $("#vTryRight").onclick = () => sfx.right(true);
 $("#vTryWrong").onclick = () => sfx.wrong(true);
 /* 試聽換人：照目前選的方式播一次 */
@@ -467,6 +470,7 @@ applyDisplay();
 $("#sRate").oninput = e => { settings.rate = +e.target.value; $("#sRateV").textContent = `${settings.rate} 倍`; saveSettings(); };
 $("#sTest").onclick = () => speak("努力的努");
 $("#sTheme").onchange = e => { settings.formalTheme = e.target.checked; saveSettings(); };
+$("#sClock").onchange = e => { settings.clockFormal = e.target.checked; saveSettings(); };
 $("#sMaintain").onchange = e => { const v = Math.max(1, Math.min(60, +e.target.value || 7)); settings.maintainAfter = v; saveSettings(); renderSettings(); render(); };
 
 let lastFocus = null;

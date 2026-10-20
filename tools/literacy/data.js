@@ -89,7 +89,9 @@ const termIndex = (grade, term) => (grade - 1) * 2 + (term === "上" ? 0 : 1);
 /* formalTheme：正式評量也用主題和貼紙（預設要用；從基線期起每次都一樣，前後才能比較）
    畫面與聲音（每台電腦自己的設定）：fontScale 作答畫面字的大小、uiScale 設定畫面大小、rate 唸讀速度、sfx 音效開關 */
 const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove","next","next","reveal"], maintainAfter:7, rate:0.85, formalTheme:true,
-  fontScale:"1", uiScale:"1", sfx:true, turnStyle:"chime"},
+  fontScale:"1", uiScale:"1", sfx:true, turnStyle:"chime",
+  /* 作答時右上角顯示計時：練習預設顯示；正式評量預設不顯示（可能讓學生緊張、影響反應時間），在評量設定打開 */
+  clockPractice:true, clockFormal:false},
   load("literacy-settings", {}));
 const saveSettings = () => store("literacy-settings", settings);
 
