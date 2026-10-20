@@ -27,6 +27,10 @@ function chooseTheme(){
   $("#pickHearts").innerHTML = !heartsAllowed() ? "" : `<span class="tl">愛心</span>${chipRow([["0", "不用"], ...HEART_CHOICES.map(n => [String(n), `${n} 顆`])], String(hp), "phearts")}
     ${hp ? `<span class="note" style="margin:0">答錯少一顆、連續答對 3 題補一顆，用完就結束${list.length > 1 ? (play ? "（大家共用）" : "（每人各自）") : ""}</span>` : ""}`;
   $("#pickHearts").querySelectorAll("[data-phearts]").forEach(b => b.onclick = () => { settings.practiceHearts = +b.dataset.phearts; saveSettings(); chooseTheme(); });
+  /* 注音（3-4，只在練習）：選項加不加注音；語詞、句子提示一律有注音 */
+  $("#pickBpmf").innerHTML = formal ? "" : `<span class="tl">注音</span>${chipRow([["0", "選項不加"], ["1", "選項加注音"]], settings.practiceBpmf ? "1" : "0", "pbpmf")}
+    <span class="note" style="margin:0">語詞、句子提示一律有注音</span>`;
+  $("#pickBpmf").querySelectorAll("[data-pbpmf]").forEach(b => b.onclick = () => { settings.practiceBpmf = b.dataset.pbpmf === "1"; saveSettings(); chooseTheme(); });
   const LINE = id => play ? Themes.THEMES[id].line : `可以得到${Themes.THEMES[id].name}的貼紙`;
   $("#pickWho").innerHTML = list.map(k => `<span class="pk">${Rewards.avatarHtml(k.code)}${esc(kidShow(k))}</span>`).join("");
   $("#pickHint").textContent = list.length > 1 ? "大家一起決定，要去哪裡冒險？" : "你想去哪裡冒險？";

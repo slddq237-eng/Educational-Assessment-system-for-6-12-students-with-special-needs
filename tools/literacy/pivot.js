@@ -32,6 +32,7 @@ const DIMS = {
   theme:     ["主題", r => r.theme ? themeName(r.theme) : "無"],
   game:      ["遊戲玩法", r => gameName(r.game)],
   hearts:    ["血量模式（愛心）", r => r.hpMax ? `${r.hpMax} 顆愛心` : "沒有"],
+  bpmf:      ["選項注音", r => r.bpmf ? "有注音" : "沒有"],
   kind:      ["正式或練習", r => r.kind === "formal" ? "正式評量" : "練習"],
   gapAfter:  ["教學後天數（分組）", r => gapBucket(r, "after"), GAP_BUCKETS.after.list],
   gapPrev:   ["距上次評量（分組）", r => gapBucket(r, "prev"), GAP_BUCKETS.prev.list],
