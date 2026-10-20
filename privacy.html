@@ -38,6 +38,16 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
 td:first-child{font-weight:700;white-space:nowrap}
 .warn{background:var(--amber-bg);border:2px dashed var(--amber);border-radius:14px;padding:10px 16px;color:#5c400a;margin:8px 0 0}
 .note{color:var(--muted);font-size:15px}
+/* 手機（窄螢幕）：表格改成一筆一塊，資料名稱當標題，下面依序列出「存在哪裡」「說明」 */
+@media (max-width:600px){
+  table,tbody,tr,td{display:block;width:100%}
+  tr:first-child{display:none}
+  tr{border-bottom:1px solid var(--line);padding:8px 0}
+  td{border:0;padding:2px 0}
+  td:first-child{white-space:normal;font-size:17px}
+  td:nth-child(2)::before{content:"存在哪裡：";color:var(--muted)}
+  td:nth-child(3)::before{content:"說明：";color:var(--muted)}
+}
 @media print{ body{background:#fff;font-size:13px} .nav{display:none} .card,.big{break-inside:avoid;border-width:1px} @page{size:A4;margin:12mm} }
 </style>
 </head>
