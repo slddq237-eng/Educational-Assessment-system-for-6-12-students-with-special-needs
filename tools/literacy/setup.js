@@ -266,7 +266,7 @@ function renderKidSheet(){
     const p = planOf(k), open = openPlan === k.code;
     return `<div class="krow" data-i="${i}">
     <input aria-label="代號" data-f="code" value="${esc(k.code)}" maxlength="8">
-    <input aria-label="名字（選填）" data-f="name" value="${esc(k.name||"")}" maxlength="10" placeholder="可不填">
+    <input aria-label="名字" data-f="name" value="${esc(k.name||"")}" maxlength="10" placeholder="學生看到的名字">
     <select aria-label="年級" data-f="grade">${GRADES.map((g,j) => `<option value="${j+1}" ${kidGrade(k)===j+1?"selected":""}>${g}年級</option>`).join("")}</select>
     <button class="chip ${adjLevel(k) || dosage(p) ? "on" : ""}" data-plan aria-expanded="${open}">本學期安排${adjLevel(k) || dosage(p) ? " ✓" : ""}</button>
     <button class="chip" data-del>刪除</button></div>

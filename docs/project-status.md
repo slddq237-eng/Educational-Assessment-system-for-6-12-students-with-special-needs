@@ -111,6 +111,8 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
 
 ## 3-3. 整合的分階段計畫（2026-10-20 定案順序：0 → 1 → 2 → 3）
 
+進度：第 0 階段完成（2026-10-20，PR「第 0 階段：整理地基」）；下一步第 1 階段。
+
 | 階段 | 步驟 | 完成標準 |
 |---|---|---|
 | 0 整理地基 | 0-1 `app.js` 拆成資料存取、出題作答、紀錄面板等檔案 | 功能和舊紀錄都不變 |
@@ -150,7 +152,9 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
   - 第 0 課＝課前單元（例如康軒一上「真簡單」數字一到十），畫面直接顯示單元名稱；課次可有 `title`。
   - 康軒一上（2026-10-20）：語詞優先用課本語詞，其次用字音字形檔例詞，其餘 18 字及數字單元由 Claude 擬定並經維護者確認；形近字 27 字來自字音字形檔，其餘為擬定。
 - 學生名單、教學日期、評量設定：瀏覽器 localStorage（`literacy-kids`、`literacy-teach`、`literacy-settings`、`literacy-ui`）。
-- 作答紀錄：瀏覽器 IndexedDB（資料庫 `literacy`、store `records`），每題一筆，欄位見 `tools/literacy/app.js` 第 9 段的 COLS。
+- 作答紀錄：瀏覽器 IndexedDB（資料庫 `literacy`、store `records`），每題一筆，欄位見 `tools/literacy/records.js` 第 7 段的 COLS。2026-10-20 起新增 `hintSet`（當時的提示設定）、`rule`（答錯規則，`none`＝答錯就記錯）、`layout`、`theme`、`game`、`reward`；舊紀錄沒有這些欄位，Excel 顯示「未記錄」或「無」。
+- 識字評量的程式分成 `data.js`、`setup.js`、`records.js`、`play.js`、`app.js`，載入順序固定（見 `app.js` 開頭）。
+- 備份檔第 2 版：其他模組可用 `addBackupPart(key, save, restore)` 把自己的資料（之後的貼紙收藏、頭像）加進備份；第 1 版舊檔仍可還原。
 - 只存在老師自己的電腦＋瀏覽器；靠「下載備份檔（.json）」與「從備份檔還原」搬移。第 4 版規劃改用線上資料庫。
 
 ## 5. 版本規劃

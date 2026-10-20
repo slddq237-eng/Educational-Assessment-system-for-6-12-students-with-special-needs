@@ -105,7 +105,9 @@ const dosage = p => DOSE.reduce((s,[id]) => s + (p[id] || 0), 0);
 const adjLevel = k => planOf(k).adjust ? planOf(k).level : null;
 const kidGrade = k => Math.min(6, k.grade + (SCHOOL_YEAR - (k.sy || SCHOOL_YEAR)));
 const kidBy = code => kids.find(k => k.code === code);
-const kidLabel = k => k.name ? `${k.code} ${k.name}` : k.code;
+/* 老師看的畫面：「姓名（代號）」；學生看的畫面（輪到誰、結果）：只顯示姓名，沒填姓名才顯示代號 */
+const kidLabel = k => k.name ? `${k.name}（${k.code}）` : k.code;
+const kidShow = k => k.name || k.code;
 /* 判斷時機用的「學習年級」：有課程調整就用調整後的年級 */
 const studyGrade = k => adjLevel(k) || kidGrade(k);
 const gradeText = k => `${GRADES[kidGrade(k)-1]}年級${adjLevel(k) ? `・課程調整到${GRADES[adjLevel(k)-1]}年級` : ""}`;

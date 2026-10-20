@@ -125,6 +125,8 @@ function startSession(){
     goal: state.goal, kind: state.kind, mode: state.mode, answer: state.answer,
     limit: +state.limit, aim: +$("#aim").value || 30, lessons: [...state.lessons],
     noHelp: c.noHelp, rule: c.rule || [], hints: c.hints, choices: +c.choices,
+    /* 主題、遊戲玩法、版面：第 1、3 階段才會用到，先預留，紀錄裡就有欄位可以比較 */
+    theme: "", game: "", layout: "cards",
     tally: Object.fromEntries(list.map(k => [k, {n:0, first:0, passed:0, secs:[], wrong:0}])),
     quitArm: false
   };
@@ -141,7 +143,7 @@ function startSession(){
 /* 畫上方的學生名字與進度 */
 function drawBar(it){
   const k = kidBy(it.kid);
-  $("#pWho").textContent = `輪到 ${k ? kidLabel(k) : it.kid}`;
+  $("#pWho").textContent = `輪到 ${k ? kidShow(k) : it.kid}`;
   if(G.mode === "flu") $("#pProg").textContent = `答對 ${G.round.correct} 個`;
   else { const mine = G.queue.filter(x => x.kid === it.kid), idx = mine.indexOf(it) + 1; $("#pProg").textContent = `第 ${idx} / ${mine.length} 題`; }
 }
@@ -238,7 +240,10 @@ function endItem(passed, correctSec, revealed){
     hintLevel: Math.max(sysLevel, cur.teacher), hints: cur.shown.map(hintName).join("、"),
     teacherPrompt: cur.teacher ? TEACHER_BTNS.find(t => t[0] === cur.teacher)[1] : "",
     firstSec: cur.firstSec, correctSec: passed ? correctSec : null,
-    phase: phaseFor(it.kid, b, n) || "", daysAfter: state.manual[key(b,n)] ? "" : (a.days ?? "")
+    phase: phaseFor(it.kid, b, n) || "", daysAfter: state.manual[key(b,n)] ? "" : (a.days ?? ""),
+    /* 當時的條件（研究用的進階比較會用到）：提示設定、答錯規則用代碼存，Excel 再翻成中文 */
+    hintSet: G.hints.join(","), rule: G.noHelp ? "none" : G.rule.join(","), layout: G.layout,
+    theme: G.theme, game: G.game, reward: ""
   };
   saveRecord(rec);
   const t = G.tally[it.kid];
@@ -256,10 +261,10 @@ function endItem(passed, correctSec, revealed){
 /* ---------- 流暢性模式：一位學生一回合 ---------- */
 function showReady(){
   const code = G.kids[G.turn], k = kidBy(code);
-  $("#pWho").textContent = `輪到 ${k ? kidLabel(k) : code}`;
+  $("#pWho").textContent = `輪到 ${k ? kidShow(k) : code}`;
   $("#pProg").textContent = "";
   $("#pTimer").hidden = true;
-  $("#pBody").innerHTML = `<div class="ready"><h2>${esc(k ? kidLabel(k) : code)}，準備好了嗎？</h2>
+  $("#pBody").innerHTML = `<div class="ready"><h2>${esc(k ? kidShow(k) : code)}，準備好了嗎？</h2>
     <p class="note" style="margin:0">${LIMITS.find(l => +l[0] === G.limit)[1]}內，聽到哪個字就點哪個，越多越好！</p>
     <button class="go" id="roundGo">開始</button></div>`;
   $("#roundGo").onclick = startRound;
@@ -315,7 +320,7 @@ function finish(){
   const g = G;
   $("#rTitle").textContent = "完成了！";
   $("#rList").innerHTML = g.kids.map(code => {
-    const t = g.tally[code], k = kidBy(code), name = esc(k ? kidLabel(k) : code);
+    const t = g.tally[code], k = kidBy(code), name = esc(k ? kidShow(k) : code);
     if(g.mode === "flu"){
       const perMin = Math.round((t.roundCorrect || 0) * 60 / g.limit);
       return `<div class="rcard"><b>${name}</b><span class="big">每分鐘 ${perMin} 個</span>

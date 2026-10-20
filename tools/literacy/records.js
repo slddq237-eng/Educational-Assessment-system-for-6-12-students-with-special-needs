@@ -48,6 +48,8 @@ function clearRecords(){
    ========================================================= */
 /* Excel 欄位：標題 → 怎麼從紀錄取值 */
 const yesNo = v => v ? "是" : "否";
+/* 答錯規則的簡稱（Excel 用）；舊紀錄沒有這些欄位，顯示「未記錄」或「無」 */
+const RULE_SHORT = {remove:"打叉", next:"提示", reveal:"顯示答案"};
 const COLS = [
   ["日期時間", r => new Date(r.at).toLocaleString("zh-TW", {hour12:false})],
   ["學生代號", r => r.kid], ["名字", r => r.kidName], ["年級", r => r.grade], ["學習年級", r => r.studyGrade],
@@ -57,11 +59,15 @@ const COLS = [
   ["出題方式", r => r.method === "all" ? "全部出題" : (METHODS.find(m => m.id === r.method) || {}).name || r.method],
   ["課本", r => r.bookName], ["課次", r => BOOKS[r.book] && BOOKS[r.book].lessons[r.lesson] ? lessonName(r.book, r.lesson) : r.lesson], ["目標字", r => r.char], ["語詞", r => r.word],
   ["常用字加題", r => yesNo(r.boost)], ["選項數", r => r.choices], ["全部選項", r => r.options],
+  ["版面", r => r.layout === "bingo" ? "全課賓果卡" : "選項卡"],
   ["第一次選的字", r => r.firstPick], ["第一次就答對", r => yesNo(r.firstCorrect)], ["錯誤類型", r => r.errorType],
   ["最後答對", r => yesNo(r.passed)], ["顯示答案", r => yesNo(r.revealed)], ["答錯次數", r => r.wrongCount],
   ["提示層級", r => r.hintLevel], ["用到的提示", r => r.hints], ["老師提示", r => r.teacherPrompt],
+  ["提示設定", r => r.hintSet === undefined ? "未記錄" : r.hintSet ? r.hintSet.split(",").map(hintName).join("→") : "無提示"],
+  ["答錯規則", r => r.rule === undefined ? "未記錄" : r.rule === "none" ? "答錯就記錯" : r.rule.split(",").map(x => RULE_SHORT[x] || x).join("→")],
   ["第一次作答秒數", r => r.firstSec], ["答對秒數", r => r.correctSec ?? ""],
-  ["評量時機", r => r.phase], ["教學後天數", r => r.daysAfter]
+  ["評量時機", r => r.phase], ["教學後天數", r => r.daysAfter],
+  ["主題", r => r.theme || "無"], ["遊戲玩法", r => r.game || "無"], ["獎勵", r => r.reward || "無"]
 ];
 const fileDate = t => { const d = new Date(t); return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}_${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}`; };
 function exportXlsx(list, filename, msgSel){
@@ -92,8 +98,13 @@ function renderRecSheet(){
 }
 $("#recXlsx").onclick = () => exportXlsx(records, `識字評量_全部紀錄_${fileDate(Date.now())}.xlsx`, "#recMsg");
 /* 備份檔：把作答紀錄、學生名單、教學日期、設定存成一個檔案，換電腦時可以還原 */
-$("#recBackup").onclick = () => {
-  const data = {app:"literacy", version:1, savedAt:new Date().toISOString(), settings, kids, teach, records: records.map(({id, ...r}) => r)};
+/* 備份檔第 2 版：除了上面這些，其他模組（例如之後的貼紙收藏、頭像）可以用 addBackupPart() 把自己的資料加進來。
+   第 1 版的舊備份檔沒有這些部分，照樣可以還原。 */
+const BACKUP_PARTS = [];
+const addBackupPart = (key, save, restore) => BACKUP_PARTS.push({key, save, restore});
+$("#recBackup").onclick = async () => {
+  const data = {app:"literacy", version:2, savedAt:new Date().toISOString(), settings, kids, teach, records: records.map(({id, ...r}) => r)};
+  for(const p of BACKUP_PARTS){ try { data[p.key] = await p.save(); } catch(e){} }
   try {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:"application/json"}));
@@ -114,7 +125,7 @@ $("#recRestore").onchange = async e => {
     for(const k of data.kids || []) if(!kidBy(k.code)) kids.push(k);
     for(const [k, v] of Object.entries(data.teach || {})) if(!teach[k]) teach[k] = v;
     saveKids(); saveTeach();
-    $("#recMsg").textContent = `已還原 ${add.length} 筆新的作答紀錄（重複的紀錄不會再加一次）。`;
+    for(const p of BACKUP_PARTS) if(data[p.key]) await p.restore(data[p.key]);
     renderRecSheet(); $("#recMsg").textContent = `已還原 ${add.length} 筆新的作答紀錄（重複的紀錄不會再加一次）。`; render();
   } catch(err){ $("#recMsg").textContent = `沒辦法讀取這個檔案：${err.message}`; }
 };
