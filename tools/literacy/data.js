@@ -91,7 +91,9 @@ const termIndex = (grade, term) => (grade - 1) * 2 + (term === "上" ? 0 : 1);
 const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove","next","next","reveal"], maintainAfter:7, rate:0.85, formalTheme:true,
   fontScale:"1", uiScale:"1", sfx:true, turnStyle:"chime",
   /* 作答時右上角顯示計時：練習預設顯示；正式評量預設不顯示（可能讓學生緊張、影響反應時間），在評量設定打開 */
-  clockPractice:true, clockFormal:false},
+  clockPractice:true, clockFormal:false,
+  /* 打怪獸（3-3）：練習預設要玩（選主題畫面可以改）；正式評量預設不玩，在評量設定打開，從基線期起維持同一個設定 */
+  practiceGame:true, formalGame:false},
   load("literacy-settings", {}));
 const saveSettings = () => store("literacy-settings", settings);
 

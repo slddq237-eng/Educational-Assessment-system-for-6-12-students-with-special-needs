@@ -30,6 +30,7 @@ const DIMS = {
   hintLevel: ["用到的提示層級", r => `層級 ${r.hintLevel || 0}`],
   etype:     ["第一次的結果／錯誤類型", r => r.firstCorrect ? "第一次就對" : r.errorType || "其他"],
   theme:     ["主題", r => r.theme ? themeName(r.theme) : "無"],
+  game:      ["遊戲玩法", r => gameName(r.game)],
   kind:      ["正式或練習", r => r.kind === "formal" ? "正式評量" : "練習"],
   gapAfter:  ["教學後天數（分組）", r => gapBucket(r, "after"), GAP_BUCKETS.after.list],
   gapPrev:   ["距上次評量（分組）", r => gapBucket(r, "prev"), GAP_BUCKETS.prev.list],

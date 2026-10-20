@@ -31,6 +31,7 @@ tools/
     records.js    作答紀錄、Excel 匯出、備份還原
     play.js       出題、作答畫面、結果畫面
     collect.js    選主題、頭像、得到貼紙、貼紙簿
+    scenes.js     打怪獸的四個場景（移植自生字賓果）
     teacher.js    老師專區（一位學生的圖表、全班總表、逐字學習紀錄）
     pivot.js      老師專區的進階分析（樞紐分析表）
     guide.html    學扶前後測快速指南（可列印成一張 A4）

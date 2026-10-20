@@ -440,6 +440,7 @@ function renderSettings(){
   $("#sMaintain").value = settings.maintainAfter;
   $("#sTheme").checked = settings.formalTheme;
   $("#sClock").checked = !!settings.clockFormal;
+  $("#sGame").checked = !!settings.formalGame; $("#sGame").disabled = !settings.formalTheme;
 }
 /* 畫面與聲音面板 */
 function renderView(){
@@ -469,7 +470,8 @@ $("#openView").onclick = () => { renderView(); openSheet("#viewSheet"); };
 applyDisplay();
 $("#sRate").oninput = e => { settings.rate = +e.target.value; $("#sRateV").textContent = `${settings.rate} 倍`; saveSettings(); };
 $("#sTest").onclick = () => speak("努力的努");
-$("#sTheme").onchange = e => { settings.formalTheme = e.target.checked; saveSettings(); };
+$("#sTheme").onchange = e => { settings.formalTheme = e.target.checked; saveSettings(); $("#sGame").disabled = !settings.formalTheme; };
+$("#sGame").onchange = e => { settings.formalGame = e.target.checked; saveSettings(); };
 $("#sClock").onchange = e => { settings.clockFormal = e.target.checked; saveSettings(); };
 $("#sMaintain").onchange = e => { const v = Math.max(1, Math.min(60, +e.target.value || 7)); settings.maintainAfter = v; saveSettings(); renderSettings(); render(); };
 
