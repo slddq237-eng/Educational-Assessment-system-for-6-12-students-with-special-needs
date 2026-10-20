@@ -8,8 +8,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@400;700&display=swap">
 <style>
-/* 學扶前後測快速指南：給學習扶助、資源班老師的一頁說明，可以直接列印成一張 A4（兩面）。
-   版面沿用識字評量的方格紙。 */
+/* 學扶前後測快速指南：給學習扶助、資源班老師的重點說明，可以直接列印成一張 A4。
+   版面沿用識字評量的方格紙。每個步驟旁邊有「示範動畫」：仿照真的畫面，滑鼠自己移過去點，紅圈標出要點哪裡。
+   列印時不印示範動畫；電腦設定「減少動態效果」時，改成不動的圖，用數字標出點的順序。 */
 :root{
   --paper:#f5faf6; --grid:#d5e8da; --ink:#1f3d36; --muted:#5b7a71;
   --red:#d64534; --green:#2c7a69; --mint:#e4f3ec; --card:#ffffff; --amber:#9a6a12; --amber-bg:#fbf1dc;
@@ -26,29 +27,83 @@ h1{font-family:var(--kai);font-size:clamp(30px,4.5vw,44px);margin:0;letter-spaci
 .nav{display:flex;gap:8px;flex-wrap:wrap}
 .btn{display:inline-block;border:2px solid var(--ink);border-radius:999px;padding:8px 18px;background:var(--card);color:var(--ink);text-decoration:none;font:inherit;font-size:16px;cursor:pointer}
 .btn.main{background:var(--red);border-color:var(--red);color:#fff}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-@media (max-width:700px){.grid{grid-template-columns:minmax(0,1fr)}}
-.card{background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:14px 18px;break-inside:avoid}
+.card{background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:14px 18px;margin:0 0 14px;break-inside:avoid}
 .card h2{margin:0 0 6px;font-size:21px;display:flex;align-items:center;gap:10px}
 .num{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:inline-grid;place-items:center;font-size:16px;flex:none}
 ol,ul{margin:6px 0;padding-left:1.4em}
-li{margin:3px 0}
+li{margin:5px 0}
 b.k{background:var(--mint);border-radius:6px;padding:0 6px;font-weight:700}
 table{border-collapse:collapse;width:100%;font-size:16px}
 th,td{border-bottom:1px solid var(--grid);padding:6px 8px;text-align:left;vertical-align:top}
 th{color:var(--muted);font-weight:normal;font-size:14px}
-.warn{background:var(--amber-bg);border:2px dashed var(--amber);border-radius:14px;padding:10px 16px;color:#5c400a}
-.full{grid-column:1/-1}
-.note{color:var(--muted);font-size:15px}
+.note{color:var(--muted);font-size:15px;margin:6px 0 0}
+.warn{background:var(--amber-bg);border-color:var(--amber)}
+.warn h2 .num{background:var(--amber)}
+
+/* ---------- 最上面的三個重點 ---------- */
+.flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 16px}
+.flow a{display:block;background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:10px 14px;color:var(--ink);text-decoration:none}
+.flow a:hover{background:var(--mint)}
+.flow small{display:block;color:var(--muted);font-size:14px}
+.flow b{display:block;font-size:19px}
+.flow span{display:block;font-size:15px}
+@media (max-width:700px){.flow{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------- 每個步驟：左邊文字、右邊示範動畫 ---------- */
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;align-items:start}
+@media (max-width:760px){.two{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------- 示範動畫：仿照的小畫面 ---------- */
+.demo{margin:0}
+.screen{position:relative;overflow:hidden;background:var(--paper);border:2px solid var(--grid);border-radius:12px;padding:10px;font-size:13px;line-height:1.4;user-select:none}
+.screen .bar{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;margin-bottom:8px}
+.screen .lab{color:var(--muted);font-size:12px;margin:6px 0 3px}
+.screen .grp{display:flex;gap:5px;flex-wrap:wrap}
+.m{position:relative;display:inline-block;border:1.5px solid var(--ink);border-radius:999px;padding:2px 9px;background:#fff;white-space:nowrap;transition:background .2s,color .2s}
+.m.on{background:var(--green);border-color:var(--green);color:#fff}
+.m.go{background:var(--red);border-color:var(--red);color:#fff;font-weight:700;padding:4px 14px}
+.m.box{border-radius:8px}
+.m.pc{border-radius:10px;padding:5px 8px;font-weight:700}
+.m.field{border-radius:6px;border-color:var(--grid);color:var(--ink);min-width:4em}
+.sheet{background:#fff;border:1.5px solid var(--ink);border-radius:10px;padding:8px}
+.sheet .row{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.av{width:22px;height:22px;border-radius:50%;background:#f6c56b;display:inline-block}
+.bars{display:flex;gap:12px;align-items:flex-end;height:84px;padding:4px 6px 0;border-bottom:1.5px solid var(--muted)}
+.bars div{width:38px;background:#2a78d6;border-radius:4px 4px 0 0;position:relative}
+.bars div span{position:absolute;top:-17px;left:0;right:0;text-align:center;font-size:11px;color:var(--ink)}
+.bars + .grp{gap:12px;padding:2px 6px;font-size:11px;color:var(--muted)}
+.bars + .grp span{width:38px;text-align:center}
+.tag{display:block;text-align:right;margin-top:6px;font-size:11px;color:var(--muted)}
+/* 之後才出現的部分：先佔位置（畫面不會跳動），點了才顯示 */
+.later{transition:opacity .35s}
+.later:not(.in){visibility:hidden;opacity:0}
+/* 滑鼠游標與紅圈 */
+.cur{position:absolute;left:92%;top:92%;width:22px;height:22px;pointer-events:none;z-index:3;transition:left .8s ease-in-out,top .8s ease-in-out}
+.cur svg{width:100%;height:100%;display:block;transition:transform .12s}
+.cur.press svg{transform:scale(.8)}
+.ring{position:absolute;width:40px;height:40px;margin:-20px 0 0 -20px;border:3px solid var(--red);border-radius:50%;pointer-events:none;z-index:2;
+  transition:left .3s,top .3s;animation:pulse 1s ease-out infinite}
+.ring[hidden]{display:none}
+@keyframes pulse{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.35);opacity:.15}}
+.cap{min-height:2.8em;margin:8px 2px 0;font-size:16px}
+.cap b{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;font-size:14px;margin-right:6px}
+.ctl{display:flex;gap:6px;margin-top:4px}
+.ctl button{border:1.5px solid var(--muted);border-radius:999px;background:#fff;color:var(--ink);font:inherit;font-size:14px;padding:2px 12px;cursor:pointer}
+/* 不動的版本（電腦設定減少動態效果）：每個要點的地方標上順序數字 */
+.badge{display:none}
+.demo.static .badge{display:inline-grid;place-items:center;position:absolute;top:-9px;right:-9px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;font-size:11px;font-weight:700;z-index:2}
+.demo.static .ctl,.demo.static .cur,.demo.static .ring{display:none}
+
 @media print{
   body{background:#fff;font-size:12.5px}
   main{padding:0;max-width:none}
-  .nav{display:none}
-  .card{border-width:1px;padding:8px 12px}
+  .nav,.demo{display:none}
+  .two{grid-template-columns:1fr}
+  .flow{gap:6px}
+  .flow a,.card{border-width:1px;padding:6px 10px}
   .card h2{font-size:15px}
   table{font-size:12px}
   .note,.lead{font-size:11.5px}
-  .grid{gap:8px}
   h1{font-size:24px}
   @page{size:A4;margin:12mm}
 }
@@ -58,7 +113,7 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
 <main>
   <div class="top">
     <div><h1>學扶前後測快速指南</h1>
-      <p class="lead">給學習扶助、資源班老師：用「識字評量」做轉介前介入（RTI）的前測、教學中檢測和後測，資料可以直接用在心評報告。</p></div>
+      <p class="lead">給學習扶助、資源班老師：做前測、教學中檢測、後測，圖表可以直接用在心評報告。右邊的示範畫面會自己播放，紅圈就是要點的地方。</p></div>
     <div class="nav">
       <a class="btn main" href="./">打開識字評量</a>
       <button class="btn" onclick="window.print()">列印這一頁</button>
@@ -66,65 +121,225 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
     </div>
   </div>
 
-  <div class="grid">
-    <section class="card">
-      <h2><span class="num">1</span>第一次使用（約 5 分鐘）</h2>
-      <ol>
-        <li>打開識字評量，按右上角 <b class="k">學生名單</b>。</li>
-        <li>每位學生填<b>代號</b>、<b>名字</b>（學生作答時看得到）、<b>年級</b>；點頭像可以換卡通角色。</li>
-        <li>按 <b class="k">本學期安排</b>，填學習扶助（或資源班）<b>每週幾節</b>和<b>開始日期</b>。老師專區的圖會在這一天畫一條線，寫報告時可以說明介入從哪天開始。</li>
-        <li>（選填）右上角 <b class="k">畫面與聲音</b>：調字的大小、唸讀速度、音效。</li>
-      </ol>
-    </section>
+  <!-- 三個重點：一眼看完整個流程 -->
+  <nav class="flow" aria-label="三個重點">
+    <a href="#first"><small>① 只做一次，約 5 分鐘</small><b>建學生名單</b><span>學生名單 → 填代號、名字、年級 → 本學期安排</span></a>
+    <a href="#each"><small>② 每次評量</small><b>點 4 下就開始</b><span>學扶前後測 → 現在是？ → 學生、課次 → 開始</span></a>
+    <a href="#report"><small>③ 寫報告</small><b>看依時期比較</b><span>老師專區 → 一位學生 → 正確率 → 依時期比較</span></a>
+  </nav>
 
-    <section class="card">
-      <h2><span class="num">2</span>每次評量（4 個步驟）</h2>
-      <ol>
-        <li>快速開始點 <b class="k">學扶前後測</b>（這台電腦會記住，下次打開就停在這裡）。</li>
-        <li><b>現在是？</b>選 <b class="k">教學前</b>、<b class="k">教學中</b> 或 <b class="k">教學後</b>。</li>
-        <li>點<b>學生</b>（最多 4 位輪流，換人時畫面會大大顯示下一位的名字）、選<b>課次</b>。</li>
-        <li>按 <b class="k">開始</b> → 學生選主題 → 作答 → 做完抽一張貼紙。</li>
-      </ol>
-      <p class="note">選項數、提示、答錯規則都已固定，不用設定。教學前固定不給提示。</p>
-    </section>
+  <section class="card" id="first">
+    <h2><span class="num">1</span>第一次使用：建學生名單</h2>
+    <div class="two">
+      <div>
+        <ol>
+          <li>按右上角 <b class="k">學生名單</b>。</li>
+          <li>填<b>代號</b>、<b>名字</b>（學生作答時看得到）、<b>年級</b>。</li>
+          <li>按 <b class="k">本學期安排</b>，填學扶<b>每週幾節</b>、<b>開始日期</b>。圖表會在這一天畫一條線。</li>
+          <li>按 <b class="k">完成</b>。</li>
+        </ol>
+        <p class="note">字的大小、唸讀速度在右上角「畫面與聲音」調整（選填）。</p>
+      </div>
+      <figure class="demo" data-demo="first">
+        <div class="screen" aria-hidden="true">
+          <div class="bar"><span class="m">老師專區</span><span class="m">作答紀錄</span><span class="m" data-t="kids">學生名單</span></div>
+          <div class="sheet later" data-later="1">
+            <b>學生名單</b>
+            <div class="row" style="margin-top:6px"><span class="av"></span><span class="m field">S01</span><span class="m field" data-t="name">小星</span><span class="m field">3 年級</span><span class="m" data-t="plan">本學期安排</span></div>
+            <div class="row later" data-later="2" style="margin-top:6px;background:var(--mint);border-radius:8px;padding:5px 7px">學習扶助：每週 <span class="m field" style="min-width:2em">3</span> 節　開始日期 <span class="m field">2026/09/14</span></div>
+            <div class="row" style="justify-content:flex-end;margin-top:6px"><span class="m go" data-t="done">完成</span></div>
+          </div>
+          <span class="tag">示範畫面</span>
+        </div>
+        <figcaption class="cap"></figcaption>
+        <div class="ctl"><button type="button" data-act="pause">暫停</button><button type="button" data-act="replay">重播</button></div>
+      </figure>
+    </div>
+  </section>
 
-    <section class="card full">
-      <h2><span class="num">3</span>什麼時候做？</h2>
-      <table>
-        <tr><th>選哪一個</th><th>什麼時候</th><th>做幾次</th><th>系統會自動做的事</th></tr>
-        <tr><td><b>教學前</b>（前測）</td><td>開始教這幾課之前</td><td>至少 3 次、不同天，看起點穩不穩</td><td>算基線期，不給提示</td></tr>
-        <tr><td><b>教學中</b></td><td>教學期間</td><td>每 1～2 週一次</td><td>第一次選的那天記成這幾課的「教學開始日」</td></tr>
-        <tr><td><b>教學後</b>（後測）</td><td>教完那一週</td><td>1～2 次</td><td>第一次選的那天記成「教學結束日」</td></tr>
-        <tr><td><b>教學後</b>（維持）</td><td>教完 2～4 週後</td><td>1～2 次</td><td>結束 7 天以上自動算「維持期」</td></tr>
-      </table>
-      <p class="note">同一位學生從前測到後測，請用同一台電腦、同樣的課次範圍；主題可以讓學生自己選，貼紙每次固定一張，不影響成績比較。日期記錯可以到「進階設定 → 教學日期管理」修改。</p>
-    </section>
+  <section class="card" id="each">
+    <h2><span class="num">2</span>每次評量：點 4 下就開始</h2>
+    <div class="two">
+      <div>
+        <ol>
+          <li>點 <b class="k">學扶前後測</b>（這台電腦會記住，下次打開就停在這裡）。</li>
+          <li>現在是？選 <b class="k">教學前</b>、<b class="k">教學中</b> 或 <b class="k">教學後</b>。</li>
+          <li>點<b>學生</b>（最多 4 位輪流）、選<b>課次</b>。</li>
+          <li>按 <b class="k">開始評量</b> → 學生選主題 → 作答 → 抽一張貼紙。</li>
+        </ol>
+        <p class="note">選項數、提示、答錯規則都已固定，不用設定。教學前不給提示。</p>
+      </div>
+      <figure class="demo" data-demo="each">
+        <div class="screen" aria-hidden="true">
+          <div class="lab">今天要做什麼？</div>
+          <div class="grp"><span class="m pc box on" data-on>課堂練習</span><span class="m pc box">小考檢測</span><span class="m pc box" data-t="rti">學扶前後測</span><span class="m pc box">計時挑戰</span></div>
+          <div class="later" data-later="1">
+            <div class="lab">現在是？</div>
+            <div class="grp"><span class="m" data-t="pre">教學前</span><span class="m">教學中</span><span class="m">教學後</span></div>
+          </div>
+          <div class="lab">誰要做？</div>
+          <div class="grp"><span class="m" data-t="kid">小星</span><span class="m">小樹</span></div>
+          <div class="lab">練哪幾課？</div>
+          <div class="grp"><span class="m box" data-t="lesson">第 1 課</span><span class="m box">第 2 課</span><span class="m box">第 3 課</span></div>
+          <div style="text-align:right;margin-top:8px"><span class="m go" data-t="go">開始評量</span></div>
+          <span class="tag">示範畫面</span>
+        </div>
+        <figcaption class="cap"></figcaption>
+        <div class="ctl"><button type="button" data-act="pause">暫停</button><button type="button" data-act="replay">重播</button></div>
+      </figure>
+    </div>
+  </section>
 
-    <section class="card">
-      <h2><span class="num">4</span>寫報告要看哪裡</h2>
-      <p style="margin:0">右上角 <b class="k">老師專區</b> → <b>一位學生</b>，日期選 <b>全部</b>：</p>
-      <ul>
-        <li><b>正確率 → 依時期比較</b>：前測、教學中、後測、維持期的正確率並排，最直接的介入成效。</li>
-        <li><b>正確率 → 依時間</b>：折線圖，虛線分出各時期，直線標出學扶開始日。</li>
-        <li><b>反應時間</b>：越來越快代表越熟練。</li>
-        <li><b>常錯字排序、錯誤類型</b>：還沒學會的字、常搞混的是形近字還是同音字，可寫進教學建議。</li>
-        <li>點任何一個字，看那個字的每一次作答。</li>
-      </ul>
-      <p class="note">每個畫面都可以「看明細」和「匯出這個畫面（Excel）」。報告用的一鍵摘要之後會再加上。</p>
-    </section>
+  <section class="card">
+    <h2><span class="num">3</span>什麼時候做？</h2>
+    <table>
+      <tr><th>選哪一個</th><th>什麼時候</th><th>做幾次</th></tr>
+      <tr><td><b>教學前</b>（前測）</td><td>開始教這幾課之前</td><td>至少 3 次、不同天</td></tr>
+      <tr><td><b>教學中</b></td><td>教學期間</td><td>每 1～2 週 1 次</td></tr>
+      <tr><td><b>教學後</b>（後測）</td><td>教完那一週</td><td>1～2 次</td></tr>
+      <tr><td><b>教學後</b>（維持）</td><td>教完 2～4 週後</td><td>1～2 次</td></tr>
+    </table>
+    <p class="note">日期不用自己記：第一次選「教學中」的那天＝教學開始日，第一次選「教學後」的那天＝教學結束日，結束 7 天以上自動算維持期。記錯了到「進階設定 → 教學日期管理」修改。前測到後測請用同一台電腦、同樣的課次。</p>
+  </section>
 
-    <section class="card">
-      <h2><span class="num">5</span>一定要記得</h2>
-      <ul>
-        <li><b>中途按「結束」</b>：那一次的紀錄不算、也沒有貼紙，請盡量讓學生做完。</li>
-        <li><b>紀錄只存在這台電腦的瀏覽器</b>：每週按「作答紀錄 → 下載備份檔」，存到隨身碟或雲端；換電腦時用「從備份檔還原」。</li>
-        <li><b>匯出的 Excel 和備份檔有學生名字</b>：請妥善保管，不要傳到公開的地方或群組。</li>
-        <li>不要在無痕視窗使用，關掉後紀錄會不見。</li>
-        <li>給學校、家長看的說明：<a href="../../privacy.html">資料與隱私說明</a>。</li>
-      </ul>
-      <div class="warn">有問題或想調整，請洽平台維護老師。</div>
-    </section>
-  </div>
+  <section class="card" id="report">
+    <h2><span class="num">4</span>寫報告：看依時期比較</h2>
+    <div class="two">
+      <div>
+        <ol>
+          <li>按右上角 <b class="k">老師專區</b> → <b class="k">一位學生</b>。</li>
+          <li>看誰：點學生；看什麼：<b class="k">正確率</b>。</li>
+          <li>怎麼看：<b class="k">依時期比較</b>。前測、教學中、後測的正確率並排，最直接看出介入有沒有效。</li>
+        </ol>
+        <p class="note">「依時間」是折線圖，會標出學扶開始日。每個畫面都能匯出 Excel。名詞和其他圖的看法見<a href="analysis-guide.html">分析教學</a>。</p>
+      </div>
+      <figure class="demo" data-demo="report">
+        <div class="screen" aria-hidden="true">
+          <div class="bar"><span class="m" data-t="teacher">老師專區</span><span class="m">貼紙簿</span><span class="m">學生名單</span></div>
+          <div class="later" data-later="1">
+            <div class="grp"><span class="m box" data-t="one">一位學生</span><span class="m box">全班總表</span></div>
+            <div class="lab">看誰</div><div class="grp"><span class="m" data-t="who">小星</span><span class="m">小樹</span></div>
+            <div class="lab">看什麼</div><div class="grp"><span class="m" data-t="acc">正確率</span><span class="m">反應時間</span><span class="m">常錯字</span></div>
+            <div class="lab">怎麼看</div><div class="grp"><span class="m">依時間</span><span class="m">依課別</span><span class="m" data-t="phase">依時期比較</span></div>
+            <div class="later" data-later="2" style="margin-top:22px">
+              <div class="bars"><div style="height:30%"><span>35%</span></div><div style="height:55%"><span>60%</span></div><div style="height:80%"><span>85%</span></div><div style="height:76%"><span>80%</span></div></div>
+              <div class="grp"><span>基線期</span><span>教學中</span><span>教學後</span><span>維持期</span></div>
+            </div>
+          </div>
+          <span class="tag">示範畫面（不是真的學生資料）</span>
+        </div>
+        <figcaption class="cap"></figcaption>
+        <div class="ctl"><button type="button" data-act="pause">暫停</button><button type="button" data-act="replay">重播</button></div>
+      </figure>
+    </div>
+  </section>
+
+  <section class="card warn">
+    <h2><span class="num">!</span>一定要記得</h2>
+    <ul>
+      <li><b>讓學生做完</b>：中途按「結束」，那一次的紀錄不算。</li>
+      <li><b>每週備份</b>：紀錄只存在這台電腦。按「作答紀錄 → 下載備份檔」存到隨身碟或雲端；換電腦用「從備份檔還原」。</li>
+      <li><b>Excel 和備份檔有學生名字</b>：不要傳到公開的地方或群組。</li>
+      <li><b>不要用無痕視窗</b>：關掉後紀錄會不見。</li>
+      <li>給學校、家長看的說明：<a href="../../privacy.html">資料與隱私說明</a>。</li>
+    </ul>
+    <p class="note">有問題或想調整，請洽平台維護老師。</p>
+  </section>
 </main>
+
+<script>
+/* ---------- 示範動畫的腳本 ----------
+   每一步：t＝要點的地方（data-t），say＝下方說明，show＝點了之後出現哪一塊（data-later）。
+   點下去的按鈕會變成選取的顏色（同一列只留一個）。 */
+const DEMOS = {
+  first: [
+    {t:"kids", say:"按右上角「學生名單」", show:"1", keep:true},
+    {t:"name", say:"填代號、名字、年級（名字學生看得到）", keep:true},
+    {t:"plan", say:"按「本學期安排」，填學扶每週幾節、開始日期", show:"2"},
+    {t:"done", say:"按「完成」就存好了", keep:true}
+  ],
+  each: [
+    {t:"rti", say:"點「學扶前後測」", show:"1"},
+    {t:"pre", say:"現在是？例如還沒開始教，選「教學前」"},
+    {t:"kid", say:"點要做的學生（最多 4 位）"},
+    {t:"lesson", say:"選課次（可以選好幾課）"},
+    {t:"go", say:"按「開始評量」，交給學生作答", keep:true}
+  ],
+  report: [
+    {t:"teacher", say:"按右上角「老師專區」", show:"1", keep:true},
+    {t:"one", say:"選「一位學生」"},
+    {t:"who", say:"看誰：點學生"},
+    {t:"acc", say:"看什麼：選「正確率」"},
+    {t:"phase", say:"怎麼看：選「依時期比較」，前測和後測並排", show:"2"}
+  ]
+};
+const CURSOR = '<svg viewBox="0 0 24 24"><path d="M4 2l15 11-6.5 1.2L16 21l-3 1.4-3.4-6.9L4 20z" fill="#fff" stroke="#1f3d36" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+document.querySelectorAll(".demo").forEach(demo => {
+  const scr = demo.querySelector(".screen"), cap = demo.querySelector(".cap"), steps = DEMOS[demo.dataset.demo];
+  const target = s => scr.querySelector(`[data-t="${s.t}"]`);
+
+  /* 不動的版本：全部顯示，用數字標出點的順序 */
+  if(reduced){
+    demo.classList.add("static");
+    scr.querySelectorAll(".later").forEach(e => e.classList.add("in"));
+    steps.forEach((s, n) => target(s).insertAdjacentHTML("beforeend", `<span class="badge">${n + 1}</span>`));
+    cap.textContent = "照紅色數字的順序點。";
+    return;
+  }
+
+  const cur = document.createElement("div"); cur.className = "cur"; cur.innerHTML = CURSOR;
+  const ring = document.createElement("div"); ring.className = "ring"; ring.hidden = true;
+  scr.append(ring, cur);
+  let i = 0, timer = null, playing = true, onScreen = false;
+  const pauseBtn = demo.querySelector('[data-act="pause"]');
+
+  /* 回到一開始的樣子 */
+  function reset(){
+    i = 0; ring.hidden = true;
+    scr.querySelectorAll(".later").forEach(e => e.classList.remove("in"));
+    scr.querySelectorAll(".on").forEach(e => e.classList.remove("on"));
+    scr.querySelectorAll("[data-on]").forEach(e => e.classList.add("on"));
+    cur.style.left = "92%"; cur.style.top = "92%";
+  }
+  /* 某個按鈕的中心點（相對於小畫面） */
+  function center(el){
+    const a = scr.getBoundingClientRect(), b = el.getBoundingClientRect();
+    return [b.left - a.left + b.width / 2, b.top - a.top + b.height / 2];
+  }
+  /* 一步：紅圈先出現在要點的地方 → 游標移過去 → 點下去 → 停一下再做下一步 */
+  function step(){
+    if(i >= steps.length){ timer = setTimeout(() => { reset(); step(); }, 2500); return; }
+    const s = steps[i], el = target(s), [x, y] = center(el);
+    cap.innerHTML = `<b>${i + 1}</b>${s.say}`;
+    ring.hidden = false; ring.style.left = x + "px"; ring.style.top = y + "px";
+    cur.style.left = (x - 4) + "px"; cur.style.top = (y - 2) + "px";
+    timer = setTimeout(() => {
+      cur.classList.add("press"); setTimeout(() => cur.classList.remove("press"), 180);
+      if(!s.keep){
+        el.parentElement.querySelectorAll(".on").forEach(e => e.classList.remove("on"));
+        el.classList.add("on");
+      }
+      if(s.show) scr.querySelector(`[data-later="${s.show}"]`).classList.add("in");
+      i++;
+      timer = setTimeout(step, 1700);
+    }, 1100);
+  }
+  function stop(){ clearTimeout(timer); timer = null; }
+  function run(){ if(playing && onScreen && !timer) step(); }
+
+  pauseBtn.onclick = () => {
+    playing = !playing; pauseBtn.textContent = playing ? "暫停" : "播放";
+    if(playing) run(); else stop();
+  };
+  demo.querySelector('[data-act="replay"]').onclick = () => {
+    stop(); reset(); playing = true; pauseBtn.textContent = "暫停"; run();
+  };
+  /* 只在捲到看得到的時候播放，省電腦資源 */
+  new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; if(onScreen) run(); else stop(); }).observe(demo);
+  reset(); cap.innerHTML = `<b>1</b>${steps[0].say}`;
+});
+</script>
 </body>
 </html>
