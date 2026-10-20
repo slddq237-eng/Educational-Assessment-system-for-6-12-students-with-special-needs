@@ -523,6 +523,16 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 .banner{background:var(--amber-bg);border:2px solid var(--amber);border-radius:12px;padding:10px 14px;color:#5c400a}
 
 @media (prefers-reduced-motion:no-preference){.goal,.opt,.lesson{transition:transform .12s}.goal:not(:disabled):hover,.opt:not(:disabled):hover,.lesson:hover{transform:translateY(-2px)}}
+/* 新手導覽（tour.js）：畫面變暗，只亮出要看的地方，紅框標位置，旁邊一張說明小卡 */
+.tourbox{position:fixed;z-index:40;border:3px solid var(--red);border-radius:14px;box-shadow:0 0 0 9999px rgba(20,40,35,.55);pointer-events:none;transition:left .25s,top .25s,width .25s,height .25s}
+.tourbox.none{border:none}
+.tourcard{position:fixed;z-index:41;background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:14px 18px;box-shadow:0 8px 24px rgba(0,0,0,.2);font-size:17px}
+.tourcard p{margin:0 0 10px}
+.tourcard .tstep{color:var(--red);font-size:14px;font-weight:700;margin:0 0 4px}
+.tourcard .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.tourcard .ghost{padding:6px 14px}
+.tourbox[hidden],.tourcard[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){.tourbox{transition:none}}
 </style>
 </head>
 <body class="quick">
@@ -534,7 +544,8 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
       <div class="seg" role="group" aria-label="畫面模式">
         <button id="uiQuick" aria-pressed="true">快速開始</button><button id="uiAdv" aria-pressed="false">進階設定</button>
       </div>
-      <a class="ghost" href="guide.html" target="_blank" rel="noopener">使用說明</a>
+      <a class="ghost" id="guideLink" href="guide.html" target="_blank" rel="noopener">使用說明</a>
+      <button class="ghost" id="tourBtn">新手導覽</button>
       <button class="ghost" id="openTeacher">老師專區</button>
       <button class="ghost" id="openBook">貼紙簿</button>
       <button class="ghost" id="openView">畫面與聲音</button>
@@ -808,5 +819,6 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <script src="teacher.js"></script>
 <script src="pivot.js"></script>
 <script src="app.js"></script>
+<script src="tour.js"></script>
 </body>
 </html>
