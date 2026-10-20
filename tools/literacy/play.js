@@ -142,12 +142,16 @@ function startSession(){
     noHelp: c.noHelp, rule: c.rule || [], hints: c.hints,
     /* 版面：選項卡，或全課賓果卡（只在練習；正式評量、流暢性一律是選項卡，選項版面不能變） */
     choices: bingoOK(c) ? 0 : +c.choices, layout: bingoOK(c) ? "bingo" : "cards", boards: {},
-    /* 主題（在選主題畫面選的，""＝不用主題）、要不要給貼紙；遊戲玩法第 3 階段才會用到 */
+    /* 主題（在選主題畫面選的，""＝不用主題）、要不要給貼紙；遊戲玩法（3-3 打怪獸：solo 自己打、coop 合作，""＝不玩） */
     theme: state.theme || "", rewards: useRewards(), game: "",
     tally: Object.fromEntries(list.map(k => [k, {n:0, first:0, passed:0, secs:[], wrong:0}])),
     quitArm: false
   };
+  G.game = gameFor(G);
+  /* 打怪獸的戰利品（大魚、恐龍等）開始前就決定好，打敗怪獸後就是這次的貼紙 */
+  if(G.game) G.prize = Themes.drawSticker(G.theme, (Rewards.get(list[0]).stickers || {})[G.theme] || []);
   applySkin(G.theme);
+  $("#pScene").hidden = true; $("#pScene").innerHTML = ""; $("#pBody").hidden = false;
   startClockShow();
   if(G.mode === "flu"){ G.turn = 0; showScreen("#play"); showReady(); return; }
   /* 正確率模式：每位學生各抽一份題目，再交錯排成輪流順序 */
@@ -156,6 +160,7 @@ function startSession(){
   for(let i = 0; i < Math.max(...lists.map(l => l.length)); i++) lists.forEach(l => { if(l[i]) G.queue.push(l[i]); });
   G.pos = 0;
   showScreen("#play");
+  if(G.game) return sceneStart(nextItem);
   nextItem();
 }
 
@@ -188,7 +193,7 @@ function drawBar(it){
 
 function nextItem(){
   if(G.over) return;   /* 已經按「結束」了，不要再出題（避免結果畫面還在唸題目） */
-  if(G.pos >= G.queue.length) return finish();
+  if(G.pos >= G.queue.length) return G.game ? sceneWin() : finish();
   const it = G.queue[G.pos], prev = G.queue[G.pos - 1];
   /* 多人輪流時，換到另一位學生先出現換人畫面 */
   if(G.kids.length > 1 && (!prev || prev.kid !== it.kid)) return turnCard(it.kid, !prev, () => newItem(it));
@@ -361,7 +366,61 @@ function endItem(passed, correctSec, revealed){
     return;
   }
   G.pos++;
-  setTimeout(() => { if(G) nextItem(); }, passed ? (cur.line ? 1800 : 900) : revealed ? 2200 : 1000);
+  const g = G;
+  setTimeout(() => { if(G !== g || g.over) return; if(g.game && g.pos < g.queue.length) sceneBeat(it.kid, nextItem); else nextItem(); },
+    passed ? (cur.line ? 1800 : 900) : revealed ? 2200 : 1000);
+}
+
+/* ---------- 3-3 打怪獸 ----------
+   正確率模式、選項卡、有選主題才可以玩；練習看選主題畫面的選擇（預設要玩），正式評量看評量設定（預設不玩）。
+   一位學生＝自己打（solo），多位學生輪流＝大家合作打同一隻（coop）。
+   場景只在「題目之間」出現：開始前一段、每題做完一段（固定 1.8 秒，不論對錯），最後一題做完是打敗怪獸。
+   作答時看不到場景，選項的版面和沒玩時完全一樣；怪獸依「做完幾題」受傷，不論對錯（和貼紙規則一致）。 */
+const SCENE_MS = 1800;
+const GAMES = {solo:"打怪獸（個人）", coop:"打怪獸（合作）"};
+const gameName = g => GAMES[g] || "無";
+const gameAllowed = () => state.mode === "acc" && !bingoOK(current());
+function gameFor(g){
+  if(g.mode !== "acc" || g.layout !== "cards" || !g.theme || !window.Scenes || !Scenes[g.theme]) return "";
+  if(g.kind === "formal" ? !(settings.formalTheme && settings.formalGame) : settings.practiceGame === false) return "";
+  return g.kids.length > 1 ? "coop" : "solo";
+}
+const SCENE_ACT = {ocean:"用力拉", space:"出擊", dino:"敲一下", dessert:"疊蛋糕"};
+/* 切換作答畫面與場景；cap＝場景上方的一行字（可以帶頭像） */
+function showScene(on, cap = "", code = ""){
+  $("#pBody").hidden = on; $("#pScene").hidden = !on;
+  if(on) $("#sceneCap").innerHTML = `${code ? Rewards.avatarHtml(code) : ""}<span>${esc(cap)}</span>`;
+}
+/* 開始前：看看要打的怪獸，停 1.8 秒 */
+function sceneStart(then){
+  const g = G, box = $("#pScene"), t = Themes.THEMES[g.theme];
+  box.innerHTML = `<div class="scenecap" id="sceneCap"></div><div class="scenehold"></div>`;
+  g.scene = Scenes[g.theme](box.querySelector(".scenehold"), g.queue.length, g.prize);
+  g.hits = 0;
+  g.scene.setPlayer(g.queue[0].kid);
+  showScene(true, `${g.game === "coop" ? "大家一起：" : ""}${t.line}`);
+  $("#pProg").textContent = `做完 ${g.queue.length} 題就成功！`;
+  setTimeout(() => { if(G === g && !g.over){ showScene(false); then(); } }, SCENE_MS);
+}
+/* 每做完一題（不論對錯）：主角換成剛剛作答的學生，怪獸受傷一次，停 1.8 秒 */
+function sceneBeat(code, then){
+  const g = G, k = kidBy(code);
+  g.hits++;
+  g.scene.setPlayer(code);
+  showScene(true, `${k ? kidShow(k) : code} ${SCENE_ACT[g.theme] || "出擊"}！`, code);
+  g.scene.hit(g.hits);
+  setTimeout(() => { if(G === g && !g.over){ showScene(false); then(); } }, SCENE_MS);
+}
+/* 最後一題做完：打敗怪獸，播完才到結果畫面（結果畫面再揭曉貼紙） */
+function sceneWin(){
+  const g = G; if(g.winning) return; g.winning = true;
+  const t = Themes.THEMES[g.theme], last = g.queue[g.queue.length - 1].kid, k = kidBy(last);
+  g.hits = g.queue.length;
+  g.scene.setPlayer(last);
+  showScene(true, g.game === "coop" ? t.coopWin : `${k ? kidShow(k) : last} ${t.winBanner}`, g.game === "coop" ? "" : last);
+  const r = g.scene.win();
+  setTimeout(() => { if(G === g && !g.over) sfx.fanfare(); }, r.bannerAt);   /* 上方的字已經寫了結果，不另外跳大字，免得蓋住怪獸 */
+  setTimeout(() => { if(G === g && !g.over) finish(); }, r.delay);
 }
 
 /* ---------- 流暢性模式：一位學生一回合 ---------- */
@@ -429,6 +488,7 @@ function finish(){
   try { speechSynthesis.cancel(); } catch(e){}
   $("#pTimer").hidden = true; $("#pQuit").textContent = "結束";
   const g = G;
+  if(g.scene){ g.scene.stop(); $("#pScene").hidden = true; $("#pBody").hidden = false; }
   /* 哪些學生做完了：正確率模式＝自己的題目都答完；流暢性模式＝自己那一回合時間到。
      按「結束」提早離開時，沒做完的學生這次的紀錄標成「中途結束」（不列入分析），也不抽貼紙。 */
   g.done = new Set(g.kids.filter(code => g.mode === "flu" ? g.tally[code].roundCorrect !== undefined

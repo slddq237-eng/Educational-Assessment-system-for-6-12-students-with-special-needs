@@ -259,6 +259,7 @@ function stickerName(theme, i){
 }
 window.Themes = {
   THEMES, GACHA, GACHA_VERB, RARE_GLOW,
+  FISH, DINOS, fishBody, dinoSvg,   /* 打怪獸場景要畫大魚和恐龍（識字評量 scenes.js） */
   ids: Object.keys(THEMES),
   icon, stickerSvg, drawSticker, stickerName,
   stars: (theme, i) => GACHA[theme] && GACHA[theme][i] ? GACHA[theme][i].stars : 0

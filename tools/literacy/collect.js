@@ -16,11 +16,18 @@ const themeName = id => (Themes.THEMES[id] || {}).name || "無";
 function chooseTheme(){
   if(!useRewards()){ state.theme = ""; startSession(); return; }
   const list = selKids().map(kidBy);
+  /* 打怪獸（3-3）：練習可以在這裡選要不要玩；正式評量照評量設定。要玩就一定要選主題（場景跟著主題） */
+  const can = gameAllowed(), formal = state.kind === "formal", play = can && (formal ? !!settings.formalGame : settings.practiceGame !== false);
+  $("#pickGame").innerHTML = !can ? "" : formal
+    ? `<span class="note" style="margin:0">${play ? "這次會打怪獸（評量設定）：打敗怪獸得到的就是這次的貼紙。" : ""}</span>`
+    : `<span class="tl">玩法</span>${chipRow([["1", `打怪獸（${list.length > 1 ? "大家合作" : "自己打"}）`], ["0", "只換顏色"]], play ? "1" : "0", "pgame")}`;
+  $("#pickGame").querySelectorAll("[data-pgame]").forEach(b => b.onclick = () => { settings.practiceGame = b.dataset.pgame === "1"; saveSettings(); chooseTheme(); });
+  const LINE = id => play ? Themes.THEMES[id].line : `可以得到${Themes.THEMES[id].name}的貼紙`;
   $("#pickWho").innerHTML = list.map(k => `<span class="pk">${Rewards.avatarHtml(k.code)}${esc(kidShow(k))}</span>`).join("");
   $("#pickHint").textContent = list.length > 1 ? "大家一起決定，要去哪裡冒險？" : "你想去哪裡冒險？";
   $("#themes").innerHTML = Themes.ids.map(id => { const t = Themes.THEMES[id];
-    return `<button class="theme" data-skin="${id}" data-t="${id}">${Themes.icon(id, t.stickers[0][0])}${esc(t.name)}<small>可以得到${esc(t.name)}的貼紙</small></button>`; }).join("")
-    + `<button class="theme none" data-t=""><span style="font-size:72px;line-height:110px">☆</span>不用主題<small>一樣可以得到貼紙</small></button>`;
+    return `<button class="theme" data-skin="${id}" data-t="${id}">${Themes.icon(id, t.stickers[0][0])}${esc(t.name)}<small>${esc(LINE(id))}</small></button>`; }).join("")
+    + (play ? "" : `<button class="theme none" data-t=""><span style="font-size:72px;line-height:110px">☆</span>不用主題<small>一樣可以得到貼紙</small></button>`);
   $("#themes").querySelectorAll("button").forEach(b => b.onclick = () => { state.theme = b.dataset.t; startSession(); });
   showScreen("#pick");
 }
@@ -69,7 +76,8 @@ function giveStickers(g){
   for(const code of g.kids){
     if(!g.done.has(code)) continue;   /* 沒做完（中途按結束）就不給 */
     const theme = g.theme || Themes.ids[Math.floor(Math.random() * Themes.ids.length)];
-    const idx = Rewards.award(code, theme, {tool:"識字評量", session:g.session});
+    /* 打怪獸：打敗怪獸得到的東西（開始前就決定好）就是這次的貼紙，合作時大家得到一樣的 */
+    const idx = Rewards.award(code, theme, {tool:"識字評量", session:g.session, idx: g.game ? g.prize : undefined});
     const text = Themes.stickerName(theme, idx);
     const mine = records.filter(r => r.session === g.session && r.kid === code);
     if(mine.length){ const r = mine[mine.length - 1]; r.reward = text; updateRecord(r); }

@@ -110,11 +110,13 @@ async function photoFromFile(file){
 }
 
 /* ---------- 4. 貼紙 ---------- */
-/* 抽一張貼紙並存起來；回傳貼紙編號。info：{tool, session} 記在 log 裡 */
+/* 抽一張貼紙並存起來；回傳貼紙編號。info：{tool, session} 記在 log 裡；
+   info.idx 有給時直接用這一張（例如打怪獸開始前就決定好的大魚、恐龍，打敗怪獸得到的就是它） */
 function award(code, theme, info){
   const x = copy(get(code));
   const owned = (x.stickers[theme] ||= []);
-  const idx = Themes.drawSticker(theme, owned);
+  const n = Themes.THEMES[theme].stickers.length;
+  const idx = info && Number.isInteger(info.idx) && info.idx >= 0 && info.idx < n ? info.idx : Themes.drawSticker(theme, owned);
   owned.push(idx);
   (x.log ||= []).push({at:new Date().toISOString(), tool:(info && info.tool) || "", session:(info && info.session) || "", theme, idx});
   put(x);
