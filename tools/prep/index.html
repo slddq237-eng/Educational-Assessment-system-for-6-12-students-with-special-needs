@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>備課分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@400;700&display=swap">
+<style>
+/* 版面：沿用識字評量的生字簿方格紙。
+   上面選範圍與分析方式，下面是三個重點數字和結果表（部件排行／生字一覽／字頻）。 */
+:root{
+  --paper:#f5faf6; --grid:#d5e8da; --ink:#1f3d36; --muted:#5b7a71;
+  --red:#d64534; --green:#2c7a69; --mint:#e4f3ec; --card:#ffffff; --amber:#9a6a12; --amber-bg:#fbf1dc;
+  --ui:"Huninn","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --kai:"LXGW WenKai TC","DFKai-SB","BiauKai","標楷體","Kaiti TC",serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:17px;line-height:1.5;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:48px 48px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding-block:24px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* 頂列 */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.brand{display:flex;align-items:center;gap:14px}
+.stamp{width:56px;height:56px;border:4px solid var(--red);color:var(--red);border-radius:50%;display:grid;place-items:center;
+  font-family:var(--kai);font-weight:700;font-size:28px;transform:rotate(-12deg);flex:none}
+.brand small{display:block;color:var(--muted);letter-spacing:.12em;font-size:15px}
+.brand h1{margin:0;font-family:var(--kai);font-size:clamp(30px,4vw,46px);letter-spacing:.06em;line-height:1.1}
+.ghost{text-decoration:none;border:2px solid var(--ink);border-radius:999px;padding:8px 18px;color:var(--ink);background:var(--card);font-size:16px}
+.ghost:hover{background:var(--ink);color:var(--paper)}
+
+/* 面板與選項 */
+.steps{display:grid;gap:20px}
+.panel{background:var(--card);border:2px solid var(--ink);border-radius:20px;padding:clamp(16px,2.4vw,28px);box-shadow:5px 5px 0 var(--ink);min-width:0}
+.panel h2{margin:0;font-size:clamp(21px,2vw,26px);display:flex;align-items:center;gap:10px}
+.num{width:32px;height:32px;border-radius:50%;background:var(--ink);color:var(--paper);display:inline-grid;place-items:center;font-size:17px;flex:none}
+.hint{color:var(--muted);margin:6px 0 16px;font-size:16px}
+.sub{font-size:15px;color:var(--muted);margin:18px 0 8px;letter-spacing:.06em}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.opt{border:2px solid var(--ink);background:var(--card);border-radius:14px;padding:8px 16px;text-align:left}
+.opt small{display:block;color:var(--muted);font-size:14px}
+.opt.on{background:var(--green);border-color:var(--green);color:#fff}
+.opt.on small{color:#e3f4ec}
+.chip{border:2px solid var(--ink);background:var(--card);border-radius:999px;padding:4px 14px;font-size:16px}
+.chip.on{background:var(--green);border-color:var(--green);color:#fff}
+.mini{border:none;background:none;color:var(--green);text-decoration:underline;padding:4px 6px;font-size:15px}
+.book{border-top:1px dashed var(--grid);padding-top:12px;margin-top:12px}
+.book b{display:block;margin-bottom:8px}
+.check{display:flex;gap:8px;align-items:center}
+.check input{width:20px;height:20px;accent-color:var(--green)}
+input[type=text],select{border:2px solid var(--ink);border-radius:12px;padding:6px 12px;background:var(--card);max-width:100%}
+.saved{display:inline-flex;align-items:center;border:2px solid var(--amber);background:var(--amber-bg);border-radius:999px;overflow:hidden}
+.saved button{border:none;background:none;padding:4px 10px;color:#5c400a}
+.saved .x{border-left:1px solid var(--amber);color:var(--amber)}
+
+/* 重點數字與結果 */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:var(--mint);border-radius:16px;padding:12px 16px}
+.stat b{display:block;font-size:30px;line-height:1.2}
+.stat span{color:var(--muted);font-size:15px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.tabs .opt{padding:6px 18px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{border-bottom:1px solid var(--grid);padding:8px 10px;text-align:left;vertical-align:top}
+th{font-size:15px;color:var(--muted);font-weight:normal;white-space:nowrap}
+td.big{font-family:var(--kai);font-size:30px;font-weight:700;white-space:nowrap}
+td.n{white-space:nowrap}
+.bar{height:8px;border-radius:4px;background:var(--green);margin-top:4px;min-width:2px}
+.chars{font-family:var(--kai);font-size:22px;letter-spacing:.08em;word-break:break-all}
+.chars span[title]{cursor:help}
+.old{color:var(--muted)}
+.note{color:var(--muted);font-size:15px}
+.warn{background:var(--amber-bg);border:2px dashed var(--amber);color:#5c400a;border-radius:14px;padding:10px 16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="stamp">備</div>
+      <div><small>集中識字</small><h1>備課分析</h1></div>
+    </div>
+    <a class="ghost" href="../../">← 回首頁</a>
+  </header>
+
+  <div class="steps">
+    <section class="panel">
+      <h2><span class="num">1</span>分析範圍</h2>
+      <p class="hint">選一本或多本課本（例如同一個年級），再勾要分析的課次。段考範圍可以存起來，下次直接點。</p>
+      <div class="sub">課本</div>
+      <div class="row" id="books"></div>
+      <div id="lessons"></div>
+      <div class="sub">字的種類</div>
+      <div class="row" id="kinds"></div>
+      <div class="sub">存成常用範圍（例如「二上第一次段考」）</div>
+      <div class="row">
+        <input type="text" id="rangeName" placeholder="範圍名稱" maxlength="20">
+        <button class="chip" id="saveRange">儲存</button>
+        <span id="savedList" class="row"></span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2><span class="num">2</span>分析方式</h2>
+      <p class="hint">「第一層」是字直接拆開的部件（清＝氵＋青）；「拆到最細」會再把部件往下拆（青＝龶＋月），找出更多共同部件。</p>
+      <div class="row" id="depth"></div>
+      <div class="row" style="margin-top:12px">
+        <label class="check"><input type="checkbox" id="hideStroke" checked>隱藏單一筆畫（一、丨、丿、丶…）</label>
+        <label class="check">至少出現在
+          <select id="minN"><option>1</option><option selected>2</option><option>3</option><option>5</option></select>
+          個字</label>
+      </div>
+    </section>
+
+    <section class="panel" id="result">
+      <h2><span class="num">3</span>分析結果</h2>
+      <p class="hint" id="rangeText"></p>
+      <div class="stats" id="stats"></div>
+      <div class="row" style="justify-content:space-between;margin-bottom:6px">
+        <div class="tabs" id="tabs"></div>
+        <button class="chip" id="export">匯出 Excel</button>
+      </div>
+      <p class="note" id="msg"></p>
+      <div class="scroll" id="table"></div>
+    </section>
+  </div>
+</div>
+
+<script src="../../shared/lessons.js"></script>
+<script src="../../shared/parts.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="prep.js"></script>
+</body>
+</html>

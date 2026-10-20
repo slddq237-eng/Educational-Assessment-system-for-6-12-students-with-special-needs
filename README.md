@@ -8,6 +8,7 @@
 |---|---|---|
 | 生字賓果 | `tools/bingo/` | 可使用 |
 | 識字評量 | `tools/literacy/` | 第 1 版：目標 3 形音辨識、大螢幕輪流作答、作答紀錄與 Excel 匯出 |
+| 備課分析 | `tools/prep/` | 第 1 版：依課次／段考範圍統計常見部件、列出學過的舊字、匯出 Excel；字頻待資料匯入 |
 
 ## 資料夾說明
 
@@ -20,6 +21,7 @@ shared/
   themes.js       共用主題與貼紙（海洋、太空、恐龍、甜點；取自生字賓果）
   themes.css      主題配色、頭像、貼紙的樣式
   rewards.js      每位學生的貼紙收藏與頭像（存在這台電腦）
+  parts.js        自動產生的部件拆解（所有生字＋部件再往下拆）
 tools/
   bingo/          生字賓果遊戲（讀取 shared/lessons.js）
   literacy/       識字評量（讀取 shared/lessons.js）
@@ -30,6 +32,7 @@ tools/
     play.js       出題、作答畫面、結果畫面
     collect.js    選主題、頭像、得到貼紙、貼紙簿
     app.js        程式入口（說明各檔案的載入順序）
+  prep/           備課分析（讀取 shared/lessons.js、shared/parts.js）
 ```
 
 ## 合作規則
@@ -42,3 +45,5 @@ tools/
 ## 授權說明
 
 生字賓果使用的注音字型改自 But Ko「ㄅ字嗨注音標楷」（[bpmfvs](https://github.com/ButTaiwan/bpmfvs)），漢字部分 CC BY 4.0，其餘 SIL OFL 1.1。
+
+`shared/parts.js` 的部件拆解改自 [cjkvi-ids](https://github.com/cjkvi/cjkvi-ids)（衍生自 CHISE 專案），依 GPLv2 授權。
