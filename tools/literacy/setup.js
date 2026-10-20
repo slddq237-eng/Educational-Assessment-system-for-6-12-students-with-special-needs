@@ -252,7 +252,7 @@ function renderAnswers(){
 function renderKids(){
   const a = ANSWERS.find(x => x.id === state.answer);
   $("#answerHint").textContent = a.max < 99 ? `同一份題目可以用不同方式作答。「${a.name}」可選 ${a.min}～${a.max} 位學生。` : "同一份題目可以用不同方式作答。呈現模式可以全班一起，人數不限。";
-  $("#kids").innerHTML = kids.map(k => `<button class="chip kidchip ${state.kids.has(k.code)?"on":""}" data-k="${esc(k.code)}" aria-pressed="${state.kids.has(k.code)}">${esc(kidLabel(k))}<small>${gradeText(k)}</small></button>`).join("");
+  $("#kids").innerHTML = kids.map(k => `<button class="chip kidchip ${state.kids.has(k.code)?"on":""}" data-k="${esc(k.code)}" aria-pressed="${state.kids.has(k.code)}">${Rewards.avatarHtml(k.code)}${esc(kidLabel(k))}<small>${gradeText(k)}</small></button>`).join("");
   $("#kids").querySelectorAll("button").forEach(b => b.onclick = () => { const k = b.dataset.k; state.kids.has(k) ? state.kids.delete(k) : state.kids.add(k); render(); });
 }
 /* =========================================================
@@ -260,11 +260,12 @@ function renderKids(){
    ========================================================= */
 
 /* 學生名單面板 */
-let openPlan = null;
+let openPlan = null, openAv = null;   /* 目前展開的「本學期安排」「選頭像」是哪位學生 */
 function renderKidSheet(){
   $("#kTable").innerHTML = kids.map((k,i) => {
     const p = planOf(k), open = openPlan === k.code;
     return `<div class="krow" data-i="${i}">
+    <button class="avedit" data-avopen aria-expanded="${openAv === k.code}" aria-label="更換${esc(kidShow(k))}的頭像">${Rewards.avatarHtml(k.code)}</button>
     <input aria-label="代號" data-f="code" value="${esc(k.code)}" maxlength="8">
     <input aria-label="名字" data-f="name" value="${esc(k.name||"")}" maxlength="10" placeholder="學生看到的名字">
     <select aria-label="年級" data-f="grade">${GRADES.map((g,j) => `<option value="${j+1}" ${kidGrade(k)===j+1?"selected":""}>${g}年級</option>`).join("")}</select>
@@ -277,20 +278,24 @@ function renderKidSheet(){
         <span class="n">${v.parts.map(([id,t]) => `<label>${t} <input type="number" min="0" max="40" data-p="${id}" value="${p[id] ?? ""}" placeholder="0" aria-label="${v.name}${t}節數"> 節</label>`).join("")}</span>
         <label class="start">開始日期（選填）<input type="date" data-d="${v.id}Start" value="${p[v.id+"Start"] || ""}" aria-label="${v.name}開始日期"></label></div>`).join("")}
       <p class="note" style="margin:0">開始日期留空，代表本學期一開始就有上。學期中才加入的課程請填日期，分析時可以比較加入前後的差異。</p>
-    </div>` : ""}`;
+    </div>` : ""}
+    ${openAv === k.code ? avatarPanel(k) : ""}`;
   }).join("");
   $("#kTable").querySelectorAll(".krow").forEach(r => {
     const k = kids[+r.dataset.i];
     r.querySelectorAll("[data-f]").forEach(f => f.onchange = () => {
       if(f.dataset.f === "grade"){ k.grade = +f.value; k.sy = SCHOOL_YEAR; }
       else if(f.dataset.f === "code"){ const v = f.value.trim(); if(!v || kids.some(x => x !== k && x.code === v)){ f.value = k.code; return; }
-        if(state.kids.delete(k.code)) state.kids.add(v); if(openPlan === k.code) openPlan = v; k.code = v; }
+        if(state.kids.delete(k.code)) state.kids.add(v); if(openPlan === k.code) openPlan = v; if(openAv === k.code) openAv = v;
+        Rewards.rename(k.code, v); k.code = v; }
       else k.name = f.value.trim();
       saveKids(); render();
     });
     r.querySelector("[data-plan]").onclick = () => { openPlan = openPlan === k.code ? null : k.code; renderKidSheet(); };
+    r.querySelector("[data-avopen]").onclick = () => { openAv = openAv === k.code ? null : k.code; renderKidSheet(); };
     r.querySelector("[data-del]").onclick = () => { state.kids.delete(k.code); kids.splice(+r.dataset.i, 1); saveKids(); renderKidSheet(); render(); };
   });
+  bindAvatarPanel($("#kTable .avpick"), () => { renderKidSheet(); render(); });
   $("#kTable").querySelectorAll(".plan").forEach(r => {
     const k = kids[+r.dataset.i];
     const plan = () => ((k.plans ||= {})[PLAN_KEY] ||= {});
@@ -352,7 +357,7 @@ function renderSummary(){
   $("#sum").innerHTML = rows.map(([t,v,miss]) => `<div><dt>${t}</dt><dd class="${v?"":"miss"}">${v || miss || "還沒選"}</dd></div>`).join("");
   $("#go").disabled = rows.some(r => !r[1]);
 }
-$("#go").onclick = () => startSession();
+$("#go").onclick = () => chooseTheme();   /* 先選主題（見 collect.js），再開始 */
 $("#aim").addEventListener("input", renderSummary);
 
 /* 教學日期管理面板 */
@@ -388,10 +393,12 @@ function renderSettings(){
   $("#sRule").innerHTML = ruleEditor(settings.rule);
   $("#sRule").querySelectorAll("select").forEach(s => s.onchange = () => { settings.rule[+s.dataset.i] = s.value; saveSettings(); render(); });
   $("#sMaintain").value = settings.maintainAfter;
+  $("#sTheme").checked = settings.formalTheme;
   $("#sRate").value = settings.rate; $("#sRateV").textContent = `${settings.rate} 倍`;
 }
 $("#sRate").oninput = e => { settings.rate = +e.target.value; $("#sRateV").textContent = `${settings.rate} 倍`; saveSettings(); };
 $("#sTest").onclick = () => speak("努力的努");
+$("#sTheme").onchange = e => { settings.formalTheme = e.target.checked; saveSettings(); };
 $("#sMaintain").onchange = e => { const v = Math.max(1, Math.min(60, +e.target.value || 7)); settings.maintainAfter = v; saveSettings(); renderSettings(); render(); };
 
 let lastFocus = null;

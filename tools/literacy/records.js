@@ -35,6 +35,11 @@ function saveRecord(r){
   if(!recDb) return;
   try { const q = recDb.transaction(REC_STORE, "readwrite").objectStore(REC_STORE).add(r); q.onsuccess = () => { r.id = q.result; }; } catch(e){}
 }
+/* 改一筆已經存好的紀錄（例如結果畫面抽到貼紙後，把獎勵寫進去） */
+function updateRecord(r){
+  if(!recDb || r.id == null) return;
+  try { recDb.transaction(REC_STORE, "readwrite").objectStore(REC_STORE).put(r); } catch(e){}
+}
 function clearRecords(){
   records = [];
   if(!recDb) return;
@@ -67,7 +72,7 @@ const COLS = [
   ["答錯規則", r => r.rule === undefined ? "未記錄" : r.rule === "none" ? "答錯就記錯" : r.rule.split(",").map(x => RULE_SHORT[x] || x).join("→")],
   ["第一次作答秒數", r => r.firstSec], ["答對秒數", r => r.correctSec ?? ""],
   ["評量時機", r => r.phase], ["教學後天數", r => r.daysAfter],
-  ["主題", r => r.theme || "無"], ["遊戲玩法", r => r.game || "無"], ["獎勵", r => r.reward || "無"]
+  ["主題", r => r.theme ? themeName(r.theme) : "無"], ["遊戲玩法", r => r.game || "無"], ["獎勵", r => r.reward || "無"]
 ];
 const fileDate = t => { const d = new Date(t); return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}_${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}`; };
 function exportXlsx(list, filename, msgSel){

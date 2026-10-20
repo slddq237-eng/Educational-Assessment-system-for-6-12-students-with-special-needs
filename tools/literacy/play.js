@@ -114,7 +114,7 @@ let G = null;
 const SPEAKER_SVG = `<svg viewBox="0 0 24 24" width="55%" height="55%" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>`;
 
 function showScreen(id){
-  for(const s of ["#setup", "#play", "#result"]) $(s).hidden = s !== id;
+  for(const s of ["#setup", "#pick", "#play", "#result", "#book"]) $(s).hidden = s !== id;
   window.scrollTo(0, 0);
 }
 
@@ -125,11 +125,12 @@ function startSession(){
     goal: state.goal, kind: state.kind, mode: state.mode, answer: state.answer,
     limit: +state.limit, aim: +$("#aim").value || 30, lessons: [...state.lessons],
     noHelp: c.noHelp, rule: c.rule || [], hints: c.hints, choices: +c.choices,
-    /* 主題、遊戲玩法、版面：第 1、3 階段才會用到，先預留，紀錄裡就有欄位可以比較 */
-    theme: "", game: "", layout: "cards",
+    /* 主題（在選主題畫面選的，""＝不用主題）、要不要給貼紙；遊戲玩法與版面第 3 階段才會用到 */
+    theme: state.theme || "", rewards: useRewards(), game: "", layout: "cards",
     tally: Object.fromEntries(list.map(k => [k, {n:0, first:0, passed:0, secs:[], wrong:0}])),
     quitArm: false
   };
+  applySkin(G.theme);
   if(G.mode === "flu"){ G.turn = 0; showScreen("#play"); showReady(); return; }
   /* 正確率模式：每位學生各抽一份題目，再交錯排成輪流順序 */
   const lists = list.map(code => pickItems(code, q).map(it => ({...it, kid:code})));
@@ -143,7 +144,7 @@ function startSession(){
 /* 畫上方的學生名字與進度 */
 function drawBar(it){
   const k = kidBy(it.kid);
-  $("#pWho").textContent = `輪到 ${k ? kidShow(k) : it.kid}`;
+  $("#pWho").innerHTML = `${Rewards.avatarHtml(it.kid)}輪到 ${esc(k ? kidShow(k) : it.kid)}`;
   if(G.mode === "flu") $("#pProg").textContent = `答對 ${G.round.correct} 個`;
   else { const mine = G.queue.filter(x => x.kid === it.kid), idx = mine.indexOf(it) + 1; $("#pProg").textContent = `第 ${idx} / ${mine.length} 題`; }
 }
@@ -261,7 +262,7 @@ function endItem(passed, correctSec, revealed){
 /* ---------- 流暢性模式：一位學生一回合 ---------- */
 function showReady(){
   const code = G.kids[G.turn], k = kidBy(code);
-  $("#pWho").textContent = `輪到 ${k ? kidShow(k) : code}`;
+  $("#pWho").innerHTML = `${Rewards.avatarHtml(code)}輪到 ${esc(k ? kidShow(k) : code)}`;
   $("#pProg").textContent = "";
   $("#pTimer").hidden = true;
   $("#pBody").innerHTML = `<div class="ready"><h2>${esc(k ? kidShow(k) : code)}，準備好了嗎？</h2>
@@ -323,16 +324,17 @@ function finish(){
     const t = g.tally[code], k = kidBy(code), name = esc(k ? kidShow(k) : code);
     if(g.mode === "flu"){
       const perMin = Math.round((t.roundCorrect || 0) * 60 / g.limit);
-      return `<div class="rcard"><b>${name}</b><span class="big">每分鐘 ${perMin} 個</span>
+      return `<div class="rcard" data-kid="${esc(code)}"><b class="rname2">${Rewards.avatarHtml(code)}${name}</b><span class="big">每分鐘 ${perMin} 個</span>
         <span class="sm">答對 ${t.roundCorrect || 0} 個、答錯 ${t.roundWrong || 0} 個（${LIMITS.find(l => +l[0] === g.limit)[1]}），目標每分鐘 ${g.aim} 個${perMin >= g.aim ? "，達到目標！" : ""}</span></div>`;
     }
     const avg = t.secs.length ? (t.secs.reduce((a, b) => a + b, 0) / t.secs.length).toFixed(1) : "—";
-    return `<div class="rcard"><b>${name}</b><span class="big">${t.first} / ${t.n}</span>
+    return `<div class="rcard" data-kid="${esc(code)}"><b class="rname2">${Rewards.avatarHtml(code)}${name}</b><span class="big">${t.first} / ${t.n}</span>
       <span class="sm">第一次就答對 ${t.first} 題${t.n ? `（${Math.round(t.first / t.n * 100)}%）` : ""}，最後答對 ${t.passed} 題，答對平均 ${avg} 秒</span></div>`;
   }).join("") || `<p class="note">這次沒有作答紀錄。</p>`;
   $("#rNote").textContent = g.kind === "formal" ? "這次是正式評量，結果會納入學習分析。" : "這次是練習，結果另外統計。";
   showScreen("#result");
+  giveStickers(g);   /* 每位有作答的學生抽一張貼紙（見 collect.js） */
 }
-$("#rAgain").onclick = () => { if(G) startSession(); };
+$("#rAgain").onclick = () => { if(G) chooseTheme(); };
 $("#rHome").onclick = () => { G = null; showScreen("#setup"); render(); };
 $("#rExport").onclick = () => { if(G) exportXlsx(records.filter(r => r.session === G.session), `識字評量_${fileDate(G.session)}.xlsx`, "#rMsg"); };

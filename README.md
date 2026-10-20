@@ -17,6 +17,9 @@ docs/
   project-status.md  專案現況與決策紀錄（交接用）
 shared/
   lessons.js      共用教材資料：生字、語詞、例句、部件、形近同音字
+  themes.js       共用主題與貼紙（海洋、太空、恐龍、甜點；取自生字賓果）
+  themes.css      主題配色、頭像、貼紙的樣式
+  rewards.js      每位學生的貼紙收藏與頭像（存在這台電腦）
 tools/
   bingo/          生字賓果遊戲（讀取 shared/lessons.js）
   literacy/       識字評量（讀取 shared/lessons.js）
@@ -25,6 +28,7 @@ tools/
     setup.js      設定畫面與彈出面板
     records.js    作答紀錄、Excel 匯出、備份還原
     play.js       出題、作答畫面、結果畫面
+    collect.js    選主題、頭像、得到貼紙、貼紙簿
     app.js        程式入口（說明各檔案的載入順序）
 ```
 
