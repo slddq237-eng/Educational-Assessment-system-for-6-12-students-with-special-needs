@@ -40,6 +40,8 @@ const MODES = [
 /* 畫面與聲音：作答畫面字的大小、設定畫面的大小（數字是放大倍數） */
 const FONT_SIZES = [["0.8","小"],["1","標準"],["1.2","大"],["1.4","特大"]];
 const UI_SIZES = [["0.85","小"],["1","標準"],["1.15","大"]];
+/* 多人輪流換人時的提醒方式（畫面一定會顯示「換 ○○」）；預設是畫面＋提示音，要唸名字再到「畫面與聲音」改 */
+const TURN_STYLES = [["chime","畫面＋提示音（預設）"],["voice","畫面＋唸出名字"],["both","畫面＋提示音＋唸出名字"],["silent","只有畫面"]];
 const LIMITS = [["30","30 秒"],["60","1 分鐘"],["120","2 分鐘"]];
 const CHOICES = [["3","3 個"],["4","4 個"],["6","6 個"],["bingo","全課賓果卡（只在練習）"]];
 const choiceText = c => c === "bingo" ? "全課賓果卡" : `${c} 個選項`;
@@ -87,7 +89,7 @@ const termIndex = (grade, term) => (grade - 1) * 2 + (term === "上" ? 0 : 1);
 /* formalTheme：正式評量也用主題和貼紙（預設要用；從基線期起每次都一樣，前後才能比較）
    畫面與聲音（每台電腦自己的設定）：fontScale 作答畫面字的大小、uiScale 設定畫面大小、rate 唸讀速度、sfx 音效開關 */
 const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove","next","next","reveal"], maintainAfter:7, rate:0.85, formalTheme:true,
-  fontScale:"1", uiScale:"1", sfx:true},
+  fontScale:"1", uiScale:"1", sfx:true, turnStyle:"chime"},
   load("literacy-settings", {}));
 const saveSettings = () => store("literacy-settings", settings);
 

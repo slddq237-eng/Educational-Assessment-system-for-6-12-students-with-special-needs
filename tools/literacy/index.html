@@ -580,8 +580,11 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
     <h3>唸讀速度</h3>
     <div class="group"><input id="sRate" type="range" min="0.5" max="1.2" step="0.05" aria-label="唸讀速度"><span id="sRateV"></span><button class="chip" id="sTest">試聽「努力的努」</button></div>
     <h3>音效</h3>
-    <label class="group"><input type="checkbox" id="vSfx" style="width:20px;height:20px;accent-color:var(--green)"> 答對、答錯、得到貼紙時播放音效</label>
+    <label class="group"><input type="checkbox" id="vSfx" style="width:20px;height:20px;accent-color:var(--green)"> 答對、答錯、換人、得到貼紙時播放音效</label>
     <div class="group"><button class="chip" id="vTryRight">試聽答對</button><button class="chip" id="vTryWrong">試聽答錯</button></div>
+    <h3>多人輪流的換人提醒</h3>
+    <div class="group" id="vTurn"></div>
+    <div class="group"><button class="chip" id="vTryTurn">試聽換人</button><span class="note" style="margin:0">畫面一定會顯示大頭像和「換 ○○」。提示音要開著上面的「音效」才會響。</span></div>
     <footer><button class="save" data-close>完成</button></footer>
   </div>
 </div>

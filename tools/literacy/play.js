@@ -110,7 +110,8 @@ function note(f, t0, dur, type, vol){
 const sfx = {
   right(force){ if(settings.sfx || force) [523, 659, 784].forEach((f, i) => note(f, i * 0.08, 0.3, "triangle", 0.22)); },
   wrong(force){ if(settings.sfx || force){ note(220, 0, 0.16, "square", 0.09); note(165, 0.17, 0.26, "square", 0.09); } },
-  turn(){ if(settings.sfx){ note(784, 0, 0.25, "sine", 0.18); note(587, 0.22, 0.4, "sine", 0.18); } },
+  /* 換人提示音：三個往上跳的小音「叮嚨咚」，輕快可愛 */
+  turn(force){ if(settings.sfx || force){ note(988, 0, 0.12, "triangle", 0.16); note(1319, 0.1, 0.14, "triangle", 0.16); note(1568, 0.2, 0.32, "sine", 0.13); } },
   fanfare(){ if(settings.sfx){ [523, 659, 784, 1047].forEach((f, i) => note(f, i * 0.11, 0.35, "triangle", 0.2)); [523, 659, 784].forEach(f => note(f, 0.5, 1.1, "sine", 0.1)); } }
 };
 /* 答對時選項旁邊冒出一圈小星星（只在被點的選項上，0.6 秒，不影響計時與版面） */
@@ -175,7 +176,7 @@ function nextItem(){
 }
 
 /* ---------- 3-1 換人過場 ----------
-   畫面中間放大頭像和大字「換 ○○」，唸一次名字，停約 1.6 秒再出題，讓學生有時間換位置。
+   畫面中間放大頭像和大字「換 ○○」，播提示音（或依設定唸名字），停約 1.6 秒再出題，讓學生有時間換位置。
    計時從題目唸完才開始，這段停頓不會算進反應時間。正式評量、練習都一樣。 */
 const TURN_MS = 1600;
 function turnCard(code, first, then){
@@ -184,8 +185,10 @@ function turnCard(code, first, then){
   $("#pProg").textContent = "";
   $("#pBody").innerHTML = `<div class="turncard" role="status"><div class="turnav">${Rewards.avatarHtml(code)}</div>
     <h2>${first ? `先從 ${esc(name)} 開始` : `換 ${esc(name)}`}！</h2><p class="note" style="margin:0">請 ${esc(name)} 準備好</p></div>`;
-  sfx.turn();
-  speak(`${first ? "先從" : "換"}${name}`);
+  /* 提醒方式看「畫面與聲音」的設定：預設只有提示音，選了才唸名字 */
+  const style = settings.turnStyle || "chime";
+  if(style === "chime" || style === "both") sfx.turn();
+  if(style === "voice" || style === "both") setTimeout(() => { if(G === g && !g.over) speak(`${first ? "先從" : "換"}${name}`); }, style === "both" ? 450 : 0);
   setTimeout(() => { if(G === g && !g.over) then(); }, TURN_MS);
 }
 

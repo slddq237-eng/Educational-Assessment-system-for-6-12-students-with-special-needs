@@ -449,6 +449,8 @@ function renderView(){
   $("#vUi").querySelectorAll("[data-ui]").forEach(b => b.onclick = () => { settings.uiScale = b.dataset.ui; saveSettings(); applyDisplay(); renderView(); });
   $("#sRate").value = settings.rate; $("#sRateV").textContent = `${settings.rate} 倍`;
   $("#vSfx").checked = settings.sfx;
+  $("#vTurn").innerHTML = chips(TURN_STYLES, settings.turnStyle || "chime", "turn");
+  $("#vTurn").querySelectorAll("[data-turn]").forEach(b => b.onclick = () => { settings.turnStyle = b.dataset.turn; saveSettings(); renderView(); });
 }
 /* 把字的大小、畫面大小套到整個網頁（CSS 變數 --fs、--uiz） */
 function applyDisplay(){
@@ -458,6 +460,8 @@ function applyDisplay(){
 $("#vSfx").onchange = e => { settings.sfx = e.target.checked; saveSettings(); };
 $("#vTryRight").onclick = () => sfx.right(true);
 $("#vTryWrong").onclick = () => sfx.wrong(true);
+/* 試聽換人：照目前選的方式播一次 */
+$("#vTryTurn").onclick = () => { const s = settings.turnStyle || "chime"; if(s === "chime" || s === "both") sfx.turn(true); if(s === "voice" || s === "both") setTimeout(() => speak("換小明"), s === "both" ? 450 : 0); };
 $("#openView").onclick = () => { renderView(); openSheet("#viewSheet"); };
 applyDisplay();
 $("#sRate").oninput = e => { settings.rate = +e.target.value; $("#sRateV").textContent = `${settings.rate} 倍`; saveSettings(); };
