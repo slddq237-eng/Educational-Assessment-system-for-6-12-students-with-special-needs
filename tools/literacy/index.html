@@ -304,8 +304,12 @@ details.howto{margin:10px 0 0}
 .stamp2{position:absolute;right:4%;bottom:4%;width:32%;aspect-ratio:1;opacity:.9}
 .stamp2 .av{--s:100%;border-width:2px}
 /* ---------- 3-3 打怪獸場景（移植自生字賓果）：只在題目之間的固定長度過場出現 ---------- */
-#pickGame,#pickHearts,#pickBpmf{align-items:center;margin:0 0 16px}
-#pickGame:empty,#pickHearts:empty,#pickBpmf:empty{display:none}
+#pickGame,#pickHearts,#pickBpmf,#pickRead{align-items:center;margin:0 0 16px}
+#pickGame:empty,#pickHearts:empty,#pickBpmf:empty,#pickRead:empty{display:none}
+/* 報讀提示的小喇叭：固定在提示框右上角，句子很長要捲動時也看得到 */
+.hintbox .h:has(.hspk){position:relative;padding-right:60px}
+.hspk{position:absolute;top:8px;right:8px;width:44px;height:44px;border:none;border-radius:50%;background:var(--red);color:#fff;display:grid;place-items:center;box-shadow:0 3px 0 #8f2a1e;cursor:pointer}
+.hspk:active{transform:translateY(2px);box-shadow:0 1px 0 #8f2a1e}
 /* 注音（3-4）：字的右邊有注音；注音字型只有一種粗細 */
 .bpmf,.hintbox .h.bpmf,.opt-big.bpmf{font-family:"BpmfKai",var(--kai);font-weight:400}
 .hintbox .h.sent.bpmf{font-size:calc(clamp(24px,2.6vw,34px) * var(--fs,1))}   /* 句子加注音時字放大，注音才看得清楚 */
@@ -691,6 +695,8 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
     <div class="group" id="sChoices"></div>
     <h3>提示（答錯時依序出現）</h3>
     <div class="levels" id="sHints"></div>
+    <label class="group"><input type="checkbox" id="sRead" style="width:20px;height:20px;accent-color:var(--green)"> 語詞、句子提示可以按喇叭念出來（報讀，預設不要）</label>
+    <p class="note" style="margin:0">報讀算是多給一層協助，會讓正確率變高。要開的話，從基線期起都開著，前後才能比較；每題有沒有按報讀都會記下來。部件重組沒有報讀（會念出答案的讀音）。</p>
     <h3>答錯後的處理</h3>
     <ol class="ladder" id="sRule"></ol>
     <h3>主題與貼紙</h3>
@@ -715,6 +721,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
   <div class="row gamerow" id="pickGame"></div>
   <div class="row gamerow" id="pickHearts"></div>
   <div class="row gamerow" id="pickBpmf"></div>
+  <div class="row gamerow" id="pickRead"></div>
   <div class="themes" id="themes"></div>
 </div>
 

@@ -86,8 +86,10 @@ const HINT_LEVEL = {word:1, sent:1, pic:2, sound:2, parts:3, mask:3, shape:3};
 const TEACHER_BTNS = [[4,"口語提示"],[5,"示範"],[6,"肢體提示"],[7,"完全提示"]];
 function hintHtml(id, c, b){
   /* 語詞、句子提示加注音（3-4）：目標字挖空，不會看到它的注音；破音字依 shared/bpmf.js 的讀音 */
-  if(id === "word"){ const w = wordOf(c, b); return w ? `<div class="h bpmf">${esc(Bpmf.blank(w, c, "○"))}的○</div>` : ""; }
-  if(id === "sent"){ const t = sentOf(c, b); return t ? `<div class="h sent bpmf">${esc(Bpmf.blank(t, c, "（　）"))}</div>` : ""; }
+  /* 報讀提示：這次有開（G.read）就在語詞、句子提示旁加小喇叭，按了念出完整語詞或句子（見 showNextHint） */
+  const read = G && G.read ? `<button class="hspk" data-read="${id}" aria-label="念給我聽">${SPEAKER_SVG}</button>` : "";
+  if(id === "word"){ const w = wordOf(c, b); return w ? `<div class="h bpmf">${esc(Bpmf.blank(w, c, "○"))}的○${read}</div>` : ""; }
+  if(id === "sent"){ const t = sentOf(c, b); return t ? `<div class="h sent bpmf">${esc(Bpmf.blank(t, c, "（　）"))}${read}</div>` : ""; }
   if(id === "pic") return PICS[c] ? `<div class="pic" role="img" aria-label="圖片提示">${PICS[c]}</div>` : "";
   if(id === "sound") return `<div class="h">再慢慢唸一次</div>`;
   if(id === "parts"){
@@ -182,6 +184,8 @@ function startSession(){
     theme: state.theme || "", rewards: useRewards(), game: "",
     /* 選項加注音（3-4）：只在練習，選主題畫面決定；正式評量一律不加 */
     bpmf: state.kind !== "formal" && !!settings.practiceBpmf,
+    /* 報讀提示：練習看選主題畫面，正式評量看評量設定；部件重組（4-1）沒有題目讀音，報讀會念出答案，所以一律不開 */
+    read: state.goal !== "4-1" && (state.kind === "formal" ? !!settings.formalRead : settings.practiceRead !== false),
     tally: Object.fromEntries(list.map(k => [k, {n:0, first:0, passed:0, secs:[], wrong:0}])),
     quitArm: false
   };
@@ -297,7 +301,7 @@ function newItem(it){
   const b = splitKey(it.k)[0], board = G.layout === "bingo" ? bingoBoard(it.kid, it.k) : null;
   const regroup = G.goal === "4-1";   /* 目標 4-1 部件重組：看部件選字，不唸題目 */
   G.cur = {it, b, board, opts: board ? board.cells.map(ch => ({ch, type: optType(it.c, ch, it.k)})) : (regroup ? makePartsOptions : makeOptions)(it.c, it.k, G.choices),
-           wrong:0, firstPick:null, firstSec:null, shown:[], hintPos:0, teacher:0, t0:null, tShown:performance.now(), done:false};
+           wrong:0, firstPick:null, firstSec:null, shown:[], hintPos:0, teacher:0, reads:new Set(), t0:null, tShown:performance.now(), done:false};
   drawBar(it);
   const cols = board ? board.cols : G.choices === 4 ? 2 : 3, rows = board ? board.rows : Math.ceil(G.choices / cols);
   const stamp = board ? `<span class="stamp2" aria-hidden="true">${Rewards.avatarHtml(it.kid)}</span>` : "";
@@ -368,6 +372,11 @@ function showNextHint(){
     if(!html) continue;
     cur.shown.push(id);
     $("#hintbox").insertAdjacentHTML("beforeend", html);
+    /* 報讀：按小喇叭念出完整語詞（例如「努力的努」）或整句，並記下按過哪一種 */
+    $("#hintbox").querySelectorAll(`[data-read="${id}"]`).forEach(btn => btn.onclick = () => {
+      if(cur.done) return;
+      cur.reads.add(id); speak(id === "word" ? sayOf(cur.it.c, cur.b) : sentOf(cur.it.c, cur.b));
+    });
     if(id === "sound") speak(sayOf(cur.it.c, cur.b), null, Math.max(0.5, settings.rate - 0.25));
     return;
   }
@@ -405,6 +414,7 @@ function endItem(passed, correctSec, revealed){
     /* 當時的條件（研究用的進階分析會用到）：提示設定、答錯規則用代碼存，Excel 再翻成中文 */
     hintSet: G.hints.join(","), rule: G.noHelp ? "none" : G.rule.join(","), layout: G.layout,
     theme: G.theme, game: G.game, reward: "", bpmf: !!G.bpmf,
+    read: !!G.read, readUsed: [...cur.reads].map(id => ({word:"語詞", sent:"句子"})[id]).join("、"),   /* 報讀：這次有沒有開、這題按了哪幾種提示的喇叭 */
     fontScale: settings.fontScale, rate: settings.rate, sfx: settings.sfx,
     aim: G.mode === "flu" ? G.aim : "",   /* 流暢性的目標（每分鐘幾個），老師專區畫目標線用 */
     clock: !!G.clock,                      /* 作答時右上角有沒有顯示計時 */

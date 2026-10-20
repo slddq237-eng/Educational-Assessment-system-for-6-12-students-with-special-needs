@@ -31,6 +31,9 @@ function chooseTheme(){
   $("#pickBpmf").innerHTML = formal ? "" : `<span class="tl">注音</span>${chipRow([["0", "選項不加"], ["1", "選項加注音"]], settings.practiceBpmf ? "1" : "0", "pbpmf")}
     <span class="note" style="margin:0">語詞、句子提示一律有注音</span>`;
   $("#pickBpmf").querySelectorAll("[data-pbpmf]").forEach(b => b.onclick = () => { settings.practiceBpmf = b.dataset.pbpmf === "1"; saveSettings(); chooseTheme(); });
+  /* 報讀提示（只在練習；部件重組沒有，因為會念出答案的讀音）：語詞、句子提示旁的小喇叭 */
+  $("#pickRead").innerHTML = formal || state.goal === "4-1" ? "" : `<span class="tl">報讀</span>${chipRow([["1", "提示可以按喇叭念出來"], ["0", "不念"]], settings.practiceRead !== false ? "1" : "0", "pread")}`;
+  $("#pickRead").querySelectorAll("[data-pread]").forEach(b => b.onclick = () => { settings.practiceRead = b.dataset.pread === "1"; saveSettings(); chooseTheme(); });
   const LINE = id => play ? Themes.THEMES[id].line : `可以得到${Themes.THEMES[id].name}的貼紙`;
   $("#pickWho").innerHTML = list.map(k => `<span class="pk">${Rewards.avatarHtml(k.code)}${esc(kidShow(k))}</span>`).join("");
   $("#pickHint").textContent = list.length > 1 ? "大家一起決定，要去哪裡冒險？" : "你想去哪裡冒險？";
