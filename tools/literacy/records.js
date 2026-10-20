@@ -133,11 +133,17 @@ $("#recRestore").onchange = async e => {
     const have = new Set(records.map(r => `${r.session}|${r.at}|${r.kid}|${r.char}`));
     const add = (data.records || []).filter(r => !have.has(`${r.session}|${r.at}|${r.kid}|${r.char}`));
     add.forEach(saveRecord);
-    for(const k of data.kids || []) if(!kidBy(k.code)) kids.push(k);
+    /* 學生名單：沒有的加進來；這台電腦上同代號但還沒填名字的（例如第一次打開時的範例 S01、S02），用備份檔裡的取代 */
+    for(const k of data.kids || []){ const i = kids.findIndex(x => x.code === k.code);
+      if(i < 0) kids.push(k); else if(!kids[i].name && k.name) kids[i] = k; }
     for(const [k, v] of Object.entries(data.teach || {})) if(!teach[k]) teach[k] = v;
     saveKids(); saveTeach();
+    /* 評量設定（正式評量的條件）跟著還原，換電腦後前後才能比較；畫面與聲音是每台電腦自己的，不動 */
+    const FORMAL_KEYS = ["choices", "hints", "rule", "maintainAfter", "formalTheme", "formalGame", "clockFormal"];
+    if(data.settings) FORMAL_KEYS.forEach(k => { if(data.settings[k] !== undefined) settings[k] = data.settings[k]; });
+    saveSettings();
     for(const p of BACKUP_PARTS) if(data[p.key]) await p.restore(data[p.key]);
-    renderRecSheet(); $("#recMsg").textContent = `已還原 ${add.length} 筆新的作答紀錄（重複的紀錄不會再加一次）。`; render();
+    renderRecSheet(); $("#recMsg").textContent = `已還原 ${add.length} 筆新的作答紀錄（重複的紀錄不會再加一次），評量設定也一起還原了。`; render();
   } catch(err){ $("#recMsg").textContent = `沒辦法讀取這個檔案：${err.message}`; }
 };
 $("#recClear").onclick = e => {

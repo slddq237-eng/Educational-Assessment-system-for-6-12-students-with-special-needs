@@ -108,7 +108,8 @@ function showReveals(list){
   document.body.appendChild(box);
   box.querySelector("[data-ok]").focus();
   sfx.fanfare();
-  setTimeout(() => speak(`${name}${VERB(theme)}${t.stickers[idx][1]}！`), 600);
+  /* 唸名字只用本機語音，沒有就只唸得到什麼（見 play.js 的 speak） */
+  setTimeout(() => { if(!speak(`${name}${VERB(theme)}${t.stickers[idx][1]}！`, null, null, true)) speak(`${VERB(theme)}${t.stickers[idx][1]}！`); }, 600);
   box.querySelector("[data-ok]").onclick = () => { box.remove(); showReveals(list.slice(1)); };
 }
 

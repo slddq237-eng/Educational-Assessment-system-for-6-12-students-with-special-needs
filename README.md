@@ -13,7 +13,8 @@
 ## 資料夾說明
 
 ```
-index.html        平台首頁（工具選單）
+index.html        平台首頁（工具選單、最後更新日期）
+privacy.html      資料與隱私說明（給學校、家長、老師看）
 docs/
   project-status.md  專案現況與決策紀錄（交接用）
 shared/

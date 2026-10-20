@@ -78,17 +78,24 @@ const loadVoices = () => { try { voices = speechSynthesis.getVoices(); } catch(e
 if("speechSynthesis" in window){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
 const pickVoice = () => voices.find(v => v.lang === "zh-TW" && /Google/i.test(v.name)) || voices.find(v => v.lang === "zh-TW")
   || voices.find(v => /zh[-_]TW/i.test(v.lang)) || voices.find(v => /^zh/i.test(v.lang)) || null;
-function speak(text, onend, rate){
+/* 個資：Chrome 的「Google」語音會把要唸的文字送到雲端合成。唸學生名字時只用這台電腦內建（localService）的中文語音，
+   找不到就不唸名字（speak 回傳 false，由呼叫的地方改成不含名字的說法）。題目的生字語詞照常用 pickVoice()。 */
+const localVoice = () => voices.find(v => v.localService && /zh[-_]TW/i.test(v.lang)) || voices.find(v => v.localService && /^zh/i.test(v.lang)) || null;
+const hasZhVoice = () => voices.some(v => /^zh/i.test(v.lang));
+function speak(text, onend, rate, withName){
   const done = () => { const sp = $("#speaker"); if(sp) sp.classList.remove("talk"); if(onend) onend(); };
-  if(!("speechSynthesis" in window)){ setTimeout(done, 300); return; }
+  if(!("speechSynthesis" in window)){ setTimeout(done, 300); return !withName; }
+  const v = withName ? localVoice() : pickVoice();
+  if(withName && !v) return false;
   try {
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = "zh-TW"; const v = pickVoice(); if(v) u.voice = v; u.rate = rate || settings.rate;
+    u.lang = "zh-TW"; if(v) u.voice = v; u.rate = rate || settings.rate;
     u.onend = u.onerror = done;
     const sp = $("#speaker"); if(sp) sp.classList.add("talk");
     speechSynthesis.speak(u);
   } catch(e){ setTimeout(done, 300); }
+  return true;
 }
 /* 音效（取自生字賓果的做法，用瀏覽器直接合成，不需要音檔）：
    答對＝三個音往上的「叮叮叮」；答錯＝兩聲往下的「嗶嗶」，比較明顯；得到貼紙＝一小段歡呼音樂。
@@ -216,7 +223,8 @@ function turnCard(code, first, then){
   /* 提醒方式看「畫面與聲音」的設定：預設只有提示音，選了才唸名字 */
   const style = settings.turnStyle || "chime";
   if(style === "chime" || style === "both") sfx.turn();
-  if(style === "voice" || style === "both") setTimeout(() => { if(G === g && !g.over) speak(`${first ? "先從" : "換"}${name}`); }, style === "both" ? 450 : 0);
+  /* 唸名字只用本機語音；這台電腦沒有本機中文語音時改成提示音（「唸出名字」那一種原本沒有提示音） */
+  if(style === "voice" || style === "both") setTimeout(() => { if(G === g && !g.over && !speak(`${first ? "先從" : "換"}${name}`, null, null, true) && style === "voice") sfx.turn(); }, style === "both" ? 450 : 0);
   setTimeout(() => { if(G === g && !g.over) then(); }, TURN_MS);
 }
 
