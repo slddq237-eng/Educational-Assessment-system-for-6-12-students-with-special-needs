@@ -17,15 +17,20 @@ const PRESETS = [
   {id:"test", name:"小考檢測", desc:"條件固定、提示較少，看學生真正會多少。", rec:"紀錄會存下來，列入學習分析",
    why:"每次小考的條件都一樣，前後成績才能比較，看得出教學有沒有效果。",
    apply:() => Object.assign(state, {kind:"formal", mode:"acc"})},
+  {id:"rti", name:"學扶前後測", desc:"給學扶、資源班老師：選「教學前、中、後」，條件都固定好，前後成績可以比較。", rec:"紀錄會存下來，列入學習分析",
+   why:"做轉介前介入（RTI）或學習扶助時用。正式評量的條件全部固定；系統會自動記下教學開始和結束的日期，老師專區的圖就會分出前測、教學中、後測，方便寫報告。",
+   apply:() => Object.assign(state, {kind:"formal", mode:"acc"})},
   {id:"timed", name:"計時挑戰", desc:"1 分鐘內答對越多越好，看學生熟不熟練。", rec:"紀錄會存下來，列入學習分析",
    why:"認得字之後，還要認得快，讀起文章才會順。每分鐘答對幾個，可以看出熟練的程度。",
    apply:() => Object.assign(state, {kind:"formal", mode:"flu", limit:"60"})}
 ];
 let ui = load("literacy-ui", "quick");      /* 這台電腦上次用的是快速開始還是進階設定 */
-state.preset = "class";
+/* 這台電腦上次用的卡片（學扶老師用過一次，下次打開就直接停在「學扶前後測」） */
+state.preset = PRESETS.some(p => p.id === load("literacy-preset", "")) ? load("literacy-preset", "") : "class";
 const isQuick = () => ui === "quick";
 function applyPreset(id){
-  state.preset = id;
+  if(state.preset !== id) state.rti = "";
+  state.preset = id; store("literacy-preset", id);
   Object.assign(state, {goal:"3", answer:"turn", qCount:null, qMethod:"even"});
   PRESETS.find(p => p.id === id).apply();
 }
@@ -41,9 +46,48 @@ $("#uiAdv").onclick = () => setUi("adv");
 function renderPresets(){
   $("#presets").innerHTML = PRESETS.map(p => `<button class="preset ${state.preset===p.id?"on":""}" data-p="${p.id}" aria-pressed="${state.preset===p.id}">
       <b>${p.name}</b><span class="d">${p.desc}</span><span class="rec ${p.off?"off":""}">${p.rec}</span></button>`).join("")
-    + `<details class="why presetwhy" style="grid-column:1/-1"><summary>這三種有什麼不同？</summary>${PRESETS.map(p => `<p><b>${p.name}</b>：${p.why}</p>`).join("")}</details>`;
+    + (state.preset === "rti" ? `<div class="rtibox" style="grid-column:1/-1"><b>現在是？</b><div class="group">${RTI_PHASES.map(([id, name, d]) =>
+        `<button class="opt ${state.rti === id ? "on" : ""}" data-rti="${id}" aria-pressed="${state.rti === id}">${name}<small>${d}</small></button>`).join("")}</div>
+        <p class="note" style="margin:0">開始後系統會自動記下這幾課的教學開始、結束日期；老師專區的圖就會分出前測、教學中、後測。</p></div>` : "")
+    + `<details class="why presetwhy" style="grid-column:1/-1"><summary>這幾種有什麼不同？</summary>${PRESETS.map(p => `<p><b>${p.name}</b>：${p.why}</p>`).join("")}</details>`;
   $("#presets").querySelectorAll("[data-p]").forEach(b => b.onclick = () => { applyPreset(b.dataset.p); render(); });
+  $("#presets").querySelectorAll("[data-rti]").forEach(b => b.onclick = () => { state.rti = b.dataset.rti; render(); });
 }
+/* ---------- 學扶前後測 ----------
+   老師選「教學前／教學中／教學後」，這幾課這次的評量時機就照選的（教學前＝基線期，不給提示）。
+   教學後的課，如果教學結束已經超過「維持期」天數，自動算維持期。 */
+const RTI_PHASES = [["pre","教學前","前測：還沒開始教，不給提示"],["mid","教學中","定期檢測：教學期間每 1～2 週一次"],["post","教學後","後測：教完以後；教完 7 天以上自動算維持期"]];
+state.rti = ""; state.rtiKeys = [];
+function rtiPhaseFor(k){
+  if(state.rti === "pre") return "基線期";
+  if(state.rti === "mid") return "教學中";
+  const t = teach[k] || {};
+  return t.type === "dates" && t.end && Math.round((today - parse(t.end)) / DAY) >= settings.maintainAfter ? "維持期" : "教學後";
+}
+/* 每次重畫前，把學扶前後測選的時期套到所選課次（換成別的卡片就清掉） */
+function syncRti(){
+  state.rtiKeys.forEach(k => delete state.manual[k]); state.rtiKeys = [];
+  if(!isQuick() || state.preset !== "rti" || !state.rti) return;
+  state.lessons.forEach(k => { state.manual[k] = rtiPhaseFor(k); }); state.rtiKeys = [...state.lessons];
+}
+/* 學扶前後測的「教學後天數」：有結束日、而且今天在結束日當天或之後，就算天數（結束當天＝第 0 天） */
+function rtiDays(k){
+  const t = teach[k] || {};
+  if(t.type !== "dates" || !t.end || today < parse(t.end)) return "";
+  return Math.round((today - parse(t.end)) / DAY);
+}
+/* 按開始時自動記日期：教學中＝這天是教學開始日（還沒記過才記）；教學後＝這天是教學結束日（還沒記過才記） */
+function rtiDates(){
+  if(!isQuick() || state.preset !== "rti") return;
+  for(const k of state.lessons){
+    const t = teach[k];
+    const hasStart = t && t.type === "dates" && t.start;
+    if(state.rti === "mid" && !hasStart) teach[k] = {type:"dates", start: iso(today), end: ""};
+    if(state.rti === "post" && hasStart && !t.end && parse(t.start) <= today) t.end = iso(today);
+  }
+  saveTeach();
+}
+
 /* 依目前看得到的步驟，重新編號 1、2、3… */
 function renumber(){
   let i = 0;
@@ -325,6 +369,7 @@ function renderSummary(){
     $("#kindBadge").innerHTML = `<span class="badge ${p.off?"prac":""}">${p.rec}</span>`;
     const rows = [
       ["今天做什麼", `${p.name}（聽音找字）`],
+      ...(p.id === "rti" ? [["現在是", state.rti ? RTI_PHASES.find(x => x[0] === state.rti)[1] : null, "還沒選教學前、中、後"]] : []),
       ["學生", n && n <= 4 ? selKids().map(c => esc(kidLabel(kidBy(c)))).join("、") : null, n ? "一次最多 4 位學生" : "還沒選"],
       ["課次", state.lessons.length ? esc(lessonsText()) : null],
       ["時間", !state.lessons.length ? null : c.flu ? `每位學生 ${LIMITS.find(l => l[0]===state.limit)[1]}` : `${q.count} 題，${minutes(q.sec)}`]
@@ -357,7 +402,7 @@ function renderSummary(){
   $("#sum").innerHTML = rows.map(([t,v,miss]) => `<div><dt>${t}</dt><dd class="${v?"":"miss"}">${v || miss || "還沒選"}</dd></div>`).join("");
   $("#go").disabled = rows.some(r => !r[1]);
 }
-$("#go").onclick = () => chooseTheme();   /* 先選主題（見 collect.js），再開始 */
+$("#go").onclick = () => { rtiDates(); chooseTheme(); };   /* 先選主題（見 collect.js），再開始 */
 $("#aim").addEventListener("input", renderSummary);
 
 /* 教學日期管理面板 */
@@ -434,4 +479,4 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets()
 document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); if(t && t.dataset.open === "kids"){ renderKidSheet(); openSheet("#kidsSheet"); } });
 $("#openRecords").onclick = () => { renderRecSheet(); openSheet("#recSheet"); };
 
-function render(){ renderPresets(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderKids(); renderSummary(); renumber(); }
+function render(){ syncRti(); renderPresets(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderKids(); renderSummary(); renumber(); }

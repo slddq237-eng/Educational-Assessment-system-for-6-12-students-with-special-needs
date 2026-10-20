@@ -142,7 +142,9 @@ const bookName = b => `${BOOKS[b].edition} ${BOOKS[b].grade}${BOOKS[b].term}`;
 
 /* 依教學日期判斷 */
 function datePhase(t){
-  if(!t.start || !t.end) return {phase:null, why:"日期還沒填完整"};
+  if(!t.start) return {phase:null, why:"日期還沒填完整"};
+  /* 只有開始日、還沒填結束日：開始前是基線期，開始後是教學中（學扶前後測會自動記開始日） */
+  if(!t.end) return today < parse(t.start) ? {phase:"基線期", why:`教學從 ${md(t.start)} 開始`} : {phase:"教學中", why:`教學從 ${md(t.start)} 開始，還沒填結束日`};
   const s = parse(t.start), e = parse(t.end);
   if(e < s) return {phase:null, why:"結束日早於開始日，請檢查日期"};
   if(today < s) return {phase:"基線期", why:`教學從 ${md(t.start)} 開始`};

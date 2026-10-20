@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>學扶前後測快速指南</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@400;700&display=swap">
+<style>
+/* 學扶前後測快速指南：給學習扶助、資源班老師的一頁說明，可以直接列印成一張 A4（兩面）。
+   版面沿用識字評量的方格紙。 */
+:root{
+  --paper:#f5faf6; --grid:#d5e8da; --ink:#1f3d36; --muted:#5b7a71;
+  --red:#d64534; --green:#2c7a69; --mint:#e4f3ec; --card:#ffffff; --amber:#9a6a12; --amber-bg:#fbf1dc;
+  --ui:"Huninn","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --kai:"LXGW WenKai TC","DFKai-SB","BiauKai","標楷體",serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:17px;line-height:1.6;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:48px 48px}
+main{max-width:980px;margin:0 auto;padding:24px 16px 48px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--kai);font-size:clamp(30px,4.5vw,44px);margin:0;letter-spacing:.04em}
+.lead{color:var(--muted);margin:6px 0 18px}
+.nav{display:flex;gap:8px;flex-wrap:wrap}
+.btn{display:inline-block;border:2px solid var(--ink);border-radius:999px;padding:8px 18px;background:var(--card);color:var(--ink);text-decoration:none;font:inherit;font-size:16px;cursor:pointer}
+.btn.main{background:var(--red);border-color:var(--red);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:700px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:14px 18px;break-inside:avoid}
+.card h2{margin:0 0 6px;font-size:21px;display:flex;align-items:center;gap:10px}
+.num{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:inline-grid;place-items:center;font-size:16px;flex:none}
+ol,ul{margin:6px 0;padding-left:1.4em}
+li{margin:3px 0}
+b.k{background:var(--mint);border-radius:6px;padding:0 6px;font-weight:700}
+table{border-collapse:collapse;width:100%;font-size:16px}
+th,td{border-bottom:1px solid var(--grid);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:normal;font-size:14px}
+.warn{background:var(--amber-bg);border:2px dashed var(--amber);border-radius:14px;padding:10px 16px;color:#5c400a}
+.full{grid-column:1/-1}
+.note{color:var(--muted);font-size:15px}
+@media print{
+  body{background:#fff;font-size:12.5px}
+  main{padding:0;max-width:none}
+  .nav{display:none}
+  .card{border-width:1px;padding:8px 12px}
+  .card h2{font-size:15px}
+  table{font-size:12px}
+  .note,.lead{font-size:11.5px}
+  .grid{gap:8px}
+  h1{font-size:24px}
+  @page{size:A4;margin:12mm}
+}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>學扶前後測快速指南</h1>
+      <p class="lead">給學習扶助、資源班老師：用「識字評量」做轉介前介入（RTI）的前測、教學中檢測和後測，資料可以直接用在心評報告。</p></div>
+    <div class="nav">
+      <a class="btn main" href="./">打開識字評量</a>
+      <button class="btn" onclick="window.print()">列印這一頁</button>
+      <a class="btn" href="../../">回平台首頁</a>
+    </div>
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <h2><span class="num">1</span>第一次使用（約 5 分鐘）</h2>
+      <ol>
+        <li>打開識字評量，按右上角 <b class="k">學生名單</b>。</li>
+        <li>每位學生填<b>代號</b>、<b>名字</b>（學生作答時看得到）、<b>年級</b>；點頭像可以換卡通角色。</li>
+        <li>按 <b class="k">本學期安排</b>，填學習扶助（或資源班）<b>每週幾節</b>和<b>開始日期</b>。老師專區的圖會在這一天畫一條線，寫報告時可以說明介入從哪天開始。</li>
+        <li>（選填）右上角 <b class="k">畫面與聲音</b>：調字的大小、唸讀速度、音效。</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2><span class="num">2</span>每次評量（4 個步驟）</h2>
+      <ol>
+        <li>快速開始點 <b class="k">學扶前後測</b>（這台電腦會記住，下次打開就停在這裡）。</li>
+        <li><b>現在是？</b>選 <b class="k">教學前</b>、<b class="k">教學中</b> 或 <b class="k">教學後</b>。</li>
+        <li>點<b>學生</b>（最多 4 位輪流，換人時畫面會大大顯示下一位的名字）、選<b>課次</b>。</li>
+        <li>按 <b class="k">開始</b> → 學生選主題 → 作答 → 做完抽一張貼紙。</li>
+      </ol>
+      <p class="note">選項數、提示、答錯規則都已固定，不用設定。教學前固定不給提示。</p>
+    </section>
+
+    <section class="card full">
+      <h2><span class="num">3</span>什麼時候做？</h2>
+      <table>
+        <tr><th>選哪一個</th><th>什麼時候</th><th>做幾次</th><th>系統會自動做的事</th></tr>
+        <tr><td><b>教學前</b>（前測）</td><td>開始教這幾課之前</td><td>至少 3 次、不同天，看起點穩不穩</td><td>算基線期，不給提示</td></tr>
+        <tr><td><b>教學中</b></td><td>教學期間</td><td>每 1～2 週一次</td><td>第一次選的那天記成這幾課的「教學開始日」</td></tr>
+        <tr><td><b>教學後</b>（後測）</td><td>教完那一週</td><td>1～2 次</td><td>第一次選的那天記成「教學結束日」</td></tr>
+        <tr><td><b>教學後</b>（維持）</td><td>教完 2～4 週後</td><td>1～2 次</td><td>結束 7 天以上自動算「維持期」</td></tr>
+      </table>
+      <p class="note">同一位學生從前測到後測，請用同一台電腦、同樣的課次範圍；主題可以讓學生自己選，貼紙每次固定一張，不影響成績比較。日期記錯可以到「進階設定 → 教學日期管理」修改。</p>
+    </section>
+
+    <section class="card">
+      <h2><span class="num">4</span>寫報告要看哪裡</h2>
+      <p style="margin:0">右上角 <b class="k">老師專區</b> → <b>一位學生</b>，日期選 <b>全部</b>：</p>
+      <ul>
+        <li><b>正確率 → 依時期比較</b>：前測、教學中、後測、維持期的正確率並排，最直接的介入成效。</li>
+        <li><b>正確率 → 依時間</b>：折線圖，虛線分出各時期，直線標出學扶開始日。</li>
+        <li><b>反應時間</b>：越來越快代表越熟練。</li>
+        <li><b>常錯字排序、錯誤類型</b>：還沒學會的字、常搞混的是形近字還是同音字，可寫進教學建議。</li>
+        <li>點任何一個字，看那個字的每一次作答。</li>
+      </ul>
+      <p class="note">每個畫面都可以「看明細」和「匯出這個畫面（Excel）」。報告用的一鍵摘要之後會再加上。</p>
+    </section>
+
+    <section class="card">
+      <h2><span class="num">5</span>一定要記得</h2>
+      <ul>
+        <li><b>中途按「結束」</b>：那一次的紀錄不算、也沒有貼紙，請盡量讓學生做完。</li>
+        <li><b>紀錄只存在這台電腦的瀏覽器</b>：每週按「作答紀錄 → 下載備份檔」，存到隨身碟或雲端；換電腦時用「從備份檔還原」。</li>
+        <li><b>匯出的 Excel 和備份檔有學生名字</b>：請妥善保管，不要傳到公開的地方或群組。</li>
+        <li>不要在無痕視窗使用，關掉後紀錄會不見。</li>
+      </ul>
+      <div class="warn">有問題或想調整，請洽平台維護老師。</div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

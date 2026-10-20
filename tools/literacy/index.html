@@ -194,6 +194,8 @@ body.quick .lesson .pill{display:none}
 .preset{text-align:left;border:3px solid var(--ink);background:var(--card);border-radius:18px;padding:16px;display:grid;gap:8px;align-content:start}
 .preset b{font-size:24px}
 .preset .d{color:var(--muted);font-size:16px}
+.rtibox{display:grid;gap:8px;border:3px dashed var(--green);border-radius:16px;padding:12px 16px;background:var(--mint)}
+.rtibox b{font-size:20px}
 .preset .rec{font-size:14px;border-radius:8px;padding:4px 10px;background:var(--mint);color:var(--green);width:fit-content}
 .preset .rec.off{background:var(--practice-bg);color:var(--practice)}
 .preset.on{background:var(--green);border-color:var(--green);color:#fff}
@@ -382,6 +384,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
       <div class="seg" role="group" aria-label="畫面模式">
         <button id="uiQuick" aria-pressed="true">快速開始</button><button id="uiAdv" aria-pressed="false">進階設定</button>
       </div>
+      <a class="ghost" href="guide.html" target="_blank" rel="noopener">使用說明</a>
       <button class="ghost" id="openTeacher">老師專區</button>
       <button class="ghost" id="openBook">貼紙簿</button>
       <button class="ghost" id="openView">畫面與聲音</button>
