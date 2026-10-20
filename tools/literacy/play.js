@@ -23,7 +23,7 @@ function pickItems(code, q){
   if(q.method === "weak"){
     /* 常錯優先：依這位學生過去的紀錄，錯得多、反應慢的字先出；沒考過的字排中間 */
     const score = it => {
-      const rs = records.filter(r => r.kid === code && r.char === it.c && r.goal === "3" && !r.quit);
+      const rs = records.filter(r => r.kid === code && r.char === it.c && r.goal === state.goal && !r.quit);
       if(!rs.length) return 0.5;
       const wrong = rs.filter(r => !r.firstCorrect).length / rs.length;
       const sec = rs.reduce((s, r) => s + Math.min(r.correctSec ?? 10, 10), 0) / rs.length;
@@ -62,6 +62,25 @@ function makeOptions(c, k, n){
   return shuffle([{ch:c, type:"答案"}, ...out]);
 }
 
+/* 部件重組（目標 4-1）的選項：先放形近字，再放有相同部件的字，不夠用課文字補（題目不唸出來，所以不放同音字） */
+function makePartsOptions(c, k, n){
+  const b = splitKey(k)[0], [, shape = ""] = confOf(c, b) || [], mine = partsOf(c) || [];
+  const used = new Set([c]), out = [];
+  const add = (x, type) => { if(x && isHan(x) && !used.has(x) && out.length < n - 1){ used.add(x); out.push({ch:x, type}); } };
+  shuffle([...shape]).slice(0, Math.ceil((n - 1) / 2)).forEach(x => add(x, "形近"));
+  shuffle(ALL_CHARS.filter(x => (partsOf(x) || []).some(p => mine.includes(p)))).forEach(x => add(x, "同部件"));
+  shuffle([...shape]).forEach(x => add(x, "形近"));
+  shuffle(charsOf(k)).forEach(x => add(x, "課文字"));
+  shuffle([...ALL_CHARS]).forEach(x => add(x, "其他字"));
+  return shuffle([{ch:c, type:"答案"}, ...out]);
+}
+
+/* 拆不開的字：把字切成上下左右 4 塊，打亂順序、稍微轉一下分開擺，看得到筆畫但唸不出來 */
+const cutHtml = c => shuffle([[0,0],[1,0],[0,1],[1,1]]).map(([x, y]) =>
+  `<span class="cut" style="--x:${x};--y:${y};--r:${Math.round(Math.random() * 24 - 12)}deg" aria-hidden="true"><span>${esc(c)}</span></span>`).join("");
+/* 部件重組的題目：拆得開的字，部件打亂成一塊一塊；拆不開的字用切塊 */
+const regroupHtml = c => { const p = partsOf(c); return p ? shuffle([...p]).map(x => `<span class="ptile">${esc(x)}</span>`).join("") : cutHtml(c); };
+
 /* 提示畫面；沒有資料的提示回傳空字串，系統會自動跳到下一個提示 */
 const HINT_LEVEL = {word:1, sent:1, pic:2, sound:2, parts:3, mask:3, shape:3};
 const TEACHER_BTNS = [[4,"口語提示"],[5,"示範"],[6,"肢體提示"],[7,"完全提示"]];
@@ -70,7 +89,12 @@ function hintHtml(id, c, b){
   if(id === "sent"){ const t = sentOf(c, b); return t ? `<div class="h sent">${esc(t.replaceAll(c, "（　）"))}</div>` : ""; }
   if(id === "pic") return PICS[c] ? `<div class="pic" role="img" aria-label="圖片提示">${PICS[c]}</div>` : "";
   if(id === "sound") return `<div class="h">再慢慢唸一次</div>`;
-  if(id === "parts") return PARTS[c] ? `<div class="h">${esc(PARTS[c].split(/\s+/).join(" ＋ "))}</div>` : "";
+  if(id === "parts"){
+    /* 部件（來源與規則見 data.js 的 partsOf）；拆不開的字用切塊，不直接顯示答案。部件重組的題目本身就是部件，不再重複提示 */
+    if(G && G.goal === "4-1") return "";
+    const p = partsOf(c);
+    return p ? `<div class="h">${esc(p.join(" ＋ "))}</div>` : `<div class="h pieces" aria-label="切開的字">${cutHtml(c)}</div>`;
+  }
   if(id === "mask") return `<div class="maskch" aria-label="遮住一半的字">${esc(c)}</div>`;
   if(id === "shape") return `<div class="ghostch" aria-label="淡淡的字形">${esc(c)}</div>`;
   return "";
@@ -254,6 +278,11 @@ function bingoBoard(kid, k){
 function optType(c, x, k){
   const b = splitKey(k)[0], [sound = "", shape = ""] = confOf(c, b) || [];
   if(x === c) return "答案";
+  if(G && G.goal === "4-1"){   /* 部件重組：沒有唸題目，只分形近、同部件 */
+    if(shape.includes(x)) return "形近";
+    if((partsOf(x) || []).some(p => (partsOf(c) || []).includes(p))) return "同部件";
+    return charsOf(k).includes(x) ? "課文字" : "其他字";
+  }
   if(wordOf(c, b).includes(x)) return "同詞易混";
   if(sound.includes(x)) return "同音";
   if(shape.includes(x)) return "形近";
@@ -263,7 +292,8 @@ function optType(c, x, k){
 /* 準備一題：組選項、畫畫面、唸題目；唸完才開始計時 */
 function newItem(it){
   const b = splitKey(it.k)[0], board = G.layout === "bingo" ? bingoBoard(it.kid, it.k) : null;
-  G.cur = {it, b, board, opts: board ? board.cells.map(ch => ({ch, type: optType(it.c, ch, it.k)})) : makeOptions(it.c, it.k, G.choices),
+  const regroup = G.goal === "4-1";   /* 目標 4-1 部件重組：看部件選字，不唸題目 */
+  G.cur = {it, b, board, opts: board ? board.cells.map(ch => ({ch, type: optType(it.c, ch, it.k)})) : (regroup ? makePartsOptions : makeOptions)(it.c, it.k, G.choices),
            wrong:0, firstPick:null, firstSec:null, shown:[], hintPos:0, teacher:0, t0:null, tShown:performance.now(), done:false};
   drawBar(it);
   const cols = board ? board.cols : G.choices === 4 ? 2 : 3, rows = board ? board.rows : Math.ceil(G.choices / cols);
@@ -271,8 +301,10 @@ function newItem(it){
   const cellClass = i => !board ? "" : board.marks.has(i) ? ` marked${[...board.done].some(L => board.lines[L].includes(i)) ? " win" : ""}` : "";
   $("#pBody").innerHTML = `<div class="stage">
       <div class="prompt">
-        <button class="speaker" id="speaker" aria-label="再聽一次">${SPEAKER_SVG}</button>
-        <span class="note" style="margin:0">聽聽看，是哪一個字？</span>
+        ${regroup ? `<div class="pieces big" aria-label="拆開的部件">${regroupHtml(it.c)}</div>
+        <span class="note" style="margin:0">這些部件組成哪一個字？</span>`
+        : `<button class="speaker" id="speaker" aria-label="再聽一次">${SPEAKER_SVG}</button>
+        <span class="note" style="margin:0">聽聽看，是哪一個字？</span>`}
         <div class="hintbox" id="hintbox" aria-live="polite"></div>
       </div>
       <div class="optsbox"><div class="opts ${board ? "bingo" : ""}" style="--cols:${cols};--rows:${rows}">
@@ -281,10 +313,11 @@ function newItem(it){
     </div>
     ${G.noHelp ? "" : `<div class="tbar"><span>老師提示紀錄：</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
   $("#pBody").querySelectorAll(".opt-big").forEach(btn => btn.onclick = () => pick(+btn.dataset.i, btn));
-  $("#speaker").onclick = () => speak(sayOf(it.c, b));
+  if(!regroup) $("#speaker").onclick = () => speak(sayOf(it.c, b));
   $("#pBody").querySelectorAll("[data-t]").forEach(btn => btn.onclick = () => {
     G.cur.teacher = Math.max(G.cur.teacher, +btn.dataset.t); btn.classList.add("on");
   });
+  if(regroup){ G.cur.t0 = performance.now(); return; }   /* 部件重組沒有唸題目：畫面出現就開始計時 */
   const startClock = () => { if(G && G.cur && G.cur.it === it && !G.cur.t0) G.cur.t0 = performance.now(); };
   speak(sayOf(it.c, b), startClock);
   setTimeout(startClock, 6000);   /* 萬一這台電腦沒有語音，6 秒後也開始計時 */
