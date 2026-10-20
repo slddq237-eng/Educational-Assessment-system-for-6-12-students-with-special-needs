@@ -21,7 +21,11 @@ tools/
   bingo/          生字賓果遊戲（讀取 shared/lessons.js）
   literacy/       識字評量（讀取 shared/lessons.js）
     index.html    畫面
-    app.js        程式本體（分段附中文說明）
+    data.js       基本設定、學生與教學日期、評量時機判斷
+    setup.js      設定畫面與彈出面板
+    records.js    作答紀錄、Excel 匯出、備份還原
+    play.js       出題、作答畫面、結果畫面
+    app.js        程式入口（說明各檔案的載入順序）
 ```
 
 ## 合作規則
