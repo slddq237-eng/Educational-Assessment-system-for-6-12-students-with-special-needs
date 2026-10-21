@@ -227,18 +227,20 @@ function playText(){
   return base + hp;
 }
 function renderPlay(){
-  const c = current(), formal = c.formal, row = (t, body) => `<div class="playrow"><span class="tl">${t}</span><div>${body}</div></div>`;
+  const c = current(), formal = c.formal, row = (t, body) => `<div class="playrow"><span class="tl">${ROW_ICONS[t] || ""}${t}</span><div>${body}</div></div>`;
   $("#playHint").textContent = formal ? "正式評量的玩法照「評量設定」，從基線期起每次都一樣，這裡只顯示。" : "練習可以自由選玩法。最後請學生在下面點一個主題。";
   const rows = [];
   if(formal){
-    rows.push(row("玩法", `<div class="locked"><span class="lock">固定</span><span>${playText()}。<button class="linkbtn" data-open="set">到評量設定修改</button></span></div>`));
+    const fid = willFight() ? "monster" : "color";
+    rows.push(row("玩法", `<div class="locked"><span class="lock">固定</span>${useRewards() ? `<span class="playicon">${PLAYS.find(x => x.id === fid).icon}</span>` : ""}<span>${playText()}。<button class="linkbtn" data-open="set">到評量設定修改</button></span></div>`));
     rows.push(row("報讀", `<span class="note" style="margin:0">${state.goal === "4-1" ? "部件重組沒有報讀" : settings.formalRead ? "提示可以按喇叭念出來（評量設定）" : "不念（評量設定）"}</span>`));
   } else {
     /* 不能用的玩法：流暢性模式只能一般模式（打怪獸要一題一題做完、賓果卡會改變選項版面） */
     const why = id => c.flu && id !== "color" ? "流暢性模式不能用" : "";
-    const cur = c.flu ? "color" : settings.practicePlay, p = PLAYS.find(x => x.id === cur);
-    rows.push(row("玩法", `<div class="group">${chipRow(PLAYS.map(x => [x.id, x.name]), cur, "play", v => why(v) ? "disabled" : "")}</div>
-      <p class="note">${p.desc}${c.flu ? "。流暢性模式只能用一般模式。" : ""}</p>`));
+    const cur = c.flu ? "color" : settings.practicePlay;
+    /* 三張卡片：小圖示＋名稱＋一句話；不能用的卡片寫原因 */
+    rows.push(row("玩法", `<div class="playcards">${PLAYS.map(x => `<button class="opt playcard ${cur === x.id ? "on" : ""}" data-play="${x.id}" aria-pressed="${cur === x.id}" ${why(x.id) ? "disabled" : ""}>
+        <span class="playicon">${x.icon}</span><span><b>${x.name}</b><small>${why(x.id) || x.desc}</small></span></button>`).join("")}</div>`));
     if(heartsAllowed()){
       const hp = +settings.practiceHearts || 0;
       rows.push(row("血量", `<div class="group">${chipRow([["0", "無限"], ...HEART_CHOICES.map(n => [String(n), `${n} 點`])], String(hp), "hearts")}</div>

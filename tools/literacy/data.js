@@ -43,12 +43,23 @@ const TURN_STYLES = [["chime","畫面＋提示音（預設）"],["voice","畫面
 const LIMITS = [["30","30 秒"],["60","1 分鐘"],["120","2 分鐘"]];
 const CHOICES = [["3","3 個"],["4","4 個"],["6","6 個"]];
 const choiceText = c => c === "bingo" ? "生字賓果卡" : `${c} 個選項`;
-/* 練習的玩法（第 4 步選）：正式評量看「評量設定」（打怪獸開或關），生字賓果只在練習 */
+/* 練習的玩法（第 4 步選）：正式評量看「評量設定」（打怪獸開或關），生字賓果只在練習
+   icon：第 4 步卡片上的小圖示（自己畫的 SVG，不用圖片檔）；desc：卡片上的一句話說明 */
+const ICON_LINE = `stroke="#1f3d36" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`;
 const PLAYS = [
-  {id:"color",   name:"一般模式", desc:"沒有遊戲，作答畫面只換成主題的顏色和背景，做完拿貼紙"},
-  {id:"monster", name:"打怪獸",   desc:"每做完一題就攻擊怪獸，全部做完打敗怪獸（多人時大家合作）"},
-  {id:"bingo",   name:"生字賓果", desc:"把這一課的生字排成賓果卡，聽到哪個字就點哪個，連成一條線有慶祝"}
+  {id:"color",   name:"一般模式", desc:"沒有遊戲。作答畫面換成主題的顏色，做完拿貼紙",
+   icon:`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 7C18 7 7 17 7 31c0 13 10 24 22 24 4 0 6-2 6-5 0-2-1-3-1-5 0-3 2-5 5-5h6c8 0 13-6 13-13C58 16 47 7 32 7z" fill="#f6dfb4" ${ICON_LINE}/><circle cx="20" cy="27" r="5" fill="#d64534"/><circle cx="31" cy="17" r="5" fill="#2a78d6"/><circle cx="44" cy="21" r="5" fill="#2c7a69"/><circle cx="21" cy="41" r="5" fill="#e0a21b"/></svg>`},
+  {id:"monster", name:"打怪獸",   desc:"每做完一題就攻擊怪獸，全部做完打敗牠（多人時大家合作）",
+   icon:`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M19 22l-5-11M45 22l5-11" ${ICON_LINE}/><ellipse cx="32" cy="38" rx="23" ry="20" fill="#8fd16a" ${ICON_LINE}/><circle cx="32" cy="32" r="8" fill="#fff" ${ICON_LINE}/><circle cx="33" cy="33" r="3.5" fill="#1f3d36"/><path d="M21 45q11 9 22 0z" fill="#fff" ${ICON_LINE}/><path d="M27 47l2 4 2-4M33 47l2 4 2-4" fill="none" stroke="#1f3d36" stroke-width="2"/></svg>`},
+  {id:"bingo",   name:"生字賓果", desc:"生字排成賓果卡，聽到哪個字就點哪個，連成一線有慶祝",
+   icon:`<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="7" y="7" width="50" height="50" rx="8" fill="#fff" ${ICON_LINE}/><path d="M23.7 7v50M40.3 7v50M7 23.7h50M7 40.3h50" stroke="#1f3d36" stroke-width="2"/><circle cx="15.3" cy="15.3" r="5.5" fill="#d64534"/><circle cx="32" cy="32" r="5.5" fill="#d64534"/><circle cx="48.7" cy="48.7" r="5.5" fill="#d64534"/><path d="M11 11l42 42" stroke="#e0a21b" stroke-width="3" stroke-linecap="round" opacity=".85"/></svg>`}
 ];
+/* 第 4 步其他列的小圖示：血量（紅心，和作答畫面一樣）、注音、報讀（喇叭） */
+const ROW_ICONS = {
+  "血量": `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z" fill="#d64534"/></svg>`,
+  "注音": `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" fill="#2c7a69"/><text x="12" y="17" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">ㄅ</text></svg>`,
+  "報讀": `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#2a78d6" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>`
+};
 /* 提示層級草案：0 無提示；1–3 系統給；4–7 老師給（作答畫面上的按鈕） */
 const LEVELS = [
   {n:1, who:"系統", items:[["word","語詞挖空（○瓜的○）"],["sent","句子"]]},
