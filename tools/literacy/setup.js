@@ -1,6 +1,6 @@
 /* =========================================================
    識字評量：設定畫面（setup.js）
-   快速開始、進階設定的六個步驟、右邊的摘要，以及學生名單、教學日期、評量設定三個彈出面板。
+   三個步驟（評量目標 → 玩法和學生 → 課次）、快速開始與進階設定、右邊的摘要，以及學生名單、教學日期、評量設定三個彈出面板。
    ========================================================= */
 
 /* =========================================================
@@ -31,7 +31,7 @@ const isQuick = () => ui === "quick";
 function applyPreset(id){
   if(state.preset !== id) state.rti = "";
   state.preset = id; store("literacy-preset", id);
-  Object.assign(state, {goal:"3", answer:"turn", qCount:null, qMethod:"even"});
+  Object.assign(state, {answer:"turn", qCount:null, qMethod:"even"});   /* 評量目標沿用第 1 步選的 */
   PRESETS.find(p => p.id === id).apply();
 }
 function setUi(mode){
@@ -88,11 +88,47 @@ function rtiDates(){
   saveTeach();
 }
 
-/* 依目前看得到的步驟，重新編號 1、2、3… */
-function renumber(){
-  let i = 0;
-  document.querySelectorAll("#setup .steps > section").forEach(sec => { if(getComputedStyle(sec).display !== "none") sec.querySelector(".num").textContent = ++i; });
+/* ---------- 三個步驟：一次只看一步（像生字賓果） ----------
+   1 選評量目標 → 2 選玩法和學生 → 3 選課次（右邊的摘要和「開始」只在第 3 步出現）。
+   第 2 步要先選好學生才能往下；上方的步驟標籤也可以直接點。 */
+const WSTEPS = ["選評量目標", "選玩法和學生", "選課次"];
+let wstep = 1;
+/* 第 2 步還缺什麼（空字串＝可以往下） */
+function step2Miss(){
+  const n = selKids().length;
+  if(isQuick()){
+    if(state.preset === "rti" && !state.rti) return "請先選教學前、中、後";
+    return !n ? "請先點選要做的學生" : n > 4 ? "一次最多 4 位學生" : "";
+  }
+  const a = ANSWERS.find(x => x.id === state.answer);
+  return !n ? "請先點選要評量的學生" : n < a.min || n > a.max ? `「${a.name}」需要 ${a.min}～${a.max} 位學生，目前 ${n} 位` : "";
 }
+function renderWizard(){
+  const miss = step2Miss();
+  $("#wTabs").innerHTML = WSTEPS.map((t, i) => `<button class="wtab ${i + 1 < wstep ? "ok" : ""}" data-w="${i + 1}" ${i + 1 === wstep ? 'aria-current="step"' : ""} ${i === 2 && miss ? "disabled" : ""}><span class="n">${i + 1}</span>${t}</button>`).join("");
+  $("#wTabs").querySelectorAll("button:not(:disabled)").forEach(b => b.onclick = () => showStep(+b.dataset.w));
+  $("#wPrev").hidden = wstep === 1;
+  $("#wNext").hidden = wstep === 3;
+  $("#wNext").disabled = wstep === 2 && !!miss;
+  $("#wNote").textContent = wstep === 2 ? miss : wstep === 3 ? "選好課次後，按「開始」。" : "";
+}
+function showStep(n){
+  wstep = n;
+  document.querySelectorAll("#setup .wstep").forEach(d => d.hidden = +d.dataset.step !== n);
+  $("#layout").dataset.step = n;
+  renderWizard();
+}
+$("#wPrev").onclick = () => { showStep(wstep - 1); $("#wTabs").scrollIntoView({block:"nearest"}); };
+$("#wNext").onclick = () => { showStep(wstep + 1); $("#wTabs").scrollIntoView({block:"nearest"}); };
+
+/* 右上角「選單」：點了裡面的項目或點選單外面就收起來 */
+$("#topMenu .menulist").addEventListener("click", e => {
+  if(!e.target.closest("button,a")) return;
+  $("#topMenu").open = false;
+  if(e.target.closest("button")) $("#topMenu summary").focus();   /* 面板關掉後，游標回到「選單」 */
+}, true);
+document.addEventListener("click", e => { if($("#topMenu").open && !e.target.closest("#topMenu")) $("#topMenu").open = false; });
+document.addEventListener("keydown", e => { if(e.key === "Escape" && $("#topMenu").open){ $("#topMenu").open = false; $("#topMenu summary").focus(); } });
 
 function renderGoals(){
   const L = BOOKS[state.book].lessons;
@@ -196,7 +232,7 @@ function renderLessons(){
   });
   $("#picked").innerHTML = state.lessons.length ? `已選：${esc(lessonsText())}　<button class="linkbtn" id="clearLessons">全部清除</button>` : "還沒選課次，可以選好幾課，也可以跨版本。";
   if($("#clearLessons")) $("#clearLessons").onclick = () => { state.lessons = []; render(); };
-  if(!selKids().length){ $("#status").innerHTML = `<p class="note">請先在第 4 步選學生，才能判斷評量時機。</p>`; return; }
+  if(!selKids().length){ $("#status").innerHTML = `<p class="note">請先在第 2 步選學生，才能判斷評量時機。</p>`; return; }
   $("#status").innerHTML = state.lessons.map(k => {
     const [b,n] = splitKey(k), gs = groups(b, n), need = gs.some(g => !g.label);
     const lines = gs.map(g => `<span>${g.kids.map(c => esc(kidLabel(kidBy(c)))).join("、")}：<b>${g.label || "未判斷"}</b> <span class="why">${esc(g.why)}</span></span>`).join("<br>");
@@ -370,7 +406,7 @@ function renderSummary(){
     const p = PRESETS.find(x => x.id === state.preset), q = quizPlan(), n = selKids().length;
     $("#kindBadge").innerHTML = `<span class="badge ${p.off?"prac":""}">${p.rec}</span>`;
     const rows = [
-      ["今天做什麼", `${p.name}（聽音找字）`],
+      ["今天做什麼", `${p.name}（${g.name}）`],
       ...(p.id === "rti" ? [["現在是", state.rti ? RTI_PHASES.find(x => x[0] === state.rti)[1] : null, "還沒選教學前、中、後"]] : []),
       ["學生", n && n <= 4 ? selKids().map(c => esc(kidLabel(kidBy(c)))).join("、") : null, n ? "一次最多 4 位學生" : "還沒選"],
       ["課次", state.lessons.length ? esc(lessonsText()) : null],
@@ -397,7 +433,7 @@ function renderSummary(){
     ["提示", c.hints.length ? c.hints.map(hintName).join(" → ") : "無提示"],
     ["課次", lessonText],
     ["題目", quizText],
-    ["評量時機", state.lessons.length && n && !ph.includes(null) ? ph.join("<br>") : null, n ? "請到第 5 步設定教學日期" : "先選學生才能判斷"],
+    ["評量時機", state.lessons.length && n && !ph.includes(null) ? ph.join("<br>") : null, n ? "請在上面的課次卡片設定教學日期" : "先選學生才能判斷"],
     ["作答模式", a.name],
     ["學生", n ? (kidsOk ? `${selKids().map(c => esc(kidLabel(kidBy(c)))).join("、")}（${n} 位）` : null) : null, n ? `「${a.name}」需要 ${a.min}～${a.max} 位，目前 ${n} 位` : "還沒選"]
   ];
@@ -498,4 +534,4 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets()
 document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); if(t && t.dataset.open === "kids"){ renderKidSheet(); openSheet("#kidsSheet"); } });
 $("#openRecords").onclick = () => { renderRecSheet(); openSheet("#recSheet"); };
 
-function render(){ syncRti(); renderPresets(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderKids(); renderSummary(); renumber(); }
+function render(){ syncRti(); renderPresets(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderKids(); renderSummary(); renderWizard(); }

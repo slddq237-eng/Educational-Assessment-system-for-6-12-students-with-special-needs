@@ -83,9 +83,9 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
 
   <!-- 三個重點：一眼看完整個流程 -->
   <nav class="flow" aria-label="三個重點">
-    <a href="#first"><small>① 只做一次，約 5 分鐘</small><b>建學生名單</b><span>學生名單 → 填代號、名字、年級 → 本學期安排</span></a>
-    <a href="#each"><small>② 每次評量</small><b>點 4 下就開始</b><span>學扶前後測 → 現在是？ → 學生、課次 → 開始</span></a>
-    <a href="#report"><small>③ 寫報告</small><b>看依時期比較</b><span>老師專區 → 一位學生 → 正確率 → 依時期比較</span></a>
+    <a href="#first"><small>① 只做一次，約 5 分鐘</small><b>建學生名單</b><span>選單 → 學生名單 → 填代號、名字、年級 → 本學期安排</span></a>
+    <a href="#each"><small>② 每次評量</small><b>三步就開始</b><span>評量目標 → 學扶前後測、現在是？、學生 → 課次 → 開始</span></a>
+    <a href="#report"><small>③ 寫報告</small><b>看依時期比較</b><span>選單 → 老師專區 → 一位學生 → 正確率 → 依時期比較</span></a>
   </nav>
 
   <section class="card" id="first">
@@ -93,20 +93,21 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
     <div class="two">
       <div>
         <ol>
-          <li>按右上角 <b class="k">學生名單</b>。</li>
+          <li>按右上角 <b class="k">選單</b> → <b class="k">學生名單</b>。</li>
           <li>填<b>代號</b>、<b>名字</b>（學生作答時看得到）、<b>年級</b>。</li>
           <li>按 <b class="k">本學期安排</b>，填學扶<b>每週幾節</b>、<b>開始日期</b>。圖表會在這一天畫一條線。</li>
           <li>按 <b class="k">完成</b>。</li>
         </ol>
-        <p class="note">字的大小、唸讀速度在右上角「畫面與聲音」調整（選填）。</p>
+        <p class="note">字的大小、唸讀速度在右上角「選單 → 畫面與聲音」調整（選填）。</p>
       </div>
       <figure class="walk" data-demo="first">
         <div class="screen" aria-hidden="true">
-          <div class="bar"><span class="m">老師專區</span><span class="m">作答紀錄</span><span class="m" data-t="kids">學生名單</span></div>
-          <div class="sheet later" data-later="1">
+          <div class="bar"><span class="m" data-t="menu">選單 ▾</span><span class="m">回平台首頁</span></div>
+          <div class="bar later" data-later="1"><span class="m">老師專區</span><span class="m" data-t="kids">學生名單</span><span class="m">作答紀錄</span><span class="m">使用說明</span></div>
+          <div class="sheet later" data-later="2">
             <b>學生名單</b>
             <div class="row" style="margin-top:6px"><span class="av"></span><span class="m field">S01</span><span class="m field" data-t="name">小星</span><span class="m field">3 年級</span><span class="m" data-t="plan">本學期安排</span></div>
-            <div class="row later" data-later="2" style="margin-top:6px;background:var(--mint);border-radius:8px;padding:5px 7px">學習扶助：每週 <span class="m field" style="min-width:2em">3</span> 節　開始日期 <span class="m field">2026/09/14</span></div>
+            <div class="row later" data-later="3" style="margin-top:6px;background:var(--mint);border-radius:8px;padding:5px 7px">學習扶助：每週 <span class="m field" style="min-width:2em">3</span> 節　開始日期 <span class="m field">2026/09/14</span></div>
             <div class="row" style="justify-content:flex-end;margin-top:6px"><span class="m go" data-t="done">完成</span></div>
           </div>
           <span class="tag">示範畫面</span>
@@ -118,30 +119,35 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
   </section>
 
   <section class="card" id="each">
-    <h2><span class="num">2</span>每次評量：點 4 下就開始</h2>
+    <h2><span class="num">2</span>每次評量：三步就開始</h2>
     <div class="two">
       <div>
+        <p>設定一次只出現一步，選好按 <b class="k">下一步</b>。</p>
         <ol>
-          <li>點 <b class="k">學扶前後測</b>（這台電腦會記住，下次打開就停在這裡）。</li>
-          <li>現在是？選 <b class="k">教學前</b>、<b class="k">教學中</b> 或 <b class="k">教學後</b>。</li>
-          <li>點<b>學生</b>（最多 4 位輪流）、選<b>課次</b>。</li>
-          <li>按 <b class="k">開始評量</b> → 學生選主題 → 作答 → 抽一張貼紙。</li>
+          <li><b>選評量目標</b>：例如 <b class="k">形音辨識</b>，按 <b class="k">下一步</b>。</li>
+          <li><b>選玩法和學生</b>：點 <b class="k">學扶前後測</b>（這台電腦會記住，下次打開就停在這裡），現在是？選 <b class="k">教學前</b>、<b class="k">教學中</b> 或 <b class="k">教學後</b>；再點<b>學生</b>（最多 4 位輪流），按 <b class="k">下一步</b>。</li>
+          <li><b>選課次</b>：按 <b class="k">開始</b> → 學生選主題 → 作答 → 抽一張貼紙。</li>
         </ol>
         <p class="note">選項數、提示、答錯規則都已固定，不用設定。教學前不給提示。</p>
       </div>
       <figure class="walk" data-demo="each">
         <div class="screen" aria-hidden="true">
-          <div class="lab">今天要做什麼？</div>
-          <div class="grp"><span class="m pc box on" data-on>課堂練習</span><span class="m pc box">小考檢測</span><span class="m pc box" data-t="rti">學扶前後測</span><span class="m pc box">計時挑戰</span></div>
+          <div class="lab">第 1 步　今天要評量哪一個目標？</div>
+          <div class="grp"><span class="m box" data-t="goal">形音辨識</span><span class="m box">部件重組</span><span class="m ghost" data-t="next1">下一步</span></div>
           <div class="later" data-later="1">
-            <div class="lab">現在是？</div>
-            <div class="grp"><span class="m" data-t="pre">教學前</span><span class="m">教學中</span><span class="m">教學後</span></div>
+            <div class="lab">第 2 步　今天要做什麼？</div>
+            <div class="grp"><span class="m pc box on" data-on>課堂練習</span><span class="m pc box">小考檢測</span><span class="m pc box" data-t="rti">學扶前後測</span><span class="m pc box">計時挑戰</span></div>
+            <div class="later" data-later="2">
+              <div class="lab">現在是？</div>
+              <div class="grp"><span class="m" data-t="pre">教學前</span><span class="m">教學中</span><span class="m">教學後</span></div>
+            </div>
+            <div class="lab">誰要做？</div>
+            <div class="grp"><span class="m" data-t="kid">小星</span><span class="m">小樹</span><span class="m ghost" data-t="next2">下一步</span></div>
           </div>
-          <div class="lab">誰要做？</div>
-          <div class="grp"><span class="m" data-t="kid">小星</span><span class="m">小樹</span></div>
-          <div class="lab">練哪幾課？</div>
-          <div class="grp"><span class="m box" data-t="lesson">第 1 課</span><span class="m box">第 2 課</span><span class="m box">第 3 課</span></div>
-          <div style="text-align:right;margin-top:8px"><span class="m go" data-t="go">開始評量</span></div>
+          <div class="later" data-later="3">
+            <div class="lab">第 3 步　練哪幾課？</div>
+            <div class="grp"><span class="m box" data-t="lesson">第 1 課</span><span class="m box">第 2 課</span><span class="m box">第 3 課</span><span class="m go" data-t="go" style="margin-left:auto">開始</span></div>
+          </div>
           <span class="tag">示範畫面</span>
         </div>
         <figcaption class="cap"></figcaption>
@@ -159,7 +165,7 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
       <tr><td><b>教學後</b>（後測）</td><td>教完那一週</td><td>1～2 次</td></tr>
       <tr><td><b>教學後</b>（維持）</td><td>教完 2～4 週後</td><td>1～2 次</td></tr>
     </table>
-    <p class="note">日期不用自己記：第一次選「教學中」的那天＝教學開始日，第一次選「教學後」的那天＝教學結束日，結束 7 天以上自動算維持期。記錯了到「進階設定 → 教學日期管理」修改。前測到後測請用同一台電腦、同樣的課次。</p>
+    <p class="note">日期不用自己記：第一次選「教學中」的那天＝教學開始日，第一次選「教學後」的那天＝教學結束日，結束 7 天以上自動算維持期。記錯了切到「進階設定」，再從右上角「選單 → 教學日期管理」修改。前測到後測請用同一台電腦、同樣的課次。</p>
   </section>
 
   <section class="card" id="report">
@@ -167,7 +173,7 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
     <div class="two">
       <div>
         <ol>
-          <li>按右上角 <b class="k">老師專區</b> → <b class="k">一位學生</b>。</li>
+          <li>按右上角 <b class="k">選單</b> → <b class="k">老師專區</b> → <b class="k">一位學生</b>。</li>
           <li>看誰：點學生；看什麼：<b class="k">正確率</b>。</li>
           <li>怎麼看：<b class="k">依時期比較</b>。前測、教學中、後測的正確率並排，最直接看出介入有沒有效。</li>
         </ol>
@@ -175,7 +181,8 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
       </div>
       <figure class="walk" data-demo="report">
         <div class="screen" aria-hidden="true">
-          <div class="bar"><span class="m" data-t="teacher">老師專區</span><span class="m">貼紙簿</span><span class="m">學生名單</span></div>
+          <div class="bar"><span class="m" data-t="menu">選單 ▾</span><span class="m">回平台首頁</span></div>
+          <div class="bar later" data-later="0"><span class="m" data-t="teacher">老師專區</span><span class="m">學生名單</span><span class="m">作答紀錄</span></div>
           <div class="later" data-later="1">
             <div class="grp"><span class="m box" data-t="one">一位學生</span><span class="m box">全班總表</span></div>
             <div class="lab">看誰</div><div class="grp"><span class="m" data-t="who">小星</span><span class="m">小樹</span></div>
@@ -211,20 +218,25 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
 /* ---------- 示範動畫的步驟（畫面與播放方式在 demo.css、demo.js） ---------- */
 const DEMOS = {
   first: [
-    {t:"kids", say:"按右上角「學生名單」", show:"1", keep:true},
+    {t:"menu", say:"按右上角「選單」", show:"1", keep:true},
+    {t:"kids", say:"點「學生名單」", show:"2", keep:true},
     {t:"name", say:"填代號、名字、年級（名字學生看得到）", keep:true},
-    {t:"plan", say:"按「本學期安排」，填學扶每週幾節、開始日期", show:"2"},
+    {t:"plan", say:"按「本學期安排」，填學扶每週幾節、開始日期", show:"3"},
     {t:"done", say:"按「完成」就存好了", keep:true}
   ],
   each: [
-    {t:"rti", say:"點「學扶前後測」", show:"1"},
+    {t:"goal", say:"第 1 步：選評量目標，例如「形音辨識」"},
+    {t:"next1", say:"按「下一步」", show:"1", keep:true},
+    {t:"rti", say:"第 2 步：點「學扶前後測」", show:"2"},
     {t:"pre", say:"現在是？例如還沒開始教，選「教學前」"},
     {t:"kid", say:"點要做的學生（最多 4 位）"},
-    {t:"lesson", say:"選課次（可以選好幾課）"},
-    {t:"go", say:"按「開始評量」，交給學生作答", keep:true}
+    {t:"next2", say:"按「下一步」", show:"3", keep:true},
+    {t:"lesson", say:"第 3 步：選課次（可以選好幾課）"},
+    {t:"go", say:"按「開始」，交給學生作答", keep:true}
   ],
   report: [
-    {t:"teacher", say:"按右上角「老師專區」", show:"1", keep:true},
+    {t:"menu", say:"按右上角「選單」", show:"0", keep:true},
+    {t:"teacher", say:"點「老師專區」", show:"1", keep:true},
     {t:"one", say:"選「一位學生」"},
     {t:"who", say:"看誰：點學生"},
     {t:"acc", say:"看什麼：選「正確率」"},

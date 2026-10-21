@@ -42,7 +42,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   font-family:var(--kai);font-weight:700;font-size:28px;transform:rotate(-12deg);flex:none}
 .brand small{display:block;color:var(--muted);letter-spacing:.12em;font-size:15px}
 .brand h1{margin:0;font-family:var(--kai);font-size:clamp(30px,4vw,46px);letter-spacing:.06em;line-height:1.1}
-.tools{display:flex;gap:8px;flex-wrap:wrap}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
 .ghost{text-decoration:none;border:2px solid var(--ink);border-radius:999px;padding:8px 18px;color:var(--ink);background:var(--card);font-size:16px}
 .ghost:hover{background:var(--ink);color:var(--paper)}
 .mock{display:flex;gap:10px;align-items:flex-start;background:var(--amber-bg);border:2px dashed var(--amber);color:#5c400a;
@@ -55,7 +55,6 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .steps{display:grid;gap:20px;min-width:0}
 .panel{background:var(--card);border:2px solid var(--ink);border-radius:20px;padding:clamp(16px,2.4vw,28px);box-shadow:5px 5px 0 var(--ink);min-width:0}
 .panel h2{margin:0;font-size:clamp(21px,2vw,26px);display:flex;align-items:center;gap:10px;text-wrap:balance}
-.num{width:32px;height:32px;border-radius:50%;background:var(--ink);color:var(--paper);display:inline-grid;place-items:center;font-size:17px;flex:none}
 .hint{color:var(--muted);margin:6px 0 16px;font-size:16px}
 .warnbar{background:#fbf1dc;border:2px dashed #9a6a12;border-radius:14px;padding:10px 16px;color:#5c400a;margin:0 0 16px;font-size:16px}
 .sub{font-size:15px;color:var(--muted);margin:18px 0 8px;letter-spacing:.06em}
@@ -194,6 +193,33 @@ body.quick .lesson .pill{display:none}
 .seg{display:inline-flex;border:2px solid var(--ink);border-radius:999px;overflow:hidden;background:var(--card)}
 .seg button{border:none;background:none;padding:8px 16px;font-size:16px}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+/* ---------- 三個步驟（一次只看一步）與右上角選單 ---------- */
+.menu{position:relative}
+.menu>summary{list-style:none;cursor:pointer;display:inline-block}
+.menu>summary::-webkit-details-marker{display:none}
+.menu>summary::after{content:" ▾"}
+.menu[open]>summary{background:var(--ink);color:var(--paper)}
+.menulist{position:absolute;right:0;top:calc(100% + 8px);z-index:15;min-width:200px;background:var(--card);border:2px solid var(--ink);
+  border-radius:16px;box-shadow:4px 4px 0 var(--ink);padding:6px;display:grid}
+.menulist button,.menulist a{border:none;background:none;text-align:left;padding:10px 14px;border-radius:10px;font-size:17px;color:var(--ink);text-decoration:none}
+.menulist button:hover,.menulist a:hover{background:var(--mint)}
+.menulist hr{border:none;border-top:1px solid var(--grid);margin:4px 8px;width:auto}
+.wtabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.wtab{display:flex;align-items:center;gap:8px;border:2px solid var(--ink);background:var(--card);border-radius:999px;padding:8px 18px 8px 8px;font-size:17px}
+.wtab .n{width:30px;height:30px;border-radius:50%;border:2px solid var(--ink);display:inline-grid;place-items:center;font-size:16px;flex:none}
+.wtab[aria-current="step"]{background:var(--ink);color:var(--paper)}
+.wtab[aria-current="step"] .n{border-color:var(--paper)}
+.wtab.ok .n{background:var(--green);border-color:var(--green);color:#fff}
+.wtab:disabled{opacity:.45;cursor:not-allowed}
+.wstep{display:grid;gap:20px;min-width:0}
+.wstep[hidden]{display:none}
+#layout:not([data-step="3"]){grid-template-columns:minmax(0,1fr)}
+#layout:not([data-step="3"]) .summary{display:none}
+.wnav{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.wnav .note{flex:1;margin:0;min-width:160px}
+.wnav .go{padding:12px 28px;font-size:19px;margin-left:auto}
+.modebar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.modebar .note{margin:0}
 .presets{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 .preset{text-align:left;border:3px solid var(--ink);background:var(--card);border-radius:18px;padding:16px;display:grid;gap:8px;align-content:start}
 .preset b{font-size:24px}
@@ -558,46 +584,61 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
   <header class="top">
     <div class="brand"><div class="stamp">識</div><div><small>學習評量平台</small><h1>識字評量</h1></div></div>
     <div class="tools">
-      <div class="seg" role="group" aria-label="畫面模式">
-        <button id="uiQuick" aria-pressed="true">快速開始</button><button id="uiAdv" aria-pressed="false">進階設定</button>
-      </div>
-      <a class="ghost" id="guideLink" href="guide.html" target="_blank" rel="noopener">使用說明</a>
-      <button class="ghost" id="tourBtn">新手導覽</button>
-      <button class="ghost" id="openTeacher">老師專區</button>
-      <button class="ghost" id="openBook">貼紙簿</button>
-      <button class="ghost" id="openView">畫面與聲音</button>
-      <button class="ghost" id="openRecords">作答紀錄</button>
-      <button class="ghost" id="openKids">學生名單</button>
-      <button class="ghost adv-only" id="openDates">教學日期管理</button>
-      <button class="ghost adv-only" id="openSettings">評量設定</button>
+      <details class="menu" id="topMenu">
+        <summary class="ghost">選單</summary>
+        <div class="menulist">
+          <button id="openTeacher">老師專區</button>
+          <button id="openKids">學生名單</button>
+          <button id="openRecords">作答紀錄</button>
+          <button id="openBook">貼紙簿</button>
+          <button id="openView">畫面與聲音</button>
+          <button class="adv-only" id="openDates">教學日期管理</button>
+          <button class="adv-only" id="openSettings">評量設定</button>
+          <hr>
+          <a id="guideLink" href="guide.html" target="_blank" rel="noopener">使用說明</a>
+          <button id="tourBtn">新手導覽</button>
+        </div>
+      </details>
       <a class="ghost" href="../../">回平台首頁</a>
     </div>
   </header>
   <p class="warnbar" id="voiceWarn" role="alert" hidden>這台電腦找不到中文語音，題目不會唸出來（作答還是可以進行）。請改用 Chrome 或 Edge，或在電腦的「語音」設定加裝中文（台灣）語音後重新整理。</p>
-  <p class="mock"><b>第 1 版</b><span>目前可以使用「聽音找字」（目標 3 形音辨識）。作答前可以選主題，完成後抽貼紙，貼紙收在「貼紙簿」。作答紀錄存在這台電腦的瀏覽器，請定期到「作答紀錄」下載備份檔。</span></p>
+  <p class="mock"><b>第 1 版</b><span>目前可以使用目標 3「形音辨識」（聽音找字）和目標 4-1「部件重組」。作答前可以選主題，完成後抽貼紙，貼紙收在「貼紙簿」。作答紀錄存在這台電腦的瀏覽器，請定期到「作答紀錄」下載備份檔。</span></p>
   <p class="banner" id="dbWarn" hidden>這台電腦的瀏覽器不允許存檔（可能是無痕視窗），這次的作答紀錄關掉網頁就會消失，請在結束後匯出 Excel。</p>
   <p class="warnbar" id="dayWarn" role="status" hidden>日期已經換到新的一天了，請<button class="linkbtn" id="dayReload">重新整理網頁</button>，評量時機（基線期、教學後第幾天）才會用今天判斷。</p>
   <p class="warnbar" id="backupWarn" role="status" hidden><span id="backupText"></span> <button class="linkbtn" id="backupOpen">打開作答紀錄下載備份</button></p>
 
-  <div class="layout">
+  <!-- 三個步驟一次只看一個（像生字賓果）：1 評量目標 → 2 玩法和學生 → 3 課次 -->
+  <nav class="wtabs" id="wTabs" aria-label="設定步驟"></nav>
+  <div class="layout" id="layout" data-step="1">
     <div class="steps">
-      <!-- 快速開始：三張卡片，選了就自動套用設定 -->
-      <section class="panel quick-only" aria-labelledby="hq">
-        <h2 id="hq"><span class="num">1</span>今天要做什麼？</h2>
-        <p class="hint">選一個就好，其他設定系統會幫你填好。每一次的作答都會存下來。</p>
-        <div class="presets" id="presets"></div>
-      </section>
-
-      <section class="panel adv-only" aria-labelledby="h1">
-        <h2 id="h1"><span class="num">1</span>今天要評量哪一個目標？</h2>
+      <div class="wstep" data-step="1">
+      <section class="panel" aria-labelledby="h1">
+        <h2 id="h1">今天要評量哪一個目標？</h2>
         <p class="hint">建議依 1 → 4 的順序，但可以自由選擇。</p>
         <details class="why"><summary>為什麼建議這個順序？</summary>
           <p>學生要先懂一個詞的意思（聽音選圖），認字才有意義；接著把字形和意思連起來（看字選圖），再分辨長得像、唸起來像的字（形音辨識），最後注意字的細部（部件、書寫）。順序只是建議，可以依學生的狀況調整。</p></details>
         <div class="goals" id="goals"></div>
       </section>
+      </div>
+
+      <div class="wstep" data-step="2" hidden>
+      <div class="modebar">
+        <div class="seg" role="group" aria-label="設定方式">
+          <button id="uiQuick" aria-pressed="true">快速開始</button><button id="uiAdv" aria-pressed="false">進階設定</button>
+        </div>
+        <span class="note quick-only">選一張卡片，其他設定系統會幫你填好。</span>
+        <span class="note adv-only">自己決定正式評量或練習、提示與作答方式。</span>
+      </div>
+      <!-- 快速開始：三張卡片，選了就自動套用設定 -->
+      <section class="panel quick-only" aria-labelledby="hq">
+        <h2 id="hq">今天要做什麼？</h2>
+        <p class="hint">選一個就好，其他設定系統會幫你填好。每一次的作答都會存下來。</p>
+        <div class="presets" id="presets"></div>
+      </section>
 
       <section class="panel adv-only" aria-labelledby="h2">
-        <h2 id="h2"><span class="num">2</span>這次是正式評量，還是練習？</h2>
+        <h2 id="h2">這次是正式評量，還是練習？</h2>
         <p class="hint">正式評量的條件固定，結果納入學習分析；練習可以自由調整玩法，結果另外統計。</p>
         <div class="kinds" id="kinds"></div>
         <p class="sub">評量方式</p>
@@ -611,21 +652,29 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
       </section>
 
       <section class="panel adv-only" aria-labelledby="h3">
-        <h2 id="h3"><span class="num">3</span>提示與答錯後的處理</h2>
+        <h2 id="h3">提示與答錯後的處理</h2>
         <p class="hint" id="h3hint"></p>
         <div id="hintArea"></div>
       </section>
 
+      <section class="panel adv-only" aria-labelledby="h6">
+        <h2 id="h6">學生怎麼作答？</h2>
+        <p class="hint" id="answerHint">同一份題目可以用不同方式作答。</p>
+        <div class="kinds" id="answers"></div>
+      </section>
+
       <section class="panel" aria-labelledby="h4">
-        <h2 id="h4"><span class="num">4</span><span class="adv-only">哪些學生要評量？</span><span class="quick-only">誰要做？</span></h2>
+        <h2 id="h4"><span class="adv-only">哪些學生要評量？</span><span class="quick-only">誰要做？</span></h2>
         <p class="hint adv-only">學生的年級在「學生名單」設定，系統會用年級判斷每一課對這位學生是哪個時期。</p>
         <p class="hint quick-only">點選要做的學生，最多 4 位輪流。</p>
         <div class="row" id="kids"></div>
         <p class="note"><button class="linkbtn" data-open="kids">新增學生或修改年級</button></p>
       </section>
+      </div>
 
+      <div class="wstep" data-step="3" hidden>
       <section class="panel" aria-labelledby="h5">
-        <h2 id="h5"><span class="num">5</span><span class="adv-only">評量哪幾課？</span><span class="quick-only">練哪幾課？</span></h2>
+        <h2 id="h5"><span class="adv-only">評量哪幾課？</span><span class="quick-only">練哪幾課？</span></h2>
         <p class="hint">先選版本，再選年級和課次。<span class="adv-only">課次卡片上會顯示所選學生的評量時機。</span></p>
         <p class="sub">版本</p>
         <div class="row" id="eds"></div>
@@ -638,12 +687,9 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
         <p class="sub">出題</p>
         <div class="box" id="quiz" style="margin-top:0"></div>
       </section>
+      </div>
 
-      <section class="panel adv-only" aria-labelledby="h6">
-        <h2 id="h6"><span class="num">6</span>學生怎麼作答？</h2>
-        <p class="hint" id="answerHint">同一份題目可以用不同方式作答。</p>
-        <div class="kinds" id="answers"></div>
-      </section>
+      <div class="wnav"><button class="ghost" id="wPrev">上一步</button><span class="note" id="wNote"></span><button class="go" id="wNext">下一步</button></div>
     </div>
 
     <aside class="summary" aria-labelledby="hs">
