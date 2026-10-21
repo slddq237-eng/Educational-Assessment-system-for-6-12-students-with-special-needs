@@ -65,7 +65,10 @@ function checkBackup(){
   $("#backupWarn").hidden = !show;
   if(show) $("#backupText").textContent = `這台電腦有 ${records.length} 筆作答紀錄，${days == null ? "還沒有下載過備份檔" : `上次備份是 ${days} 天前`}。清除瀏覽資料或換電腦時紀錄會不見，建議現在備份。`;
 }
-$("#backupOpen").onclick = () => { renderRecSheet(); openSheet("#recSheet"); };
+$("#backupOpen").onclick = () => { renderRecSheet(); openSheet("#recSheet"); $("#recBackup").click(); };
+/* 右上角選單的「下載備份檔」「從備份檔還原」：打開作答紀錄面板再執行，結果訊息才看得到 */
+$("#menuBackup").onclick = () => { renderRecSheet(); openSheet("#recSheet"); $("#recBackup").click(); };
+$("#menuRestore").onclick = () => { renderRecSheet(); openSheet("#recSheet"); $("#recRestore").click(); };
 
 
 /* =========================================================
