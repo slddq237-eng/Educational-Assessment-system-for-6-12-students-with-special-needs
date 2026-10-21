@@ -11,10 +11,17 @@
      pivot.js    21～23. 進階分析（樞紐分析表）
      app.js      全部載入後開始畫畫面（這個檔案）
      tour.js     新手導覽（第一次打開時自動出現，右上角可重看）
-   平台共用的檔案：shared/lessons.js（生字資料）、shared/themes.js（主題與貼紙）、shared/rewards.js（收藏與頭像）。
+   平台共用的檔案：shared/lessons.js（生字資料）、shared/common.js（課本排序與名稱、語詞、部件查詢、Excel 元件）、
+   shared/themes.js（主題與貼紙）、shared/rewards.js（收藏與頭像）。
    ========================================================= */
 
 /* 全部準備好後，畫出設定畫面（依上次用的模式） */
 setUi(ui);
 /* 收藏與頭像讀完後再畫一次，學生按鈕上才有頭像 */
 Rewards.ready.then(render);
+
+/* 網頁開著過夜：評量時機是用打開網頁那天判斷的，日期換了就提醒重新整理（不自動重新整理，免得打斷正在進行的評量） */
+const checkDay = () => { $("#dayWarn").hidden = iso(new Date()) === iso(today); };
+document.addEventListener("visibilitychange", () => { if(!document.hidden) checkDay(); });
+setInterval(checkDay, 60 * 1000);
+$("#dayReload").onclick = () => location.reload();

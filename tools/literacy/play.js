@@ -12,8 +12,6 @@
 const shuffle = a => { for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const charsOf = k => { const [b,n] = splitKey(k); const L = BOOKS[b].lessons[n]; return [...(L.write + L.read)]; };
 const ALL_CHARS = [...new Set(BOOK_ORDER.flatMap(b => Object.keys(BOOKS[b].lessons).flatMap(n => charsOf(key(b,n)))))];
-const wordOf = (c, b) => (WORDS_ED[b] || {})[c] || WORDS[c] || "";
-const sentOf = (c, b) => (SENT_ED[b] || {})[c] || SENT[c] || "";
 const sayOf = (c, b) => wordOf(c, b) ? `${wordOf(c, b)}的${c}` : c;
 const isHan = ch => /\p{Script=Han}/u.test(ch);
 

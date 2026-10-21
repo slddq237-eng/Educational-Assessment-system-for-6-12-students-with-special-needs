@@ -16,15 +16,19 @@
 index.html        平台首頁（工具選單、最後更新日期）
 privacy.html      資料與隱私說明（給學校、家長、老師看）
 about.html        關於我們：平台介紹、資料來源與出處（加入新的外部資料時要一起改）
+favicon.svg       網站小圖示
 docs/
   project-status.md  專案現況與決策紀錄（交接用）
   research-method-spec.md  識字教學單一受試研究方法規格書（實驗設計、分析分層）
+  scripts/        給 Claude 用的資料產生程式：make_parts.py（部件拆解）、make_bpmf.py（注音字型與破音字讀音），新增課本後各執行一次
 shared/
   lessons.js      共用教材資料：生字、語詞、例句、部件、形近同音字
+  common.js       共用小工具：課本排序與名稱、語詞、干擾字、部件查詢、按匯出時才載入 Excel 元件（識字評量、備課分析共用）
+  vendor/         放進網站的外部程式元件：SheetJS 0.18.5（匯出 Excel，Apache 2.0），不用連外網
   themes.js       共用主題與貼紙（海洋、太空、恐龍、甜點；取自生字賓果）
   themes.css      主題配色、頭像、貼紙的樣式
   rewards.js      每位學生的貼紙收藏與頭像（存在這台電腦）
-  parts.js        自動產生的部件拆解（所有生字＋部件再往下拆）
+  parts.js        自動產生的部件拆解（所有生字＋部件再往下拆；見 docs/scripts/make_parts.py，新增課本後要補產生）
   freq.js         字頻排名（教育部字頻總表，5,731 字）
   bpmf.js         破音字讀音表（自動產生，見 docs/scripts/make_bpmf.py；新增課本後要重新產生）
   fonts/          注音字型（字嗨注音標楷子集，依課本拆成幾個檔，用到才下載）

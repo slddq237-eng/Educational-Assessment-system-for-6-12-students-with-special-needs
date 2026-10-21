@@ -252,12 +252,15 @@ function exportRows(cols, rows, title, msgSel){
 }
 /* 匯出一張或多張工作表：sheets＝[{name, rows}] 或單一 rows */
 function exportSheet(rows, name, filename, msgSel, more = []){
-  if(!window.XLSX){ $(msgSel).textContent = "Excel 元件沒有載入，請確認電腦有連上網路後重新整理。"; return; }
+  setMsg(msgSel, "準備匯出…");
+  loadXlsx().then(() => writeSheet(rows, name, filename, msgSel, more), () => { setMsg(msgSel, "Excel 元件載入失敗，請重新整理網頁再試一次。"); });
+}
+function writeSheet(rows, name, filename, msgSel, more){
   const wb = XLSX.utils.book_new(), safe = s => s.replace(/[\\/?*[\]:]/g, "").slice(0, 31) || "工作表";
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.length ? rows : [{"說明":"沒有資料"}]), safe(name));
   more.forEach(s => XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(s.rows.length ? s.rows : [{"說明":"沒有資料"}]), safe(s.name)));
-  try { XLSX.writeFile(wb, filename.replace(/[\\/?*:|"<>]/g, "")); $(msgSel).textContent = `已匯出 ${rows.length} 列。`; }
-  catch(e){ $(msgSel).textContent = "這個環境不允許下載檔案，請用一般瀏覽器開啟網站再匯出。"; }
+  try { XLSX.writeFile(wb, filename.replace(/[\\/?*:|"<>]/g, "")); setMsg(msgSel, `已匯出 ${rows.length} 列。`); }
+  catch(e){ setMsg(msgSel, "這個環境不允許下載檔案，請用一般瀏覽器開啟網站再匯出。"); }
 }
 
 /* =========================================================

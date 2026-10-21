@@ -9,16 +9,7 @@
    1. 基本設定與小工具
    ========================================================= */
 const $ = s => document.querySelector(s);
-const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
-const EDITION_ORDER = ["翰林", "南一", "康軒"];
-const edRank = e => { const i = EDITION_ORDER.indexOf(e); return i < 0 ? 99 : i; };
-const termRank = b => b.grade * 2 + (b.term === "下" ? 1 : 0);
-const BOOK_ORDER = Object.keys(BOOKS).sort((a, b) => edRank(BOOKS[a].edition) - edRank(BOOKS[b].edition)
-  || termRank(BOOKS[a]) - termRank(BOOKS[b]));
-const bookName = k => `${BOOKS[k].edition} ${BOOKS[k].grade}${BOOKS[k].term}`;
-const lessonName = (b, n) => n === "0" ? (BOOKS[b].lessons[n].title || "課前單元") : `第 ${n} 課`;
-const lessonKeys = b => Object.keys(BOOKS[b].lessons).sort((x, y) => x - y);
-const wordOf = (c, b) => ((typeof WORDS_ED !== "undefined" && WORDS_ED[b]) || {})[c] || WORDS[c] || "";
+/* esc、課本排序與名稱（BOOK_ORDER、termRank、bookName、lessonName、lessonKeys）、wordOf、rawParts 在 shared/common.js */
 const hasFreq = typeof FREQ !== "undefined";
 
 /* 單一筆畫：預設不列入排行（幾乎每個字都有，對教學沒有幫助） */
@@ -28,8 +19,8 @@ const ALIAS = {"糸":"糹"};
 const LABEL = {"糹":"糹（糸）", "⺼":"⺼（肉）", "⺕":"⺕（彐）"};
 const label = p => LABEL[p] || p;
 
-/* 查一個字的第一層部件：人工整理的 PARTS 優先，沒有再用自動拆解的 PARTS_AUTO */
-const partsOf = c => ((PARTS[c] || PARTS_AUTO[c] || "").split(" ").filter(p => p && p !== c)).map(p => ALIAS[p] || p);
+/* 查一個字的第一層部件（人工 PARTS 優先，見 shared/common.js 的 rawParts）；備課分析把同一部件的不同寫法合併計算 */
+const partsOf = c => rawParts(c).filter(p => p !== c).map(p => ALIAS[p] || p);
 /* 拆到最細：把部件一路往下拆，收集途中所有部件（不重複） */
 function allParts(c, seen = new Set()){
   for(const p of partsOf(c)) if(!seen.has(p)){ seen.add(p); allParts(p, seen); }
@@ -206,7 +197,6 @@ function drawResult(){
    6. 匯出 Excel：匯出目前分頁的內容
    ========================================================= */
 $("#export").onclick = () => {
-  if(!window.XLSX){ $("#msg").textContent = "Excel 元件沒有載入，請確認電腦有連上網路後重新整理。"; return; }
   if(!current) return;
   let rows, sheet;
   if(state.tab === "parts"){
@@ -219,10 +209,14 @@ $("#export").onclick = () => {
     rows = current.list.map(x => ({"課本": bookName(x.b), "課次": lessonName(x.b, x.n), "字": x.c, "種類": x.kind,
       "部件": partsOf(x.c).map(label).join("＋") || "獨體字", "語詞": wordOf(x.c, x.b)}));
   } else { $("#msg").textContent = "字頻資料匯入後才能匯出。"; return; }
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), sheet);
-  XLSX.writeFile(wb, `備課分析_${sheet}.xlsx`);
-  $("#msg").textContent = `已匯出 ${rows.length} 列。`;
+  /* Excel 元件按匯出時才載入（見 shared/common.js 的 loadXlsx） */
+  setMsg("#msg", "準備匯出…");
+  loadXlsx().then(() => {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), sheet);
+    try { XLSX.writeFile(wb, `備課分析_${sheet}.xlsx`); setMsg("#msg", `已匯出 ${rows.length} 列。`); }
+    catch(e){ setMsg("#msg", "這個環境不允許下載檔案，請用一般瀏覽器開啟網站再匯出。"); }
+  }, () => { setMsg("#msg", "Excel 元件載入失敗，請重新整理網頁再試一次。"); });
 };
 
 /* =========================================================

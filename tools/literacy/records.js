@@ -43,12 +43,29 @@ function updateRecord(r){
   delete r.dirty;
   try { recDb.transaction(REC_STORE, "readwrite").objectStore(REC_STORE).put(r); } catch(e){}
 }
+/* 移除一批紀錄（封存舊學年用）：記憶體和這台電腦的資料庫都拿掉 */
+function removeRecords(list){
+  const gone = new Set(list);
+  records = records.filter(r => !gone.has(r));
+  if(!recDb) return;
+  try { const st = recDb.transaction(REC_STORE, "readwrite").objectStore(REC_STORE); list.forEach(r => { if(r.id != null) st.delete(r.id); }); } catch(e){}
+}
 function clearRecords(){
   records = [];
   if(!recDb) return;
   try { recDb.transaction(REC_STORE, "readwrite").objectStore(REC_STORE).clear(); } catch(e){}
 }
-(async () => { recDb = await openRecDb(); records = await loadRecords(); $("#dbWarn").hidden = !!recDb; })();
+(async () => { recDb = await openRecDb(); records = await loadRecords(); $("#dbWarn").hidden = !!recDb; checkBackup(); })();
+
+/* 備份提醒：有紀錄、而且超過 30 天沒下載備份檔（或從來沒備份過）時，設定畫面上方提醒一次 */
+const BACKUP_KEY = "literacy-lastBackup", BACKUP_DAYS = 30;
+function checkBackup(){
+  const last = load(BACKUP_KEY, null), days = last ? Math.round((today - parse(last)) / DAY) : null;
+  const show = records.length > 0 && !!recDb && (days == null || days >= BACKUP_DAYS);
+  $("#backupWarn").hidden = !show;
+  if(show) $("#backupText").textContent = `這台電腦有 ${records.length} 筆作答紀錄，${days == null ? "還沒有下載過備份檔" : `上次備份是 ${days} 天前`}。清除瀏覽資料或換電腦時紀錄會不見，建議現在備份。`;
+}
+$("#backupOpen").onclick = () => { renderRecSheet(); openSheet("#recSheet"); };
 
 
 /* =========================================================
@@ -81,14 +98,18 @@ const COLS = [
   ["唸讀速度", r => r.rate ?? "未記錄"], ["流暢目標（每分鐘）", r => r.aim || ""], ["顯示計時", r => r.clock === undefined ? "未記錄" : yesNo(r.clock)], ["音效", r => r.sfx === undefined ? "未記錄" : r.sfx ? "開" : "關"]
 ];
 const fileDate = t => { const d = new Date(t); return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}_${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}`; };
+/* Excel 元件按匯出時才載入（見 shared/common.js 的 loadXlsx） */
 function exportXlsx(list, filename, msgSel){
-  if(!list.length){ $(msgSel).textContent = "沒有可以匯出的紀錄。"; return; }
-  if(!window.XLSX){ $(msgSel).textContent = "Excel 元件沒有載入，請確認電腦有連上網路後重新整理。"; return; }
+  if(!list.length){ setMsg(msgSel, "沒有可以匯出的紀錄。"); return; }
+  setMsg(msgSel, "準備匯出…");
+  loadXlsx().then(() => writeXlsx(list, filename, msgSel), () => { setMsg(msgSel, "Excel 元件載入失敗，請重新整理網頁再試一次。"); });
+}
+function writeXlsx(list, filename, msgSel){
   const rows = list.map(r => Object.fromEntries(COLS.map(([h, f]) => [h, f(r)])));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "作答紀錄");
-  try { XLSX.writeFile(wb, filename); $(msgSel).textContent = `已匯出 ${list.length} 筆紀錄。`; }
-  catch(e){ $(msgSel).textContent = "這個環境不允許下載檔案，請用一般瀏覽器開啟網站再匯出。"; }
+  try { XLSX.writeFile(wb, filename); setMsg(msgSel, `已匯出 ${list.length} 筆紀錄。`); }
+  catch(e){ setMsg(msgSel, "這個環境不允許下載檔案，請用一般瀏覽器開啟網站再匯出。"); }
 }
 
 /* 作答紀錄面板：每一次評量一列 */
@@ -106,6 +127,33 @@ function renderRecSheet(){
     }).join("")}</tbody>` : `<tbody><tr><td>還沒有作答紀錄。</td></tr></tbody>`;
   $("#recMsg").textContent = "";
   $("#recClear").classList.remove("armed"); $("#recClear").textContent = "清除全部紀錄";
+  renderYears();
+}
+
+/* 封存舊學年：紀錄多了以後，把以前學年的紀錄存成檔案、再從這台電腦移除，網頁會比較快。
+   封存檔和備份檔格式相同，需要時用「從備份檔還原」加回來。一定要先下載封存檔，才能移除。 */
+const yearOf = r => { const d = new Date(r.at); return (d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1) - 1911; };
+const archived = new Set();   /* 這次打開網頁後已經下載過封存檔的學年 */
+function renderYears(){
+  const by = new Map(); for(const r of records){ const y = yearOf(r); if(y < SCHOOL_YEAR){ if(!by.has(y)) by.set(y, []); by.get(y).push(r); } }
+  const years = [...by].sort((a, b) => a[0] - b[0]);
+  $("#recYears").innerHTML = !years.length ? "" : `<h3>封存以前學年的紀錄</h3>
+    <p class="note" style="margin:0">紀錄很多時，可以把以前學年的紀錄存成封存檔，再從這台電腦移除，網頁會比較快。移除後老師專區就看不到那一學年；需要時用「從備份檔還原」選封存檔加回來。</p>
+    ${years.map(([y, rs]) => `<div class="row"><b>${y} 學年：${rs.length} 筆</b>
+      <button class="ghost" data-archive="${y}">下載封存檔</button>
+      <button class="danger" data-remove="${y}" ${archived.has(y) ? "" : "disabled title=\"先下載封存檔才能移除\""}>從這台電腦移除</button></div>`).join("")}`;
+  $("#recYears").querySelectorAll("[data-archive]").forEach(b => b.onclick = () => {
+    const y = +b.dataset.archive, rs = by.get(y);
+    if(downloadJson({app:"literacy", version:2, archive:y, savedAt:new Date().toISOString(), settings, kids, teach, records: rs.map(({id, ...r}) => r)}, `識字評量_${y}學年封存_${fileDate(Date.now())}.json`)){
+      archived.add(y); renderYears(); $("#recMsg").textContent = `已下載 ${y} 學年的封存檔（${rs.length} 筆），請存到隨身碟或雲端硬碟，再按「從這台電腦移除」。`;
+    }
+  });
+  $("#recYears").querySelectorAll("[data-remove]").forEach(b => b.onclick = () => {
+    const y = +b.dataset.remove;
+    if(!b.classList.contains("armed")){ b.classList.add("armed"); b.textContent = "確定要移除？再按一次"; return; }
+    const n = by.get(y).length; removeRecords(by.get(y)); archived.delete(y);
+    renderRecSheet(); checkBackup(); $("#recMsg").textContent = `已從這台電腦移除 ${y} 學年的 ${n} 筆紀錄。`;
+  });
 }
 $("#recXlsx").onclick = () => exportXlsx(records, `識字評量_全部紀錄_${fileDate(Date.now())}.xlsx`, "#recMsg");
 /* 備份檔：把作答紀錄、學生名單、教學日期、設定存成一個檔案，換電腦時可以還原 */
@@ -116,14 +164,20 @@ const addBackupPart = (key, save, restore) => BACKUP_PARTS.push({key, save, rest
 $("#recBackup").onclick = async () => {
   const data = {app:"literacy", version:2, savedAt:new Date().toISOString(), settings, kids, teach, records: records.map(({id, ...r}) => r)};
   for(const p of BACKUP_PARTS){ try { data[p.key] = await p.save(); } catch(e){} }
+  if(!downloadJson(data, `識字評量_備份_${fileDate(Date.now())}.json`)) return;
+  $("#recMsg").textContent = "已下載備份檔，請存到隨身碟或雲端硬碟。";
+  store(BACKUP_KEY, iso(new Date())); checkBackup();
+};
+/* 把資料存成 .json 檔下載（備份檔、封存檔）；這個環境不能下載時回傳 false */
+function downloadJson(data, filename){
   try {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:"application/json"}));
-    a.download = `識字評量_備份_${fileDate(Date.now())}.json`;
+    a.download = filename;
     document.body.appendChild(a); a.click(); a.remove();
-    $("#recMsg").textContent = "已下載備份檔，請存到隨身碟或雲端硬碟。";
-  } catch(e){ $("#recMsg").textContent = "這個環境不允許下載檔案，請用一般瀏覽器開啟網站再備份。"; }
-};
+    return true;
+  } catch(e){ $("#recMsg").textContent = "這個環境不允許下載檔案，請用一般瀏覽器開啟網站再備份。"; return false; }
+}
 $("#recRestore").onchange = async e => {
   const f = e.target.files[0]; e.target.value = "";
   if(!f) return;
