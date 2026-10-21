@@ -18,7 +18,7 @@ const PRESETS = [
    why:"每次小考的條件都一樣，前後成績才能比較，看得出教學有沒有效果。",
    apply:() => Object.assign(state, {kind:"formal", mode:"acc"})},
   {id:"rti", name:"學扶前後測", desc:"給學扶、資源班老師：選「教學前、中、後」，條件都固定好，前後成績可以比較。", rec:"紀錄會存下來，列入學習分析",
-   why:"做轉介前介入（RTI）或學習扶助時用。正式評量的條件全部固定；系統會自動記下教學開始和結束的日期，老師專區的圖就會分出前測、教學中、後測，方便寫報告。",
+   why:"做轉介前介入（RTI）或學習扶助時用。正式評量的條件全部固定；紀錄會照老師選的教學前、中、後記下評量時機，老師專區的圖就會分出前測、教學中、後測，方便寫報告。",
    apply:() => Object.assign(state, {kind:"formal", mode:"acc"})},
   {id:"timed", name:"計時挑戰", desc:"1 分鐘內答對越多越好，看學生熟不熟練。", rec:"紀錄會存下來，列入學習分析",
    why:"認得字之後，還要認得快，讀起文章才會順。每分鐘答對幾個，可以看出熟練的程度。",
@@ -48,7 +48,7 @@ function renderPresets(){
       <b>${p.name}</b><span class="d">${p.desc}</span><span class="rec ${p.off?"off":""}">${p.rec}</span></button>`).join("")
     + (state.preset === "rti" ? `<div class="rtibox" style="grid-column:1/-1"><b>現在是？</b><div class="group">${RTI_PHASES.map(([id, name, d]) =>
         `<button class="opt ${state.rti === id ? "on" : ""}" data-rti="${id}" aria-pressed="${state.rti === id}">${name}<small>${d}</small></button>`).join("")}</div>
-        <p class="note" style="margin:0">開始後系統會自動記下這幾課的教學開始、結束日期；老師專區的圖就會分出前測、教學中、後測。</p></div>` : "")
+        <p class="note" style="margin:0">教學日期不會自動記；要算維持期，請在「進階設定 → 選單 → 教學日期」填教學結束日。</p></div>` : "")
     + `<details class="why presetwhy" style="grid-column:1/-1"><summary>這幾種有什麼不同？</summary>${PRESETS.map(p => `<p><b>${p.name}</b>：${p.why}</p>`).join("")}</details>`;
   $("#presets").querySelectorAll("[data-p]").forEach(b => b.onclick = () => { applyPreset(b.dataset.p); render(); });
   $("#presets").querySelectorAll("[data-rti]").forEach(b => b.onclick = () => { state.rti = b.dataset.rti; render(); });
@@ -76,17 +76,8 @@ function rtiDays(k){
   if(t.type !== "dates" || !t.end || today < parse(t.end)) return "";
   return Math.round((today - parse(t.end)) / DAY);
 }
-/* 按開始時自動記日期：教學中＝這天是教學開始日（還沒記過才記）；教學後＝這天是教學結束日（還沒記過才記） */
-function rtiDates(){
-  if(!isQuick() || state.preset !== "rti") return;
-  for(const k of state.lessons){
-    const t = teach[k];
-    const hasStart = t && t.type === "dates" && t.start;
-    if(state.rti === "mid" && !hasStart) teach[k] = {type:"dates", start: iso(today), end: ""};
-    if(state.rti === "post" && hasStart && !t.end && parse(t.start) <= today) t.end = iso(today);
-  }
-  saveTeach();
-}
+/* 教學日期不自動記（2026-10-21 拿掉）：原本按開始時把「今天」記成教學開始日或結束日，
+   但老師常常教完一陣子才做後測，日期會記錯，還會連帶改到一般評量的時機判斷。教學日期一律由老師在「教學日期」自己輸入。 */
 
 /* ---------- 四個步驟：一次只看一步（像生字賓果） ----------
    1 選評量目標 → 2 選評量方式和學生 → 3 選課次 → 4 選主題和玩法（右邊的摘要和「開始」只在第 4 步出現）。
@@ -553,7 +544,7 @@ function renderSummary(){
   $("#sum").innerHTML = rows.map(([t,v,miss]) => `<div><dt>${t}</dt><dd class="${v?"":"miss"}">${v || miss || "還沒選"}</dd></div>`).join("");
   $("#go").disabled = rows.some(r => !r[1]);
 }
-$("#go").onclick = () => { rtiDates(); chooseTheme(); };   /* 先選主題（見 collect.js），再開始 */
+$("#go").onclick = () => chooseTheme();   /* 先選主題（見 collect.js），再開始 */
 $("#aim").addEventListener("input", renderSummary);
 
 /* 教學日期管理面板 */
