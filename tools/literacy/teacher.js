@@ -282,8 +282,9 @@ function trendView(rs, m){
   let groups, chart, cols, note = "";
   if(T.view === "time" && T.axis === "teach"){
     /* 教學開始後第幾天：每筆紀錄依它那一課的教學開始日對齊 */
-    const withStart = src.filter(r => (teach[key(r.book, r.lesson)] || {}).start);
-    const g = groupBy(withStart, r => daysBetween(teach[key(r.book, r.lesson)].start, dayOf(r)));
+    /* 每位學生用自己的教學開始日（有個別設定就用個別的） */
+    const withStart = src.filter(r => teachFor(key(r.book, r.lesson), r.kid).start);
+    const g = groupBy(withStart, r => daysBetween(teachFor(key(r.book, r.lesson), r.kid).start, dayOf(r)));
     groups = [...g].sort((a, b) => a[0] - b[0]).map(([d, list]) => ({x:d, label: d < 0 ? `開始前 ${-d} 天` : `第 ${d} 天`, rs:list, phase: mainPhase(list), ...fn(list)}));
     note = `只有輸入過教學日期的課才能這樣對齊（${withStart.length} / ${src.length} ${unitN("acc")}）。0＝教學開始那一天。`;
     chart = lineChart(groups, {metric:m, xLabel: d => d < 0 ? `${d}` : `${d}`, events:[{x:0, label:"教學開始"}], xName:"教學開始後第幾天"});

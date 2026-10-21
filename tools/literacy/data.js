@@ -161,10 +161,16 @@ const kidShow = k => k.name || k.code;
 const studyGrade = k => adjLevel(k) || kidGrade(k);
 const gradeText = k => `${GRADES[kidGrade(k)-1]}年級${adjLevel(k) ? `・課程調整到${GRADES[adjLevel(k)-1]}年級` : ""}`;
 
-/* 教學日期：每一課一筆，{type:"dates", start, end} 或 {type:"notYet"}；沒有紀錄就依學生年級判斷 */
+/* 教學日期：每一課一筆「全班預設」，{type:"dates", start, end} 或 {type:"notYet"}；沒有紀錄就依學生年級判斷。
+   同一課學生進度不同時（例如學扶、跨受試研究），個別學生可以另外設定，存在 kids：{學生代號: {type, start, end}}（2026-10-21，A8）。
+   沒有個別設定的學生沿用全班預設；舊資料沒有 kids，就是全班預設，不用轉換。 */
 const key = (b,n) => b + "-" + n;
 const teach = load("literacy-teach", {});
 const saveTeach = () => store("literacy-teach", teach);
+/* 某位學生在某一課實際用的教學日期：有個別設定就用個別的，沒有就用全班預設 */
+const teachFor = (k, code) => { const t = teach[k] || {}; return (code && t.kids && t.kids[code]) || t; };
+/* 這次手動指定的評量時機（學扶前後測卡片、或第 3 步「這次全部改為」）；學扶的「教學後」要看每位學生自己的結束日 */
+const manualFor = (code, k) => state.rtiKeys && state.rtiKeys.includes(k) ? rtiPhaseFor(k, code) : state.manual[k];
 
 const state = {
   theme:"",   /* 這次實際用的主題（""＝不用主題） */
@@ -198,7 +204,7 @@ function datePhase(t){
 }
 /* 某位學生在某一課的評量時機：有教學日期就用日期，沒有就比較學生年級與課本年級 */
 function autoFor(code, b, n){
-  const t = teach[key(b,n)] || {};
+  const t = teachFor(key(b,n), code);
   if(t.type === "dates") return datePhase(t);
   const k = kidBy(code); if(!k) return {phase:null, why:""};
   const d = termIndex(studyGrade(k), TERM) - termIndex(BOOKS[b].grade, BOOKS[b].term);
@@ -210,17 +216,17 @@ function autoFor(code, b, n){
   if(d <= 3) return {phase:"維持期", why:"上學年學過"};
   return {phase:"維持期", why:"更早以前學過"};
 }
-const phaseFor = (code, b, n) => state.manual[key(b,n)] || autoFor(code, b, n).phase;
+const phaseFor = (code, b, n) => manualFor(code, key(b,n)) || autoFor(code, b, n).phase;
 const selKids = () => [...state.kids].filter(kidBy);
 const phases = () => state.lessons.flatMap(k => { const [b,n] = k.split("-"); return selKids().map(c => phaseFor(c, b, n)); });
 /* 把同一課、同一時機的學生合在一起顯示 */
 function groups(b, n){
   const g = new Map();
   for(const c of selKids()){
-    const a = autoFor(c, b, n), p = state.manual[key(b,n)] || a.phase;
-    const label = p ? `${p}${!state.manual[key(b,n)] && a.days!=null && (p==="教學後"||p==="維持期") ? `（第 ${a.days} 天）` : ""}` : null;
-    const id = (label || "") + "|" + (state.manual[key(b,n)] ? "手動指定" : a.why);
-    if(!g.has(id)) g.set(id, {label, why: state.manual[key(b,n)] ? "這次手動指定" : a.why, kids:[]});
+    const m = manualFor(c, key(b,n)), a = autoFor(c, b, n), p = m || a.phase;
+    const label = p ? `${p}${!m && a.days!=null && (p==="教學後"||p==="維持期") ? `（第 ${a.days} 天）` : ""}` : null;
+    const id = (label || "") + "|" + (m ? "手動指定" : a.why);
+    if(!g.has(id)) g.set(id, {label, why: m ? "這次手動指定" : a.why, kids:[]});
     g.get(id).kids.push(c);
   }
   return [...g.values()];

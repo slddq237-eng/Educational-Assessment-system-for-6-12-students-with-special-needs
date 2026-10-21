@@ -59,10 +59,10 @@ function renderPresets(){
    教學後的課，如果教學結束已經超過「維持期」天數，自動算維持期。 */
 const RTI_PHASES = [["pre","教學前","前測：還沒開始教，不給提示"],["mid","教學中","定期檢測：教學期間每 1～2 週一次"],["post","教學後","後測：教完以後；教完 7 天以上自動算維持期"]];
 state.rti = ""; state.rtiKeys = [];
-function rtiPhaseFor(k){
+function rtiPhaseFor(k, code){
   if(state.rti === "pre") return "基線期";
   if(state.rti === "mid") return "教學中";
-  const t = teach[k] || {};
+  const t = teachFor(k, code);
   return t.type === "dates" && t.end && Math.round((today - parse(t.end)) / DAY) >= settings.maintainAfter ? "維持期" : "教學後";
 }
 /* 每次重畫前，把學扶前後測選的時期套到所選課次（換成別的卡片就清掉） */
@@ -72,8 +72,8 @@ function syncRti(){
   state.lessons.forEach(k => { state.manual[k] = rtiPhaseFor(k); }); state.rtiKeys = [...state.lessons];
 }
 /* 學扶前後測的「教學後天數」：有結束日、而且今天在結束日當天或之後，就算天數（結束當天＝第 0 天） */
-function rtiDays(k){
-  const t = teach[k] || {};
+function rtiDays(k, code){
+  const t = teachFor(k, code);
   if(t.type !== "dates" || !t.end || today < parse(t.end)) return "";
   return Math.round((today - parse(t.end)) / DAY);
 }
@@ -323,7 +323,7 @@ function renderLessons(){
   $("#status").querySelectorAll(".st").forEach(r => {
     const k = r.dataset.k, b = splitKey(k)[0];
     r.querySelectorAll("[data-q]").forEach(btn => btn.onclick = () => {
-      teach[k] = {type:btn.dataset.q}; saveTeach();
+      teach[k] = {type:btn.dataset.q, kids:(teach[k] || {}).kids}; saveTeach();   /* 個別學生的設定保留 */
       if(btn.dataset.q === "dates") openDates(b); else render();
     });
     const m = r.querySelector("[data-m]"); if(m) m.onchange = () => { if(m.value) state.manual[k] = m.value; else delete state.manual[k]; render(); };
@@ -548,23 +548,48 @@ function renderSummary(){
 $("#go").onclick = () => chooseTheme();   /* 先選主題（見 collect.js），再開始 */
 $("#aim").addEventListener("input", renderSummary);
 
-/* 教學日期管理面板 */
+/* 教學日期管理面板：每一課一列「全班」，下面可以加「個別學生不同」的列（A8：同一課學生進度不同） */
+/* 教學狀態選單＋日期欄＋目前判斷結果（全班列和個別學生列共用） */
+function dateCtl(t, label, a){
+  return `<select data-type aria-label="${esc(label)}教學狀態">${TAUGHT.map(([v,x]) => `<option value="${v}" ${(t.type||"")===v?"selected":""}>${x}</option>`).join("")}</select>
+    <div class="ds">${t.type === "dates" ? `<input type="date" aria-label="${esc(label)}開始日" data-s value="${t.start||""}"><span>到</span><input type="date" aria-label="${esc(label)}結束日" data-e value="${t.end||""}">` : ""}
+    <span class="ph">${a.phase ? `目前：${a.phase}・${esc(a.why)}` : esc(a.why)}</span></div>`;
+}
 function renderDates(){
   $("#dBooks").innerHTML = BOOK_ORDER.map(b => `<button class="chip ${dBook===b?"on":""}" data-b="${b}">${bookName(b)}</button>`).join("");
   $("#dBooks").querySelectorAll("button").forEach(btn => btn.onclick = () => { dBook = btn.dataset.b; renderDates(); });
   $("#dTable").innerHTML = Object.keys(BOOKS[dBook].lessons).map(n => {
     const k = key(dBook,n), t = teach[k] || {}, a = t.type === "dates" ? datePhase(t) : t.type === "notYet" ? {phase:"基線期", why:"還沒教"} : {phase:null, why:"依每位學生的年級判斷"};
-    return `<div class="drow" data-k="${k}"><b>${esc(lessonName(dBook, n))}</b>
-      <select aria-label="第 ${n} 課教學狀態">${TAUGHT.map(([v,x]) => `<option value="${v}" ${(t.type||"")===v?"selected":""}>${x}</option>`).join("")}</select>
-      <div class="ds">${t.type === "dates" ? `<input type="date" aria-label="第 ${n} 課開始日" data-s value="${t.start||""}"><span>到</span><input type="date" aria-label="第 ${n} 課結束日" data-e value="${t.end||""}">` : ""}
-      <span class="ph">${a.phase ? `目前：${a.phase}・${esc(a.why)}` : esc(a.why)}</span></div></div>`;
+    const own = Object.keys(t.kids || {}).filter(kidBy), free = kids.filter(x => !own.includes(x.code));
+    return `<div class="drow" data-k="${k}"><b>${esc(lessonName(dBook, n))}</b>${dateCtl(t, `第 ${n} 課`, a)}</div>
+      ${own.map(c => `<div class="drow dkid" data-k="${k}" data-kid="${esc(c)}"><span class="dk">個別</span><div class="kc"><b>${esc(kidLabel(kidBy(c)))}</b>
+        ${dateCtl(t.kids[c], `${kidLabel(kidBy(c))} 第 ${n} 課`, autoFor(c, dBook, n))}<button class="linkbtn" data-del>改回全班</button></div></div>`).join("")}
+      ${free.length ? `<div class="dadd"><select data-add data-k="${k}" aria-label="第 ${n} 課：個別學生不同"><option value="">＋個別學生不同…</option>${free.map(x => `<option value="${esc(x.code)}">${esc(kidLabel(x))}</option>`).join("")}</select></div>` : ""}`;
   }).join("");
+  const done = () => { saveTeach(); renderDates(); render(); };
   $("#dTable").querySelectorAll(".drow").forEach(r => {
-    const k = r.dataset.k;
-    r.querySelector("select").onchange = e => { teach[k] = e.target.value ? {...(teach[k]||{}), type:e.target.value} : {}; saveTeach(); renderDates(); render(); };
+    const k = r.dataset.k, c = r.dataset.kid;
+    /* 這一列改的是全班預設，還是某位學生的個別設定 */
+    const target = () => c ? teach[k].kids[c] : teach[k];
+    r.querySelector("[data-type]").onchange = e => {
+      const v = e.target.value;
+      if(c) teach[k].kids[c] = {...teach[k].kids[c], type:v};   /* 個別學生選「依年級」＝這位學生不用全班的日期 */
+      else { const keep = (teach[k] || {}).kids; teach[k] = v ? {...(teach[k] || {}), type:v} : (keep ? {kids:keep} : {}); }
+      done();
+    };
     const s = r.querySelector("[data-s]"), en = r.querySelector("[data-e]");
-    if(s) s.onchange = () => { teach[k].start = s.value; saveTeach(); renderDates(); render(); };
-    if(en) en.onchange = () => { teach[k].end = en.value; saveTeach(); renderDates(); render(); };
+    if(s) s.onchange = () => { target().start = s.value; done(); };
+    if(en) en.onchange = () => { target().end = en.value; done(); };
+    const del = r.querySelector("[data-del]");
+    if(del) del.onclick = () => { delete teach[k].kids[c]; if(!Object.keys(teach[k].kids).length) delete teach[k].kids; done(); };
+  });
+  /* 加一位個別學生：先複製全班的日期，老師再改 */
+  $("#dTable").querySelectorAll("[data-add]").forEach(sel => sel.onchange = () => {
+    const k = sel.dataset.k, code = sel.value; if(!code) return;
+    const t = teach[k] = teach[k] || {};
+    t.kids = t.kids || {};
+    t.kids[code] = t.type === "dates" ? {type:"dates", start:t.start || "", end:t.end || ""} : {type:"dates", start:"", end:""};
+    done();
   });
 }
 
