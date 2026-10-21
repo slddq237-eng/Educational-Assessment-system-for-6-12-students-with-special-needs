@@ -7,7 +7,9 @@
 <title>分析教學</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
+<!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-21f">
 <style>
 /* 分析教學：老師專區（一位學生、全班總表、進階分析）的使用說明與名詞解釋。
    版面沿用快速指南（guide.html）的方格紙；示範動畫用 demo.css、demo.js（和快速指南共用）。 */
@@ -16,7 +18,7 @@
   --red:#d64534; --green:#2c7a69; --mint:#e4f3ec; --card:#ffffff; --amber:#9a6a12; --amber-bg:#fbf1dc;
   --s1:#2a78d6; --s2:#eb6834;
   --ui:"Huninn","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
-  --kai:"LXGW WenKai TC","DFKai-SB","BiauKai","標楷體",serif;
+  --kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:17px;line-height:1.65;

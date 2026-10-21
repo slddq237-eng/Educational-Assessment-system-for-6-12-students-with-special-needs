@@ -7,7 +7,9 @@
 <title>識字評量</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
+<!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-21f">
 <!-- 平台共用的主題外觀、頭像、貼紙樣式 -->
 <link rel="stylesheet" href="../../shared/themes.css?v=2026-10-21f">
 <!-- 注音字型（3-4）：語詞、句子提示和練習的選項加注音；畫面用到注音時才會下載 -->
@@ -21,7 +23,7 @@
   --red:#d64534; --green:#2c7a69; --mint:#e4f3ec; --card:#ffffff; --amber:#9a6a12; --amber-bg:#fbf1dc;
   --practice:#6a4fa3; --practice-bg:#efe9fa;
   --ui:"Huninn","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
-  --kai:"LXGW WenKai TC","DFKai-SB","BiauKai","標楷體","Kaiti TC",serif;
+  --kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;
   color-scheme:light;
 }
 *{box-sizing:border-box}

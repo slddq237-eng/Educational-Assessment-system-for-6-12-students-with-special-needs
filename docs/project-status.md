@@ -1,7 +1,7 @@
 # 專案現況與決策紀錄
 
 給接手這個 repo 的 Claude（和人）看的交接文件。開工前請先讀完，改完重要決策後請更新這份文件。
-最後更新：2026-10-20（新增單一受試研究方法規格書、分析分成日常教學與研究兩種）
+最後更新：2026-10-21（楷書字改用全字庫正楷體，停用霞鶩文楷）
 
 ## 1. 專案在做什麼
 
@@ -104,6 +104,7 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
   4. 同一位學生從基線期就決定要不要打怪獸，之後所有時期都一樣；每筆紀錄的 `game` 欄位記下，進階分析可以分開看。
 - **打怪獸的戰利品＝這次的貼紙（2026-10-20 維護者提出，和增強制度合併）**：打敗怪獸得到的東西直接收進貼紙簿——海洋釣到的大魚、恐龍谷孵出的恐龍（沿用賓果的扭蛋圖鑑）、太空打敗外星人得到的星球、甜點店做好的杯子蛋糕。**它就是這次評量的那一張貼紙，不是多送一張**：有打怪獸和沒打怪獸的學生，每次評量都是剛好一張，增強的份量一樣，正式評量才比較得起來。中途結束一樣不給。
 - **輪流答題的換人過場（所有模式都適用，含正式評量）**：換人時，下一位學生的頭像和名字要很明顯（大頭像＋大字「換 ○○」），過場後停約 1 秒再出題，讓學生有時間換位置。計時從題目唸完才開始，停頓不影響反應時間。
+- **標準楷書字型（2026-10-21）**：霞鶩文楷改自日本字型，很多字的筆畫、部件和教育部標準楷書不同（骨、這、述、令、刃等），學生容易學錯，所以賓果以外的頁面改用全字庫正楷體子集（`shared/fonts/tw-kai-*.woff2`、`tw-kai.css`，字型名稱 `TWKai`）。`--kai` 依序是 TWKai → 標楷體（Mac 的 BiauKai、Windows 的 DFKai-SB）→ serif；**不要再加 "Kaiti TC"、"KaiTi"、"STKaiti"（大陸字形）或霞鶩文楷**。收錄頁面文字、`lessons.js`、`parts.js` 用到的 3,155 字，拆成 12 個檔共約 3.5 MB，只下載畫面用到的檔。**新增課本、部件或頁面文字後要重新執行 `docs/scripts/make_kai.py`**。全字庫正楷體只有一般粗細，粗體是瀏覽器自動加粗；Unicode 擴充 B 區的罕用部件（例如 𠂆）不在這個字型檔，會改用電腦裡的字型。生字賓果改字型需夥伴同意。
 - **注音字型**：用原始字型（ButTaiwan/bpmfvs）依 `shared/lessons.js` 全部字＋干擾字重新產生子集，獨立存成 `shared/fonts/`；破音字讀音表一起補。
   - **3-4 完成（2026-10-20，PR #32）**：`shared/fonts/bpmf-kai-1～9.woff2`＋`bpmf-kai.css`（8 本課本的生字、干擾字、語詞、例句共 2,701 字，依課本拆成 9 個檔共約 2.9 MB；CSS 的 unicode-range 讓瀏覽器只下載畫面用到的字所在的檔）；`shared/bpmf.js` 破音字讀音表（語詞、例句 237 句、生字 22 個要換讀音）。用 `docs/scripts/make_bpmf.py` 產生，**新增課本後要重新執行**。
   - 讀音判斷：新酷音詞庫（libchewing-data）的詞投票決定，單獨一個字用字型預設讀音；「一、不」標本調；「們、麼、個、和」用預設讀音（詞庫只收口語讀音）；詞庫標錯的詞人工修正（體會、極大、著急、著涼、瀕臨絕種、難字等，清單在程式裡）。和生字賓果原本人工整理的 15 個破音字比對全部一致。
@@ -344,7 +345,9 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
 | 部件拆解 | `shared/parts.js`、`docs/parts-table.xlsx` | cjkvi-ids（CHISE） | GPLv2 | 已標示 |
 | 字頻總表 | `shared/freq.js` | 教育部語文成果網「表一：字頻總表」（BIAU1，5,731 字） | 維護者確認可用，須在「關於我們」列出處 | 2026-10-20 匯入；已列入關於我們 |
 | 注音字型 | `tools/bingo/` | ButTaiwan/bpmfvs | 漢字 CC BY 4.0、其餘 SIL OFL 1.1 | 已標示 |
-| 網頁字型 Huninn、LXGW WenKai TC | 各頁面（Google Fonts） | Google Fonts | SIL OFL 1.1 | 已列入關於我們 |
+| 網頁字型 Huninn | 各頁面（Google Fonts） | Google Fonts | SIL OFL 1.1 | 已列入關於我們 |
+| 網頁字型 LXGW WenKai TC（霞鶩文楷） | 只剩 `tools/bingo/`（Google Fonts） | Google Fonts | SIL OFL 1.1 | 2026-10-21 其他頁面停用：字形和教育部標準楷書不同 |
+| 標準楷書字型 全字庫正楷體（TW-Kai 98.1） | `shared/fonts/tw-kai-*.woff2`、`tw-kai.css`（賓果以外的所有頁面） | 行政院全字庫 cns11643.gov.tw | 政府資料開放授權條款－第 1 版 | 2026-10-21 加入；已列入關於我們；用 `docs/scripts/make_kai.py` 產生 |
 | SheetJS 0.18.5 | `shared/vendor/`（識字評量、備課分析，按匯出時才載入）；生字賓果仍從 cdnjs 載入 | SheetJS | Apache 2.0（授權全文 `shared/vendor/xlsx-LICENSE.txt`） | 已列入關於我們；2026-10-20 放進 repo |
 | 注音字型（識字評量） | `shared/fonts/`、`shared/bpmf.js` | ButTaiwan/bpmfvs（字嗨注音標楷） | 漢字 CC BY 4.0、其餘 SIL OFL 1.1 | 2026-10-20 加入；已列入關於我們 |
 | 新酷音詞庫 | 只在產生 `shared/bpmf.js` 時使用，不放進 repo | chewing/libchewing-data | LGPL-2.1 | 2026-10-20；已列入關於我們 |
