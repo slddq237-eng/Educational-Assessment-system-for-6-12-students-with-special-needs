@@ -14,18 +14,24 @@
   2. 新酷音詞庫 dict/chewing/tsi.csv
      https://github.com/chewing/libchewing-data（LGPL-2.1，只用來判斷語詞的讀音）
 執行（在 repo 最上層）：
-  python3 docs/scripts/make_bpmf.py <BpmfZihiKaiStd-Regular.ttf> <phonic_table_Z.txt> <tsi.csv>
+  python3 docs/scripts/make_bpmf.py <BpmfZihiKaiStd-Regular.ttf> <phonic_table_Z.txt> <tsi.csv> [審訂表.pdf]
+
+比對審訂表（建議，新增課本時一定要做）：再加第 4 個參數，教育部《國語一字多音審訂表》88 年版 PDF
+  https://language.moe.gov.tw/001/Upload/Files/wxiao89/a.pdf （只用來比對，不放進 repo；需要 pdftotext，
+  在 poppler-utils 套件裡）。程式會列出語詞、例句、生字裡和審訂表不一致的讀音，請維護者對照課本後決定：
+  要改就加進下面的 FIX，確認沒錯就加進 CHECKED，下次就不會再列出來。
 
 讀音怎麼決定：語詞、例句裡出現的每個詞庫詞（2 字以上）一起投票，詞越常用、越長票越重；
 找到的讀音在字型裡排第幾個，就記第幾個（0＝字型預設讀音，不用記）。
 單獨一個字（沒有組成詞）用字型的預設讀音；「一」「不」標本調；
 「們、麼、個、和」詞庫常收口語讀音，一律用預設讀音。
 """
-import json, math, re, subprocess, sys
+import json, math, re, subprocess, sys, unicodedata
 from fontTools import subset
 from fontTools.ttLib import TTFont
 
 FONT, ZTABLE, TSI = sys.argv[1:4]
+MOE_PDF = sys.argv[4] if len(sys.argv) > 4 else None
 OUT_DIR, OUT_JS = 'shared/fonts', 'shared/bpmf.js'
 
 # 1. 讀 lessons.js（用 Node 執行後轉成 JSON）
@@ -66,6 +72,10 @@ FIX = {'體會': 'ㄊㄧˇ ㄏㄨㄟˋ', '極大': 'ㄐㄧˊ ㄉㄚˋ', '著急'
        # 依教育部《國語一字多音審訂表》88 年版（詞庫兩種讀音同分或沒收這個詞）
        '綢繆': 'ㄔㄡˊ ㄇㄡˊ', '崗位': 'ㄍㄤˇ ㄨㄟˋ', '站崗': 'ㄓㄢˋ ㄍㄤˇ'}
 for w, ph in FIX.items(): DICT[w] = (10**9, ph.split(' '))
+# 比對審訂表時，已經確認沒錯的（語詞或例句, 字）→ 原因；不會再列出來
+CHECKED = {('肚子', '肚'): '人的肚子（例句：把肚皮都吃撐了），審訂表的ㄉㄨˇ是「豬肚子」',
+           ('淡淡', '淡'): '淡淡的花香、清香，審訂表的ㄧㄢˇ是「若隱若現貌」',
+           ('中的', '中'): '審訂表的「中的」是射中目標；課文是「傳說中」「故事中」＋「的」'}
 
 def readings(text):
     """投票：這段文字裡所有出現在詞庫的詞（2 個字以上）都投票，詞越常用、越長，票越重；
@@ -167,5 +177,73 @@ with open(OUT_JS, 'w', encoding='utf8') as f:
     f.write('const BPMF_TXT = ' + json.dumps(TXT, ensure_ascii=False, separators=(',', ':')) + ';\n')
     f.write('const BPMF_CH = ' + json.dumps(CH, ensure_ascii=False, separators=(',', ':')) + ';\n')
     f.write(api)
+
+# 6. 比對教育部《國語一字多音審訂表》88 年版（有給 PDF 才做）
+def moe_table(pdf):
+    """讀審訂表 PDF：字 → (合法讀音, {詞例或限讀的詞: 讀音})"""
+    raw = subprocess.run(['pdftotext', '-raw', pdf, '-'], capture_output=True, text=True, check=True).stdout
+    raw = unicodedata.normalize('NFKC', raw)   # PDF 有些字是相容字（看起來一樣、編碼不同），先統一
+    fix = lambda p: re.sub('[|丨│]', 'ㄧ', p).replace('‧', '˙')   # PDF 用直線代替注音「ㄧ」
+    BP = 'ㄅ-ㄩ|丨│ˊˇˋ˙‧'
+    ent, cur = {}, None
+    for line in raw.split('\n'):
+        m = re.match(r'^\*?\d{4} (\S) (.*)$', line)
+        if m: cur = m.group(1); ent[cur] = [m.group(2)]; continue
+        if line.startswith('［'): cur = None   # 書末的同音字表
+        if cur and not line.startswith(('教育部國語', '流水號')) and not re.match(r'^\s*－\d+－\s*$', line): ent[cur].append(line)
+    T = {}
+    for c, ls in ent.items():
+        # 審定音：第一行，加上後面「2.ㄨㄟˋ」這種行；單獨的聲調符號接回上一個音，「讀」「語」「(限讀)」略過
+        first = ls[0].strip(); rs = []
+        m = re.match(r'(\d\.)?\s*([%s]+)(讀|語)?' % BP, first)   # 「讀」「語」＝讀書音、口語音
+        if m: rs.append(m.group(2))
+        k = 1
+        if m and m.group(1):
+            for line in ls[1:]:
+                x = line.strip()
+                if re.fullmatch(r'[ˊˇˋ˙]', x) and rs: rs[-1] += x
+                elif x in ('讀', '語', '(限讀)'): pass
+                elif re.fullmatch(r'\d\.\s*[%s]+(讀|語)?' % BP, x): rs.append(re.sub(r'^\d\.\s*|讀$|語$', '', x))
+                else: break
+                k += 1
+        elif len(ls) > 1 and re.fullmatch(r'[ˊˇˋ˙]', ls[1].strip()) and rs: rs[-1] += ls[1].strip(); k = 2
+        rs = [fix(r) for r in rs]
+        if not rs: continue   # PDF 裡讀不到審定音的字（少數，略過）
+        rest = (first[m.end():] if m else first) + ''.join(x.strip() for x in ls[k:])
+        rest = re.sub(r'\s', '', rest)
+        alt = {fix(x) for x in re.findall(r'音([%s]+)' % BP, rest)} - set(rs)   # 通假說明、備注裡提到的其他讀音
+        ex = {}
+        for k, seg in re.findall(r'(\d)\.(.*?)(?=\d\.|$)', rest.split('通「')[0]):   # 通假說明之後不是詞例
+            k = int(k) - 1
+            if k >= len(rs): continue
+            for w in re.findall(r'[\u4e00-\u9fff]{2,}', seg):
+                if c in w and w not in ex: ex[w] = rs[k]
+        T[c] = (set(rs), alt, ex)
+    return T
+def same_but_tone(a, b): return a.lstrip('˙').rstrip('ˊˇˋ') == b.lstrip('˙').rstrip('ˊˇˋ')
+if MOE_PDF:
+    T = moe_table(MOE_PDF); found = []
+    def check(t, pos_reading, where, only=None):
+        for i, c in enumerate(t):
+            if c not in T or c not in Z or (only is not None and i != only) or (t, c) in CHECKED: continue
+            p = Z[c][pos_reading.get(i, 0)]; ok, alt, ex = T[c]
+            # 詞例：審訂表列出的詞出現在這段文字裡，而且蓋到這個字
+            for w, wp in ex.items():
+                for j in range(max(0, i - len(w) + 1), i + 1):
+                    if t[j:j + len(w)] == w and w[i - j] == c and p != wp and not (p.startswith('˙') and same_but_tone(p, wp)):
+                        if (w, c) not in CHECKED: found.append((where, t, c, p, f'審訂表「{w}」唸{wp}'))
+            # 讀音不在審訂表裡（輕聲不算錯：審訂表只列本調）
+            if p not in ok and not (p.startswith('˙') and any(same_but_tone(p, q) for q in ok)):
+                found.append((where, t, c, p, '審訂表只有 ' + '、'.join(sorted(ok)) + ('（' + p + '只在通假或特殊用法，見備注）' if p in alt else '')))
+    for t in sorted(texts): check(t, dict(TXT.get(t, [])), '語詞例句')
+    for b, book in L['BOOKS'].items():   # 生字：用這本課本語詞裡的讀音（BPMF_CH），沒有記就是預設讀音
+        for c in ''.join(les['write'] + les['read'] for les in book['lessons'].values()):
+            r = (CH.get(b) or {}).get(c, 0)
+            w = (L['WORDS_ED'].get(b) or {}).get(c) or L['WORDS'].get(c) or ''
+            if c in w: check(w, {w.index(c): r}, f'生字（{b}）', only=w.index(c))
+    seen_f = set(); uniq = [f for f in found if not (f[1:] in seen_f or seen_f.add(f[1:]))]
+    print(f'\n比對審訂表 88 年版：審訂表 {len(T)} 字，和平台讀音不一致 {len(uniq)} 處（請對照課本：要改加進 FIX，沒錯加進 CHECKED）')
+    for where, t, c, p, why in uniq: print(f'  {c}：平台{p}，{why}｜{where}：{t}')
+
 print(f'字數 {len(chars)}，字型 {OUT_FONT_INFO}，讀音表 {os.path.getsize(OUT_JS)//1024} KB，'
       f'有破音字的語詞例句 {len(TXT)} 句，生字換讀音 {sum(len(v) for v in CH.values())} 個')
