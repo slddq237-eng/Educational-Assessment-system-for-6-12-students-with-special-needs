@@ -388,12 +388,12 @@ function renderQuiz(){
   if(state.mode === "flu"){ box.innerHTML = `<div class="locked"><span class="lock">流暢性</span><span>在 ${LIMITS.find(l => l[0]===state.limit)[1]} 內，從所選課次的 ${quizPlan().pool} 個字隨機連續出題，題數不固定。</span></div>`; return; }
   const q = quizPlan();
   /* 快速開始只顯示題數和時間；要改題數請到進階設定 */
-  /* 練習：「隨選快速」＝預設隨機 10 個字，「全課生字」＝所選課次的字全部考；不到 10 個字就直接全課生字。
+  /* 練習：「快速隨選」＝預設隨機 10 個字，「全課生字」＝所選課次的字全部考；不到 10 個字就直接全課生字。
      正式評量的題數固定，要改請到進階設定 */
   if(isQuick()){
     const practice = state.kind !== "formal", short = q.pool <= q.def;
     const pick = !practice || short ? "" : `<div class="group" role="group" aria-label="題數">
-      <button class="chip ${q.isAll ? "" : "on"}" data-qq="def" aria-pressed="${!q.isAll}">隨選快速</button>
+      <button class="chip ${q.isAll ? "" : "on"}" data-qq="def" aria-pressed="${!q.isAll}">快速隨選</button>
       <button class="chip ${q.isAll ? "on" : ""}" data-qq="all" aria-pressed="${q.isAll}">全課生字</button></div>`;
     /* 剛好 10 個字：兩個按鈕一樣，不顯示也不說明；真的不到 10 個字才寫明 */
     const note = practice ? (q.pool < PRACTICE_COUNT ? "不到 10 個字，全課生字都考。" : "") : "要改題數，請切換到「進階設定」。";
@@ -421,7 +421,7 @@ function renderQuiz(){
   }
   box.innerHTML = `
     <label class="group" for="qCount">題數 <input id="qCount" type="number" min="1" max="${q.pool}" value="${q.count}"> 題
-      ${state.kind === "formal" ? "" : `<button class="chip ${q.isDefault?"on":""}" data-qc="def">隨選快速（${q.def} 字）</button>`}
+      ${state.kind === "formal" ? "" : `<button class="chip ${q.isDefault?"on":""}" data-qc="def">快速隨選（${q.def} 字）</button>`}
       <button class="chip ${q.count === q.one && (state.kind === "formal" || state.qCount != null) ?"on":""}" data-qc="one">一課的量（${q.one} 字）</button>
       <button class="chip ${q.isAll?"on":""}" data-qc="all">全課生字（${q.pool} 字）</button></label>
     ${how}
