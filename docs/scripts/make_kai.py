@@ -15,6 +15,12 @@
 需要：Python 3、fonttools、brotli（pip install fonttools brotli）、Node.js
 需要先下載（不放進 repo）：全字庫正楷體 TW-Kai-98_1.ttf
   https://www.cns11643.gov.tw/ 「下載專區」→ 字型下載（政府資料開放授權條款－第 1 版）
+  連不上官網時（例如 Claude 的雲端環境），改從 npm 套件 @fontpkg/tw-kai 下載同一個字型檔（2026-10-21 用這個方式產生）：
+    curl -o tw-kai.tgz https://registry.npmjs.org/@fontpkg/tw-kai/-/tw-kai-98.1.0.tgz
+    tar xzf tw-kai.tgz        → 字型檔在 package/台湾全字库正楷体.ttf（檔名是簡體字，內容就是 TW-Kai 98.1）
+  不要執行這個套件裡的程式，只拿字型檔。產生前先確認字型資訊是官方版本：
+    python3 -c "from fontTools.ttLib import TTFont as T; print(T('<字型檔>')['name'].getDebugName(0))"
+    應該顯示「(c) Copyright IMC, DGBAS Executive Yuan R.O.C. 2005-」（行政院主計處電子處理資料中心）
 執行（在 repo 最上層）：
   python3 docs/scripts/make_kai.py <TW-Kai-98_1.ttf>
 """
