@@ -146,7 +146,7 @@ const saveTeach = () => store("literacy-teach", teach);
 
 const state = {
   theme:"",   /* 這次實際用的主題（""＝不用主題） */
-  themePick:"kids",   /* 第 4 步的主題：kids＝讓學生自己選（按開始後出現選主題畫面）、none＝不用主題、或直接指定主題 */
+  themePick:"",   /* 第 4 步學生點的主題：""＝還沒點、none＝不用主題、或主題代號；選好才能開始，再玩一次沿用 */
   /* 每位學生不同的提示（只在進階設定的練習）：學生代號 → {hints:Set, rule:[]}；沒有的學生用大家共用的 pHints、pRule */
   kidHints:{}, hintFor:"",
   goal:"3", kind:"formal", mode:"acc", limit:"60",

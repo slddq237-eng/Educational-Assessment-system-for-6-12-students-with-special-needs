@@ -7,8 +7,8 @@
    ========================================================= */
 
 /* =========================================================
-   11. 選主題畫面（按「開始」之後、第一題之前）
-   玩法、血量、注音、報讀都在設定第 4 步選好了；主題在第 4 步選「讓學生自己選」時，才出現這個畫面給學生挑。
+   11. 主題（設定第 4 步，請學生點一個主題）
+   主題卡片畫在 setup.js 的 renderThemePick；按「開始」就用選好的主題開始作答。
    ========================================================= */
 /* 這次要不要用主題和貼紙：練習一定用；正式評量看「評量設定」（預設要用） */
 const useRewards = () => state.kind !== "formal" || settings.formalTheme;
@@ -17,19 +17,9 @@ const themeName = id => (Themes.THEMES[id] || {}).name || "無";
 const willFight = () => gameAllowed() && useRewards() && (state.kind === "formal" ? !!settings.formalGame : settings.practicePlay === "monster");
 
 function chooseTheme(){
-  if(!useRewards()){ state.theme = ""; startSession(); return; }
-  if(state.themePick !== "kids"){ state.theme = state.themePick === "none" ? "" : state.themePick; startSession(); return; }
-  const list = selKids().map(kidBy), play = willFight();
-  const LINE = id => play ? Themes.THEMES[id].line : `可以得到${Themes.THEMES[id].name}的貼紙`;
-  $("#pickWho").innerHTML = list.map(k => `<span class="pk">${Rewards.avatarHtml(k.code)}${esc(kidShow(k))}</span>`).join("");
-  $("#pickHint").textContent = list.length > 1 ? "大家一起決定，要去哪裡冒險？" : "你想去哪裡冒險？";
-  $("#themes").innerHTML = Themes.ids.map(id => { const t = Themes.THEMES[id];
-    return `<button class="theme" data-skin="${id}" data-t="${id}">${Themes.icon(id, t.stickers[0][0])}${esc(t.name)}<small>${esc(LINE(id))}</small></button>`; }).join("")
-    + (play ? "" : `<button class="theme none" data-t=""><span style="font-size:72px;line-height:110px">☆</span>不用主題<small>一樣可以得到貼紙</small></button>`);
-  $("#themes").querySelectorAll("button").forEach(b => b.onclick = () => { state.theme = b.dataset.t; startSession(); });
-  showScreen("#pick");
+  state.theme = useRewards() && state.themePick !== "none" ? state.themePick : "";
+  startSession();
 }
-$("#pickBack").onclick = () => showScreen("#setup");
 
 /* 作答畫面換上主題的顏色；角落放一個主題小圖示（不會動） */
 function applySkin(theme){

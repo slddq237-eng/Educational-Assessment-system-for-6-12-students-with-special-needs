@@ -228,7 +228,7 @@ function playText(){
 }
 function renderPlay(){
   const c = current(), formal = c.formal, row = (t, body) => `<div class="playrow"><span class="tl">${t}</span><div>${body}</div></div>`;
-  $("#playHint").textContent = formal ? "正式評量的玩法照「評量設定」，從基線期起每次都一樣，這裡只顯示。" : "練習可以自由選玩法。主題在下面選。";
+  $("#playHint").textContent = formal ? "正式評量的玩法照「評量設定」，從基線期起每次都一樣，這裡只顯示。" : "練習可以自由選玩法。最後請學生在下面點一個主題。";
   const rows = [];
   if(formal){
     rows.push(row("玩法", `<div class="locked"><span class="lock">固定</span><span>${playText()}。<button class="linkbtn" data-open="set">到評量設定修改</button></span></div>`));
@@ -241,7 +241,7 @@ function renderPlay(){
       <p class="note">${p.desc}${c.flu ? "。流暢性模式只能用一般模式。" : ""}</p>`));
     if(heartsAllowed()){
       const hp = +settings.practiceHearts || 0;
-      rows.push(row("血量", `<div class="group">${chipRow([["0", "不用"], ...HEART_CHOICES.map(n => [String(n), `${n} 點`])], String(hp), "hearts")}</div>
+      rows.push(row("血量", `<div class="group">${chipRow([["0", "無限"], ...HEART_CHOICES.map(n => [String(n), `${n} 點`])], String(hp), "hearts")}</div>
         <p class="note">${hp ? `畫面上方一排紅心。答錯扣 1 點、連續答對 3 題補 1 點，用完就結束${selKids().length > 1 ? (willFight() ? "（大家共用）" : "（每人各自）") : ""}。` : "不限制答錯次數。"}</p>`));
     }
     rows.push(row("注音", `<div class="group">${chipRow([["0", "選項不加"], ["1", "選項加注音"]], settings.practiceBpmf ? "1" : "0", "bpmf")}</div>
@@ -256,7 +256,7 @@ function renderPlay(){
   bind("bpmf", v => settings.practiceBpmf = v === "1");
   bind("read", v => settings.practiceRead = v === "1");
 }
-const themeText = () => !useRewards() ? "" : state.themePick === "kids" ? "・主題學生自己選" : state.themePick === "none" ? "・不用主題" : `・${themeName(state.themePick)}`;
+const themeText = () => !state.themePick ? null : state.themePick === "none" ? "不用主題" : themeName(state.themePick);
 /* 摘要的提示：有學生個別設定時，分行列出 */
 function hintsText(c){
   const one = h => h.length ? h.map(hintName).join(" → ") : "無提示";
@@ -264,13 +264,18 @@ function hintsText(c){
   if(!own.length) return one(c.hints);
   return [`全部學生：${one(c.hints)}`, ...own.map(code => `${esc(kidLabel(kidBy(code)))}：${one(kidCfg(c, code).hints)}`)].join("<br>");
 }
+/* 主題卡片：請學生直接點（打怪獸時一定要有主題，沒有「不用主題」） */
 function renderThemePick(){
   $("#themeSec").hidden = !useRewards();
   if(!useRewards()) return;
-  if(state.themePick === "none" && willFight()) state.themePick = "kids";   /* 打怪獸一定要有主題 */
-  $("#themePick").innerHTML = chipRow([["kids", "讓學生自己選"], ...Themes.ids.map(id => [id, Themes.THEMES[id].name]), ["none", "不用主題"]], state.themePick, "tp",
-    v => v === "none" && willFight() ? "disabled" : "");
-  $("#themePick").querySelectorAll("[data-tp]:not(:disabled)").forEach(b => b.onclick = () => { state.themePick = b.dataset.tp; render(); });
+  const fight = willFight(), list = selKids().map(kidBy);
+  if(state.themePick === "none" && fight) state.themePick = "";
+  const LINE = id => fight ? Themes.THEMES[id].line : `可以得到${Themes.THEMES[id].name}的貼紙`;
+  $("#pickWho").innerHTML = list.map(k => `<span class="pk">${Rewards.avatarHtml(k.code)}${esc(kidShow(k))}</span>`).join("");
+  $("#themes").innerHTML = Themes.ids.map(id => { const t = Themes.THEMES[id];
+    return `<button class="theme ${state.themePick === id ? "on" : ""}" data-skin="${id}" data-t="${id}" aria-pressed="${state.themePick === id}">${Themes.icon(id, t.stickers[0][0])}${esc(t.name)}<small>${esc(LINE(id))}</small></button>`; }).join("")
+    + (fight ? "" : `<button class="theme none ${state.themePick === "none" ? "on" : ""}" data-t="none" aria-pressed="${state.themePick === "none"}"><span style="font-size:72px;line-height:110px">☆</span>不用主題<small>一樣可以得到貼紙</small></button>`);
+  $("#themes").querySelectorAll("button").forEach(b => b.onclick = () => { state.themePick = b.dataset.t; render(); });
 }
 
 const splitKey = k => k.split("-");
@@ -484,7 +489,8 @@ function renderSummary(){
       ["學生", n && n <= 4 ? selKids().map(c => esc(kidLabel(kidBy(c)))).join("、") : null, n ? "一次最多 4 位學生" : "還沒選"],
       ["課次", state.lessons.length ? esc(lessonsText()) : null],
       ["時間", !state.lessons.length ? null : c.flu ? `每位學生 ${LIMITS.find(l => l[0]===state.limit)[1]}` : `${q.count} 題，${minutes(q.sec)}`],
-      ["玩法", playText() + themeText()]
+      ["玩法", playText()],
+      ...(useRewards() ? [["主題", themeText(), "請學生點一個主題"]] : [])
     ];
     $("#sum").innerHTML = rows.map(([t,v,miss]) => `<div><dt>${t}</dt><dd class="${v?"":"miss"}">${v || miss || "還沒選"}</dd></div>`).join("");
     $("#go").disabled = rows.some(r => !r[1]);
@@ -505,7 +511,8 @@ function renderSummary(){
     ["評量方式", c.flu ? `流暢性・${LIMITS.find(l => l[0]===state.limit)[1]}・目標每分鐘 ${esc($("#aim").value)} 個` : "正確率模式"],
     ["選項", choiceText(c.choices)],
     ["提示", hintsText(c)],
-    ["玩法", playText() + themeText()],
+    ["玩法", playText()],
+    ...(useRewards() ? [["主題", themeText(), "請學生點一個主題"]] : []),
     ["課次", lessonText],
     ["題目", quizText],
     ["評量時機", state.lessons.length && n && !ph.includes(null) ? ph.join("<br>") : null, n ? "請回第 3 步，在課次卡片設定教學日期" : "先選學生才能判斷"],

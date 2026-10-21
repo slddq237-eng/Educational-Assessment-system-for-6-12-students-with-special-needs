@@ -165,7 +165,7 @@ let G = null;
 const SPEAKER_SVG = `<svg viewBox="0 0 24 24" width="55%" height="55%" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>`;
 
 function showScreen(id){
-  for(const s of ["#setup", "#pick", "#play", "#result", "#book", "#teacher"]) $(s).hidden = s !== id;
+  for(const s of ["#setup", "#play", "#result", "#book", "#teacher"]) $(s).hidden = s !== id;
   window.scrollTo(0, 0);
 }
 
@@ -180,7 +180,7 @@ function startSession(){
     per: Object.fromEntries(list.map(k => { const p = kidCfg(c, k); return [k, {hints: p.hints, rule: p.rule || []}]; })),
     /* 版面：選項卡，或全課賓果卡（只在練習；正式評量、流暢性一律是選項卡，選項版面不能變） */
     choices: bingoOK(c) ? 0 : +c.choices, layout: bingoOK(c) ? "bingo" : "cards", boards: {},
-    /* 主題（第 4 步指定，或學生在選主題畫面選的，""＝不用主題）、要不要給貼紙；遊戲玩法（3-3 打怪獸：solo 自己打、coop 合作，""＝不玩） */
+    /* 主題（設定第 4 步學生點的，""＝不用主題）、要不要給貼紙；遊戲玩法（3-3 打怪獸：solo 自己打、coop 合作，""＝不玩） */
     theme: state.theme || "", rewards: useRewards(), game: "",
     /* 選項加注音（3-4）：只在練習，第 4 步決定；正式評量一律不加 */
     bpmf: state.kind !== "formal" && !!settings.practiceBpmf,
