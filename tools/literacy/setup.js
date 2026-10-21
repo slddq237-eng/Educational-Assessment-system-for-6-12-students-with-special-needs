@@ -18,11 +18,12 @@ const PRESETS = [
    why:"每次小考的條件都一樣，前後成績才能比較，看得出教學有沒有效果。",
    apply:() => Object.assign(state, {kind:"formal", mode:"acc"})},
   {id:"rti", name:"學扶前後測", desc:"給學扶、資源班老師：選「教學前、中、後」，條件都固定好，前後成績可以比較。", rec:"紀錄會存下來，列入學習分析",
-   why:"做轉介前介入（RTI）或學習扶助時用。正式評量的條件全部固定；系統會自動記下教學開始和結束的日期，老師專區的圖就會分出前測、教學中、後測，方便寫報告。",
+   why:"做轉介前介入（RTI）或學習扶助時用。正式評量的條件全部固定；紀錄會照老師選的教學前、中、後記下評量時機，老師專區的圖就會分出前測、教學中、後測，方便寫報告。",
    apply:() => Object.assign(state, {kind:"formal", mode:"acc"})},
-  {id:"timed", name:"計時挑戰", desc:"1 分鐘內答對越多越好，看學生熟不熟練。", rec:"紀錄會存下來，列入學習分析",
-   why:"認得字之後，還要認得快，讀起文章才會順。每分鐘答對幾個，可以看出熟練的程度。",
-   apply:() => Object.assign(state, {kind:"formal", mode:"flu", limit:"60"})}
+  /* 計時挑戰是練習（2026-10-21 維護者決定）：像遊戲一樣挑戰，結果另外統計；要列入學習分析，到進階設定選「正式評量＋流暢性模式」 */
+  {id:"timed", name:"計時挑戰", desc:"1 分鐘內答對越多越好，看學生熟不熟練。", rec:"紀錄會存下來，不列入學習分析", off:true,
+   why:"認得字之後，還要認得快，讀起文章才會順。每分鐘答對幾個，可以看出熟練的程度。這是練習，老師專區把「性質」切到「練習」就看得到；要列入學習分析，請到進階設定選「正式評量」和「流暢性模式」。",
+   apply:() => Object.assign(state, {kind:"practice", mode:"flu", limit:"60"})}
 ];
 let ui = load("literacy-ui", "quick");      /* 這台電腦上次用的是快速開始還是進階設定 */
 /* 這台電腦上次用的卡片（學扶老師用過一次，下次打開就直接停在「學扶前後測」） */
@@ -48,7 +49,7 @@ function renderPresets(){
       <b>${p.name}</b><span class="d">${p.desc}</span><span class="rec ${p.off?"off":""}">${p.rec}</span></button>`).join("")
     + (state.preset === "rti" ? `<div class="rtibox" style="grid-column:1/-1"><b>現在是？</b><div class="group">${RTI_PHASES.map(([id, name, d]) =>
         `<button class="opt ${state.rti === id ? "on" : ""}" data-rti="${id}" aria-pressed="${state.rti === id}">${name}<small>${d}</small></button>`).join("")}</div>
-        <p class="note" style="margin:0">開始後系統會自動記下這幾課的教學開始、結束日期；老師專區的圖就會分出前測、教學中、後測。</p></div>` : "")
+        <p class="note" style="margin:0">教學日期不會自動記，需要時請在「進階設定 → 選單 → 教學日期」輸入。</p></div>` : "")
     + `<details class="why presetwhy" style="grid-column:1/-1"><summary>這幾種有什麼不同？</summary>${PRESETS.map(p => `<p><b>${p.name}</b>：${p.why}</p>`).join("")}</details>`;
   $("#presets").querySelectorAll("[data-p]").forEach(b => b.onclick = () => { applyPreset(b.dataset.p); render(); });
   $("#presets").querySelectorAll("[data-rti]").forEach(b => b.onclick = () => { state.rti = b.dataset.rti; render(); });
@@ -76,17 +77,8 @@ function rtiDays(k){
   if(t.type !== "dates" || !t.end || today < parse(t.end)) return "";
   return Math.round((today - parse(t.end)) / DAY);
 }
-/* 按開始時自動記日期：教學中＝這天是教學開始日（還沒記過才記）；教學後＝這天是教學結束日（還沒記過才記） */
-function rtiDates(){
-  if(!isQuick() || state.preset !== "rti") return;
-  for(const k of state.lessons){
-    const t = teach[k];
-    const hasStart = t && t.type === "dates" && t.start;
-    if(state.rti === "mid" && !hasStart) teach[k] = {type:"dates", start: iso(today), end: ""};
-    if(state.rti === "post" && hasStart && !t.end && parse(t.start) <= today) t.end = iso(today);
-  }
-  saveTeach();
-}
+/* 教學日期不自動記（2026-10-21 拿掉）：原本按開始時把「今天」記成教學開始日或結束日，
+   但老師常常教完一陣子才做後測，日期會記錯，還會連帶改到一般評量的時機判斷。教學日期一律由老師在「教學日期」自己輸入。 */
 
 /* ---------- 四個步驟：一次只看一步（像生字賓果） ----------
    1 選評量目標 → 2 選評量方式和學生 → 3 選課次 → 4 選主題和玩法（右邊的摘要和「開始」只在第 4 步出現）。
@@ -348,6 +340,9 @@ const METHODS = [
 ];
 const SEC_PER_ITEM = {turn:8, split:8, present:15};
 const FREQ_SHARE = 0.2; /* 平均隨機中先出常用字的比例 */
+/* 練習的預設題數：一課的字數每課不同，多位學生輪流時會玩很久，所以練習預設一次 10 個字（2026-10-21 維護者決定）。
+   正式評量仍是一課的量，成績才能代表整課的程度。 */
+const PRACTICE_COUNT = 10;
 /* 一課的量：所選版本每課生字數的平均 */
 function oneLesson(){
   const books = [...new Set(state.lessons.map(k => splitKey(k)[0]))];
@@ -357,9 +352,11 @@ function oneLesson(){
 function quizPlan(){
   const pool = state.lessons.reduce((s,k) => s + lessonSize(k), 0);
   const one = Math.min(oneLesson(), pool);
-  const count = Math.min(pool, state.qCount ?? one);
-  const isAll = count === pool, isDefault = count === one;
-  /* 題數等於一課的量（預設）或全部出題時，不需要選出題方式；正式評量固定平均隨機 */
+  const def = state.kind === "formal" ? one : Math.min(PRACTICE_COUNT, pool);   /* 預設題數 */
+  /* state.qCount：null＝預設、"all"＝全部（換課次後仍是全部）、數字＝老師自己輸入的題數 */
+  const count = state.qCount === "all" ? pool : Math.min(pool, state.qCount ?? def);
+  const isAll = count === pool, isDefault = count === def;
+  /* 題數等於預設（練習 10 個字、正式評量一課的量）或全部出題時，不需要選出題方式；正式評量固定平均隨機 */
   const canChoose = state.kind !== "formal" && !isAll && !isDefault;
   const method = isAll ? "all" : canChoose ? state.qMethod : "even";
   /* 平均隨機：練習時 20% 先取所選課次中字頻最高的字，其餘 80% 平均分到各課隨機抽。
@@ -373,7 +370,7 @@ function quizPlan(){
     if(!moved) break; }
   const n = Math.max(1, selKids().length);
   const sec = count * (SEC_PER_ITEM[state.answer] || 8) * (state.answer === "turn" ? n : 1);
-  return {pool, one, count, isAll, isDefault, canChoose, method, freqN, per, sec, n};
+  return {pool, one, def, count, isAll, isDefault, canChoose, method, freqN, per, sec, n};
 }
 const methodName = m => m === "all" ? "全部出題" : METHODS.find(x => x.id === m).name;
 const minutes = s => s < 60 ? "不到 1 分鐘" : `約 ${Math.ceil(s / 30) / 2} 分鐘`;
@@ -383,7 +380,19 @@ function renderQuiz(){
   if(state.mode === "flu"){ box.innerHTML = `<div class="locked"><span class="lock">流暢性</span><span>在 ${LIMITS.find(l => l[0]===state.limit)[1]} 內，從所選課次的 ${quizPlan().pool} 個字隨機連續出題，題數不固定。</span></div>`; return; }
   const q = quizPlan();
   /* 快速開始只顯示題數和時間；要改題數請到進階設定 */
-  if(isQuick()){ box.innerHTML = `<p class="time"><b>${q.count} 題，${minutes(q.sec)}</b><span class="note" style="margin:0">${selKids().length > 1 ? "（學生輪流作答）" : ""}要改題數，請切換到「進階設定」。</span></p>`; return; }
+  /* 練習：「快速隨選」＝預設隨機 10 個字，「全課生字」＝所選課次的字全部考；不到 10 個字就直接全課生字。
+     正式評量的題數固定，要改請到進階設定 */
+  if(isQuick()){
+    const practice = state.kind !== "formal", short = q.pool <= q.def;
+    const pick = !practice || short ? "" : `<div class="group" role="group" aria-label="題數">
+      <button class="chip ${q.isAll ? "" : "on"}" data-qq="def" aria-pressed="${!q.isAll}">快速隨選</button>
+      <button class="chip ${q.isAll ? "on" : ""}" data-qq="all" aria-pressed="${q.isAll}">全課生字</button></div>`;
+    /* 剛好 10 個字：兩個按鈕一樣，不顯示也不說明；真的不到 10 個字才寫明 */
+    const note = practice ? (q.pool < PRACTICE_COUNT ? "不到 10 個字，全課生字都考。" : "") : "要改題數，請切換到「進階設定」。";
+    box.innerHTML = `${pick}<p class="time"><b>${q.count} 題，${minutes(q.sec)}</b><span class="note" style="margin:0">${selKids().length > 1 ? "（學生輪流作答）" : ""}${note}</span></p>`;
+    box.querySelectorAll("[data-qq]").forEach(b => b.onclick = () => { state.qCount = b.dataset.qq === "all" ? "all" : null; render(); });
+    return;
+  }
   const manyBooks = new Set(state.lessons.map(k => splitKey(k)[0])).size > 1;
   const perText = [...q.per].filter(([,v]) => v).map(([k,v]) => `${manyBooks ? bookName(splitKey(k)[0]) + " " : ""}${lessonName(...splitKey(k))} ${v}`).join("、");
   let how;
@@ -404,12 +413,17 @@ function renderQuiz(){
   }
   box.innerHTML = `
     <label class="group" for="qCount">題數 <input id="qCount" type="number" min="1" max="${q.pool}" value="${q.count}"> 題
-      <button class="chip ${q.isDefault?"on":""}" data-qc="one">一課的量（${q.one} 字）</button>
-      <button class="chip ${q.isAll?"on":""}" data-qc="all">全部 ${q.pool} 字</button></label>
+      ${state.kind === "formal" ? "" : `<button class="chip ${q.isDefault?"on":""}" data-qc="def">快速隨選（${q.def} 字）</button>`}
+      <button class="chip ${q.count === q.one && (state.kind === "formal" || state.qCount != null) ?"on":""}" data-qc="one">一課的量（${q.one} 字）</button>
+      <button class="chip ${q.isAll?"on":""}" data-qc="all">全課生字（${q.pool} 字）</button></label>
     ${how}
     <p class="time"><b>${minutes(q.sec)}</b>　<span class="note" style="margin:0">${state.answer === "turn" && q.n > 1 ? `${q.n} 位學生輪流，每人 ${q.count} 題，` : ""}每題約 ${SEC_PER_ITEM[state.answer] || 8} 秒估算</span></p>`;
   $("#qCount").onchange = e => { const v = Math.max(1, Math.min(q.pool, +e.target.value || 1)); state.qCount = v; render(); };
-  box.querySelectorAll("[data-qc]").forEach(b => b.onclick = () => { state.qCount = b.dataset.qc === "all" ? q.pool : null; render(); });
+  box.querySelectorAll("[data-qc]").forEach(b => b.onclick = () => {
+    const qc = b.dataset.qc;
+    state.qCount = qc === "all" ? "all" : qc === "one" && state.kind !== "formal" ? q.one : null;
+    render();
+  });
   box.querySelectorAll("[data-qm]").forEach(b => b.onclick = () => { state.qMethod = b.dataset.qm; render(); });
 }
 
@@ -531,7 +545,7 @@ function renderSummary(){
   $("#sum").innerHTML = rows.map(([t,v,miss]) => `<div><dt>${t}</dt><dd class="${v?"":"miss"}">${v || miss || "還沒選"}</dd></div>`).join("");
   $("#go").disabled = rows.some(r => !r[1]);
 }
-$("#go").onclick = () => { rtiDates(); chooseTheme(); };   /* 先選主題（見 collect.js），再開始 */
+$("#go").onclick = () => chooseTheme();   /* 先選主題（見 collect.js），再開始 */
 $("#aim").addEventListener("input", renderSummary);
 
 /* 教學日期管理面板 */
