@@ -227,6 +227,15 @@ function groups(b, n){
 }
 
 /* 這次實際套用的條件 */
+/* 不適合某些評量目標的提示（開發路線圖 A2，規格書「提示和題目的適配性」表裡的 ✗）：會直接給出答案，程式自動跳過。
+   △（提示很強）的還是可以用，等維護者討論決定。之後新增評量目標時，在這裡加一列。 */
+const HINT_UNFIT = {
+  "1":   {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"},
+  "2":   {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"},
+  "4-1": {parts:"題目本身就是部件", sound:"會唸出答案的讀音，部件重組不唸題目"}
+};
+const unfitWhy = (goal, h) => (HINT_UNFIT[goal] || {})[h] || "";
+const fitHints = (goal, list) => list.filter(h => !unfitWhy(goal, h));
 function current(){
   const formal = state.kind === "formal", flu = state.mode === "flu";
   const base = formal && phases().includes("基線期");
@@ -234,14 +243,14 @@ function current(){
   return {
     formal, flu, base, noHelp,
     choices: formal || flu ? settings.choices : settings.practicePlay === "bingo" ? "bingo" : state.pChoices,
-    hints: noHelp ? [] : (formal ? settings.hints : HINT_ORDER.filter(h => state.pHints.has(h))),
+    hints: noHelp ? [] : fitHints(state.goal, formal ? settings.hints : HINT_ORDER.filter(h => state.pHints.has(h))),
     rule: noHelp ? null : (formal ? settings.rule : state.pRule)
   };
 }
 /* 某位學生這次的提示與答錯規則：進階設定的練習可以每人不同，其他情況大家都一樣 */
 function kidCfg(c, code){
   const own = !c.noHelp && !c.formal && !isQuick() && state.kidHints[code];
-  return own ? {hints: HINT_ORDER.filter(h => own.hints.has(h)), rule: own.rule} : {hints: c.hints, rule: c.rule};
+  return own ? {hints: fitHints(state.goal, HINT_ORDER.filter(h => own.hints.has(h))), rule: own.rule} : {hints: c.hints, rule: c.rule};
 }
 function ruleFlow(rule, hints){
   if(!rule) return `<div class="flow"><span class="s">答錯就記錯，進入下一題</span></div>`;

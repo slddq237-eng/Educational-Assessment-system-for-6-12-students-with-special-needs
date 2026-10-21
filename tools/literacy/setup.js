@@ -169,9 +169,11 @@ function renderKind(){
   }
 }
 
-function hintChips(set, onToggle, disabled){
+/* 提示選項：不適合這個評量目標的提示（data.js 的 HINT_UNFIT）停用，滑鼠移上去看原因 */
+function hintChips(set, onToggle, disabled, goal = state.goal){
+  const why = id => unfitWhy(goal, id);   /* 評量設定（所有評量目標共用）傳 goal＝""，不停用 */
   return LEVELS.map(l => `<div class="lv"><span class="n">${l.n}<br><span class="who">${l.who}</span></span>
-    <div class="group">${l.items.map(([id,t]) => `<button class="chip ${set.has(id)?"on":""}" data-h="${id}" ${disabled?"disabled":""} aria-pressed="${set.has(id)}">${t}</button>`).join("")}</div></div>`).join("")
+    <div class="group">${l.items.map(([id,t]) => `<button class="chip ${set.has(id) && !why(id)?"on":""}" data-h="${id}" ${disabled || why(id)?"disabled":""} ${why(id)?`title="${why(id)}"`:""} aria-pressed="${set.has(id) && !why(id)}">${t}</button>`).join("")}</div></div>`).join("")
     + `<div class="lv"><span class="n">4～7<br><span class="who">老師按鈕</span></span><span class="note" style="margin:0">${TEACHER}：作答畫面上隨時可按，按了就記錄</span></div>`;
 }
 
@@ -189,10 +191,13 @@ function renderHints(){
     area.innerHTML = `<div class="locked"><span class="lock">固定</span><span>無提示・答錯就記錯，進入下一題</span></div>`;
     return;
   }
+  /* 這個評量目標會跳過哪些提示（例如部件重組不用部件、聲音提示） */
+  const skipped = LEVELS.flatMap(l => l.items).filter(([id]) => unfitWhy(state.goal, id));
+  const skipNote = skipped.length ? `<p class="note" style="margin:8px 0 0">這個評量目標不用：${skipped.map(([id, t]) => `${t}（${unfitWhy(state.goal, id)}）`).join("、")}，系統會自動跳過。</p>` : "";
   if(c.formal || isQuick()){
     $("#h3hint").textContent = c.formal ? "正式評量使用「評量設定」裡的標準條件，所有學生都一樣，這裡只顯示。" : "所有學生都用同一組提示。要調整，或讓每位學生不同，請切換到「進階設定」。";
     area.innerHTML = `<div class="locked"><span class="lock">${c.formal ? "固定" : "全部學生"}</span><div style="display:grid;gap:8px">${ruleFlow(c.rule, c.hints)}
-      <span class="note" style="margin:0">老師提示（${TEACHER}）可隨時按按鈕記錄。${c.formal ? `<button class="linkbtn" data-open="set">到評量設定修改</button>` : ""}</span></div></div>`;
+      <span class="note" style="margin:0">老師提示（${TEACHER}）可隨時按按鈕記錄。${c.formal ? `<button class="linkbtn" data-open="set">到評量設定修改</button>` : ""}</span></div></div>${skipNote}`;
     return;
   }
   /* 進階設定的練習：上方選「設定給誰」，全部學生＝共用的一組；點某位學生可以幫他個別設定 */
@@ -208,7 +213,7 @@ function renderHints(){
       list.some(code => state.kidHints[code]) ? `<p class="note" style="margin:0 0 10px">沒有個別設定的學生都用這一組。</p>` : ""}
     <p class="sub">提示</p><div class="levels">${hintChips(set)}</div>
     <p class="sub">答錯後的處理</p><ol class="ladder">${ruleEditor(rule)}</ol>
-    <p class="sub">實際順序</p>${ruleFlow(rule, HINT_ORDER.filter(h => set.has(h)))}`}`;
+    <p class="sub">實際順序</p>${ruleFlow(rule, fitHints(state.goal, HINT_ORDER.filter(h => set.has(h))))}${skipNote}`}`;
   area.querySelectorAll("[data-hfor]").forEach(b => b.onclick = () => { state.hintFor = b.dataset.hfor; render(); });
   if($("#hOwn")) $("#hOwn").onclick = () => { state.kidHints[who] = {hints: new Set(state.pHints), rule: [...state.pRule]}; render(); };
   if($("#hShared")) $("#hShared").onclick = () => { delete state.kidHints[who]; render(); };
@@ -552,7 +557,7 @@ function renderSettings(){
   $("#sChoices").innerHTML = CHOICES.filter(c => c[0] !== "bingo").map(([v,t]) => `<button class="chip ${settings.choices===v?"on":""}" data-c="${v}">${t}</button>`).join("");
   $("#sChoices").querySelectorAll("button").forEach(b => b.onclick = () => { settings.choices = b.dataset.c; saveSettings(); renderSettings(); render(); });
   const set = new Set(settings.hints);
-  $("#sHints").innerHTML = hintChips(set);
+  $("#sHints").innerHTML = hintChips(set, null, false, "");
   $("#sHints").querySelectorAll("[data-h]").forEach(b => b.onclick = () => {
     const id = b.dataset.h; set.has(id) ? set.delete(id) : set.add(id);
     settings.hints = HINT_ORDER.filter(h => set.has(h)); saveSettings(); renderSettings(); render();
