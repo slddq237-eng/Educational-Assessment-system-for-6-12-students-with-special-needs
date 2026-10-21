@@ -361,7 +361,8 @@ function quizPlan(){
   const pool = state.lessons.reduce((s,k) => s + lessonSize(k), 0);
   const one = Math.min(oneLesson(), pool);
   const def = state.kind === "formal" ? one : Math.min(PRACTICE_COUNT, pool);   /* 預設題數 */
-  const count = Math.min(pool, state.qCount ?? def);
+  /* state.qCount：null＝預設、"all"＝全部（換課次後仍是全部）、數字＝老師自己輸入的題數 */
+  const count = state.qCount === "all" ? pool : Math.min(pool, state.qCount ?? def);
   const isAll = count === pool, isDefault = count === def;
   /* 題數等於預設（練習 10 個字、正式評量一課的量）或全部出題時，不需要選出題方式；正式評量固定平均隨機 */
   const canChoose = state.kind !== "formal" && !isAll && !isDefault;
@@ -387,7 +388,15 @@ function renderQuiz(){
   if(state.mode === "flu"){ box.innerHTML = `<div class="locked"><span class="lock">流暢性</span><span>在 ${LIMITS.find(l => l[0]===state.limit)[1]} 內，從所選課次的 ${quizPlan().pool} 個字隨機連續出題，題數不固定。</span></div>`; return; }
   const q = quizPlan();
   /* 快速開始只顯示題數和時間；要改題數請到進階設定 */
-  if(isQuick()){ box.innerHTML = `<p class="time"><b>${q.count} 題，${minutes(q.sec)}</b><span class="note" style="margin:0">${selKids().length > 1 ? "（學生輪流作答）" : ""}要改題數，請切換到「進階設定」。</span></p>`; return; }
+  /* 練習可以選每次考 10 個字（預設）或全課生字；正式評量的題數固定，要改請到進階設定 */
+  if(isQuick()){
+    const pick = state.kind === "formal" || q.pool <= q.def ? "" : `<div class="group" role="group" aria-label="每次考幾個字">
+      <button class="chip ${q.isAll ? "" : "on"}" data-qq="def" aria-pressed="${!q.isAll}">每次考 ${q.def} 個字（預設）</button>
+      <button class="chip ${q.isAll ? "on" : ""}" data-qq="all" aria-pressed="${q.isAll}">每次考全課生字（${q.pool} 字）</button></div>`;
+    box.innerHTML = `${pick}<p class="time"><b>${q.count} 題，${minutes(q.sec)}</b><span class="note" style="margin:0">${selKids().length > 1 ? "（學生輪流作答）" : ""}${pick ? "" : "要改題數，請切換到「進階設定」。"}</span></p>`;
+    box.querySelectorAll("[data-qq]").forEach(b => b.onclick = () => { state.qCount = b.dataset.qq === "all" ? "all" : null; render(); });
+    return;
+  }
   const manyBooks = new Set(state.lessons.map(k => splitKey(k)[0])).size > 1;
   const perText = [...q.per].filter(([,v]) => v).map(([k,v]) => `${manyBooks ? bookName(splitKey(k)[0]) + " " : ""}${lessonName(...splitKey(k))} ${v}`).join("、");
   let how;
@@ -416,7 +425,7 @@ function renderQuiz(){
   $("#qCount").onchange = e => { const v = Math.max(1, Math.min(q.pool, +e.target.value || 1)); state.qCount = v; render(); };
   box.querySelectorAll("[data-qc]").forEach(b => b.onclick = () => {
     const qc = b.dataset.qc;
-    state.qCount = qc === "all" ? q.pool : qc === "one" && state.kind !== "formal" ? q.one : null;
+    state.qCount = qc === "all" ? "all" : qc === "one" && state.kind !== "formal" ? q.one : null;
     render();
   });
   box.querySelectorAll("[data-qm]").forEach(b => b.onclick = () => { state.qMethod = b.dataset.qm; render(); });
