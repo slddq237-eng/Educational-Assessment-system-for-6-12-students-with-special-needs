@@ -66,7 +66,7 @@ function checkBackup(){
   if(show) $("#backupText").textContent = `這台電腦有 ${records.length} 筆作答紀錄，${days == null ? "還沒有下載過備份檔" : `上次備份是 ${days} 天前`}。清除瀏覽資料或換電腦時紀錄會不見，建議現在備份。`;
 }
 $("#backupOpen").onclick = () => { renderRecSheet(); openSheet("#recSheet"); $("#recBackup").click(); };
-/* 右上角選單的「下載備份檔」「從備份檔還原」：打開作答紀錄面板再執行，結果訊息才看得到 */
+/* 右上角選單的「下載備份檔」「匯入檔案」：打開作答紀錄面板再執行，結果訊息才看得到 */
 $("#menuBackup").onclick = () => { renderRecSheet(); openSheet("#recSheet"); $("#recBackup").click(); };
 $("#menuRestore").onclick = () => { renderRecSheet(); openSheet("#recSheet"); $("#recRestore").click(); };
 
@@ -100,7 +100,9 @@ const COLS = [
   ["作答字的大小", r => r.fontScale ? (FONT_SIZES.find(f => f[0] === r.fontScale) || [, r.fontScale])[1] : "未記錄"],
   ["唸讀速度", r => r.rate ?? "未記錄"], ["流暢目標（每分鐘）", r => r.aim || ""], ["顯示計時", r => r.clock === undefined ? "未記錄" : yesNo(r.clock)], ["音效", r => r.sfx === undefined ? "未記錄" : r.sfx ? "開" : "關"],
   /* 新欄位一律加在最後面，舊的欄位順序不變（Excel 的欄位位置才不會跑掉） */
-  ["裝置", r => r.device || "未記錄"], ["紀錄格式版本", r => r.fmt || 1]
+  ["裝置", r => r.device || "未記錄"], ["紀錄格式版本", r => r.fmt || 1],
+  /* 只考有教的字（wordsets.js）：以前的紀錄都是整課出題 */
+  ["只考有教的字", r => !r.wsChars ? "整課" : `${r.ws === "p" ? "練習自己點的" : `第 ${r.ws} 組`}：${[...r.wsChars].length}／${r.wsAll} 字（${r.wsChars}）`]
 ];
 const fileDate = t => { const d = new Date(t); return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}_${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}`; };
 /* Excel 元件按匯出時才載入（見 shared/common.js 的 loadXlsx） */
@@ -130,26 +132,26 @@ function renderRecSheet(){
         <td>${esc([...new Set(rs.map(r => r.kid))].join("、"))}</td><td>${rs[0].kind === "formal" ? "正式" : "練習"}${quit ? "・<span class=\"warn\">中途結束</span>" : ""}</td>
         <td>${rs[0].mode === "flu" ? "流暢性" : "正確率"}</td><td>${rs.length}</td><td>${Math.round(first / rs.length * 100)}%</td></tr>`;
     }).join("")}</tbody>` : `<tbody><tr><td>還沒有作答紀錄。</td></tr></tbody>`;
-  $("#recMsg").textContent = "";
+  $("#recMsg").textContent = ""; $("#importAsk").hidden = true;
   $("#recClear").classList.remove("armed"); $("#recClear").textContent = "清除全部紀錄";
   renderYears();
 }
 
 /* 封存舊學年：紀錄多了以後，把以前學年的紀錄存成檔案、再從這台電腦移除，網頁會比較快。
-   封存檔和備份檔格式相同，需要時用「從備份檔還原」加回來。一定要先下載封存檔，才能移除。 */
+   封存檔和備份檔格式相同，需要時用「匯入檔案」加回來。一定要先下載封存檔，才能移除。 */
 const yearOf = r => { const d = new Date(r.at); return (d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1) - 1911; };
 const archived = new Set();   /* 這次打開網頁後已經下載過封存檔的學年 */
 function renderYears(){
   const by = new Map(); for(const r of records){ const y = yearOf(r); if(y < SCHOOL_YEAR){ if(!by.has(y)) by.set(y, []); by.get(y).push(r); } }
   const years = [...by].sort((a, b) => a[0] - b[0]);
   $("#recYears").innerHTML = !years.length ? "" : `<h3>封存以前學年的紀錄</h3>
-    <p class="note" style="margin:0">紀錄很多時，可以把以前學年的紀錄存成封存檔，再從這台電腦移除，網頁會比較快。移除後老師專區就看不到那一學年；需要時用「從備份檔還原」選封存檔加回來。</p>
+    <p class="note" style="margin:0">紀錄很多時，可以把以前學年的紀錄存成封存檔，再從這台電腦移除，網頁會比較快。移除後老師專區就看不到那一學年；需要時用「匯入檔案」選封存檔加回來。</p>
     ${years.map(([y, rs]) => `<div class="row"><b>${y} 學年：${rs.length} 筆</b>
       <button class="ghost" data-archive="${y}">下載封存檔</button>
       <button class="danger" data-remove="${y}" ${archived.has(y) ? "" : "disabled title=\"先下載封存檔才能移除\""}>從這台電腦移除</button></div>`).join("")}`;
   $("#recYears").querySelectorAll("[data-archive]").forEach(b => b.onclick = () => {
     const y = +b.dataset.archive, rs = by.get(y);
-    if(downloadJson({app:"literacy", version:2, archive:y, savedAt:new Date().toISOString(), settings, kids, teach, records: rs.map(({id, ...r}) => r)}, `識字評量_${y}學年封存_${fileDate(Date.now())}.json`)){
+    if(downloadJson({app:"literacy", kind:"archive", version:2, archive:y, savedAt:new Date().toISOString(), settings, kids, teach, records: rs.map(({id, ...r}) => r)}, `識字評量_${y}學年封存_${fileDate(Date.now())}.json`)){
       archived.add(y); renderYears(); $("#recMsg").textContent = `已下載 ${y} 學年的封存檔（${rs.length} 筆），請存到隨身碟或雲端硬碟，再按「從這台電腦移除」。`;
     }
   });
@@ -167,44 +169,81 @@ $("#recXlsx").onclick = () => exportXlsx(records, `識字評量_全部紀錄_${f
 const BACKUP_PARTS = [];
 const addBackupPart = (key, save, restore) => BACKUP_PARTS.push({key, save, restore});
 $("#recBackup").onclick = async () => {
-  const data = {app:"literacy", version:2, savedAt:new Date().toISOString(), settings, kids, teach, records: records.map(({id, ...r}) => r)};
+  const data = {app:"literacy", kind:"backup", version:2, savedAt:new Date().toISOString(), settings, kids, teach, records: records.map(({id, ...r}) => r)};
   for(const p of BACKUP_PARTS){ try { data[p.key] = await p.save(); } catch(e){} }
   if(!downloadJson(data, `識字評量_備份_${fileDate(Date.now())}.json`)) return;
   $("#recMsg").textContent = "已下載備份檔，請存到隨身碟或雲端硬碟。";
   store(BACKUP_KEY, iso(new Date())); checkBackup();
 };
-/* 把資料存成 .json 檔下載（備份檔、封存檔）；這個環境不能下載時回傳 false */
-function downloadJson(data, filename){
+/* 把資料存成 .json 檔下載（備份檔、封存檔、字組檔）；這個環境不能下載時回傳 false */
+function downloadJson(data, filename, msgSel = "#recMsg"){
   try {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:"application/json"}));
     a.download = filename;
     document.body.appendChild(a); a.click(); a.remove();
     return true;
-  } catch(e){ $("#recMsg").textContent = "這個環境不允許下載檔案，請用一般瀏覽器開啟網站再備份。"; return false; }
+  } catch(e){ setMsg(msgSel, "這個環境不允許下載檔案，請用一般瀏覽器開啟網站再下載。"); return false; }
 }
+/* ---------- 匯入檔案（規格書 A7） ----------
+   平台存的檔案都是「平台資料檔」（.json），檔案裡的 kind 寫著是哪一種：
+     backup＝備份檔、archive＝封存檔（兩種格式相同）、wordsets＝字組檔（見 wordsets.js）。
+   以前的備份檔、封存檔沒有 kind，看有沒有 archive 判斷，照樣可以匯入。
+   選了檔案先說明「這是什麼檔、裡面有什麼」，老師按「匯入」才真的加進來。Excel 檔只能看，不能匯入。 */
+const fileKind = d => d.kind || (d.archive ? "archive" : "backup");
+const recKey = r => `${r.session}|${r.at}|${r.kid}|${r.char}`;
+const savedDay = d => { const t = new Date(d.savedAt); return isNaN(t) ? "" : `${t.getFullYear()}/${t.getMonth() + 1}/${t.getDate()} `; };
 $("#recRestore").onchange = async e => {
   const f = e.target.files[0]; e.target.value = "";
   if(!f) return;
-  try {
-    const data = JSON.parse(await f.text());
-    if(data.app !== "literacy") throw new Error("不是識字評量的備份檔");
-    const have = new Set(records.map(r => `${r.session}|${r.at}|${r.kid}|${r.char}`));
-    const add = (data.records || []).filter(r => !have.has(`${r.session}|${r.at}|${r.kid}|${r.char}`));
-    add.forEach(saveRecord);
-    /* 學生名單：沒有的加進來；這台電腦上同代號但還沒填名字的（例如第一次打開時的範例 S01、S02），用備份檔裡的取代 */
-    for(const k of data.kids || []){ const i = kids.findIndex(x => x.code === k.code);
-      if(i < 0) kids.push(k); else if(!kids[i].name && k.name) kids[i] = k; }
-    for(const [k, v] of Object.entries(data.teach || {})) if(!teach[k]) teach[k] = v;
-    saveKids(); saveTeach();
-    /* 評量設定（正式評量的條件）跟著還原，換電腦後前後才能比較；畫面與聲音是每台電腦自己的，不動 */
-    const FORMAL_KEYS = ["choices", "hints", "rule", "maintainAfter", "formalTheme", "formalGame", "clockFormal", "formalRead"];
-    if(data.settings) FORMAL_KEYS.forEach(k => { if(data.settings[k] !== undefined) settings[k] = data.settings[k]; });
-    saveSettings();
-    for(const p of BACKUP_PARTS) if(data[p.key]) await p.restore(data[p.key]);
-    renderRecSheet(); $("#recMsg").textContent = `已還原 ${add.length} 筆新的作答紀錄（重複的紀錄不會再加一次），評量設定也一起還原了。`; render();
-  } catch(err){ $("#recMsg").textContent = `沒辦法讀取這個檔案：${err.message}`; }
+  const ask = $("#importAsk"); ask.hidden = true;
+  let data;
+  try { data = JSON.parse(await f.text()); } catch(err){ $("#recMsg").textContent = "沒辦法讀取這個檔案：這不是平台存的資料檔（Excel 檔只能看，不能匯入）。"; return; }
+  if(!data || data.app !== "literacy"){ $("#recMsg").textContent = "沒辦法讀取這個檔案：這不是識字評量存的資料檔。"; return; }
+  const kind = fileKind(data);
+  let text, doIt;
+  if(kind === "backup" || kind === "archive"){
+    const have = new Set(records.map(recKey)), recs = data.records || [];
+    const add = recs.filter(r => !have.has(recKey(r))).length, wsN = Object.keys(data.wordsets || {}).length;
+    text = `這是 ${savedDay(data)}下載的${kind === "archive" ? ` ${data.archive} 學年封存檔` : "備份檔"}，有 ${recs.length} 筆作答紀錄（其中 ${add} 筆是這台電腦還沒有的）、${(data.kids || []).length} 位學生${wsN ? `、${wsN} 課的字組` : ""}。
+      匯入後，評量設定（正式評量的條件）也會換成檔案裡的。<br><span class="warn">這個檔案有學生資料，請不要寄給不相關的人。</span>`;
+    doIt = () => restoreBackup(data);
+  } else if(kind === "wordsets"){
+    const plan = wsImportPlan(data.sets);
+    text = `這是 ${savedDay(data)}存的字組檔，有 ${Object.keys(data.sets || {}).length} 課：${esc(Object.values(data.sets || {}).map(v => v.name).filter(Boolean).join("、"))}。字組檔沒有學生資料。`
+      + (plan.skip.length ? `<br><span class="warn">${esc(plan.skip.join("、"))}：這台電腦的字組已經用在正式評量，不會被換掉（要換，請先在第 3 步按「重新開始一組」再匯入）。</span>` : "")
+      + (plan.none.length ? `<br>${esc(plan.none.join("、"))}：這個版本的網頁沒有這一課的字，會略過。` : "");
+    doIt = () => { wsImport(plan); render(); return `已匯入 ${plan.ok.length} 課的字組${plan.skip.length ? `，${plan.skip.length} 課沒有換掉` : ""}。到第 3 步選課次就會看到。`; };
+  } else { $("#recMsg").textContent = "這個檔案是比較新版本的網頁存的，請重新整理網頁後再匯入一次。"; return; }
+  $("#recMsg").textContent = "";
+  ask.innerHTML = `<p style="margin:0">${text}</p><p style="margin:0"><b>要匯入嗎？</b></p>
+    <div class="row"><button class="save" id="importYes">匯入</button><button class="ghost" id="importNo">取消</button></div>`;
+  ask.hidden = false;
+  $("#importNo").onclick = () => { ask.hidden = true; $("#recMsg").textContent = "沒有匯入。"; };
+  $("#importYes").onclick = async () => {
+    ask.hidden = true;
+    try { const msg = await doIt(); renderRecSheet(); $("#recMsg").textContent = msg; }
+    catch(err){ $("#recMsg").textContent = `沒辦法匯入這個檔案：${err.message}`; }
+  };
 };
+/* 匯入備份檔、封存檔：作答紀錄、學生名單、教學日期加進來（重複的不再加），評量設定換成檔案裡的 */
+async function restoreBackup(data){
+  const have = new Set(records.map(recKey));
+  const add = (data.records || []).filter(r => !have.has(recKey(r)));
+  add.forEach(saveRecord);
+  /* 學生名單：沒有的加進來；這台電腦上同代號但還沒填名字的（例如第一次打開時的範例 S01、S02），用備份檔裡的取代 */
+  for(const k of data.kids || []){ const i = kids.findIndex(x => x.code === k.code);
+    if(i < 0) kids.push(k); else if(!kids[i].name && k.name) kids[i] = k; }
+  for(const [k, v] of Object.entries(data.teach || {})) if(!teach[k]) teach[k] = v;
+  saveKids(); saveTeach();
+  /* 評量設定（正式評量的條件）跟著還原，換電腦後前後才能比較；畫面與聲音是每台電腦自己的，不動 */
+  const FORMAL_KEYS = ["choices", "hints", "rule", "maintainAfter", "formalTheme", "formalGame", "clockFormal", "formalRead"];
+  if(data.settings) FORMAL_KEYS.forEach(k => { if(data.settings[k] !== undefined) settings[k] = data.settings[k]; });
+  saveSettings();
+  for(const p of BACKUP_PARTS) if(data[p.key]) await p.restore(data[p.key]);
+  render();
+  return `已匯入 ${add.length} 筆新的作答紀錄（重複的紀錄不會再加一次），評量設定也一起換成檔案裡的了。`;
+}
 $("#recClear").onclick = e => {
   const b = e.currentTarget;
   if(!b.classList.contains("armed")){ b.classList.add("armed"); b.textContent = "確定要刪除？再按一次"; return; }
