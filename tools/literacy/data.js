@@ -69,6 +69,17 @@ const TAUGHT = [["","依學生年級自動判斷"],["dates","輸入教學日期"
 const PHASES = ["基線期","教學中","教學後","維持期"];
 const GRADES = ["一","二","三","四","五","六"];
 
+/* 作答紀錄的格式版本（開發路線圖 A4）：每筆紀錄都記下 fmt，之後改紀錄格式時新舊資料分得開。
+   改格式的規則：只加新欄位、不改舊欄位的意思；真的要改意思時，版本加 1，並寫在下面和 docs/project-status.md。
+   1＝2026-10-21 以前的紀錄（沒有 fmt 這一欄）；2＝加上 fmt 與裝置類型 device */
+const RECORD_FORMAT = 2;
+/* 作答的裝置類型：觸控而且螢幕短邊小於 600 像素＝手機；主要靠手指點（沒有滑鼠）＝平板；其他＝電腦 */
+function deviceType(){
+  const touch = navigator.maxTouchPoints > 0, coarse = matchMedia("(pointer: coarse)").matches;
+  if(touch && Math.min(screen.width, screen.height) < 600) return "手機";
+  return coarse ? "平板" : "電腦";
+}
+
 const DAY = 864e5;
 const today = new Date(); today.setHours(0,0,0,0);
 const iso = d => new Date(d.getTime() - d.getTimezoneOffset()*6e4).toISOString().slice(0,10);

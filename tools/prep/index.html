@@ -81,6 +81,9 @@ td.n{white-space:nowrap}
 .chars span[title]{cursor:help}
 .old{color:var(--muted)}
 .note{color:var(--muted);font-size:15px}
+tr.auto td{background:var(--amber-bg)}
+.autonote{margin:0 0 10px;line-height:1.7}
+.autonote .check{display:inline-flex;margin-left:10px}
 .warn{background:var(--amber-bg);border:2px dashed var(--amber);color:#5c400a;border-radius:14px;padding:10px 16px}
 </style>
 </head>
@@ -137,11 +140,12 @@ td.n{white-space:nowrap}
   </div>
 </div>
 
-<script src="../../shared/lessons.js"></script>
-<script src="../../shared/parts.js"></script>
-<script src="../../shared/freq.js"></script>
+<!-- ?v=日期 是版本號：改了任何 .js 檔，就把這頁所有的 ?v= 一起改成當天日期（同一天改第二次加 b、c），老師的瀏覽器才會下載新檔案 -->
+<script src="../../shared/lessons.js?v=2026-10-21e"></script>
+<script src="../../shared/parts.js?v=2026-10-21e"></script>
+<script src="../../shared/freq.js?v=2026-10-21e"></script>
 <!-- 共用小工具（課本排序與名稱、語詞、部件查詢、按匯出時才載入 Excel 元件），識字評量與備課分析共用 -->
-<script src="../../shared/common.js"></script>
-<script src="prep.js"></script>
+<script src="../../shared/common.js?v=2026-10-21e"></script>
+<script src="prep.js?v=2026-10-21e"></script>
 </body>
 </html>

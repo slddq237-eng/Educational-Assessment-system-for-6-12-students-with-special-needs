@@ -398,6 +398,7 @@ function endItem(passed, correctSec, revealed){
   const it = cur.it, [b, n] = splitKey(it.k), k = kidBy(it.kid) || {}, a = autoFor(it.kid, b, n);
   const sysLevel = Math.max(0, ...cur.shown.map(id => HINT_LEVEL[id]));
   const rec = {
+    fmt: RECORD_FORMAT, device: deviceType(),   /* 紀錄格式版本、作答的裝置類型（見 data.js） */
     session: G.session, at: new Date().toISOString(), kid: it.kid, kidName: k.name || "",
     grade: k.code ? kidGrade(k) : "", studyGrade: k.code ? studyGrade(k) : "",
     kind: G.kind, goal: G.goal, mode: G.mode, answer: G.answer, method: G.q.method,

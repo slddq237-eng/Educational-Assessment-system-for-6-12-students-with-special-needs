@@ -20,6 +20,9 @@ const LABEL = {"糹":"糹（糸）", "⺼":"⺼（肉）", "⺕":"⺕（彐）"}
 const label = p => LABEL[p] || p;
 
 /* 查一個字的第一層部件（人工 PARTS 優先，見 shared/common.js 的 rawParts）；備課分析把同一部件的不同寫法合併計算 */
+/* 拆法來源：獨體字（拆不開）不算自動拆，不用檢查 */
+const srcOf = c => partsOf(c).length ? partsSource(c) : "";
+const SRC_NAME = {manual:"人工", auto:"自動（請檢查）", "":"—"};
 const partsOf = c => rawParts(c).filter(p => p !== c).map(p => ALIAS[p] || p);
 /* 拆到最細：把部件一路往下拆，收集途中所有部件（不重複） */
 function allParts(c, seen = new Set()){
@@ -180,9 +183,14 @@ function drawResult(){
       : `<p class="note">沒有符合條件的部件。可以多勾幾課，或把「至少出現在」改小一點。</p>`;
   }
   else if(state.tab === "chars"){
-    $("#table").innerHTML = R.list.length ? `<table><thead><tr><th>課次</th><th>字</th><th>種類</th><th>部件</th><th>語詞</th></tr></thead><tbody>${
-      R.list.map(x => `<tr><td class="n">${esc(bookName(x.b))} ${esc(lessonName(x.b, x.n))}</td><td class="big">${esc(x.c)}</td><td class="n">${x.kind}</td>
-        <td class="chars">${esc(partsOf(x.c).map(label).join("＋") || "獨體字")}</td><td>${esc(wordOf(x.c, x.b))}</td></tr>`).join("")}</tbody></table>` : "";
+    /* 拆法來源（開發路線圖 B3）：電腦自動拆的字標黃色，方便老師檢查；拆得不適合教學的，在 shared/lessons.js 的 PARTS 補人工拆法 */
+    const auto = R.list.filter(x => srcOf(x.c) === "auto"), rows = state.autoOnly ? auto : R.list;
+    $("#table").innerHTML = R.list.length ? `<p class="note autonote">範圍內有 <b>${auto.length}</b> 個字的部件是電腦自動拆的（標黃色），不一定適合教學，例如「王＝一＋土」。發現拆得不好，跟 Claude 說「○ 改成怎麼拆」，或用部件拆解表修正。
+      <label class="check"><input type="checkbox" id="autoOnly" ${state.autoOnly ? "checked" : ""}>只看自動拆的字</label></p>
+      <table><thead><tr><th>課次</th><th>字</th><th>種類</th><th>部件</th><th>拆法來源</th><th>語詞</th></tr></thead><tbody>${
+      rows.map(x => `<tr class="${srcOf(x.c) === "auto" ? "auto" : ""}"><td class="n">${esc(bookName(x.b))} ${esc(lessonName(x.b, x.n))}</td><td class="big">${esc(x.c)}</td><td class="n">${x.kind}</td>
+        <td class="chars">${esc(partsOf(x.c).map(label).join("＋") || "獨體字")}</td><td class="n">${SRC_NAME[srcOf(x.c)]}</td><td>${esc(wordOf(x.c, x.b))}</td></tr>`).join("")}</tbody></table>` : "";
+    if($("#autoOnly")) $("#autoOnly").onchange = e => { state.autoOnly = e.target.checked; update(); };
   }
   else {
     $("#table").innerHTML = hasFreq
@@ -207,7 +215,7 @@ $("#export").onclick = () => {
   } else if(state.tab === "chars"){
     sheet = "生字一覽";
     rows = current.list.map(x => ({"課本": bookName(x.b), "課次": lessonName(x.b, x.n), "字": x.c, "種類": x.kind,
-      "部件": partsOf(x.c).map(label).join("＋") || "獨體字", "語詞": wordOf(x.c, x.b)}));
+      "部件": partsOf(x.c).map(label).join("＋") || "獨體字", "拆法來源": SRC_NAME[srcOf(x.c)], "語詞": wordOf(x.c, x.b)}));
   } else { $("#msg").textContent = "字頻資料匯入後才能匯出。"; return; }
   /* Excel 元件按匯出時才載入（見 shared/common.js 的 loadXlsx） */
   setMsg("#msg", "準備匯出…");

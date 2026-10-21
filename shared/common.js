@@ -26,6 +26,8 @@ const confOf = (c, b) => fromEd(typeof CONF_ED !== "undefined" ? CONF_ED : undef
 
 /* 部件：先用 lessons.js 的 PARTS（人工整理），沒有再用 parts.js 的 PARTS_AUTO（自動拆解）；回傳第一層部件的清單。
    各工具再依用途加規則：識字評量只把拆成 2 塊以上的當成「拆得開」，備課分析把同一部件的不同寫法合併計算。 */
+/* 這個字的拆法從哪裡來：manual＝人工（lessons.js 的 PARTS）、auto＝電腦自動拆（parts.js，不一定適合教學，要人工檢查）、""＝沒有拆法 */
+const partsSource = c => (typeof PARTS !== "undefined" && PARTS[c]) ? "manual" : (typeof PARTS_AUTO !== "undefined" && PARTS_AUTO[c]) ? "auto" : "";
 const rawParts = c => ((typeof PARTS !== "undefined" && PARTS[c]) || (typeof PARTS_AUTO !== "undefined" && PARTS_AUTO[c]) || "").split(/\s+/).filter(Boolean);
 
 /* 顯示一行提示：畫面已經換掉、找不到那個位置時就不顯示（匯出要等元件載入，這段時間老師可能已經切到別的畫面） */
