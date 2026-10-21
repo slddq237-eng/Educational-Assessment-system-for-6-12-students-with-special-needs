@@ -7,7 +7,9 @@
 <title>學扶前後測快速指南</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
+<!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-21f">
 <style>
 /* 學扶前後測快速指南：給學習扶助、資源班老師的重點說明，可以直接列印成一張 A4。
    版面沿用識字評量的方格紙。每個步驟旁邊有「示範動畫」（demo.css、demo.js，分析教學也用）。 */
@@ -15,7 +17,7 @@
   --paper:#f5faf6; --grid:#d5e8da; --ink:#1f3d36; --muted:#5b7a71;
   --red:#d64534; --green:#2c7a69; --mint:#e4f3ec; --card:#ffffff; --amber:#9a6a12; --amber-bg:#fbf1dc;
   --ui:"Huninn","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
-  --kai:"LXGW WenKai TC","DFKai-SB","BiauKai","標楷體",serif;
+  --kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:17px;line-height:1.6;

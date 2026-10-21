@@ -7,7 +7,9 @@
 <title>關於我們</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
+<!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
+<link rel="stylesheet" href="shared/fonts/tw-kai.css?v=2026-10-21f">
 <style>
 /* 關於我們：平台介紹、資料來源與出處。內容對應 docs/project-status.md「資料來源與授權清單」
    和規格書「資料來源、授權與隱私」表一；加入新的外部資料時，這一頁要一起改。
@@ -16,7 +18,7 @@
   --paper:#f5faf6; --line:#d5e8da; --ink:#1f3d36; --muted:#5b7a71;
   --red:#d64534; --green:#2c7a69; --mint:#e4f3ec; --card:#ffffff; --amber:#9a6a12; --amber-bg:#fbf1dc;
   --ui:"Huninn","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
-  --kai:"LXGW WenKai TC","DFKai-SB","BiauKai","標楷體",serif;
+  --kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:17px;line-height:1.7;
@@ -89,9 +91,12 @@ td:first-child{font-weight:700}
       <tr><td>破音字讀音</td><td>判斷識字評量語詞、例句裡的破音字該念哪一個音</td>
         <td><a href="https://github.com/chewing/libchewing-data" target="_blank" rel="noopener">新酷音輸入法詞庫</a>（libchewing-data），少數詞由 Claude 人工修正</td>
         <td>LGPL-2.1</td></tr>
-      <tr><td>網頁字型</td><td>所有頁面的中文字</td>
-        <td>Huninn（jf 粉圓體）、LXGW WenKai TC（霞鶩文楷），由 <a href="https://fonts.google.com/" target="_blank" rel="noopener">Google Fonts</a> 提供</td>
+      <tr><td>網頁字型</td><td>按鈕、說明文字</td>
+        <td>Huninn（jf 粉圓體），由 <a href="https://fonts.google.com/" target="_blank" rel="noopener">Google Fonts</a> 提供</td>
         <td>SIL OFL 1.1</td></tr>
+      <tr><td>標準楷書字型</td><td>題目、選項、生字等楷書字（生字賓果除外）</td>
+        <td>行政院「<a href="https://www.cns11643.gov.tw/" target="_blank" rel="noopener">全字庫</a>正楷體」（TW-Kai），只收錄平台用到的字，放在本網站裡</td>
+        <td>政府資料開放授權條款－第 1 版</td></tr>
       <tr><td>Excel 匯出元件</td><td>匯出作答紀錄、分析結果</td>
         <td><a href="https://sheetjs.com/" target="_blank" rel="noopener">SheetJS</a> 0.18.5，放在本網站裡（生字賓果由 cdnjs 提供）</td>
         <td>Apache 2.0</td></tr>
