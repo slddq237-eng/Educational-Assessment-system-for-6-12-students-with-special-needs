@@ -37,7 +37,8 @@ tools/
     index.html    畫面
     data.js       基本設定、學生與教學日期、評量時機判斷
     setup.js      設定畫面與彈出面板
-    records.js    作答紀錄、Excel 匯出、備份還原
+    records.js    作答紀錄、Excel 匯出、備份、匯入檔案
+    wordsets.js   只考有教的字（字組：每課要考哪些字、鎖定、分享）
     play.js       出題、作答畫面、結果畫面
     collect.js    選主題、頭像、得到貼紙、貼紙簿
     scenes.js     打怪獸的四個場景（移植自生字賓果）

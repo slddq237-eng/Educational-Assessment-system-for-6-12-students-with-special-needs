@@ -287,7 +287,8 @@ function renderThemePick(){
 
 const splitKey = k => k.split("-");
 const EDITIONS = [...new Set(BOOK_ORDER.map(b => BOOKS[b].edition))];
-const lessonSize = k => { const [b,n] = splitKey(k); return BOOKS[b].lessons[n].total; };
+/* 這課這次要考幾個字（有「只考有教的字」就只算點選的字，見 wordsets.js） */
+const lessonSize = k => wsPick(k).length;
 /* 依版本分組顯示已選課次，例如「翰林 2上 第 1、2 課」 */
 function lessonsText(){
   const by = new Map();
@@ -308,7 +309,7 @@ function renderLessons(){
     const pill = !gs.length ? "" : gs.some(g => !g.label) ? `<span class="pill warn">需要日期</span>`
       : new Set(gs.map(g => g.label.replace(/（.*/, ""))).size > 1 ? `<span class="pill">依學生不同</span>` : `<span class="pill">${gs[0].label.replace(/（.*/, "")}</span>`;
     return `<button class="lesson ${on?"on":""}" data-n="${n}" aria-pressed="${on}"><span class="t"><b>${esc(lessonName(state.book, n))}</b>${pill}</span>${l.title && n !== "0" ? `<span class="ltitle">${esc(l.title)}</span>` : ""}
-      <span class="chars">${esc(l.write)}${l.read?`<span style="opacity:.6">・${esc(l.read)}</span>`:""}</span></button>`;
+      <span class="chars">${esc(l.write)}${l.read?`<span style="opacity:.6">・${esc(l.read)}</span>`:""}</span>${on && wsPartial(k) ? `<span class="wsp">只考 ${lessonSize(k)}／${l.total} 字</span>` : ""}</button>`;
   }).join("");
   $("#lessons").querySelectorAll("button").forEach(b => b.onclick = () => {
     const k = key(state.book, b.dataset.n);
@@ -317,6 +318,7 @@ function renderLessons(){
   });
   $("#picked").innerHTML = state.lessons.length ? `已選：${esc(lessonsText())}　<button class="linkbtn" id="clearLessons">全部清除</button>` : "還沒選課次，可以選好幾課，也可以跨版本。";
   if($("#clearLessons")) $("#clearLessons").onclick = () => { state.lessons = []; render(); };
+  renderTaught();
   if(!selKids().length){ $("#status").innerHTML = `<p class="note">請先在第 2 步選學生，才能判斷評量時機。</p>`; return; }
   $("#status").innerHTML = state.lessons.map(k => {
     const [b,n] = splitKey(k), gs = groups(b, n), need = gs.some(g => !g.label);

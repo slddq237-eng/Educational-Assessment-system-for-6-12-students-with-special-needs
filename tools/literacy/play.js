@@ -14,9 +14,11 @@ const charsOf = k => { const [b,n] = splitKey(k); const L = BOOKS[b].lessons[n];
 const ALL_CHARS = [...new Set(BOOK_ORDER.flatMap(b => Object.keys(BOOKS[b].lessons).flatMap(n => charsOf(key(b,n)))))];
 const sayOf = (c, b) => wordOf(c, b) ? `${wordOf(c, b)}的${c}` : c;
 const isHan = ch => /\p{Script=Han}/u.test(ch);
+/* 這次要考的字（只考有教的字，見 wordsets.js）；選項裡的「課文字」干擾字仍然用整課的字 */
+const testChars = k => wsPick(k);
 
 function pickItems(code, q){
-  const pool = state.lessons.flatMap(k => charsOf(k).map(c => ({c, k})));
+  const pool = state.lessons.flatMap(k => testChars(k).map(c => ({c, k})));
   if(q.method === "all") return shuffle(pool);
   if(q.method === "weak"){
     /* 常錯優先：依這位學生過去的紀錄，錯得多、反應慢的字先出；沒考過的字排中間 */
@@ -175,6 +177,8 @@ function startSession(){
     session: Date.now(), cfg: c, q, kids: list,
     goal: state.goal, kind: state.kind, mode: state.mode, answer: state.answer,
     limit: +state.limit, aim: +$("#aim").value || 30, lessons: [...state.lessons],
+    /* 每課考的是哪一組字（只考有教的字）；正式評量用到的字組這時鎖定 */
+    ws: wsStart(state.lessons, state.kind),
     noHelp: c.noHelp, rule: c.rule || [], hints: c.hints,
     /* 每位學生這次的提示與答錯規則（進階設定的練習可以每人不同，見 data.js 的 kidCfg） */
     per: Object.fromEntries(list.map(k => { const p = kidCfg(c, k); return [k, {hints: p.hints, rule: p.rule || []}]; })),
@@ -271,7 +275,7 @@ const gridFor = n => n <= 9 ? [3,3] : n <= 16 ? [4,4] : n <= 20 ? [5,4] : n <= 2
 function bingoBoard(kid, k){
   const id = kid + "|" + k;
   if(!G.boards[id]){
-    const own = [...new Set(charsOf(k))].slice(0, 36), [cols, rows] = gridFor(own.length);
+    const own = [...new Set(testChars(k))].slice(0, 36), [cols, rows] = gridFor(own.length);
     const fill = shuffle(ALL_CHARS.filter(c => !own.includes(c))).slice(0, cols * rows - own.length);
     const lines = [];
     for(let r = 0; r < rows; r++) lines.push(Array.from({length:cols}, (_, c) => r * cols + c));
@@ -419,7 +423,8 @@ function endItem(passed, correctSec, revealed){
     fontScale: settings.fontScale, rate: settings.rate, sfx: settings.sfx,
     aim: G.mode === "flu" ? G.aim : "",   /* 流暢性的目標（每分鐘幾個），老師專區畫目標線用 */
     clock: !!G.clock,                      /* 作答時右上角有沒有顯示計時 */
-    hpMax: G.hpMax || "", hp: G.hpMax ? heartPool(it.kid).hp : ""   /* 血量模式：開始時幾點、這題做完剩幾點 */
+    hpMax: G.hpMax || "", hp: G.hpMax ? heartPool(it.kid).hp : "",   /* 血量模式：開始時幾點、這題做完剩幾點 */
+    ...G.ws[it.k]   /* 只考有教的字：ws＝第幾組（""＝整課，"p"＝練習自己點的）、wsChars＝這課考的字、wsAll＝整課幾個字 */
   };
   saveRecord(rec);
   const t = G.tally[it.kid];
@@ -571,7 +576,7 @@ function startRound(){
 }
 /* 流暢性模式的下一題：從所選課次隨機抽，不連續出同一個字 */
 function nextFluItem(){
-  const pool = G.lessons.flatMap(k => charsOf(k).map(c => ({c, k})));
+  const pool = G.lessons.flatMap(k => testChars(k).map(c => ({c, k})));
   let it;
   do { it = pool[Math.floor(Math.random() * pool.length)]; } while(pool.length > 1 && G.round.last && it.c === G.round.last);
   G.round.last = it.c;
