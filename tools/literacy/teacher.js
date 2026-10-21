@@ -275,7 +275,9 @@ const mainPhase = rs => { const c = {}; rs.forEach(r => c[phaseOf(r)] = (c[phase
 function trendView(rs, m){
   const fn = METRIC_FN[m], k = kidBy(T.kid), who = k ? kidLabel(k) : T.kid;
   const src = m === "flu" ? rs.filter(r => r.mode === "flu") : rs;
-  if(m === "flu" && !src.length) return {title:`${who}・流暢性`, tiles:[["流暢性回合","0",""]], chart:"", note:"這個範圍沒有流暢性模式（計時挑戰）的紀錄。", cols:[], rows:[]};
+  if(m === "flu" && !src.length) return {title:`${who}・流暢性`, tiles:[["流暢性回合","0",""]], chart:"",
+    /* 計時挑戰算練習：只看正式評量時看不到，提醒老師切換「性質」 */
+    note: T.kind === "formal" ? "正式評量沒有流暢性紀錄。計時挑戰算練習，請把上面的「性質」切到「練習」或「全部」。" : "這個範圍沒有流暢性模式（計時挑戰）的紀錄。", cols:[], rows:[]};
   const all = fn(src), mName = METRICS.find(x => x.id === m).name;
   let groups, chart, cols, note = "";
   if(T.view === "time" && T.axis === "teach"){
