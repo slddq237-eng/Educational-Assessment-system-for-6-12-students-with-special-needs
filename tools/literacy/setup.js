@@ -49,7 +49,7 @@ function renderPresets(){
       <b>${p.name}</b><span class="d">${p.desc}</span><span class="rec ${p.off?"off":""}">${p.rec}</span></button>`).join("")
     + (state.preset === "rti" ? `<div class="rtibox" style="grid-column:1/-1"><b>現在是？</b><div class="group">${RTI_PHASES.map(([id, name, d]) =>
         `<button class="opt ${state.rti === id ? "on" : ""}" data-rti="${id}" aria-pressed="${state.rti === id}">${name}<small>${d}</small></button>`).join("")}</div>
-        <p class="note" style="margin:0">教學日期不會自動記；要算維持期，請在「進階設定 → 選單 → 教學日期」填教學結束日。</p></div>` : "")
+        <p class="note" style="margin:0">教學日期不會自動記，需要時請在「進階設定 → 選單 → 教學日期」輸入。</p></div>` : "")
     + `<details class="why presetwhy" style="grid-column:1/-1"><summary>這幾種有什麼不同？</summary>${PRESETS.map(p => `<p><b>${p.name}</b>：${p.why}</p>`).join("")}</details>`;
   $("#presets").querySelectorAll("[data-p]").forEach(b => b.onclick = () => { applyPreset(b.dataset.p); render(); });
   $("#presets").querySelectorAll("[data-rti]").forEach(b => b.onclick = () => { state.rti = b.dataset.rti; render(); });
