@@ -95,7 +95,9 @@ const COLS = [
   ["主題", r => r.theme ? themeName(r.theme) : "無"], ["遊戲玩法", r => gameName(r.game)], ["選項注音", r => r.bpmf ? "有" : "無"], ["報讀（當時設定）", r => r.read ? "開" : "關"], ["按了報讀", r => r.readUsed || "無"], ["血量（開始時）", r => r.hpMax || ""], ["血量（這題後剩下）", r => r.hpMax ? r.hp : ""], ["獎勵", r => r.reward || "無"],
   ["中途結束（不列入分析）", r => yesNo(r.quit)],
   ["作答字的大小", r => r.fontScale ? (FONT_SIZES.find(f => f[0] === r.fontScale) || [, r.fontScale])[1] : "未記錄"],
-  ["唸讀速度", r => r.rate ?? "未記錄"], ["流暢目標（每分鐘）", r => r.aim || ""], ["顯示計時", r => r.clock === undefined ? "未記錄" : yesNo(r.clock)], ["音效", r => r.sfx === undefined ? "未記錄" : r.sfx ? "開" : "關"]
+  ["唸讀速度", r => r.rate ?? "未記錄"], ["流暢目標（每分鐘）", r => r.aim || ""], ["顯示計時", r => r.clock === undefined ? "未記錄" : yesNo(r.clock)], ["音效", r => r.sfx === undefined ? "未記錄" : r.sfx ? "開" : "關"],
+  /* 新欄位一律加在最後面，舊的欄位順序不變（Excel 的欄位位置才不會跑掉） */
+  ["裝置", r => r.device || "未記錄"], ["紀錄格式版本", r => r.fmt || 1]
 ];
 const fileDate = t => { const d = new Date(t); return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}_${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}`; };
 /* Excel 元件按匯出時才載入（見 shared/common.js 的 loadXlsx） */
