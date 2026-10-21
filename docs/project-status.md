@@ -307,7 +307,7 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
   - 康軒一上（2026-10-20）：語詞優先用課本語詞，其次用字音字形檔例詞，其餘 18 字及數字單元由 Claude 擬定並經維護者確認；形近字 27 字來自字音字形檔，其餘為擬定。
 - 學生名單、教學日期、評量設定：瀏覽器 localStorage（`literacy-kids`、`literacy-teach`、`literacy-settings`、`literacy-ui`）。
 - 學生的貼紙收藏與頭像：瀏覽器 IndexedDB（資料庫 `platform-rewards`、store `kids`，以學生代號為鍵），平台共用，見 `shared/rewards.js`。主題與貼紙圖形在 `shared/themes.js`、`shared/themes.css`（取自賓果，賓果本身未改）。
-- 作答紀錄：瀏覽器 IndexedDB（資料庫 `literacy`、store `records`），每題一筆，欄位見 `tools/literacy/records.js` 第 7 段的 COLS。2026-10-20 起新增 `hintSet`（當時的提示設定）、`rule`（答錯規則，`none`＝答錯就記錯）、`layout`、`theme`、`game`、`reward`；舊紀錄沒有這些欄位，Excel 顯示「未記錄」或「無」。
+- 作答紀錄：瀏覽器 IndexedDB（資料庫 `literacy`、store `records`），每題一筆，欄位見 `tools/literacy/records.js` 第 7 段的 COLS；超過 30 天沒備份會提醒，以前學年可以封存（2026-10-20）。2026-10-20 起新增 `hintSet`（當時的提示設定）、`rule`（答錯規則，`none`＝答錯就記錯）、`layout`、`theme`、`game`、`reward`；舊紀錄沒有這些欄位，Excel 顯示「未記錄」或「無」。
 - 識字評量的程式分成 `data.js`、`setup.js`、`records.js`、`play.js`、`collect.js`、`teacher.js`、`pivot.js`、`app.js`，載入順序固定（見 `app.js` 開頭）。
 - 老師專區的選單狀態存在 localStorage `literacy-teacher`、進階分析在 `literacy-pivot`、「我的比較」在 `literacy-pivots`。流暢性紀錄另記 `aim`（目標每分鐘幾個）。
 - 備份檔第 2 版：其他模組可用 `addBackupPart(key, save, restore)` 把自己的資料（之後的貼紙收藏、頭像）加進備份；第 1 版舊檔仍可還原。
@@ -324,7 +324,7 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
 | 字頻總表 | `shared/freq.js` | 教育部語文成果網「表一：字頻總表」（BIAU1，5,731 字） | 維護者確認可用，須在「關於我們」列出處 | 2026-10-20 匯入；已列入關於我們 |
 | 注音字型 | `tools/bingo/` | ButTaiwan/bpmfvs | 漢字 CC BY 4.0、其餘 SIL OFL 1.1 | 已標示 |
 | 網頁字型 Huninn、LXGW WenKai TC | 各頁面（Google Fonts） | Google Fonts | SIL OFL 1.1 | 已列入關於我們 |
-| SheetJS 0.18.5 | 各頁面（cdnjs） | SheetJS | Apache 2.0 | 已列入關於我們 |
+| SheetJS 0.18.5 | `shared/vendor/`（識字評量、備課分析，按匯出時才載入）；生字賓果仍從 cdnjs 載入 | SheetJS | Apache 2.0（授權全文 `shared/vendor/xlsx-LICENSE.txt`） | 已列入關於我們；2026-10-20 放進 repo |
 | 注音字型（識字評量） | `shared/fonts/`、`shared/bpmf.js` | ButTaiwan/bpmfvs（字嗨注音標楷） | 漢字 CC BY 4.0、其餘 SIL OFL 1.1 | 2026-10-20 加入；已列入關於我們 |
 | 新酷音詞庫 | 只在產生 `shared/bpmf.js` 時使用，不放進 repo | chewing/libchewing-data | LGPL-2.1 | 2026-10-20；已列入關於我們 |
 
@@ -349,12 +349,12 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
 - 流暢性模式：上一位最後一題答完的延遲出題，可能多出一題到下一位的回合。
 - 進階分析：算每列合計時重複掃全部紀錄，10 萬筆時「哪些字最難」要 4 秒；改成先分組，降到 0.06 秒（594 種設定比對，結果與改寫前完全相同）。
 
-會動到架構、需要維護者決定的事（細節見 PR 說明）：
-1. Excel 匯出元件 SheetJS 從 cdnjs 載入，學校網路擋外部網站或沒有網路時不能匯出；可以改成放進 repo（約 900 KB，Apache 2.0）。
-2. 所有作答紀錄存在單一瀏覽器，打開網頁時全部讀進記憶體；大約一年半（20 位學生）會到 10 萬筆，目前仍可用，但之後要考慮依學年封存，並提醒老師定期備份。
-3. 各工具重複寫了相同的小工具（課本名稱、排序、語詞、部件查詢），而且備課分析與識字評量的部件查詢規則不同；識字評量 10 個檔案共用全域變數、依載入順序。之後可以抽出 `shared/` 的共用工具檔。
-4. 自動產生的部件拆解（`shared/parts.js`）沒有把產生程式放進 repo（注音的已放在 `docs/scripts/`）。
-5. 小問題：網頁開著過夜時「今天」不會更新（評量時機以打開網頁那天判斷）；中文檔名下載要在學校電腦實測；237 個字的干擾字只有 1 個（出題時會自動用課文字補）、南一三上沒有例句。
+會動到架構的事（維護者 2026-10-20 說「全部優化」，同日完成）：
+1. **Excel 匯出不用連外網**：SheetJS 放進 `shared/vendor/`，按「匯出」時才載入（`shared/common.js` 的 `loadXlsx`），打開網頁不用多下載 880 KB。生字賓果是夥伴的檔案，仍從 cdnjs 載入。
+2. **作答紀錄的長期累積**：設定畫面上方有備份提醒（有紀錄而且超過 30 天沒下載備份檔，記在 localStorage `literacy-lastBackup`）；「作答紀錄」面板可以封存以前學年（先下載封存檔才能移除，封存檔和備份檔同格式，用「從備份檔還原」加回來）。學年依作答日期算（8 月到隔年 7 月）。
+3. **共用小工具**：`shared/common.js`（esc、課本排序 BOOK_ORDER 與名稱、wordOf、sentOf、confOf、rawParts、loadXlsx），識字評量和備課分析都改讀這份。部件查詢共用 `rawParts`，各工具再加自己的規則：識字評量只把拆成 2 塊以上的當成拆得開；備課分析把「糸／糹」合併計算。識字評量 10 個檔案仍以全域變數串接（沒有建置工具，維持現狀），載入順序寫在 `app.js` 開頭。
+4. **部件產生程式**：`docs/scripts/make_parts.py`，新增課本後執行，只新增沒有拆法的字、部件表補新列與出現課次；對現有資料重跑不會改任何東西，刪掉康軒六上 209 字後重跑，補回的拆法完全相同。
+5. 小問題：網頁開著過夜時，設定畫面會提醒重新整理（不自動重新整理，免得打斷評量）；網站加了小圖示（`favicon.svg`，生字賓果除外）。還沒處理：中文檔名下載要在學校電腦實測；237 個字的干擾字只有 1 個（出題時會自動用課文字補）、南一三上沒有例句（內容需維護者確認）。
 
 ## 6. 待決問題（摘要）
 

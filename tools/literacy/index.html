@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
 <title>識字評量</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -575,6 +576,8 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
   <p class="warnbar" id="voiceWarn" role="alert" hidden>這台電腦找不到中文語音，題目不會唸出來（作答還是可以進行）。請改用 Chrome 或 Edge，或在電腦的「語音」設定加裝中文（台灣）語音後重新整理。</p>
   <p class="mock"><b>第 1 版</b><span>目前可以使用「聽音找字」（目標 3 形音辨識）。作答前可以選主題，完成後抽貼紙，貼紙收在「貼紙簿」。作答紀錄存在這台電腦的瀏覽器，請定期到「作答紀錄」下載備份檔。</span></p>
   <p class="banner" id="dbWarn" hidden>這台電腦的瀏覽器不允許存檔（可能是無痕視窗），這次的作答紀錄關掉網頁就會消失，請在結束後匯出 Excel。</p>
+  <p class="warnbar" id="dayWarn" role="status" hidden>日期已經換到新的一天了，請<button class="linkbtn" id="dayReload">重新整理網頁</button>，評量時機（基線期、教學後第幾天）才會用今天判斷。</p>
+  <p class="warnbar" id="backupWarn" role="status" hidden><span id="backupText"></span> <button class="linkbtn" id="backupOpen">打開作答紀錄下載備份</button></p>
 
   <div class="layout">
     <div class="steps">
@@ -818,12 +821,11 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
       <button class="danger" id="recClear">清除全部紀錄</button>
     </div>
     <p class="note" id="recMsg"></p>
+    <div id="recYears"></div>
     <p class="note" style="margin:0">紀錄只存在這台電腦的瀏覽器。換電腦、清除瀏覽資料前，請先下載備份檔；備份檔裡有學生資料，請妥善保管。</p>
   </div>
 </div>
 
-<!-- Excel 匯出用的套件（和生字賓果用同一個） -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- 生字資料：平台共用的教材資料（shared/lessons.js） -->
 <script src="../../shared/lessons.js"></script>
 <!-- 注音讀音表（shared/bpmf.js）：語詞、例句裡的破音字該念哪一個音 -->
@@ -832,6 +834,8 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <script src="../../shared/freq.js"></script>
 <!-- 自動部件拆解（shared/parts.js）：部件提示在 lessons.js 的 PARTS 沒有這個字時才用 -->
 <script src="../../shared/parts.js"></script>
+<!-- 共用小工具（課本排序與名稱、語詞、部件查詢、按匯出時才載入 Excel 元件），識字評量與備課分析共用 -->
+<script src="../../shared/common.js"></script>
 <!-- 平台共用：主題與貼紙、每位學生的收藏與頭像 -->
 <script src="../../shared/themes.js"></script>
 <script src="../../shared/rewards.js"></script>

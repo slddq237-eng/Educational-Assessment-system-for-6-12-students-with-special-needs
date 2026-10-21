@@ -7,6 +7,7 @@
 - 每個小工具放在 `tools/<工具名稱>/`，入口是該資料夾的 `index.html`。首頁 `index.html` 負責列出工具。
 - `tools/bingo/` 是夥伴的原版生字賓果：除非維護者明確要求，不要修改。
 - 教材資料（生字、語詞、例句、部件、形近同音字）放在 `shared/lessons.js`，所有識字類工具共用；不要在工具資料夾裡另外複製一份。
+- 工具之間共用的小工具（課本排序與名稱、語詞、部件查詢、載入 Excel 元件）寫在 `shared/common.js`，不要在工具裡再寫一份。新增課本後執行 `docs/scripts/make_parts.py` 與 `make_bpmf.py`，新字才有部件與注音。
 - 兩位維護者分資料夾負責。`shared/`、`docs/`、首頁 `index.html`、`privacy.html`、`README.md`、`CLAUDE.md` 是共用檔案：修改前提醒維護者先告知夥伴，並在 PR 說明中特別標出。
 - 開工前先看有沒有還沒合併的 PR 動到同一批檔案，有的話先提醒維護者。
 - 開工就先發草稿 PR（draft），讓其他人在 Pull requests 清單看到誰正在改哪些檔案；做完、檢查通過再改成可合併。
