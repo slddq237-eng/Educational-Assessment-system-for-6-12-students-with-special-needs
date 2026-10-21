@@ -45,7 +45,7 @@ const CHOICES = [["3","3 個"],["4","4 個"],["6","6 個"]];
 const choiceText = c => c === "bingo" ? "生字賓果卡" : `${c} 個選項`;
 /* 練習的玩法（第 4 步選）：正式評量看「評量設定」（打怪獸開或關），生字賓果只在練習 */
 const PLAYS = [
-  {id:"color",   name:"主題配色", desc:"作答畫面換成主題的顏色和背景，做完拿貼紙"},
+  {id:"color",   name:"一般模式", desc:"沒有遊戲，作答畫面只換成主題的顏色和背景，做完拿貼紙"},
   {id:"monster", name:"打怪獸",   desc:"每做完一題就攻擊怪獸，全部做完打敗怪獸（多人時大家合作）"},
   {id:"bingo",   name:"生字賓果", desc:"把這一課的生字排成賓果卡，聽到哪個字就點哪個，連成一條線有慶祝"}
 ];
@@ -97,7 +97,7 @@ const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove
   /* 作答時右上角顯示計時：練習預設顯示；正式評量預設不顯示（可能讓學生緊張、影響反應時間），在評量設定打開 */
   clockPractice:true, clockFormal:false,
   /* 打怪獸（3-3）：正式評量預設不玩，在評量設定打開，從基線期起維持同一個設定。
-     練習的玩法在第 4 步選（practicePlay：主題配色 color／打怪獸 monster／生字賓果 bingo，預設打怪獸） */
+     練習的玩法在第 4 步選（practicePlay：一般模式 color／打怪獸 monster／生字賓果 bingo，預設打怪獸） */
   formalGame:false,
   /* 血量模式（3-3b，只在練習）：開始前選幾點血量，0＝不用 */
   practiceHearts:0,

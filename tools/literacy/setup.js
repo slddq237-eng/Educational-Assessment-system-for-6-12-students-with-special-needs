@@ -222,7 +222,7 @@ const playName = id => (PLAYS.find(p => p.id === id) || {}).name || "";
 function playText(){
   const c = current();
   if(!useRewards()) return "不用主題（評量設定）";
-  const base = willFight() ? `打怪獸（${selKids().length > 1 ? "大家合作" : "自己打"}）` : c.choices === "bingo" ? "生字賓果" : "主題配色";
+  const base = willFight() ? `打怪獸（${selKids().length > 1 ? "大家合作" : "自己打"}）` : c.choices === "bingo" ? "生字賓果" : "一般模式";
   const hp = heartsAllowed() && +settings.practiceHearts ? `・血量 ${settings.practiceHearts} 點` : "";
   return base + hp;
 }
@@ -234,11 +234,11 @@ function renderPlay(){
     rows.push(row("玩法", `<div class="locked"><span class="lock">固定</span><span>${playText()}。<button class="linkbtn" data-open="set">到評量設定修改</button></span></div>`));
     rows.push(row("報讀", `<span class="note" style="margin:0">${state.goal === "4-1" ? "部件重組沒有報讀" : settings.formalRead ? "提示可以按喇叭念出來（評量設定）" : "不念（評量設定）"}</span>`));
   } else {
-    /* 不能用的玩法：流暢性模式只能主題配色（打怪獸要一題一題做完、賓果卡會改變選項版面） */
+    /* 不能用的玩法：流暢性模式只能一般模式（打怪獸要一題一題做完、賓果卡會改變選項版面） */
     const why = id => c.flu && id !== "color" ? "流暢性模式不能用" : "";
     const cur = c.flu ? "color" : settings.practicePlay, p = PLAYS.find(x => x.id === cur);
     rows.push(row("玩法", `<div class="group">${chipRow(PLAYS.map(x => [x.id, x.name]), cur, "play", v => why(v) ? "disabled" : "")}</div>
-      <p class="note">${p.desc}${c.flu ? "。流暢性模式只能用主題配色。" : ""}</p>`));
+      <p class="note">${p.desc}${c.flu ? "。流暢性模式只能用一般模式。" : ""}</p>`));
     if(heartsAllowed()){
       const hp = +settings.practiceHearts || 0;
       rows.push(row("血量", `<div class="group">${chipRow([["0", "不用"], ...HEART_CHOICES.map(n => [String(n), `${n} 點`])], String(hp), "hearts")}</div>
