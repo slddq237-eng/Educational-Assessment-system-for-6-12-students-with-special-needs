@@ -395,7 +395,8 @@ function renderQuiz(){
     const pick = !practice || short ? "" : `<div class="group" role="group" aria-label="題數">
       <button class="chip ${q.isAll ? "" : "on"}" data-qq="def" aria-pressed="${!q.isAll}">隨選快速</button>
       <button class="chip ${q.isAll ? "on" : ""}" data-qq="all" aria-pressed="${q.isAll}">全課生字</button></div>`;
-    const note = practice ? (short ? "不到 10 個字，全課生字都考。" : "") : "要改題數，請切換到「進階設定」。";
+    /* 剛好 10 個字：兩個按鈕一樣，不顯示也不說明；真的不到 10 個字才寫明 */
+    const note = practice ? (q.pool < PRACTICE_COUNT ? "不到 10 個字，全課生字都考。" : "") : "要改題數，請切換到「進階設定」。";
     box.innerHTML = `${pick}<p class="time"><b>${q.count} 題，${minutes(q.sec)}</b><span class="note" style="margin:0">${selKids().length > 1 ? "（學生輪流作答）" : ""}${note}</span></p>`;
     box.querySelectorAll("[data-qq]").forEach(b => b.onclick = () => { state.qCount = b.dataset.qq === "all" ? "all" : null; render(); });
     return;
