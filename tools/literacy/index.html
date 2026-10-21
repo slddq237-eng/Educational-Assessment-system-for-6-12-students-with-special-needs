@@ -9,9 +9,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@400;700&display=swap">
 <!-- 平台共用的主題外觀、頭像、貼紙樣式 -->
-<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-21">
+<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-21d">
 <!-- 注音字型（3-4）：語詞、句子提示和練習的選項加注音；畫面用到注音時才會下載 -->
-<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-21">
+<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-21d">
 <style>
 /* 版面：沿用生字賓果的生字簿方格紙。
    設定畫面：左邊六個步驟，右邊固定的「本次評量」摘要；評量設定、教學日期、學生名單、作答紀錄放在彈出面板。
@@ -213,8 +213,8 @@ body.quick .lesson .pill{display:none}
 .wtab:disabled{opacity:.45;cursor:not-allowed}
 .wstep{display:grid;gap:20px;min-width:0}
 .wstep[hidden]{display:none}
-#layout:not([data-step="3"]){grid-template-columns:minmax(0,1fr)}
-#layout:not([data-step="3"]) .summary{display:none}
+#layout:not([data-step="4"]){grid-template-columns:minmax(0,1fr)}
+#layout:not([data-step="4"]) .summary{display:none}
 .wnav{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .wnav .note{flex:1;margin:0;min-width:160px}
 .wnav .go{padding:12px 28px;font-size:19px;margin-left:auto}
@@ -331,8 +331,13 @@ details.howto{margin:10px 0 0}
 .stamp2{position:absolute;right:4%;bottom:4%;width:32%;aspect-ratio:1;opacity:.9}
 .stamp2 .av{--s:100%;border-width:2px}
 /* ---------- 3-3 打怪獸場景（移植自生字賓果）：只在題目之間的固定長度過場出現 ---------- */
-#pickGame,#pickHearts,#pickBpmf,#pickRead{align-items:center;margin:0 0 16px}
-#pickGame:empty,#pickHearts:empty,#pickBpmf:empty,#pickRead:empty{display:none}
+/* 第 4 步「怎麼玩？」：每一列＝標題＋選項 */
+.playrows{display:grid;gap:14px}
+.playrow{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px 12px;align-items:start}
+.playrow>.tl{font-weight:700;padding-top:8px}
+.playrow .note{margin:4px 0 0}
+@media (max-width:620px){.playrow{grid-template-columns:1fr}.playrow>.tl{padding-top:0}}
+.hintfor{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--mint);border-radius:12px;padding:10px 12px;margin-bottom:12px}
 /* 報讀提示的小喇叭：固定在提示框右上角，句子很長要捲動時也看得到 */
 .hintbox .h:has(.hspk){position:relative;padding-right:60px}
 .hspk{position:absolute;top:8px;right:8px;width:44px;height:44px;border:none;border-radius:50%;background:var(--red);color:#fff;display:grid;place-items:center;box-shadow:0 3px 0 #8f2a1e;cursor:pointer}
@@ -466,7 +471,7 @@ details.howto{margin:10px 0 0}
 @keyframes flick{to{transform:scale(.85,1.15) rotate(4deg)}}
 .scn .chef.cheer{animation:cheer .45s ease-in-out 6 alternate}
 @media (prefers-reduced-motion:reduce){.scn *,.scn{animation:none!important;transition:none!important}}
-/* ---------- 3-3b 血量模式：上方一排愛心，答錯少一顆（碎掉），連對 3 題補一顆 ---------- */
+/* ---------- 3-3b 血量模式：上方一排紅心表示血量，答錯少一點（碎掉），連對 3 題補一點 ---------- */
 .hearts{display:inline-flex;gap:2px;font-size:clamp(22px,2.2vw,30px);line-height:1;background:var(--card);border-radius:999px;padding:4px 12px}
 .hearts i{font-style:normal;color:#e2304a;display:inline-block}
 .hearts i.empty{color:#c9c2c4;filter:grayscale(1)}
@@ -549,7 +554,9 @@ table.pivot tr.tot th,table.pivot tr.tot td{border-top:2px solid var(--ink)}
 .sheet.wide{width:min(1100px,100%)}
 .sheet > *{min-width:0}
 /* ---------- 選主題、貼紙簿 ---------- */
-.pickwho{display:flex;flex-wrap:wrap;gap:14px;font-size:24px}
+.pickwho{display:flex;flex-wrap:wrap;gap:14px;font-size:24px;margin-bottom:14px}
+.pickwho:empty{display:none}
+#themes .theme.on{outline:5px solid var(--red);outline-offset:3px}
 .pickwho .pk{display:inline-flex;align-items:center;gap:8px}
 .pickwho .av{--s:56px}
 .booksec h2{margin:0 0 10px;font-size:22px}
@@ -608,7 +615,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
   <p class="warnbar" id="dayWarn" role="status" hidden>日期已經換到新的一天了，請<button class="linkbtn" id="dayReload">重新整理網頁</button>，評量時機（基線期、教學後第幾天）才會用今天判斷。</p>
   <p class="warnbar" id="backupWarn" role="status" hidden><span id="backupText"></span> <button class="linkbtn" id="backupOpen">打開作答紀錄下載備份</button></p>
 
-  <!-- 三個步驟一次只看一個（像生字賓果）：1 評量目標 → 2 玩法和學生 → 3 課次 -->
+  <!-- 四個步驟一次只看一個（像生字賓果）：1 評量目標 → 2 評量方式和學生 → 3 課次 → 4 主題和玩法 -->
   <nav class="wtabs" id="wTabs" aria-label="設定步驟"></nav>
   <div class="layout" id="layout" data-step="1">
     <div class="steps">
@@ -651,12 +658,6 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
         <div id="choiceArea"></div>
       </section>
 
-      <section class="panel adv-only" aria-labelledby="h3">
-        <h2 id="h3">提示與答錯後的處理</h2>
-        <p class="hint" id="h3hint"></p>
-        <div id="hintArea"></div>
-      </section>
-
       <section class="panel adv-only" aria-labelledby="h6">
         <h2 id="h6">學生怎麼作答？</h2>
         <p class="hint" id="answerHint">同一份題目可以用不同方式作答。</p>
@@ -686,6 +687,27 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
         <div class="status adv-only" id="status"></div>
         <p class="sub">出題</p>
         <div class="box" id="quiz" style="margin-top:0"></div>
+      </section>
+      </div>
+
+      <div class="wstep" data-step="4" hidden>
+      <section class="panel" aria-labelledby="h7">
+        <h2 id="h7">怎麼玩？</h2>
+        <p class="hint" id="playHint"></p>
+        <div class="playrows" id="playArea"></div>
+      </section>
+
+      <section class="panel adv-only" aria-labelledby="h3">
+        <h2 id="h3">提示與答錯後的處理</h2>
+        <p class="hint" id="h3hint"></p>
+        <div id="hintArea"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="h8" id="themeSec">
+        <h2 id="h8">選一個喜歡的主題！</h2>
+        <p class="hint">請學生點一個主題。主題只換作答畫面的外觀和拿到的貼紙，不影響題目和計時。</p>
+        <div class="pickwho" id="pickWho"></div>
+        <div class="themes" id="themes"></div>
       </section>
       </div>
 
@@ -759,19 +781,6 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
     <label for="sMaintain" class="group">教學結束後第 <input id="sMaintain" type="number" min="1" max="60"> 天起算維持期</label>
     <footer><button class="save" data-close>完成</button></footer>
   </div>
-</div>
-
-<!-- =================== 選主題（學生選） =================== -->
-<div class="wrap" id="pick" hidden>
-  <header class="top"><div class="brand"><div class="stamp">選</div><div><small>識字評量</small><h1>選一個你喜歡的主題！</h1></div></div>
-    <button class="ghost" id="pickBack">回到設定</button></header>
-  <div class="pickwho" id="pickWho"></div>
-  <p class="hint" id="pickHint"></p>
-  <div class="row gamerow" id="pickGame"></div>
-  <div class="row gamerow" id="pickHearts"></div>
-  <div class="row gamerow" id="pickBpmf"></div>
-  <div class="row gamerow" id="pickRead"></div>
-  <div class="themes" id="themes"></div>
 </div>
 
 <!-- =================== 老師專區 =================== -->
@@ -872,31 +881,31 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
   </div>
 </div>
 
-<!-- 每個檔案後面的 ?v=日期 是版本號：改了任何 .js、.css 檔，就把這頁所有的 ?v= 一起改成當天日期（用「全部取代」）。
+<!-- 每個檔案後面的 ?v=日期 是版本號：改了任何 .js、.css 檔，就把這頁所有的 ?v= 一起改成當天日期（用「全部取代」；同一天改第二次就在日期後面加 b、c）。
      這樣老師的瀏覽器才會下載新檔案，不會新網頁配到舊程式（例如按「下一步」沒反應）。 -->
 <!-- 生字資料：平台共用的教材資料（shared/lessons.js） -->
-<script src="../../shared/lessons.js?v=2026-10-21"></script>
+<script src="../../shared/lessons.js?v=2026-10-21d"></script>
 <!-- 注音讀音表（shared/bpmf.js）：語詞、例句裡的破音字該念哪一個音 -->
-<script src="../../shared/bpmf.js?v=2026-10-21"></script>
+<script src="../../shared/bpmf.js?v=2026-10-21d"></script>
 <!-- 字頻：教育部字頻總表（shared/freq.js），練習的常用字、字頻優先、老師專區高字頻生字會用到 -->
-<script src="../../shared/freq.js?v=2026-10-21"></script>
+<script src="../../shared/freq.js?v=2026-10-21d"></script>
 <!-- 自動部件拆解（shared/parts.js）：部件提示在 lessons.js 的 PARTS 沒有這個字時才用 -->
-<script src="../../shared/parts.js?v=2026-10-21"></script>
+<script src="../../shared/parts.js?v=2026-10-21d"></script>
 <!-- 共用小工具（課本排序與名稱、語詞、部件查詢、按匯出時才載入 Excel 元件），識字評量與備課分析共用 -->
-<script src="../../shared/common.js?v=2026-10-21"></script>
+<script src="../../shared/common.js?v=2026-10-21d"></script>
 <!-- 平台共用：主題與貼紙、每位學生的收藏與頭像 -->
-<script src="../../shared/themes.js?v=2026-10-21"></script>
-<script src="../../shared/rewards.js?v=2026-10-21"></script>
+<script src="../../shared/themes.js?v=2026-10-21d"></script>
+<script src="../../shared/rewards.js?v=2026-10-21d"></script>
 <!-- 程式本體：分成八個檔案，順序不能換（說明見 app.js 開頭） -->
-<script src="data.js?v=2026-10-21"></script>
-<script src="setup.js?v=2026-10-21"></script>
-<script src="records.js?v=2026-10-21"></script>
-<script src="play.js?v=2026-10-21"></script>
-<script src="collect.js?v=2026-10-21"></script>
-<script src="scenes.js?v=2026-10-21"></script>
-<script src="teacher.js?v=2026-10-21"></script>
-<script src="pivot.js?v=2026-10-21"></script>
-<script src="app.js?v=2026-10-21"></script>
-<script src="tour.js?v=2026-10-21"></script>
+<script src="data.js?v=2026-10-21d"></script>
+<script src="setup.js?v=2026-10-21d"></script>
+<script src="records.js?v=2026-10-21d"></script>
+<script src="play.js?v=2026-10-21d"></script>
+<script src="collect.js?v=2026-10-21d"></script>
+<script src="scenes.js?v=2026-10-21d"></script>
+<script src="teacher.js?v=2026-10-21d"></script>
+<script src="pivot.js?v=2026-10-21d"></script>
+<script src="app.js?v=2026-10-21d"></script>
+<script src="tour.js?v=2026-10-21d"></script>
 </body>
 </html>

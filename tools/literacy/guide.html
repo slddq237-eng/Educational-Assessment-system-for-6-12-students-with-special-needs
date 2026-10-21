@@ -67,7 +67,7 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
   @page{size:A4;margin:12mm}
 }
 </style>
-<link rel="stylesheet" href="demo.css?v=2026-10-21">
+<link rel="stylesheet" href="demo.css?v=2026-10-21d">
 </head>
 <body>
 <main>
@@ -84,7 +84,7 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
   <!-- 三個重點：一眼看完整個流程 -->
   <nav class="flow" aria-label="三個重點">
     <a href="#first"><small>① 只做一次，約 5 分鐘</small><b>建學生名單</b><span>選單 → 學生名單 → 填代號、名字、年級 → 本學期安排</span></a>
-    <a href="#each"><small>② 每次評量</small><b>三步就開始</b><span>評量目標 → 學扶前後測、現在是？、學生 → 課次 → 開始</span></a>
+    <a href="#each"><small>② 每次評量</small><b>四步就開始</b><span>評量目標 → 學扶前後測、現在是？、學生 → 課次 → 玩法 → 開始</span></a>
     <a href="#report"><small>③ 寫報告</small><b>看依時期比較</b><span>選單 → 老師專區 → 一位學生 → 正確率 → 依時期比較</span></a>
   </nav>
 
@@ -119,14 +119,15 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
   </section>
 
   <section class="card" id="each">
-    <h2><span class="num">2</span>每次評量：三步就開始</h2>
+    <h2><span class="num">2</span>每次評量：四步就開始</h2>
     <div class="two">
       <div>
         <p>設定一次只出現一步，選好按 <b class="k">下一步</b>。</p>
         <ol>
           <li><b>選評量目標</b>：例如 <b class="k">形音辨識</b>，按 <b class="k">下一步</b>。</li>
-          <li><b>選玩法和學生</b>：點 <b class="k">學扶前後測</b>（這台電腦會記住，下次打開就停在這裡），現在是？選 <b class="k">教學前</b>、<b class="k">教學中</b> 或 <b class="k">教學後</b>；再點<b>學生</b>（最多 4 位輪流），按 <b class="k">下一步</b>。</li>
-          <li><b>選課次</b>：按 <b class="k">開始</b> → 學生選主題 → 作答 → 抽一張貼紙。</li>
+          <li><b>選評量方式和學生</b>：點 <b class="k">學扶前後測</b>（這台電腦會記住，下次打開就停在這裡），現在是？選 <b class="k">教學前</b>、<b class="k">教學中</b> 或 <b class="k">教學後</b>；再點<b>學生</b>（最多 4 位輪流），按 <b class="k">下一步</b>。</li>
+          <li><b>選課次</b>：可以選好幾課，按 <b class="k">下一步</b>。</li>
+          <li><b>選主題和玩法</b>：學扶前後測的玩法照評量設定；請學生點一個 <b>主題</b>，按 <b class="k">開始</b> → 作答 → 抽一張貼紙。</li>
         </ol>
         <p class="note">選項數、提示、答錯規則都已固定，不用設定。教學前不給提示。</p>
       </div>
@@ -146,7 +147,11 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
           </div>
           <div class="later" data-later="3">
             <div class="lab">第 3 步　練哪幾課？</div>
-            <div class="grp"><span class="m box" data-t="lesson">第 1 課</span><span class="m box">第 2 課</span><span class="m box">第 3 課</span><span class="m go" data-t="go" style="margin-left:auto">開始</span></div>
+            <div class="grp"><span class="m box" data-t="lesson">第 1 課</span><span class="m box">第 2 課</span><span class="m box">第 3 課</span><span class="m ghost" data-t="next3">下一步</span></div>
+          </div>
+          <div class="later" data-later="4">
+            <div class="lab">第 4 步　主題和玩法</div>
+            <div class="grp"><span class="m">一般模式</span><span class="m">打怪獸</span><span class="m">生字賓果</span><span class="m go" data-t="go" style="margin-left:auto">開始</span></div>
           </div>
           <span class="tag">示範畫面</span>
         </div>
@@ -232,7 +237,8 @@ const DEMOS = {
     {t:"kid", say:"點要做的學生（最多 4 位）"},
     {t:"next2", say:"按「下一步」", show:"3", keep:true},
     {t:"lesson", say:"第 3 步：選課次（可以選好幾課）"},
-    {t:"go", say:"按「開始」，交給學生作答", keep:true}
+    {t:"next3", say:"按「下一步」", show:"4", keep:true},
+    {t:"go", say:"第 4 步：確認玩法，按「開始」交給學生作答", keep:true}
   ],
   report: [
     {t:"menu", say:"按右上角「選單」", show:"0", keep:true},
@@ -244,6 +250,6 @@ const DEMOS = {
   ]
 };
 </script>
-<script src="demo.js?v=2026-10-21"></script>
+<script src="demo.js?v=2026-10-21d"></script>
 </body>
 </html>
