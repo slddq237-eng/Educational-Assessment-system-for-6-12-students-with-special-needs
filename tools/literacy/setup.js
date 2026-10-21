@@ -388,12 +388,15 @@ function renderQuiz(){
   if(state.mode === "flu"){ box.innerHTML = `<div class="locked"><span class="lock">流暢性</span><span>在 ${LIMITS.find(l => l[0]===state.limit)[1]} 內，從所選課次的 ${quizPlan().pool} 個字隨機連續出題，題數不固定。</span></div>`; return; }
   const q = quizPlan();
   /* 快速開始只顯示題數和時間；要改題數請到進階設定 */
-  /* 練習可以選每次考 10 個字（預設）或全課生字；正式評量的題數固定，要改請到進階設定 */
+  /* 練習：「隨選快速」＝預設隨機 10 個字，「全課生字」＝所選課次的字全部考；不到 10 個字就直接全課生字。
+     正式評量的題數固定，要改請到進階設定 */
   if(isQuick()){
-    const pick = state.kind === "formal" || q.pool <= q.def ? "" : `<div class="group" role="group" aria-label="每次考幾個字">
-      <button class="chip ${q.isAll ? "" : "on"}" data-qq="def" aria-pressed="${!q.isAll}">每次考 ${q.def} 個字（預設）</button>
-      <button class="chip ${q.isAll ? "on" : ""}" data-qq="all" aria-pressed="${q.isAll}">每次考全課生字（${q.pool} 字）</button></div>`;
-    box.innerHTML = `${pick}<p class="time"><b>${q.count} 題，${minutes(q.sec)}</b><span class="note" style="margin:0">${selKids().length > 1 ? "（學生輪流作答）" : ""}${pick ? "" : "要改題數，請切換到「進階設定」。"}</span></p>`;
+    const practice = state.kind !== "formal", short = q.pool <= q.def;
+    const pick = !practice || short ? "" : `<div class="group" role="group" aria-label="題數">
+      <button class="chip ${q.isAll ? "" : "on"}" data-qq="def" aria-pressed="${!q.isAll}">隨選快速</button>
+      <button class="chip ${q.isAll ? "on" : ""}" data-qq="all" aria-pressed="${q.isAll}">全課生字</button></div>`;
+    const note = practice ? (short ? "不到 10 個字，全課生字都考。" : "") : "要改題數，請切換到「進階設定」。";
+    box.innerHTML = `${pick}<p class="time"><b>${q.count} 題，${minutes(q.sec)}</b><span class="note" style="margin:0">${selKids().length > 1 ? "（學生輪流作答）" : ""}${note}</span></p>`;
     box.querySelectorAll("[data-qq]").forEach(b => b.onclick = () => { state.qCount = b.dataset.qq === "all" ? "all" : null; render(); });
     return;
   }
@@ -417,9 +420,9 @@ function renderQuiz(){
   }
   box.innerHTML = `
     <label class="group" for="qCount">題數 <input id="qCount" type="number" min="1" max="${q.pool}" value="${q.count}"> 題
-      ${state.kind === "formal" ? "" : `<button class="chip ${q.isDefault?"on":""}" data-qc="def">預設 ${q.def} 字</button>`}
+      ${state.kind === "formal" ? "" : `<button class="chip ${q.isDefault?"on":""}" data-qc="def">隨選快速（${q.def} 字）</button>`}
       <button class="chip ${q.count === q.one && (state.kind === "formal" || state.qCount != null) ?"on":""}" data-qc="one">一課的量（${q.one} 字）</button>
-      <button class="chip ${q.isAll?"on":""}" data-qc="all">全部 ${q.pool} 字</button></label>
+      <button class="chip ${q.isAll?"on":""}" data-qc="all">全課生字（${q.pool} 字）</button></label>
     ${how}
     <p class="time"><b>${minutes(q.sec)}</b>　<span class="note" style="margin:0">${state.answer === "turn" && q.n > 1 ? `${q.n} 位學生輪流，每人 ${q.count} 題，` : ""}每題約 ${SEC_PER_ITEM[state.answer] || 8} 秒估算</span></p>`;
   $("#qCount").onchange = e => { const v = Math.max(1, Math.min(q.pool, +e.target.value || 1)); state.qCount = v; render(); };
