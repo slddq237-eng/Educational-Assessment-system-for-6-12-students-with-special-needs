@@ -1,6 +1,6 @@
 /* =========================================================
    平台共用：主題外觀、頭像、得到貼紙的畫面、貼紙簿（shared/themes.css）
-   配色與動畫取自生字賓果（tools/bingo/index.html），賓果本身沒有修改。
+   配色與動畫取自原本的生字賓果（2026-10-21 已移除）。
    各工具只要在外框加上 data-skin="ocean"（或 space、dino、dessert），裡面就能用下面的顏色變數：
      --stage、--stage2  背景的漸層兩色　　--stageink  背景上的文字顏色
      --cardbg、--cardink、--cardline  卡片（選項）的底色、文字色、框線色　　--acc  強調色
