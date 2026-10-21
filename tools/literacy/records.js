@@ -84,7 +84,7 @@ const COLS = [
   ["出題方式", r => r.method === "all" ? "全部出題" : (METHODS.find(m => m.id === r.method) || {}).name || r.method],
   ["課本", r => r.bookName], ["課次", r => BOOKS[r.book] && BOOKS[r.book].lessons[r.lesson] ? lessonName(r.book, r.lesson) : r.lesson], ["目標字", r => r.char], ["語詞", r => r.word],
   ["常用字加題", r => yesNo(r.boost)], ["選項數", r => r.choices], ["全部選項", r => r.options],
-  ["版面", r => r.layout === "bingo" ? "全課賓果卡" : "選項卡"],
+  ["版面", r => r.layout === "bingo" ? "生字賓果卡" : "選項卡"],
   ["第一次選的字", r => r.firstPick], ["第一次就答對", r => yesNo(r.firstCorrect)], ["錯誤類型", r => r.errorType],
   ["最後答對", r => yesNo(r.passed)], ["顯示答案", r => yesNo(r.revealed)], ["答錯次數", r => r.wrongCount],
   ["提示層級", r => r.hintLevel], ["用到的提示", r => r.hints], ["老師提示", r => r.teacherPrompt],
@@ -92,7 +92,7 @@ const COLS = [
   ["答錯規則", r => r.rule === undefined ? "未記錄" : r.rule === "none" ? "答錯就記錯" : r.rule.split(",").map(x => RULE_SHORT[x] || x).join("→")],
   ["第一次作答秒數", r => r.firstSec], ["答對秒數", r => r.correctSec ?? ""],
   ["評量時機", r => r.phase], ["教學後天數", r => r.daysAfter],
-  ["主題", r => r.theme ? themeName(r.theme) : "無"], ["遊戲玩法", r => gameName(r.game)], ["選項注音", r => r.bpmf ? "有" : "無"], ["報讀（當時設定）", r => r.read ? "開" : "關"], ["按了報讀", r => r.readUsed || "無"], ["愛心（開始時）", r => r.hpMax || ""], ["愛心（這題後剩下）", r => r.hpMax ? r.hp : ""], ["獎勵", r => r.reward || "無"],
+  ["主題", r => r.theme ? themeName(r.theme) : "無"], ["遊戲玩法", r => gameName(r.game)], ["選項注音", r => r.bpmf ? "有" : "無"], ["報讀（當時設定）", r => r.read ? "開" : "關"], ["按了報讀", r => r.readUsed || "無"], ["血量（開始時）", r => r.hpMax || ""], ["血量（這題後剩下）", r => r.hpMax ? r.hp : ""], ["獎勵", r => r.reward || "無"],
   ["中途結束（不列入分析）", r => yesNo(r.quit)],
   ["作答字的大小", r => r.fontScale ? (FONT_SIZES.find(f => f[0] === r.fontScale) || [, r.fontScale])[1] : "未記錄"],
   ["唸讀速度", r => r.rate ?? "未記錄"], ["流暢目標（每分鐘）", r => r.aim || ""], ["顯示計時", r => r.clock === undefined ? "未記錄" : yesNo(r.clock)], ["音效", r => r.sfx === undefined ? "未記錄" : r.sfx ? "開" : "關"]

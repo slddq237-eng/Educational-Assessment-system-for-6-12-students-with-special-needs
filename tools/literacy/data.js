@@ -41,8 +41,14 @@ const UI_SIZES = [["0.85","小"],["1","標準"],["1.15","大"]];
 /* 多人輪流換人時的提醒方式（畫面一定會顯示「換 ○○」）；預設是畫面＋提示音，要唸名字再到「畫面與聲音」改 */
 const TURN_STYLES = [["chime","畫面＋提示音（預設）"],["voice","畫面＋唸出名字"],["both","畫面＋提示音＋唸出名字"],["silent","只有畫面"]];
 const LIMITS = [["30","30 秒"],["60","1 分鐘"],["120","2 分鐘"]];
-const CHOICES = [["3","3 個"],["4","4 個"],["6","6 個"],["bingo","全課賓果卡（只在練習）"]];
-const choiceText = c => c === "bingo" ? "全課賓果卡" : `${c} 個選項`;
+const CHOICES = [["3","3 個"],["4","4 個"],["6","6 個"]];
+const choiceText = c => c === "bingo" ? "生字賓果卡" : `${c} 個選項`;
+/* 練習的玩法（第 4 步選）：正式評量看「評量設定」（打怪獸開或關），生字賓果只在練習 */
+const PLAYS = [
+  {id:"color",   name:"主題配色", desc:"作答畫面換成主題的顏色和背景，做完拿貼紙"},
+  {id:"monster", name:"打怪獸",   desc:"每做完一題就攻擊怪獸，全部做完打敗怪獸（多人時大家合作）"},
+  {id:"bingo",   name:"生字賓果", desc:"把這一課的生字排成賓果卡，聽到哪個字就點哪個，連成一條線有慶祝"}
+];
 /* 提示層級草案：0 無提示；1–3 系統給；4–7 老師給（作答畫面上的按鈕） */
 const LEVELS = [
   {n:1, who:"系統", items:[["word","語詞挖空（○瓜的○）"],["sent","句子"]]},
@@ -90,16 +96,20 @@ const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove
   fontScale:"1", uiScale:"1", sfx:true, turnStyle:"chime",
   /* 作答時右上角顯示計時：練習預設顯示；正式評量預設不顯示（可能讓學生緊張、影響反應時間），在評量設定打開 */
   clockPractice:true, clockFormal:false,
-  /* 打怪獸（3-3）：練習預設要玩（選主題畫面可以改）；正式評量預設不玩，在評量設定打開，從基線期起維持同一個設定 */
-  practiceGame:true, formalGame:false,
-  /* 血量模式（3-3b，只在練習）：開始前選幾顆愛心，0＝不用 */
+  /* 打怪獸（3-3）：正式評量預設不玩，在評量設定打開，從基線期起維持同一個設定。
+     練習的玩法在第 4 步選（practicePlay：主題配色 color／打怪獸 monster／生字賓果 bingo，預設打怪獸） */
+  formalGame:false,
+  /* 血量模式（3-3b，只在練習）：開始前選幾點血量，0＝不用 */
   practiceHearts:0,
-  /* 練習的選項加注音（3-4）：選主題畫面可以改；正式評量的選項一律不加（會變成看注音找字） */
+  /* 練習的選項加注音（3-4）：第 4 步可以改；正式評量的選項一律不加（會變成看注音找字） */
   practiceBpmf:false,
-  /* 報讀提示：語詞、句子提示旁的小喇叭，按了念出完整語詞或句子。練習在選主題畫面開關（預設開）；
+  /* 報讀提示：語詞、句子提示旁的小喇叭，按了念出完整語詞或句子。練習在第 4 步開關（預設開）；
      正式評量看「評量設定」（預設關，從基線期起維持同一個設定）；部件重組（4-1）一律沒有 */
   practiceRead:true, formalRead:false},
   load("literacy-settings", {}));
+/* 以前存的「打怪獸要不要玩」（practiceGame）換成新的玩法設定 */
+if(!settings.practicePlay) settings.practicePlay = settings.practiceGame === false ? "color" : "monster";
+delete settings.practiceGame;
 const saveSettings = () => store("literacy-settings", settings);
 
 /* 學生名單：年級記的是設定那一年的年級，之後每學年自動升級 */
@@ -135,7 +145,10 @@ const teach = load("literacy-teach", {});
 const saveTeach = () => store("literacy-teach", teach);
 
 const state = {
-  theme:"",   /* 這次選的主題（作答前在選主題畫面選） */
+  theme:"",   /* 這次實際用的主題（""＝不用主題） */
+  themePick:"kids",   /* 第 4 步的主題：kids＝讓學生自己選（按開始後出現選主題畫面）、none＝不用主題、或直接指定主題 */
+  /* 每位學生不同的提示（只在進階設定的練習）：學生代號 → {hints:Set, rule:[]}；沒有的學生用大家共用的 pHints、pRule */
+  kidHints:{}, hintFor:"",
   goal:"3", kind:"formal", mode:"acc", limit:"60",
   pChoices:"6", pHints:new Set(["word","sent","pic"]), pRule:["next","next","remove","reveal"],
   ed:"翰林", book:"h2", lessons:[], qCount:null, qMethod:"even", manual:{}, answer:"turn",
@@ -198,10 +211,15 @@ function current(){
   const noHelp = flu || base;
   return {
     formal, flu, base, noHelp,
-    choices: formal || flu ? settings.choices : state.pChoices,
+    choices: formal || flu ? settings.choices : settings.practicePlay === "bingo" ? "bingo" : state.pChoices,
     hints: noHelp ? [] : (formal ? settings.hints : HINT_ORDER.filter(h => state.pHints.has(h))),
     rule: noHelp ? null : (formal ? settings.rule : state.pRule)
   };
+}
+/* 某位學生這次的提示與答錯規則：進階設定的練習可以每人不同，其他情況大家都一樣 */
+function kidCfg(c, code){
+  const own = !c.noHelp && !c.formal && !isQuick() && state.kidHints[code];
+  return own ? {hints: HINT_ORDER.filter(h => own.hints.has(h)), rule: own.rule} : {hints: c.hints, rule: c.rule};
 }
 function ruleFlow(rule, hints){
   if(!rule) return `<div class="flow"><span class="s">答錯就記錯，進入下一題</span></div>`;

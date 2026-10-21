@@ -1,6 +1,6 @@
 /* =========================================================
    識字評量：設定畫面（setup.js）
-   三個步驟（評量目標 → 玩法和學生 → 課次）、快速開始與進階設定、右邊的摘要，以及學生名單、教學日期、評量設定三個彈出面板。
+   四個步驟（評量目標 → 評量方式和學生 → 課次 → 主題和玩法）、快速開始與進階設定、右邊的摘要，以及學生名單、教學日期、評量設定三個彈出面板。
    ========================================================= */
 
 /* =========================================================
@@ -88,10 +88,10 @@ function rtiDates(){
   saveTeach();
 }
 
-/* ---------- 三個步驟：一次只看一步（像生字賓果） ----------
-   1 選評量目標 → 2 選玩法和學生 → 3 選課次（右邊的摘要和「開始」只在第 3 步出現）。
-   第 2 步要先選好學生才能往下；上方的步驟標籤也可以直接點。 */
-const WSTEPS = ["選評量目標", "選玩法和學生", "選課次"];
+/* ---------- 四個步驟：一次只看一步（像生字賓果） ----------
+   1 選評量目標 → 2 選評量方式和學生 → 3 選課次 → 4 選主題和玩法（右邊的摘要和「開始」只在第 4 步出現）。
+   第 2 步要先選好學生、第 3 步要先選課次才能往下；上方的步驟標籤也可以直接點。 */
+const WSTEPS = ["選評量目標", "選評量方式和學生", "選課次", "選主題和玩法"];
 let wstep = 1;
 /* 第 2 步還缺什麼（空字串＝可以往下） */
 function step2Miss(){
@@ -104,13 +104,15 @@ function step2Miss(){
   return !n ? "請先點選要評量的學生" : n < a.min || n > a.max ? `「${a.name}」需要 ${a.min}～${a.max} 位學生，目前 ${n} 位` : "";
 }
 function renderWizard(){
-  const miss = step2Miss();
-  $("#wTabs").innerHTML = WSTEPS.map((t, i) => `<button class="wtab ${i + 1 < wstep ? "ok" : ""}" data-w="${i + 1}" ${i + 1 === wstep ? 'aria-current="step"' : ""} ${i === 2 && miss ? "disabled" : ""}><span class="n">${i + 1}</span>${t}</button>`).join("");
+  const miss = step2Miss(), miss3 = state.lessons.length ? "" : "請先選課次";
+  /* 第 n 步能不能去：前面每一步都要完成 */
+  const can = n => !(n >= 3 && miss) && !(n >= 4 && miss3);
+  $("#wTabs").innerHTML = WSTEPS.map((t, i) => `<button class="wtab ${i + 1 < wstep ? "ok" : ""}" data-w="${i + 1}" ${i + 1 === wstep ? 'aria-current="step"' : ""} ${can(i + 1) ? "" : "disabled"}><span class="n">${i + 1}</span>${t}</button>`).join("");
   $("#wTabs").querySelectorAll("button:not(:disabled)").forEach(b => b.onclick = () => showStep(+b.dataset.w));
   $("#wPrev").hidden = wstep === 1;
-  $("#wNext").hidden = wstep === 3;
-  $("#wNext").disabled = wstep === 2 && !!miss;
-  $("#wNote").textContent = wstep === 2 ? miss : wstep === 3 ? "選好課次後，按「開始」。" : "";
+  $("#wNext").hidden = wstep === WSTEPS.length;
+  $("#wNext").disabled = !can(wstep + 1);
+  $("#wNote").textContent = wstep === 2 ? miss : wstep === 3 ? miss3 : wstep === 4 ? "確認摘要後，按「開始」。" : "";
 }
 function showStep(n){
   wstep = n;
@@ -161,8 +163,8 @@ function renderKind(){
   if(c.formal || c.flu){
     $("#choiceArea").innerHTML = `<div class="locked"><span class="lock">固定</span><span>${choiceText(settings.choices)}（${c.flu && !c.formal ? "流暢性模式使用標準條件" : "正式評量的標準條件"}）。<button class="linkbtn" data-open="set">到評量設定修改</button></span></div>`;
   } else {
-    $("#choiceArea").innerHTML = `<div class="group">${CHOICES.map(([v,t]) => `<button class="chip ${state.pChoices===v?"on":""}" data-c="${v}" ${v==="bingo" && state.mode==="flu"?"disabled":""}>${t}</button>`).join("")}</div>
-      <p class="note">全課賓果卡：把這一課的生字排成賓果卡，聽到哪個字就點哪個，答對的格子蓋章，連成一條線有慶祝。只用在練習；正式評量一律用固定的選項卡。</p>`;
+    $("#choiceArea").innerHTML = `<div class="group">${CHOICES.map(([v,t]) => `<button class="chip ${state.pChoices===v?"on":""}" data-c="${v}">${t}</button>`).join("")}</div>
+      ${c.choices === "bingo" ? `<p class="note">第 4 步的玩法選了「生字賓果」，這次用賓果卡作答，選項數不適用。</p>` : ""}`;
     $("#choiceArea").querySelectorAll("[data-c]").forEach(b => b.onclick = () => { state.pChoices = b.dataset.c; render(); });
   }
 }
@@ -179,6 +181,7 @@ function ruleEditor(rule, onChange){
     : `<li><span class="k">錯 ${i+1} 次</span><select data-i="${i}" aria-label="答錯第 ${i+1} 次">${["remove","next"].map(v => `<option value="${v}" ${r===v?"selected":""}>${REACT[v]}</option>`).join("")}</select></li>`).join("");
 }
 
+/* 第 4 步的提示：快速開始只顯示（所有學生一樣）；進階設定的練習可以改，也可以每位學生不同 */
 function renderHints(){
   const c = current(), area = $("#hintArea");
   if(c.noHelp){
@@ -186,18 +189,88 @@ function renderHints(){
     area.innerHTML = `<div class="locked"><span class="lock">固定</span><span>無提示・答錯就記錯，進入下一題</span></div>`;
     return;
   }
-  if(c.formal){
-    $("#h3hint").textContent = "正式評量使用「評量設定」裡的標準條件，這裡只顯示，不能修改。";
-    area.innerHTML = `<div class="locked"><span class="lock">固定</span><div style="display:grid;gap:8px">${ruleFlow(c.rule, c.hints)}
-      <span class="note" style="margin:0">老師提示（${TEACHER}）可隨時按按鈕記錄。<button class="linkbtn" data-open="set">到評量設定修改</button></span></div></div>`;
+  if(c.formal || isQuick()){
+    $("#h3hint").textContent = c.formal ? "正式評量使用「評量設定」裡的標準條件，所有學生都一樣，這裡只顯示。" : "所有學生都用同一組提示。要調整，或讓每位學生不同，請切換到「進階設定」。";
+    area.innerHTML = `<div class="locked"><span class="lock">${c.formal ? "固定" : "全部學生"}</span><div style="display:grid;gap:8px">${ruleFlow(c.rule, c.hints)}
+      <span class="note" style="margin:0">老師提示（${TEACHER}）可隨時按按鈕記錄。${c.formal ? `<button class="linkbtn" data-open="set">到評量設定修改</button>` : ""}</span></div></div>`;
     return;
   }
-  $("#h3hint").textContent = "練習可以自由選提示和答錯規則。提示會依層級由少到多出現。";
-  area.innerHTML = `<p class="sub">提示</p><div class="levels">${hintChips(state.pHints)}</div>
-    <p class="sub">答錯後的處理</p><ol class="ladder">${ruleEditor(state.pRule)}</ol>
-    <p class="sub">實際順序</p>${ruleFlow(c.rule, c.hints)}`;
-  area.querySelectorAll("[data-h]").forEach(b => b.onclick = () => { const id = b.dataset.h; state.pHints.has(id) ? state.pHints.delete(id) : state.pHints.add(id); render(); });
-  area.querySelectorAll(".ladder select").forEach(s => s.onchange = () => { state.pRule[+s.dataset.i] = s.value; render(); });
+  /* 進階設定的練習：上方選「設定給誰」，全部學生＝共用的一組；點某位學生可以幫他個別設定 */
+  const list = selKids();
+  if(state.hintFor && !list.includes(state.hintFor)) state.hintFor = "";
+  const who = state.hintFor, own = who && state.kidHints[who], k = who && kidBy(who);
+  const set = who ? (own ? own.hints : state.pHints) : state.pHints, rule = who ? (own ? own.rule : state.pRule) : state.pRule;
+  $("#h3hint").textContent = "練習可以自由選提示和答錯規則，提示會依層級由少到多出現。也可以點學生，幫某位學生個別設定。";
+  area.innerHTML = `<div class="hintfor"><b>設定給：</b>${chipRow([["", "全部學生"], ...list.map(code => [code, `${esc(kidLabel(kidBy(code)))}${state.kidHints[code] ? "・個別" : ""}`])], who, "hfor")}</div>
+    ${who && !own ? `<p class="note" style="margin:0 0 10px">${esc(kidLabel(k))}目前和全部學生相同：</p>${ruleFlow(current().rule, current().hints)}
+      <p><button class="chip" id="hOwn">幫${esc(kidShow(k))}個別設定</button></p>` : `
+    ${who ? `<p class="note" style="margin:0 0 10px">${esc(kidLabel(k))}的個別設定（只套用在這位學生）。<button class="linkbtn" id="hShared">改回和全部學生相同</button></p>` :
+      list.some(code => state.kidHints[code]) ? `<p class="note" style="margin:0 0 10px">沒有個別設定的學生都用這一組。</p>` : ""}
+    <p class="sub">提示</p><div class="levels">${hintChips(set)}</div>
+    <p class="sub">答錯後的處理</p><ol class="ladder">${ruleEditor(rule)}</ol>
+    <p class="sub">實際順序</p>${ruleFlow(rule, HINT_ORDER.filter(h => set.has(h)))}`}`;
+  area.querySelectorAll("[data-hfor]").forEach(b => b.onclick = () => { state.hintFor = b.dataset.hfor; render(); });
+  if($("#hOwn")) $("#hOwn").onclick = () => { state.kidHints[who] = {hints: new Set(state.pHints), rule: [...state.pRule]}; render(); };
+  if($("#hShared")) $("#hShared").onclick = () => { delete state.kidHints[who]; render(); };
+  area.querySelectorAll("[data-h]").forEach(b => b.onclick = () => { const id = b.dataset.h; set.has(id) ? set.delete(id) : set.add(id); render(); });
+  area.querySelectorAll(".ladder select").forEach(s => s.onchange = () => { rule[+s.dataset.i] = s.value; render(); });
+}
+
+/* ---------- 第 4 步：怎麼玩（玩法、血量、注音、報讀）與主題 ----------
+   練習在這裡自由選；正式評量照「評量設定」，這裡只顯示（從基線期起每次都一樣，前後才能比較）。 */
+const playName = id => (PLAYS.find(p => p.id === id) || {}).name || "";
+function playText(){
+  const c = current();
+  if(!useRewards()) return "不用主題（評量設定）";
+  const base = willFight() ? `打怪獸（${selKids().length > 1 ? "大家合作" : "自己打"}）` : c.choices === "bingo" ? "生字賓果" : "主題配色";
+  const hp = heartsAllowed() && +settings.practiceHearts ? `・血量 ${settings.practiceHearts} 點` : "";
+  return base + hp;
+}
+function renderPlay(){
+  const c = current(), formal = c.formal, row = (t, body) => `<div class="playrow"><span class="tl">${t}</span><div>${body}</div></div>`;
+  $("#playHint").textContent = formal ? "正式評量的玩法照「評量設定」，從基線期起每次都一樣，這裡只顯示。" : "練習可以自由選玩法。主題在下面選。";
+  const rows = [];
+  if(formal){
+    rows.push(row("玩法", `<div class="locked"><span class="lock">固定</span><span>${playText()}。<button class="linkbtn" data-open="set">到評量設定修改</button></span></div>`));
+    rows.push(row("報讀", `<span class="note" style="margin:0">${state.goal === "4-1" ? "部件重組沒有報讀" : settings.formalRead ? "提示可以按喇叭念出來（評量設定）" : "不念（評量設定）"}</span>`));
+  } else {
+    /* 不能用的玩法：流暢性模式只能主題配色（打怪獸要一題一題做完、賓果卡會改變選項版面） */
+    const why = id => c.flu && id !== "color" ? "流暢性模式不能用" : "";
+    const cur = c.flu ? "color" : settings.practicePlay, p = PLAYS.find(x => x.id === cur);
+    rows.push(row("玩法", `<div class="group">${chipRow(PLAYS.map(x => [x.id, x.name]), cur, "play", v => why(v) ? "disabled" : "")}</div>
+      <p class="note">${p.desc}${c.flu ? "。流暢性模式只能用主題配色。" : ""}</p>`));
+    if(heartsAllowed()){
+      const hp = +settings.practiceHearts || 0;
+      rows.push(row("血量", `<div class="group">${chipRow([["0", "不用"], ...HEART_CHOICES.map(n => [String(n), `${n} 點`])], String(hp), "hearts")}</div>
+        <p class="note">${hp ? `畫面上方一排紅心。答錯扣 1 點、連續答對 3 題補 1 點，用完就結束${selKids().length > 1 ? (willFight() ? "（大家共用）" : "（每人各自）") : ""}。` : "不限制答錯次數。"}</p>`));
+    }
+    rows.push(row("注音", `<div class="group">${chipRow([["0", "選項不加"], ["1", "選項加注音"]], settings.practiceBpmf ? "1" : "0", "bpmf")}</div>
+      <p class="note">語詞、句子提示一律有注音。</p>`));
+    rows.push(row("報讀", state.goal === "4-1" ? `<span class="note" style="margin:0">部件重組沒有報讀（會念出答案的讀音）。</span>`
+      : `<div class="group">${chipRow([["1", "提示可以按喇叭念出來"], ["0", "不念"]], settings.practiceRead !== false ? "1" : "0", "read")}</div>`));
+  }
+  $("#playArea").innerHTML = rows.join("");
+  const bind = (key, f) => $("#playArea").querySelectorAll(`[data-${key}]:not(:disabled)`).forEach(b => b.onclick = () => { f(b.dataset[key]); saveSettings(); render(); });
+  bind("play", v => settings.practicePlay = v);
+  bind("hearts", v => settings.practiceHearts = +v);
+  bind("bpmf", v => settings.practiceBpmf = v === "1");
+  bind("read", v => settings.practiceRead = v === "1");
+}
+const themeText = () => !useRewards() ? "" : state.themePick === "kids" ? "・主題學生自己選" : state.themePick === "none" ? "・不用主題" : `・${themeName(state.themePick)}`;
+/* 摘要的提示：有學生個別設定時，分行列出 */
+function hintsText(c){
+  const one = h => h.length ? h.map(hintName).join(" → ") : "無提示";
+  const own = selKids().filter(code => kidCfg(c, code).hints !== c.hints);
+  if(!own.length) return one(c.hints);
+  return [`全部學生：${one(c.hints)}`, ...own.map(code => `${esc(kidLabel(kidBy(code)))}：${one(kidCfg(c, code).hints)}`)].join("<br>");
+}
+function renderThemePick(){
+  $("#themeSec").hidden = !useRewards();
+  if(!useRewards()) return;
+  if(state.themePick === "none" && willFight()) state.themePick = "kids";   /* 打怪獸一定要有主題 */
+  $("#themePick").innerHTML = chipRow([["kids", "讓學生自己選"], ...Themes.ids.map(id => [id, Themes.THEMES[id].name]), ["none", "不用主題"]], state.themePick, "tp",
+    v => v === "none" && willFight() ? "disabled" : "");
+  $("#themePick").querySelectorAll("[data-tp]:not(:disabled)").forEach(b => b.onclick = () => { state.themePick = b.dataset.tp; render(); });
 }
 
 const splitKey = k => k.split("-");
@@ -410,7 +483,8 @@ function renderSummary(){
       ...(p.id === "rti" ? [["現在是", state.rti ? RTI_PHASES.find(x => x[0] === state.rti)[1] : null, "還沒選教學前、中、後"]] : []),
       ["學生", n && n <= 4 ? selKids().map(c => esc(kidLabel(kidBy(c)))).join("、") : null, n ? "一次最多 4 位學生" : "還沒選"],
       ["課次", state.lessons.length ? esc(lessonsText()) : null],
-      ["時間", !state.lessons.length ? null : c.flu ? `每位學生 ${LIMITS.find(l => l[0]===state.limit)[1]}` : `${q.count} 題，${minutes(q.sec)}`]
+      ["時間", !state.lessons.length ? null : c.flu ? `每位學生 ${LIMITS.find(l => l[0]===state.limit)[1]}` : `${q.count} 題，${minutes(q.sec)}`],
+      ["玩法", playText() + themeText()]
     ];
     $("#sum").innerHTML = rows.map(([t,v,miss]) => `<div><dt>${t}</dt><dd class="${v?"":"miss"}">${v || miss || "還沒選"}</dd></div>`).join("");
     $("#go").disabled = rows.some(r => !r[1]);
@@ -430,10 +504,11 @@ function renderSummary(){
     ["評量目標", `目標 ${g.id}　${g.name}`],
     ["評量方式", c.flu ? `流暢性・${LIMITS.find(l => l[0]===state.limit)[1]}・目標每分鐘 ${esc($("#aim").value)} 個` : "正確率模式"],
     ["選項", choiceText(c.choices)],
-    ["提示", c.hints.length ? c.hints.map(hintName).join(" → ") : "無提示"],
+    ["提示", hintsText(c)],
+    ["玩法", playText() + themeText()],
     ["課次", lessonText],
     ["題目", quizText],
-    ["評量時機", state.lessons.length && n && !ph.includes(null) ? ph.join("<br>") : null, n ? "請在上面的課次卡片設定教學日期" : "先選學生才能判斷"],
+    ["評量時機", state.lessons.length && n && !ph.includes(null) ? ph.join("<br>") : null, n ? "請回第 3 步，在課次卡片設定教學日期" : "先選學生才能判斷"],
     ["作答模式", a.name],
     ["學生", n ? (kidsOk ? `${selKids().map(c => esc(kidLabel(kidBy(c)))).join("、")}（${n} 位）` : null) : null, n ? `「${a.name}」需要 ${a.min}～${a.max} 位，目前 ${n} 位` : "還沒選"]
   ];
@@ -534,4 +609,4 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets()
 document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); if(t && t.dataset.open === "kids"){ renderKidSheet(); openSheet("#kidsSheet"); } });
 $("#openRecords").onclick = () => { renderRecSheet(); openSheet("#recSheet"); };
 
-function render(){ syncRti(); renderPresets(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderKids(); renderSummary(); renderWizard(); }
+function render(){ syncRti(); renderPresets(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }

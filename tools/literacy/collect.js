@@ -8,32 +8,18 @@
 
 /* =========================================================
    11. 選主題畫面（按「開始」之後、第一題之前）
+   玩法、血量、注音、報讀都在設定第 4 步選好了；主題在第 4 步選「讓學生自己選」時，才出現這個畫面給學生挑。
    ========================================================= */
 /* 這次要不要用主題和貼紙：練習一定用；正式評量看「評量設定」（預設要用） */
 const useRewards = () => state.kind !== "formal" || settings.formalTheme;
 const themeName = id => (Themes.THEMES[id] || {}).name || "無";
+/* 這次會不會打怪獸（還沒選主題前先判斷；要打怪獸就一定要有主題，場景跟著主題） */
+const willFight = () => gameAllowed() && useRewards() && (state.kind === "formal" ? !!settings.formalGame : settings.practicePlay === "monster");
 
 function chooseTheme(){
   if(!useRewards()){ state.theme = ""; startSession(); return; }
-  const list = selKids().map(kidBy);
-  /* 打怪獸（3-3）：練習可以在這裡選要不要玩；正式評量照評量設定。要玩就一定要選主題（場景跟著主題） */
-  const can = gameAllowed(), formal = state.kind === "formal", play = can && (formal ? !!settings.formalGame : settings.practiceGame !== false);
-  $("#pickGame").innerHTML = !can ? "" : formal
-    ? `<span class="note" style="margin:0">${play ? "這次會打怪獸（評量設定）：打敗怪獸得到的就是這次的貼紙。" : ""}</span>`
-    : `<span class="tl">玩法</span>${chipRow([["1", `打怪獸（${list.length > 1 ? "大家合作" : "自己打"}）`], ["0", "只換顏色"]], play ? "1" : "0", "pgame")}`;
-  $("#pickGame").querySelectorAll("[data-pgame]").forEach(b => b.onclick = () => { settings.practiceGame = b.dataset.pgame === "1"; saveSettings(); chooseTheme(); });
-  /* 血量模式（3-3b）：只在練習的正確率模式；合作打怪獸時全組共用，其他時候每人各自 */
-  const hp = heartsAllowed() ? +settings.practiceHearts || 0 : 0;
-  $("#pickHearts").innerHTML = !heartsAllowed() ? "" : `<span class="tl">愛心</span>${chipRow([["0", "不用"], ...HEART_CHOICES.map(n => [String(n), `${n} 顆`])], String(hp), "phearts")}
-    ${hp ? `<span class="note" style="margin:0">答錯少一顆、連續答對 3 題補一顆，用完就結束${list.length > 1 ? (play ? "（大家共用）" : "（每人各自）") : ""}</span>` : ""}`;
-  $("#pickHearts").querySelectorAll("[data-phearts]").forEach(b => b.onclick = () => { settings.practiceHearts = +b.dataset.phearts; saveSettings(); chooseTheme(); });
-  /* 注音（3-4，只在練習）：選項加不加注音；語詞、句子提示一律有注音 */
-  $("#pickBpmf").innerHTML = formal ? "" : `<span class="tl">注音</span>${chipRow([["0", "選項不加"], ["1", "選項加注音"]], settings.practiceBpmf ? "1" : "0", "pbpmf")}
-    <span class="note" style="margin:0">語詞、句子提示一律有注音</span>`;
-  $("#pickBpmf").querySelectorAll("[data-pbpmf]").forEach(b => b.onclick = () => { settings.practiceBpmf = b.dataset.pbpmf === "1"; saveSettings(); chooseTheme(); });
-  /* 報讀提示（只在練習；部件重組沒有，因為會念出答案的讀音）：語詞、句子提示旁的小喇叭 */
-  $("#pickRead").innerHTML = formal || state.goal === "4-1" ? "" : `<span class="tl">報讀</span>${chipRow([["1", "提示可以按喇叭念出來"], ["0", "不念"]], settings.practiceRead !== false ? "1" : "0", "pread")}`;
-  $("#pickRead").querySelectorAll("[data-pread]").forEach(b => b.onclick = () => { settings.practiceRead = b.dataset.pread === "1"; saveSettings(); chooseTheme(); });
+  if(state.themePick !== "kids"){ state.theme = state.themePick === "none" ? "" : state.themePick; startSession(); return; }
+  const list = selKids().map(kidBy), play = willFight();
   const LINE = id => play ? Themes.THEMES[id].line : `可以得到${Themes.THEMES[id].name}的貼紙`;
   $("#pickWho").innerHTML = list.map(k => `<span class="pk">${Rewards.avatarHtml(k.code)}${esc(kidShow(k))}</span>`).join("");
   $("#pickHint").textContent = list.length > 1 ? "大家一起決定，要去哪裡冒險？" : "你想去哪裡冒險？";
