@@ -348,6 +348,9 @@ const METHODS = [
 ];
 const SEC_PER_ITEM = {turn:8, split:8, present:15};
 const FREQ_SHARE = 0.2; /* 平均隨機中先出常用字的比例 */
+/* 練習的預設題數：一課的字數每課不同，多位學生輪流時會玩很久，所以練習預設一次 10 個字（2026-10-21 維護者決定）。
+   正式評量仍是一課的量，成績才能代表整課的程度。 */
+const PRACTICE_COUNT = 10;
 /* 一課的量：所選版本每課生字數的平均 */
 function oneLesson(){
   const books = [...new Set(state.lessons.map(k => splitKey(k)[0]))];
@@ -357,9 +360,10 @@ function oneLesson(){
 function quizPlan(){
   const pool = state.lessons.reduce((s,k) => s + lessonSize(k), 0);
   const one = Math.min(oneLesson(), pool);
-  const count = Math.min(pool, state.qCount ?? one);
-  const isAll = count === pool, isDefault = count === one;
-  /* 題數等於一課的量（預設）或全部出題時，不需要選出題方式；正式評量固定平均隨機 */
+  const def = state.kind === "formal" ? one : Math.min(PRACTICE_COUNT, pool);   /* 預設題數 */
+  const count = Math.min(pool, state.qCount ?? def);
+  const isAll = count === pool, isDefault = count === def;
+  /* 題數等於預設（練習 10 個字、正式評量一課的量）或全部出題時，不需要選出題方式；正式評量固定平均隨機 */
   const canChoose = state.kind !== "formal" && !isAll && !isDefault;
   const method = isAll ? "all" : canChoose ? state.qMethod : "even";
   /* 平均隨機：練習時 20% 先取所選課次中字頻最高的字，其餘 80% 平均分到各課隨機抽。
@@ -373,7 +377,7 @@ function quizPlan(){
     if(!moved) break; }
   const n = Math.max(1, selKids().length);
   const sec = count * (SEC_PER_ITEM[state.answer] || 8) * (state.answer === "turn" ? n : 1);
-  return {pool, one, count, isAll, isDefault, canChoose, method, freqN, per, sec, n};
+  return {pool, one, def, count, isAll, isDefault, canChoose, method, freqN, per, sec, n};
 }
 const methodName = m => m === "all" ? "全部出題" : METHODS.find(x => x.id === m).name;
 const minutes = s => s < 60 ? "不到 1 分鐘" : `約 ${Math.ceil(s / 30) / 2} 分鐘`;
@@ -404,12 +408,17 @@ function renderQuiz(){
   }
   box.innerHTML = `
     <label class="group" for="qCount">題數 <input id="qCount" type="number" min="1" max="${q.pool}" value="${q.count}"> 題
-      <button class="chip ${q.isDefault?"on":""}" data-qc="one">一課的量（${q.one} 字）</button>
+      ${state.kind === "formal" ? "" : `<button class="chip ${q.isDefault?"on":""}" data-qc="def">預設 ${q.def} 字</button>`}
+      <button class="chip ${q.count === q.one && (state.kind === "formal" || state.qCount != null) ?"on":""}" data-qc="one">一課的量（${q.one} 字）</button>
       <button class="chip ${q.isAll?"on":""}" data-qc="all">全部 ${q.pool} 字</button></label>
     ${how}
     <p class="time"><b>${minutes(q.sec)}</b>　<span class="note" style="margin:0">${state.answer === "turn" && q.n > 1 ? `${q.n} 位學生輪流，每人 ${q.count} 題，` : ""}每題約 ${SEC_PER_ITEM[state.answer] || 8} 秒估算</span></p>`;
   $("#qCount").onchange = e => { const v = Math.max(1, Math.min(q.pool, +e.target.value || 1)); state.qCount = v; render(); };
-  box.querySelectorAll("[data-qc]").forEach(b => b.onclick = () => { state.qCount = b.dataset.qc === "all" ? q.pool : null; render(); });
+  box.querySelectorAll("[data-qc]").forEach(b => b.onclick = () => {
+    const qc = b.dataset.qc;
+    state.qCount = qc === "all" ? q.pool : qc === "one" && state.kind !== "formal" ? q.one : null;
+    render();
+  });
   box.querySelectorAll("[data-qm]").forEach(b => b.onclick = () => { state.qMethod = b.dataset.qm; render(); });
 }
 
