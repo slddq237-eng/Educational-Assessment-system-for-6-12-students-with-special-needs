@@ -16,9 +16,11 @@
 執行（在 repo 最上層）：
   python3 docs/scripts/make_bpmf.py <BpmfZihiKaiStd-Regular.ttf> <phonic_table_Z.txt> <tsi.csv> [審訂表.pdf]
 
-比對審訂表（建議，新增課本時一定要做）：再加第 4 個參數，教育部《國語一字多音審訂表》88 年版 PDF
-  https://language.moe.gov.tw/001/Upload/Files/wxiao89/a.pdf （只用來比對，不放進 repo；需要 pdftotext，
-  在 poppler-utils 套件裡）。程式會列出語詞、例句、生字裡和審訂表不一致的讀音，請維護者對照課本後決定：
+比對審訂表（每次都會做）：程式自動從教育部網站下載《國語一字多音審訂表》88 年版 PDF
+  https://language.moe.gov.tw/001/Upload/Files/wxiao89/a.pdf （存在電腦的暫存資料夾，不放進 repo；
+  下載過就不再下載）。不能上網時，可以自己下載後當第 4 個參數；給 skip 就不比對。
+  需要 pdftotext（在 poppler-utils 套件裡）；沒有的話只會提醒，注音照樣產生。
+  程式會列出語詞、例句、生字裡和審訂表不一致的讀音，請維護者對照課本後決定：
   要改就加進下面的 FIX，確認沒錯就加進 CHECKED，下次就不會再列出來。
 
 讀音怎麼決定：語詞、例句裡出現的每個詞庫詞（2 字以上）一起投票，詞越常用、越長票越重；
@@ -31,7 +33,8 @@ from fontTools import subset
 from fontTools.ttLib import TTFont
 
 FONT, ZTABLE, TSI = sys.argv[1:4]
-MOE_PDF = sys.argv[4] if len(sys.argv) > 4 else None
+MOE_URL = 'https://language.moe.gov.tw/001/Upload/Files/wxiao89/a.pdf'   # 《國語一字多音審訂表》88 年版
+MOE_PDF = sys.argv[4] if len(sys.argv) > 4 else 'auto'
 OUT_DIR, OUT_JS = 'shared/fonts', 'shared/bpmf.js'
 
 # 1. 讀 lessons.js（用 Node 執行後轉成 JSON）
@@ -220,7 +223,30 @@ def moe_table(pdf):
                 if c in w and w not in ex: ex[w] = rs[k]
         T[c] = (set(rs), alt, ex)
     return T
+def moe_download():
+    """下載審訂表 PDF 到暫存資料夾（下載過就直接用）；失敗回傳 None"""
+    import os, ssl, shutil, tempfile, urllib.request
+    path = os.path.join(tempfile.gettempdir(), 'moe-polyphone-88.pdf')
+    if os.path.exists(path) and os.path.getsize(path) > 1_000_000: return path
+    try:
+        if shutil.which('curl'):   # curl 最穩
+            subprocess.run(['curl', '-sSfL', '-m', '120', '-o', path, MOE_URL], check=True)
+        else:   # 沒有 curl 用 Python 下載；照常檢查憑證，只是不用 Python 3.13 新加的嚴格模式（教育部網站的憑證過不了）
+            ctx = ssl.create_default_context(); ctx.verify_flags &= ~getattr(ssl, 'VERIFY_X509_STRICT', 0)
+            with urllib.request.urlopen(MOE_URL, timeout=120, context=ctx) as r, open(path, 'wb') as f: f.write(r.read())
+        with open(path, 'rb') as f:
+            if f.read(5) != b'%PDF-': raise ValueError('下載到的不是 PDF')
+        return path
+    except Exception as e:
+        if os.path.exists(path): os.remove(path)
+        print(f'\n⚠ 下載審訂表失敗（{e}），這次沒有比對讀音。可以自己下載 {MOE_URL} 後當第 4 個參數。')
+        return None
 def same_but_tone(a, b): return a.lstrip('˙').rstrip('ˊˇˋ') == b.lstrip('˙').rstrip('ˊˇˋ')
+import shutil
+if MOE_PDF == 'skip': MOE_PDF = None
+elif not shutil.which('pdftotext'):
+    print('\n⚠ 找不到 pdftotext（poppler-utils 套件），這次沒有比對審訂表。'); MOE_PDF = None
+elif MOE_PDF == 'auto': MOE_PDF = moe_download()
 if MOE_PDF:
     T = moe_table(MOE_PDF); found = []
     def check(t, pos_reading, where, only=None):
