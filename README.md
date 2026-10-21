@@ -6,7 +6,6 @@
 
 | 工具 | 資料夾 | 狀態 |
 |---|---|---|
-| 生字賓果 | `tools/bingo/` | 可使用 |
 | 識字評量 | `tools/literacy/` | 第 1 版：目標 3 形音辨識、大螢幕輪流作答、作答紀錄與 Excel 匯出 |
 | 備課分析 | `tools/prep/` | 第 1 版：依課次／段考範圍統計常見部件、列出學過的舊字、字頻排序（教育部字頻總表）、匯出 Excel |
 
@@ -25,7 +24,7 @@ shared/
   lessons.js      共用教材資料：生字、語詞、例句、部件、形近同音字
   common.js       共用小工具：課本排序與名稱、語詞、干擾字、部件查詢、按匯出時才載入 Excel 元件（識字評量、備課分析共用）
   vendor/         放進網站的外部程式元件：SheetJS 0.18.5（匯出 Excel，Apache 2.0），不用連外網
-  themes.js       共用主題與貼紙（海洋、太空、恐龍、甜點；取自生字賓果）
+  themes.js       共用主題與貼紙（海洋、太空、恐龍、甜點；取自原本的生字賓果）
   themes.css      主題配色、頭像、貼紙的樣式
   rewards.js      每位學生的貼紙收藏與頭像（存在這台電腦）
   parts.js        自動產生的部件拆解（所有生字＋部件再往下拆；見 docs/scripts/make_parts.py，新增課本後要補產生）
@@ -33,7 +32,7 @@ shared/
   bpmf.js         破音字讀音表（自動產生，見 docs/scripts/make_bpmf.py；新增課本後要重新產生）
   fonts/          注音字型（字嗨注音標楷子集，依課本拆成幾個檔，用到才下載）
 tools/
-  bingo/          生字賓果遊戲（讀取 shared/lessons.js）
+  bingo/          只剩一頁轉址：生字賓果 2026-10-21 移除，玩法已整合進識字評量
   literacy/       識字評量（讀取 shared/lessons.js）
     index.html    畫面
     data.js       基本設定、學生與教學日期、評量時機判斷
@@ -85,6 +84,6 @@ tools/
 
 ## 授權說明
 
-生字賓果使用的注音字型改自 But Ko「ㄅ字嗨注音標楷」（[bpmfvs](https://github.com/ButTaiwan/bpmfvs)），漢字部分 CC BY 4.0，其餘 SIL OFL 1.1。
+識字評量的注音字型改自 But Ko「ㄅ字嗨注音標楷」（[bpmfvs](https://github.com/ButTaiwan/bpmfvs)），漢字部分 CC BY 4.0，其餘 SIL OFL 1.1。
 
 `shared/parts.js` 的部件拆解改自 [cjkvi-ids](https://github.com/cjkvi/cjkvi-ids)（衍生自 CHISE 專案），依 GPLv2 授權。

@@ -9,9 +9,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="shared/fonts/tw-kai.css?v=2026-10-21g">
+<link rel="stylesheet" href="shared/fonts/tw-kai.css?v=2026-10-21h">
 <style>
-/* 平台首頁：配色沿用生字賓果的方格紙風格 */
+/* 平台首頁：配色沿用原本生字賓果的方格紙風格 */
 :root{
   --paper:#f5faf6; --line:#d5e8da; --ink:#1f3d36; --muted:#5b7a71;
   --red:#d64534; --green:#2c7a69; --card:#ffffff;
@@ -50,6 +50,7 @@ footer a{color:var(--green)}
   <details class="news" id="news">
     <summary>最後更新：<b><time datetime="2026-10-21">2026-10-21</time></b>（點開看這次更新了什麼）</summary>
     <ul>
+      <li>生字賓果移除：原作者決定不保留，賓果的玩法（主題、打怪獸、生字賓果卡、貼紙簿）都已經在「識字評量」的練習裡。舊的賓果網址會自動轉到識字評量。</li>
       <li>康軒六上換成 115 學年度現行版（出版社 2026 年的新檔；12 課中有 10 課的生字和舊版不同）。識字評量、生字賓果、備課分析都一起更新。</li>
       <li>楷書字改用「全字庫正楷體」（字形依教育部標準楷書），每台電腦、平板、手機看到的字都一樣，不會再出現和課本寫法不同的字（例如「骨、這、述」）。生字賓果暫時維持原本字型。</li>
       <li>識字評量：第 4 步的玩法改成有小圖示的卡片（一般模式、打怪獸、生字賓果），每個附一句話說明；血量、注音、報讀也加上小圖示。</li>
@@ -74,11 +75,6 @@ footer a{color:var(--green)}
     </ul>
   </details>
   <div class="tools">
-    <a class="tool" href="tools/bingo/">
-      <b>生字賓果</b>
-      <span>聽語音找出生字，可單人或合作打怪獸，有四種主題。</span>
-      <div class="tag">可使用</div>
-    </a>
     <a class="tool" href="tools/literacy/">
       <b>識字評量</b>
       <span>依評量目標分階段檢測識字，逐字記錄作答，可匯出 Excel。</span>
