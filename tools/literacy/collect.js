@@ -22,10 +22,12 @@ function chooseTheme(){
 }
 
 /* 作答畫面換上主題的顏色；角落放一個主題小圖示（不會動） */
-function applySkin(theme){
+/* backdrop＝要不要加主題背景插圖（只在練習；正式評量維持固定的主題底色，2026-10-22 維護者決定） */
+function applySkin(theme, backdrop){
   const p = $("#play");
   if(theme){ p.dataset.skin = theme; p.classList.add("skin-bg"); $("#pDeco").innerHTML = Themes.icon(theme, Themes.THEMES[theme].stickers[0][0]); }
   else { delete p.dataset.skin; p.classList.remove("skin-bg"); $("#pDeco").innerHTML = ""; }
+  $("#pBack").innerHTML = theme && backdrop ? Themes.backdrop(theme) : "";
 }
 
 /* =========================================================

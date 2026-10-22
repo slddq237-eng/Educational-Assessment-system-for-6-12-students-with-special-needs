@@ -121,6 +121,8 @@ const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove
   /* 打怪獸（3-3）：正式評量預設不玩，在評量設定打開，從基線期起維持同一個設定。
      練習的玩法在第 4 步選（practicePlay：一般模式 color／打怪獸 monster／生字賓果 bingo，預設打怪獸） */
   formalGame:false,
+  /* 練習打怪獸：每做完幾題跳一次動畫（細部設定 → 練習與遊戲；預設 3 題，2026-10-22 維護者決定） */
+  sceneEvery:"3",
   /* 血量模式（3-3b，只在練習）：開始前選幾點血量，0＝不用 */
   practiceHearts:0,
   /* 練習的選項加注音（3-4）：第 4 步可以改；正式評量的選項一律不加（會變成看注音找字） */
