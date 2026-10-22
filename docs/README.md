@@ -30,7 +30,7 @@
 | `records.md` | 資料怎麼存、作答紀錄、A8 名詞與時期 | 4、3-3 的「A8 名詞與時期定義」 |
 | `data-sources.md` | 資料來源與授權清單、上傳教材檔案時讀得到哪些檔案 | 4-1、「上傳教材檔案、課本改版時」 |
 | `materials.md` | 教材資料的來源與使用邏輯、讀音規則、待確認清單、資料掃描發現 | 4-1 的「教材資料的來源與使用邏輯」 |
-| `pending.md` | 待決問題 | 6 |
+| `pending.md` | 所有待決問題的總清單（每題一行，依誰決定分組，細節在各主題檔案） | 6 |
 | `history.md` | 決策歷史：整合的分階段計畫、已完成的實作細節、全面檢查 | 原開頭、3-3 主段與實作細節、5-1 |
 
 其他：`research-method-spec.md` 研究方法規格；`scripts/` 產生資料、自動檢查的程式；`material-review.xlsx`、`parts-table.xlsx` 給老師確認的教材清單。
@@ -68,3 +68,7 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
 - 純前端、無建置工具。repo 公開：嚴禁把學生姓名、照片、成績寫進任何檔案。
 - **自動檢查**（2026-10-22 加）：每次發 PR、改 main，GitHub Actions 會跑 `docs/scripts/check.js`（設定檔 `.github/workflows/check.yml`），檢查程式語法、教材資料（語詞裡有沒有這個字、干擾字有沒有包含答案等）、各頁版本號是否一致、有沒有照片或備份檔等學生資料。PR 頁面出現紅叉就先修好再合併；本機可以跑 `node docs/scripts/check.js`。已知、等決定的教材問題放在檔案裡的 `KNOWN`（只提醒不失敗）。建議 repo 擁有者在 Settings → Rules 設定「main 要檢查通過才能合併」。
 - 維護者是新手：回覆用繁體中文，術語附白話解釋；程式碼每個段落開頭加中文說明（不逐行註解）。
+
+### 合併審核要不要用 GitHub 強制執行（待決）
+（2026-10-22 從 `docs/pending.md` 移來；pending.md 只留一行摘要）
+- **合併審核要不要用 GitHub 強制執行（CODEOWNERS）**（2026-10-22 加）：現在「動到共用檔案、識字評量要 repo 擁有者同意」只是約定。等夥伴用自己的 GitHub 帳號發 PR，就可以加 `.github/CODEOWNERS`（列出歸擁有者管的路徑）、在 Settings → Rules 設定「要 Code Owners 審核」與「自動檢查要通過」，並把擁有者加進 Bypass list（GitHub 不允許自己審核自己的 PR，不加會卡住擁有者自己的 PR），再發測試 PR 確認。步驟寫在「GitHub 新手使用說明」的「合併規則與審核設定」。
