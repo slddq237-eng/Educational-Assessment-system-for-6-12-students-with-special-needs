@@ -1,0 +1,19 @@
+# 哪些檔案的修改要 repo 擁有者審核（2026-10-22 維護者決定，對應 CLAUDE.md「合併進 main 分級」）
+# 動到下面這些路徑的 PR，GitHub 會自動請擁有者審核；在 Settings → Rules 打開「Require review from Code Owners」後才會強制。
+# 沒列在這裡的（例如之後新增的 tools/<新工具>/），作者在自動檢查通過後可以自己合併。
+# 寫法：一行一個路徑，後面接審核人的 GitHub 帳號；後面的行會蓋過前面的。
+
+# 共用檔案
+/shared/            @slddq237-eng
+/docs/              @slddq237-eng
+/index.html         @slddq237-eng
+/privacy.html       @slddq237-eng
+/about.html         @slddq237-eng
+/favicon.svg        @slddq237-eng
+/README.md          @slddq237-eng
+/CLAUDE.md          @slddq237-eng
+/.github/           @slddq237-eng
+
+# 識字評量（兩位維護者一起修訂）、生字賓果轉址頁
+/tools/literacy/    @slddq237-eng
+/tools/bingo/       @slddq237-eng
