@@ -3,10 +3,11 @@
    四個主題場景移植自原本的生字賓果（2026-10-21 已移除）：
    海洋＝釣神秘大魚、太空＝勇士打外星人、恐龍谷＝敲開神秘恐龍蛋、甜點店＝疊超級大蛋糕。
    和賓果不同的地方：
-   - 只在題目之間的固定長度過場出現（作答時看不到），怪獸依「完成題數」受傷，不論對錯。
+   - 只在題目之間的固定長度過場出現（作答時看不到），每做完幾題一次（play.js 的 sceneEvery）。
+   - 依「第一次就答對」的題數前進；都沒答對播 miss（再加油），不前進。最後一律完成，但蛋糕高度、外星人剩的血照答對題數。
    - 打敗怪獸得到的東西就是這次的貼紙（由 collect.js 的 giveStickers 發，不另外揭曉）。
    - 題目很多時，太空的血條最多 20 格、蛋糕最多 12 層，依比例前進。
-   每個場景回傳 {setPlayer(學生代號), hit(完成題數), miss(), win() → {bannerAt, delay}, stop()}。
+   每個場景回傳 {setPlayer(學生代號), hit(累計答對題數, 還剩幾題), miss(還剩幾題), win(累計答對題數) → {bannerAt, delay}, stop()}。
    ========================================================= */
 (() => {
 const {THEMES, RARE_GLOW, FISH, DINOS, fishBody, dinoSvg} = Themes;
@@ -113,13 +114,14 @@ function oceanScene(el, goal, prize){
     c.setAttribute("cx",(S.fx-10+Math.random()*30).toFixed(1)); c.setAttribute("cy",SURF); c.setAttribute("r",(2+Math.random()*4).toFixed(1)); c.setAttribute("fill","#e2f7ff");
     c.setAttribute("class","drop"); c.style.setProperty("--dx",((Math.random()-.5)*110).toFixed(0)+"px"); c.style.setProperty("--dy",(-20-Math.random()*70).toFixed(0)+"px");
     spl.appendChild(c); setTimeout(()=>c.remove(),1100); } }
-  function label(){ const left=goal-S.done, depth=Math.round((S.ty-SURF)/(DEEP-SURF)*10);
-    q("sceneLab").textContent = S.win ? `釣到${FISH[prize].name}了！` : `神秘大魚在水深 ${depth} 公尺，再拉 ${left} 下！`; }
+  let qLeft=goal;   /* 還剩幾題 */
+  function label(){ const depth=Math.round((S.ty-SURF)/(DEEP-SURF)*10);
+    q("sceneLab").textContent = S.win ? `釣到${FISH[prize].name}了！` : `神秘大魚在水深 ${depth} 公尺，再答 ${qLeft} 題！`; }
   label();
   return {
     setPlayer(p){ setSvgAv(q("oAv"), q("oFace"), p); },
-    hit(done){ S.done=done; S.ty = DEEP-(DEEP-NEAR)*(done/goal); S.ten=1; S.wob=14; bubbles(6); SFX.reel(); label(); },
-    miss(){ const keep=S.ty; S.ty=Math.min(DEEP+20,keep+28); S.ten=.9; S.wob=22; bubbles(4); SFX.bloop(); setTimeout(()=>{ if(!S.win) S.ty=keep; },600); },
+    hit(done, left){ S.done=done; if(left!=null) qLeft=left; S.ty = DEEP-(DEEP-NEAR)*(done/goal); S.ten=1; S.wob=14; bubbles(6); SFX.reel(); label(); },
+    miss(left){ if(left!=null){ qLeft=left; label(); } const keep=S.ty; S.ty=Math.min(DEEP+20,keep+28); S.ten=.9; S.wob=22; bubbles(4); SFX.bloop(); setTimeout(()=>{ if(!S.win) S.ty=keep; },600); },
     win(){ S.win=true; S.done=goal; S.ty=40; S.ten=1; S.wob=18; SFX.reel(); label();
       setTimeout(()=>{ splash(); SFX.splash(); const sk=q("oSkin"); sk.innerHTML=fishBody(prize,true); sk.style.filter="none"; sk.style.opacity="1"; },500);
       setTimeout(splash,800);
@@ -186,11 +188,12 @@ function spaceScene(el, goal){
   <path class="slash" d="M214 190 Q266 230 238 304" stroke="#ffe08a" stroke-width="3" fill="none" stroke-linecap="round"/>
   <g class="impact"><path d="M222 244 L232 222 L238 240 L256 226 L250 246 L272 250 L252 258 L262 276 L242 266 L236 288 L228 266 L208 274 L218 256 L198 248Z" fill="#fff36b" stroke="#ff7a1a" stroke-width="3" stroke-linejoin="round"/>
     <text x="234" y="258" text-anchor="middle" font-size="18" font-weight="700" fill="#d6321a">砰!</text></g>
-  <text class="dmg" x="272" y="192" font-size="30" font-weight="700" fill="#ffe08a" stroke="#2a1b5e" stroke-width="1.5">-1</text>
+  <text class="dmg" id="sDmg" x="272" y="192" font-size="30" font-weight="700" fill="#ffe08a" stroke="#2a1b5e" stroke-width="1.5">-1</text>
   </g></svg><div class="scenelab" id="sceneLab"></div>`;
   const svg=el.querySelector("svg"), q=id=>el.querySelector("#"+id);
-  let left=goal, nb=0;
-  const label=()=>{ q("sceneLab").textContent = left>0 ? `外星人還有 ${left} 格血` : "外星人被打跑了！"; };
+  let left=goal, nb=0, won=false;   /* left＝外星人剩的血（總題數－答對題數） */
+  const label=()=>{ q("sceneLab").textContent = won || left<=0 ? "外星人被打跑了！" : `外星人還有 ${left} 格血`; };
+  const segs=()=>q("sHp").querySelectorAll(".hpseg").forEach((r,i)=>r.classList.toggle("gone", i>=Math.ceil(left/goal*NSEG)));
   function bandage(){ const b=BAND[nb++ % BAND.length]; const g=document.createElementNS("http://www.w3.org/2000/svg","g");
     g.setAttribute("transform",`translate(${b[0]} ${b[1]}) rotate(${b[2]})`);
     g.innerHTML=`<g class="bandpop"><rect x="-13" y="-5" width="26" height="10" rx="5" fill="#f6d3a8" stroke="#c99a6a" stroke-width="1.3"/><rect x="-4.5" y="-5" width="9" height="10" fill="#ead0b0" stroke="#c99a6a" stroke-width="1"/><circle cx="-9" cy="-1.5" r=".9" fill="#c99a6a"/><circle cx="9" cy="1.5" r=".9" fill="#c99a6a"/></g>`;
@@ -198,10 +201,13 @@ function spaceScene(el, goal){
   label();
   return {
     setPlayer(p){ setSvgAv(q("sAv"), q("sFace"), p); },
-    hit(done){ left=goal-done; retrigger(svg,"atk",1300); setTimeout(()=>{ SFX.slash(); SFX.hit(); },320);
-      setTimeout(()=>{ q("sHp").querySelectorAll(".hpseg").forEach((r,i)=>r.classList.toggle("gone", i>=Math.ceil(left/goal*NSEG))); bandage(); label(); },420); },
+    hit(done){ const n=Math.max(1,left-(goal-done)); left=goal-done;   /* n＝這次扣幾格（新答對幾題） */ q("sDmg").textContent=`-${n}`;
+      retrigger(svg,"atk",1300); setTimeout(()=>{ SFX.slash(); SFX.hit(); },320);
+      setTimeout(()=>{ segs(); bandage(); label(); },420); },
     miss(){ retrigger(svg,"hurt",900); setTimeout(SFX.zap,180); },
-    win(){ left=0; retrigger(svg,"atk",1300); setTimeout(()=>{ SFX.slash(); SFX.hit(); q("sHp").querySelectorAll(".hpseg").forEach(r=>r.classList.add("gone")); bandage(); label(); },420);
+    /* 最後一律打跑外星人，但血條只扣到答對的題數（剩下的血留著） */
+    win(final){ const n=Math.max(0,left-(goal-final)); left=goal-final; won=true; q("sDmg").textContent=n?`-${n}`:"";
+      retrigger(svg,"atk",1300); setTimeout(()=>{ SFX.slash(); SFX.hit(); segs(); bandage(); label(); },420);
       setTimeout(()=>svg.classList.add("won"),1100);
       return {bannerAt:1300, delay:3600}; },
     stop(){}
@@ -249,8 +255,8 @@ function dinoScene(el, goal, hatchIdx){
   <text id="dQ" x="210" y="160" font-size="40" font-weight="700" fill="#e3672f" opacity="0">?</text>
   </g></svg><div class="scenelab" id="sceneLab"></div>`;
   const q=id=>el.querySelector("#"+id), egg=q("dEgg");
-  let done=0;
-  const label=()=>{ const left=goal-done; q("sceneLab").textContent = left>0 ? `再答 ${left} 題，蛋就會打開` : "蛋打開了！"; };
+  let done=0, qLeft=goal;   /* done＝累計答對題數（裂痕），qLeft＝還剩幾題 */
+  const label=()=>{ q("sceneLab").textContent = qLeft>0 ? `再答 ${qLeft} 題，蛋就會打開` : "蛋打開了！"; };
   function render(){
     const p=done/goal, n=Math.ceil(p*CR.length);
     const crk=q("dCr").querySelectorAll(".crk");
@@ -267,9 +273,9 @@ function dinoScene(el, goal, hatchIdx){
   render(); label();
   return {
     setPlayer(){},
-    hit(d){ done=d; retrigger(egg,"wob",750); SFX.crack(); setTimeout(()=>{ render(); chips(5); label(); },250); },
-    miss(){ retrigger(egg,"huh",550); retrigger(q("dQ"),"qm",1000); },
-    win(){ done=goal; render(); label(); retrigger(egg,"wob",750); SFX.crack();
+    hit(d, left){ done=d; if(left!=null) qLeft=left; retrigger(egg,"wob",750); SFX.crack(); setTimeout(()=>{ render(); chips(5); label(); },250); },
+    miss(left){ if(left!=null){ qLeft=left; label(); } retrigger(egg,"huh",550); retrigger(q("dQ"),"qm",1000); },
+    win(){ done=goal; qLeft=0; render(); label(); retrigger(egg,"wob",750); SFX.crack();
       setTimeout(()=>{ q("dTop").classList.add("fly"); q("dIn").style.display="none"; q("dRays").classList.add("on"); chips(14); SFX.hatch(); },650);
       setTimeout(()=>{ q("dPop").classList.add("on"); },850);
       return {bannerAt:900, delay:3300}; },
@@ -315,10 +321,10 @@ function dessertScene(el, goal){
   </svg><div class="dprog" id="dProg" role="img"></div><div class="scenelab" id="sceneLab"></div>`;
   const q=id=>el.querySelector("#"+id), svg=el.querySelector("svg"), chef=q("cChef");
   const NS="http://www.w3.org/2000/svg";
-  let done=0, items=0;   /* done＝疊了幾層蛋糕，items＝完成幾題（題目很多時，幾題才疊一層） */
+  let done=0, qLeft=goal;   /* done＝疊了幾層蛋糕，qLeft＝還剩幾題（題目很多時，答對幾題才疊一層） */
   const wOf=i=> LG>1 ? W0-(W0-W1)*i/(LG-1) : W0;
   const label=()=>{ if(prog){ const left=prog[1]-prog[0]; q("sceneLab").textContent = left>0 ? `還有 ${left} 個字，蛋糕就完成了！` : "超級大蛋糕完成了！"; return; }
-    const left=goal-items; q("sceneLab").textContent = left>0 ? `再答 ${left} 題，蛋糕就完成了！` : "超級大蛋糕完成了！"; };
+    q("sceneLab").textContent = qLeft>0 ? `再答 ${qLeft} 題，蛋糕就完成了！` : "蛋糕完成了！"; };
   function layer(i){
     const w=wOf(i), x=CX-w/2, y=BASE-(i+1)*H, [c,f]=FL[i%FL.length];
     let drip=`M${x} ${y+2} H${x+w} V${y+H*.42}`; const n=Math.max(4,Math.round(w/18));
@@ -352,18 +358,20 @@ function dessertScene(el, goal){
   label();
   return {
     setPlayer(p){ setSvgAv(q("cAv"), q("cFace"), p); },
-    hit(d){ items=d; retrigger(chef,"toss",800); dropTo(Math.min(LG-1, Math.ceil(d/goal*LG)), 250); label(); },
+    hit(d, left){ if(left!=null) qLeft=left; retrigger(chef,"toss",800); dropTo(Math.min(LG-1, Math.ceil(d/goal*LG)), 250); label(); },
     /* 進度條：一個杯子蛋糕＝一個字（每位同學都答完這一輪才算做好一個） */
     progress(r,T,part){ prog=[r,T]; const box=q("dProg");
       if(box.children.length!==T) box.innerHTML=Array.from({length:T},(_,i)=>`<span class="cup">${cupSvg(i)}</span>`).join("");
       [...box.children].forEach((c,i)=>{ const full=i<r; if(full&&!c._full) retrigger(c,"pop",700); c._full=full;
         c.classList.toggle("full",full); c.classList.toggle("now",i===r); c.classList.toggle("half",i===r&&part>0); });
       box.setAttribute("aria-label",`蛋糕進度：完成 ${r} 個字，共 ${T} 個字`); label(); },
-    miss(){ retrigger(chef,"wobble",700); retrigger(svg,"oopsing",1000); },
-    win(){ retrigger(chef,"toss",800);
-      items=goal; const landed = dropTo(LG, 250); label();
-      setTimeout(()=>sparkle(14, BASE-LG*H), landed);
-      setTimeout(()=>{ const topY=BASE-LG*H, w=wOf(LG-1);
+    miss(left){ if(left!=null){ qLeft=left; label(); } retrigger(chef,"wobble",700); retrigger(svg,"oopsing",1000); },
+    /* 最後一律完成（插蠟燭），蛋糕高度照答對題數；一題都沒答對也有一層 */
+    win(final){ retrigger(chef,"toss",800);
+      const top=Math.max(1, done, Math.min(LG, Math.ceil(final/goal*LG)));
+      qLeft=0; const landed = dropTo(top, 250); label();
+      setTimeout(()=>sparkle(14, BASE-top*H), landed);
+      setTimeout(()=>{ const topY=BASE-top*H, w=wOf(top-1);
         let cand=""; [-0.28,0,0.28].forEach((f,i)=>{ const cx=CX+f*w, col=["#4fa8f0","#ff5d73","#ffd23f"][i];
           cand+=`<g class="candle" style="animation-delay:${i*0.15}s"><rect x="${cx-4}" y="${topY-34}" width="8" height="34" rx="2" fill="${col}" stroke="#7a3a4a" stroke-width="1.5"/>
             <path d="M${cx-4} ${topY-26} l8 -5 M${cx-4} ${topY-14} l8 -5" stroke="#fff" stroke-width="2"/>

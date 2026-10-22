@@ -257,11 +257,57 @@ function stickerName(theme, i){
   const g = GACHA[theme] && GACHA[theme][i];
   return `${t.name}・${t.stickers[i][1]}${g ? `（${g.label}）` : ""}`;
 }
+/* ===================== 主題背景插圖（練習的作答畫面） =====================
+   2026-10-22 加：自己畫的卡通背景（沒有授權問題），讓練習比較有主題感。
+   不干擾作答：圖案只放在畫面底部和四個角、顏色淡、對比低、不會動；中間題目和選項的位置保持乾淨。
+   畫布 1600×900，底部對齊（preserveAspectRatio＝xMidYMax slice），螢幕比例不同時切掉的是上方或兩側。 */
+function backdrop(theme){
+  const R = (n, f) => Array.from({length:n}, (_, i) => f(i)).join("");
+  const art = {
+    /* 恐龍：侏儸紀（遠方火山、蕨類、長頸龍和翼龍的剪影） */
+    dino: `<g opacity=".55">
+      <path d="M-20 900 L180 640 Q210 610 240 640 L470 900Z M1180 900 L1360 680 Q1385 655 1410 680 L1620 900Z" fill="#9fbf86"/>
+      <path d="M180 640 Q210 610 240 640 L228 660 L214 648 L198 664Z M1360 680 Q1385 655 1410 680 L1398 698 L1386 688 L1372 700Z" fill="#e9a07a"/>
+      <g fill="#e8efe0">${R(3, i => `<circle cx="${212 + i * 14}" cy="${590 - i * 34}" r="${18 + i * 8}"/>`)}</g>
+      <path d="M1180 760 Q1190 700 1240 690 Q1262 640 1262 600 Q1262 586 1276 588 Q1288 592 1282 606 Q1276 650 1268 700 Q1320 708 1330 760Z" fill="#86a86d"/>
+      <g fill="#86a86d">${R(2, i => `<path d="M${150 + i * 1220} ${120 + i * 40} q30 -26 60 0 q-30 -12 -60 0Z M${180 + i * 1220} ${112 + i * 40} l6 -14 l6 14Z"/>`)}</g>
+    </g>
+    <g fill="#7fae5c" opacity=".6">${R(6, i => { const x = i < 3 ? 40 + i * 90 : 1300 + (i - 3) * 100, h = 120 + (i % 3) * 40;
+      return `<path d="M${x} 900 Q${x + 6} ${900 - h * .5} ${x + 12} ${900 - h}" stroke="#6a9a4c" stroke-width="8" fill="none"/>` +
+        R(5, j => `<ellipse cx="${x + 12 + (j % 2 ? 26 : -26)}" cy="${900 - h + j * 18}" rx="30" ry="9" transform="rotate(${j % 2 ? 20 : -20} ${x + 12} ${900 - h + j * 18})"/>`); })}</g>
+    <rect y="860" width="1600" height="40" fill="#8fb870" opacity=".5"/>`,
+    /* 海洋：海底（從上面照下來的光、海草、珊瑚、沙地、泡泡、遠處的小魚） */
+    ocean: `<g fill="#fff" opacity=".04">${R(4, i => `<path d="M${200 + i * 380} 0 L${260 + i * 380} 0 L${180 + i * 380} 900 L${80 + i * 380} 900Z"/>`)}</g>
+    <path d="M0 830 Q200 790 420 830 T860 820 T1300 830 T1600 810 V900 H0Z" fill="#1d6d8c" opacity=".7"/>
+    <g fill="none" stroke="#3fb37f" stroke-width="10" stroke-linecap="round" opacity=".45">${R(8, i => { const x = i < 4 ? 60 + i * 70 : 1300 + (i - 4) * 75;
+      return `<path d="M${x} 900 q-18 -40 0 -80 q18 -40 0 -80${i % 2 ? " q-14 -30 0 -60" : ""}"/>`; })}</g>
+    <g opacity=".4">${R(4, i => `<path d="M${380 + i * 300 + (i > 1 ? 380 : 0)} 840 l-14 -50 l14 18 l8 -40 l8 40 l14 -18 l-14 50Z" fill="${["#ff8a8a", "#ffb36b", "#ff8ac4", "#ffd06b"][i]}"/>`)}</g>
+    <g fill="none" stroke="#d7f3ff" stroke-width="3" opacity=".3">${R(10, i => `<circle cx="${i < 5 ? 120 + (i % 3) * 40 : 1440 + (i % 3) * 40}" cy="${300 + i * 50}" r="${6 + (i % 4) * 4}"/>`)}</g>
+    <g fill="#9fe0ff" opacity=".25">${R(3, i => `<path d="M${i < 2 ? 180 + i * 90 : 1380} ${140 + i * 60} q22 -16 44 0 q-22 16 -44 0Z M${i < 2 ? 224 + i * 90 : 1424} ${140 + i * 60} l14 -10 l0 20Z"/>`)}</g>`,
+    /* 太空：星星、有環的行星、月亮、小火箭、遠處的星球表面 */
+    space: `<g fill="#fff" opacity=".5">${R(70, i => { const x = (i * 397 + i * i * 71) % 1600, y = (i * 233 + i * i * 37) % 900; return x > 420 && x < 1180 && y > 160 && y < 800 ? "" : `<circle cx="${x}" cy="${y}" r="${1.5 + (i % 3)}"/>`; })}</g>
+    <g opacity=".5"><circle cx="170" cy="150" r="62" fill="#ff9f6b"/><ellipse cx="170" cy="156" rx="104" ry="20" fill="none" stroke="#ffd2b0" stroke-width="8"/></g>
+    <g opacity=".45"><circle cx="1440" cy="130" r="44" fill="#d9d4f7"/><circle cx="1424" cy="118" r="9" fill="#bdb6e8"/><circle cx="1458" cy="146" r="6" fill="#bdb6e8"/></g>
+    <ellipse cx="800" cy="1120" rx="1100" ry="300" fill="#2b1f63" opacity=".8"/>
+    <g opacity=".5" transform="translate(1420 690) rotate(-30)"><path d="M0 -60 Q20 -30 20 20 H-20 Q-20 -30 0 -60Z" fill="#f1ecff"/><circle cy="-14" r="8" fill="#6fd3ff"/>
+      <path d="M-20 4 L-36 28 H-20Z M20 4 L36 28 H20Z" fill="#ff6fa8"/><path d="M-12 22 Q0 56 12 22Z" fill="#ffb020"/></g>`,
+    /* 甜點：上方三角旗、糖果罐、蛋糕櫃、撒在旁邊的糖粒 */
+    dessert: `<path d="M0 0 ${R(16, i => `L${i * 100 + 50} 60 L${i * 100 + 100} 0`)}Z" fill="#f78fb3" opacity=".35"/>
+    <g opacity=".45"><rect x="70" y="700" width="120" height="160" rx="26" fill="#fff" stroke="#e7a3bb" stroke-width="6"/><rect x="92" y="680" width="76" height="26" rx="8" fill="#e7a3bb"/>
+      ${R(9, i => `<circle cx="${100 + (i % 3) * 30}" cy="${740 + Math.floor(i / 3) * 36}" r="12" fill="${["#ff9fbf", "#ffe7a3", "#a8dca0", "#b9a3ff"][i % 4]}"/>`)}</g>
+    <g opacity=".45" transform="translate(1340 640)"><rect width="200" height="220" rx="14" fill="#fff" stroke="#e7a3bb" stroke-width="6"/><path d="M0 110 H200" stroke="#e7a3bb" stroke-width="6"/>
+      <rect x="40" y="56" width="120" height="40" rx="10" fill="#ff9fbf"/><rect x="56" y="30" width="88" height="30" rx="10" fill="#ffe7a3"/>${R(3, i => `<circle cx="${50 + i * 50}" cy="170" r="22" fill="${["#9a6040", "#a8dca0", "#b9a3ff"][i]}"/>`)}</g>
+    <g opacity=".35">${R(24, i => { const x = i % 2 ? 40 + (i * 37) % 300 : 1260 + (i * 53) % 300, y = 160 + (i * 97) % 440;
+      return `<rect x="${x}" y="${y}" width="18" height="6" rx="3" fill="${["#ff5d73", "#4fa8f0", "#ffd23f", "#6ed36e"][i % 4]}" transform="rotate(${(i * 47) % 180} ${x} ${y})"/>`; })}</g>
+    <rect y="868" width="1600" height="32" fill="#e0a77a" opacity=".45"/>`
+  }[theme];
+  return art ? `<svg class="backdrop" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">${art}</svg>` : "";
+}
 window.Themes = {
   THEMES, GACHA, GACHA_VERB, RARE_GLOW,
   FISH, DINOS, fishBody, dinoSvg,   /* 打怪獸場景要畫大魚和恐龍（識字評量 scenes.js） */
   ids: Object.keys(THEMES),
-  icon, stickerSvg, drawSticker, stickerName,
+  icon, stickerSvg, drawSticker, stickerName, backdrop,
   stars: (theme, i) => GACHA[theme] && GACHA[theme][i] ? GACHA[theme][i].stars : 0
 };
 })();

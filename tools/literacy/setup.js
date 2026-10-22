@@ -620,9 +620,16 @@ function renderView(){
   $("#vUi").querySelectorAll("[data-ui]").forEach(b => b.onclick = () => { settings.uiScale = b.dataset.ui; saveSettings(); applyDisplay(); renderView(); });
   $("#sRate").value = settings.rate; $("#sRateV").textContent = `${settings.rate} 倍`;
   $("#vSfx").checked = settings.sfx;
-  $("#vClock").checked = settings.clockPractice !== false;
   $("#vTurn").innerHTML = chips(TURN_STYLES, settings.turnStyle || "chime", "turn");
   $("#vTurn").querySelectorAll("[data-turn]").forEach(b => b.onclick = () => { settings.turnStyle = b.dataset.turn; saveSettings(); renderView(); });
+}
+/* 練習與遊戲分頁：打怪獸每做完幾題跳一次動畫（正式評量不受影響） */
+const SCENE_EVERY = [["1","每題"],["3","每 3 題（預設）"],["5","每 5 題"]];
+function renderPractice(){
+  const cur = String(settings.sceneEvery || "3");
+  $("#pEvery").innerHTML = SCENE_EVERY.map(([v, t]) => `<button class="chip ${cur === v ? "on" : ""}" data-every="${v}" aria-pressed="${cur === v}">${t}</button>`).join("");
+  $("#pEvery").querySelectorAll("[data-every]").forEach(b => b.onclick = () => { settings.sceneEvery = b.dataset.every; saveSettings(); renderPractice(); });
+  $("#vClock").checked = settings.clockPractice !== false;
 }
 /* 把字的大小、畫面大小套到整個網頁（CSS 變數 --fs、--uiz） */
 function applyDisplay(){
@@ -640,7 +647,6 @@ $("#vTryTurn").onclick = () => { const s = settings.turnStyle || "chime"; if(s =
 function checkVoice(){ $("#voiceWarn").hidden = "speechSynthesis" in window && hasZhVoice(); }
 setTimeout(checkVoice, 1500);
 if("speechSynthesis" in window) speechSynthesis.addEventListener && speechSynthesis.addEventListener("voiceschanged", () => setTimeout(checkVoice, 0));
-$("#openView").onclick = () => { renderView(); openSheet("#viewSheet"); };
 applyDisplay();
 $("#sRate").oninput = e => { settings.rate = +e.target.value; $("#sRateV").textContent = `${settings.rate} 倍`; saveSettings(); };
 $("#sTest").onclick = () => speak("努力的努");
@@ -654,10 +660,20 @@ let lastFocus = null;
 function openSheet(id){ lastFocus = document.activeElement; $(id).hidden = false; $(id).querySelector("[data-close]").focus(); }
 function closeSheets(){ document.querySelectorAll(".overlay").forEach(o => o.hidden = true); if(lastFocus) lastFocus.focus(); }
 function openDates(b){ dBook = b || dBook; renderDates(); openSheet("#datesSheet"); }
-function openSettings(){ renderSettings(); openSheet("#setSheet"); }
+/* ⚙ 細部設定：三個分頁（評量設定、練習與遊戲、畫面與聲音）；從「到評量設定修改」打開時直接到評量設定 */
+let detailTab = "view";
+function showDetailTab(tab){
+  detailTab = tab;
+  document.querySelectorAll("#setSheet [data-tab]").forEach(b => { const on = b.dataset.tab === tab; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
+  document.querySelectorAll("#setSheet [data-pane]").forEach(p => p.hidden = p.dataset.pane !== tab);
+}
+document.querySelectorAll("#setSheet [data-tab]").forEach(b => b.onclick = () => showDetailTab(b.dataset.tab));
+function openDetail(tab){ renderSettings(); renderPractice(); renderView(); showDetailTab(tab || detailTab); openSheet("#setSheet"); }
+function openSettings(){ openDetail("formal"); }
 $("#openDates").onclick = () => openDates(state.book);
 $("#openKids").onclick = () => { renderKidSheet(); openSheet("#kidsSheet"); };
-$("#openSettings").onclick = openSettings;
+$("#openSettings").onclick = () => openDetail();
+$("#openGear").onclick = () => openDetail();
 document.querySelectorAll("[data-close]").forEach(b => b.onclick = closeSheets);
 document.querySelectorAll(".overlay").forEach(o => o.addEventListener("click", e => { if(e.target === o) closeSheets(); }));
 document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets(); });

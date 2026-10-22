@@ -12,7 +12,8 @@
 const shuffle = a => { for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const charsOf = k => { const [b,n] = splitKey(k); const L = BOOKS[b].lessons[n]; return [...(L.write + L.read)]; };
 const ALL_CHARS = [...new Set(BOOK_ORDER.flatMap(b => Object.keys(BOOKS[b].lessons).flatMap(n => charsOf(key(b,n)))))];
-const sayOf = (c, b) => wordOf(c, b) ? `${wordOf(c, b)}的${c}` : c;
+/* 唸題目「語詞的字」；電腦語音會唸錯的破音字，唸的時候換成同音字（見 shared/bpmf.js 的 BPMF_SAY，畫面不變） */
+const sayOf = (c, b) => wordOf(c, b) ? Bpmf.say(wordOf(c, b), c) : c;
 const isHan = ch => /\p{Script=Han}/u.test(ch);
 /* 這次要考的字（只考有教的字，見 wordsets.js）；選項裡的「課文字」干擾字仍然用整課的字 */
 const testChars = k => wsPick(k);
@@ -197,7 +198,7 @@ function startSession(){
   setupHearts(G);
   /* 打怪獸的戰利品（大魚、恐龍等）開始前就決定好，打敗怪獸後就是這次的貼紙 */
   if(G.game) G.prize = Themes.drawSticker(G.theme, (Rewards.get(list[0]).stickers || {})[G.theme] || []);
-  applySkin(G.theme);
+  applySkin(G.theme, G.kind !== "formal");
   $("#pScene").hidden = true; $("#pScene").innerHTML = ""; $("#pBody").hidden = false;
   startClockShow();
   if(G.mode === "flu"){ G.turn = 0; showScreen("#play"); showReady(); return; }
@@ -340,6 +341,8 @@ function pick(i, btn){
   if(!cur || cur.done || btn.disabled) return;
   const o = cur.opts[i], sec = Math.round((performance.now() - (cur.t0 || cur.tShown)) / 100) / 10;
   if(cur.firstPick === null){ cur.firstPick = o; cur.firstSec = sec; }
+  /* 練習的選項卡：答對、答錯在選項右上角跳出大大的綠勾、紅叉（正式評量和賓果卡維持原樣，見 A3） */
+  if(G.kind !== "formal" && G.layout === "cards") btn.classList.add("fx");
   if(o.type === "答案"){
     btn.classList.add("right"); btn.insertAdjacentHTML("beforeend", BURST); sfx.right();
     if(cur.wrong === 0) heartStreak(cur.it.kid);
@@ -379,7 +382,7 @@ function showNextHint(){
     /* 報讀：按小喇叭念出完整語詞（例如「努力的努」）或整句，並記下按過哪一種 */
     $("#hintbox").querySelectorAll(`[data-read="${id}"]`).forEach(btn => btn.onclick = () => {
       if(cur.done) return;
-      cur.reads.add(id); speak(id === "word" ? sayOf(cur.it.c, cur.b) : sentOf(cur.it.c, cur.b));
+      cur.reads.add(id); speak(id === "word" ? sayOf(cur.it.c, cur.b) : Bpmf.sayText(sentOf(cur.it.c, cur.b)));
     });
     if(id === "sound") speak(sayOf(cur.it.c, cur.b), null, Math.max(0.5, settings.rate - 0.25));
     return;
@@ -427,6 +430,8 @@ function endItem(passed, correctSec, revealed){
     ...G.ws[it.k]   /* 只考有教的字：ws＝第幾組（""＝整課，"p"＝練習自己點的）、wsChars＝這課考的字、wsAll＝整課幾個字 */
   };
   saveRecord(rec);
+  /* 打怪獸：做完幾題、前進幾格（練習＝第一次就答對的題數；正式評量維持原本「每題都前進」，等 A3 討論） */
+  if(G.game){ G.doneN++; if(rec.firstCorrect || G.kind === "formal"){ G.hits++; G.blockHits++; } }
   const t = G.tally[it.kid];
   t.n++; if(rec.firstCorrect) t.first++; if(passed){ t.passed++; t.secs.push(correctSec); } else t.wrong++;
   if(G.mode === "flu"){
@@ -440,7 +445,7 @@ function endItem(passed, correctSec, revealed){
   G.pos++;
   const g = G;
   if(cur.hpOut) return heartsOut(it.kid);
-  setTimeout(() => { if(G !== g || g.over) return; if(g.game && g.pos < g.queue.length) sceneBeat(it.kid, nextItem); else nextItem(); },
+  setTimeout(() => { if(G !== g || g.over) return; if(g.game && g.pos < g.queue.length && g.doneN % sceneEvery() === 0) sceneBeat(it.kid, nextItem); else nextItem(); },
     passed ? (cur.line ? 1800 : 900) : revealed ? 2200 : 1000);
 }
 
@@ -499,8 +504,12 @@ function heartsOut(code){
 /* ---------- 3-3 打怪獸 ----------
    正確率模式、選項卡、有選主題才可以玩；練習看第 4 步的玩法（預設打怪獸），正式評量看評量設定（預設不玩）。
    一位學生＝自己打（solo），多位學生輪流＝大家合作打同一隻（coop）。
-   場景只在「題目之間」出現：開始前一段、每題做完一段（固定 1.8 秒，不論對錯），最後一題做完是打敗怪獸。
-   作答時看不到場景，選項的版面和沒玩時完全一樣；怪獸依「做完幾題」受傷，不論對錯（和貼紙規則一致）。 */
+   場景只在「題目之間」出現：開始前一段、每做完幾題一段（固定 1.8 秒），最後一題做完是打敗怪獸。
+   幾題一段看細部設定的 sceneEvery（預設 3 題，2026-10-22 維護者決定：每題都跳會打斷注意力）；合作時算全隊輪流的題數。
+   以下只改練習；正式評量開了打怪獸時，維持原本的每題一次、不論對錯都前進（正式評量的條件由 A3 一起決定）。
+   前進多少＝這幾題「第一次就答對」的題數（答對 3 題疊 3 層蛋糕）；都沒答對就播各主題的「再加油」動畫、不前進。
+   最後一律打敗怪獸、拿到貼紙（鼓勵參與），但蛋糕高度、外星人剩的血，照答對的題數呈現。
+   作答時看不到場景，選項的版面和沒玩時完全一樣。 */
 const SCENE_MS = 1800;
 const GAMES = {solo:"打怪獸（個人）", coop:"打怪獸（合作）"};
 const gameName = g => GAMES[g] || "無";
@@ -510,7 +519,10 @@ function gameFor(g){
   if(g.kind === "formal" ? !(settings.formalTheme && settings.formalGame) : settings.practicePlay !== "monster") return "";
   return g.kids.length > 1 ? "coop" : "solo";
 }
-const SCENE_ACT = {ocean:"用力拉", space:"出擊", dino:"敲一下", dessert:"疊蛋糕"};
+const sceneEvery = () => G.kind === "formal" ? 1 : +settings.sceneEvery || 3;   /* 正式評量維持每題一次（A3 討論前不改） */
+/* 場景上方的一行字：答對 k 題時做了什麼；都沒答對時的「再加油」 */
+const SCENE_ACT = {ocean: k => `把大魚拉近 ${k} 格`, space: k => `命中外星人 ${k} 次`, dino: k => `敲了恐龍蛋 ${k} 下`, dessert: k => `疊了 ${k} 層蛋糕`};
+const SCENE_MISS = {ocean:"大魚掙扎了一下，再加油！", space:"外星人反擊了，再加油！", dino:"恐龍蛋還沒動靜，再加油！", dessert:"哎呀，蛋糕歪了，再加油！"};
 /* 切換作答畫面與場景；cap＝場景上方的一行字（可以帶頭像） */
 function showScene(on, cap = "", code = ""){
   $("#pBody").hidden = on; $("#pScene").hidden = !on;
@@ -521,29 +533,28 @@ function sceneStart(then){
   const g = G, box = $("#pScene"), t = Themes.THEMES[g.theme];
   box.innerHTML = `<div class="scenecap" id="sceneCap"></div><div class="scenehold"></div>`;
   g.scene = Scenes[g.theme](box.querySelector(".scenehold"), g.queue.length, g.prize);
-  g.hits = 0;
+  g.hits = 0; g.doneN = 0; g.blockHits = 0;
   g.scene.setPlayer(g.queue[0].kid);
   showScene(true, `${g.game === "coop" ? "大家一起：" : ""}${t.line}`);
   $("#pProg").textContent = `做完 ${g.queue.length} 題就成功！`;
   setTimeout(() => { if(G === g && !g.over){ showScene(false); then(); } }, SCENE_MS);
 }
-/* 每做完一題（不論對錯）：主角換成剛剛作答的學生，怪獸受傷一次，停 1.8 秒 */
+/* 每做完幾題：主角換成剛剛作答的學生；這幾題答對幾題就前進幾格，都沒答對就播「再加油」，停 1.8 秒 */
 function sceneBeat(code, then){
-  const g = G, k = kidBy(code);
-  g.hits++;
+  const g = G, k = kidBy(code), n = g.blockHits, who = g.game === "coop" ? "大家" : k ? kidShow(k) : code;
+  g.blockHits = 0;
   g.scene.setPlayer(code);
-  showScene(true, `${k ? kidShow(k) : code} ${SCENE_ACT[g.theme] || "出擊"}！`, code);
-  g.scene.hit(g.hits);
+  if(n){ showScene(true, `${who}${g.game === "coop" ? "" : " "}${SCENE_ACT[g.theme](n)}！`, g.game === "coop" ? "" : code); g.scene.hit(g.hits, g.queue.length - g.pos); }
+  else { showScene(true, SCENE_MISS[g.theme], g.game === "coop" ? "" : code); g.scene.miss(g.queue.length - g.pos); }
   setTimeout(() => { if(G === g && !g.over){ showScene(false); then(); } }, SCENE_MS);
 }
 /* 最後一題做完：打敗怪獸，播完才到結果畫面（結果畫面再揭曉貼紙） */
 function sceneWin(){
   const g = G; if(g.winning) return; g.winning = true;
   const t = Themes.THEMES[g.theme], last = g.queue[g.queue.length - 1].kid, k = kidBy(last);
-  g.hits = g.queue.length;
   g.scene.setPlayer(last);
   showScene(true, g.game === "coop" ? t.coopWin : `${k ? kidShow(k) : last} ${t.winBanner}`, g.game === "coop" ? "" : last);
-  const r = g.scene.win();
+  const r = g.scene.win(g.hits);   /* 一律完成；蛋糕高度、外星人剩的血照答對題數 */
   setTimeout(() => { if(G === g && !g.over) sfx.fanfare(); }, r.bannerAt);   /* 上方的字已經寫了結果，不另外跳大字，免得蓋住怪獸 */
   setTimeout(() => { if(G === g && !g.over) finish(); }, r.delay);
 }
