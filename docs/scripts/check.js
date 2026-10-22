@@ -58,12 +58,16 @@ try {
     if (b.includes('-')) err('shared/lessons.js', `課本代號「${b}」不能有「-」（程式用「-」分開課本和課次）`);
     const seen = {};
     for (const n in BOOKS[b].lessons) {
-      const L = BOOKS[b].lessons[n], chars = [...(L.write || '') + (L.read || '')].filter(han);
-      for (const c of chars) {
+      const L = BOOKS[b].lessons[n];
+      const chars = [...[...(L.write || '')].map(c => [c, '習寫']), ...[...(L.read || '')].map(c => [c, '認讀'])].filter(([c]) => han(c));
+      for (const [c, kind] of chars) {
         const id = `${b}-${n}${c}`, where = `shared/lessons.js 課本 ${b} 第 ${n} 課「${c}」`;
         if (KNOWN[id]) { warn(where, `已知問題：${KNOWN[id]}`); continue; }
-        if (seen[c] && seen[c] !== n) warn(where, `第 ${seen[c]} 課也有這個字，請對照課本確認`);
-        seen[c] = seen[c] || n;
+        /* 同一本課本兩課都有：先認讀、後習寫是課本常見安排，不提醒；其他情況（兩次習寫、先習寫後認讀）請對照課本 */
+        const prev = seen[c];
+        if (prev && prev.n !== n && !(prev.kind === '認讀' && kind === '習寫'))
+          warn(where, `第 ${prev.n} 課（${prev.kind}）也有這個字，這課是${kind}，請對照課本確認`);
+        if (!prev) seen[c] = { n, kind };
         const w = ((WORDS_ED[b] || {})[c]) || WORDS[c] || '';
         if (!w) err(where, '沒有語詞');
         else if (!w.includes(c)) err(where, `語詞「${w}」裡沒有這個字`);
