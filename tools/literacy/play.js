@@ -12,7 +12,8 @@
 const shuffle = a => { for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const charsOf = k => { const [b,n] = splitKey(k); const L = BOOKS[b].lessons[n]; return [...(L.write + L.read)]; };
 const ALL_CHARS = [...new Set(BOOK_ORDER.flatMap(b => Object.keys(BOOKS[b].lessons).flatMap(n => charsOf(key(b,n)))))];
-const sayOf = (c, b) => wordOf(c, b) ? `${wordOf(c, b)}的${c}` : c;
+/* 唸題目「語詞的字」；電腦語音會唸錯的破音字，唸的時候換成同音字（見 shared/bpmf.js 的 BPMF_SAY，畫面不變） */
+const sayOf = (c, b) => wordOf(c, b) ? Bpmf.say(wordOf(c, b), c) : c;
 const isHan = ch => /\p{Script=Han}/u.test(ch);
 /* 這次要考的字（只考有教的字，見 wordsets.js）；選項裡的「課文字」干擾字仍然用整課的字 */
 const testChars = k => wsPick(k);
@@ -379,7 +380,7 @@ function showNextHint(){
     /* 報讀：按小喇叭念出完整語詞（例如「努力的努」）或整句，並記下按過哪一種 */
     $("#hintbox").querySelectorAll(`[data-read="${id}"]`).forEach(btn => btn.onclick = () => {
       if(cur.done) return;
-      cur.reads.add(id); speak(id === "word" ? sayOf(cur.it.c, cur.b) : sentOf(cur.it.c, cur.b));
+      cur.reads.add(id); speak(id === "word" ? sayOf(cur.it.c, cur.b) : Bpmf.sayText(sentOf(cur.it.c, cur.b)));
     });
     if(id === "sound") speak(sayOf(cur.it.c, cur.b), null, Math.max(0.5, settings.rate - 0.25));
     return;

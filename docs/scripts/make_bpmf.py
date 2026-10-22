@@ -75,6 +75,9 @@ FIX = {'體會': 'ㄊㄧˇ ㄏㄨㄟˋ', '極大': 'ㄐㄧˊ ㄉㄚˋ', '著急'
        # 依教育部《國語一字多音審訂表》88 年版（詞庫兩種讀音同分或沒收這個詞）
        '綢繆': 'ㄔㄡˊ ㄇㄡˊ', '崗位': 'ㄍㄤˇ ㄨㄟˋ', '站崗': 'ㄓㄢˋ ㄍㄤˇ'}
 for w, ph in FIX.items(): DICT[w] = (10**9, ph.split(' '))
+# 語音唸題目的替換字：電腦語音會把這個詞裡的破音字唸錯，唸的時候換成「同音同調、只有一種唸法」的字。
+# 只改唸出來的聲音，畫面上的字和注音不變。格式：詞 → (要換的字, 換成的字)。實機測試確認唸錯、讀音也確認過才加。
+SAY = {'削價': ('削', '消')}   # 2026-10-22 老師反應唸成「ㄒㄩㄝ價的ㄒㄧㄠ」；康軒六上課本唸ㄒㄧㄠ
 # 比對審訂表時，已經確認沒錯的（語詞或例句, 字）→ 原因；不會再列出來
 CHECKED = {('肚子', '肚'): '人的肚子（例句：把肚皮都吃撐了），審訂表的ㄉㄨˇ是「豬肚子」',
            ('淡淡', '淡'): '淡淡的花香、清香，審訂表的ㄧㄢˇ是「若隱若現貌」',
@@ -161,6 +164,7 @@ head = '''/* =========================================================
 
    BPMF_TXT：語詞、例句 → 要換讀音的位置 [[第幾個字(從 0 算), 第幾個讀音(0＝預設)], ...]
    BPMF_CH：各課本的生字 → 在這本課本語詞裡的讀音（選項加注音時用）
+   BPMF_SAY：電腦語音會唸錯的詞 → [要換的字, 換成的同音字]（只改唸出來的聲音）
    ========================================================= */
 '''
 api = '''
@@ -172,13 +176,18 @@ const Bpmf = (() => {
   const blank = (s, c, rep) => text(s).replace(new RegExp(c + "[\\\\u{E01E0}-\\\\u{E01EF}]?", "gu"), rep);
   /* 一個生字：用這本課本語詞裡的讀音 */
   const char = (c, b) => c + vs((BPMF_CH[b] || {})[c] || 0);
-  return {text, blank, char};
+  /* 唸出來的文字：電腦語音會唸錯的詞，把破音字換成同音字（畫面不變） */
+  const sayText = s => Object.entries(BPMF_SAY).reduce((t, [w, [c, r]]) => t.split(w).join(w.split(c).join(r)), s);
+  /* 唸題目「語詞的字」：語詞和最後那個字都照同一個讀音唸 */
+  const say = (w, c) => { const f = BPMF_SAY[w]; return `${sayText(w)}的${f && f[0] === c ? f[1] : c}`; };
+  return {text, blank, char, sayText, say};
 })();
 '''
 with open(OUT_JS, 'w', encoding='utf8') as f:
     f.write(head)
     f.write('const BPMF_TXT = ' + json.dumps(TXT, ensure_ascii=False, separators=(',', ':')) + ';\n')
     f.write('const BPMF_CH = ' + json.dumps(CH, ensure_ascii=False, separators=(',', ':')) + ';\n')
+    f.write('const BPMF_SAY = ' + json.dumps({w: list(v) for w, v in SAY.items()}, ensure_ascii=False, separators=(',', ':')) + ';\n')
     f.write(api)
 
 # 6. 比對教育部《國語一字多音審訂表》88 年版（有給 PDF 才做）
