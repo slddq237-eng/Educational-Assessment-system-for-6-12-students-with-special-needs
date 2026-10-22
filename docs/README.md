@@ -16,7 +16,7 @@
 | 加入新的外部資料（課本、字頻、圖片、聲音、字型、程式元件） | `data-sources.md`（同步更新「關於我們」頁 `about.html`） |
 | 有人提出新想法、要排優先順序 | `roadmap.md`、`pending.md` |
 | 要討論、還沒決定的事 | `pending.md` |
-| 查「當初為什麼這樣決定」、已完成的實作細節 | `history.md` |
+| 查「當初為什麼這樣決定」、已完成的實作細節 | `history.md`；教材、讀音的歷史在 `history-materials.md` |
 | 研究方法（單一受試、介入設計） | `research-method-spec.md` |
 
 ## 每個檔案放什麼（新決定記在對應的檔案，同一件事只記一個地方）
@@ -32,6 +32,7 @@
 | `materials.md` | 教材資料的來源與使用邏輯、讀音規則、待確認清單、資料掃描發現 | 4-1 的「教材資料的來源與使用邏輯」 |
 | `pending.md` | 所有待決問題的總清單（每題一行，依誰決定分組，細節在各主題檔案） | 6 |
 | `history.md` | 決策歷史：整合的分階段計畫、已完成的實作細節、全面檢查 | 原開頭、3-3 主段與實作細節、5-1 |
+| `history-materials.md` | 決策歷史：各本課本的匯入紀錄、破音字讀音的比對過程 | 4 的課本匯入細節、4-1 的破音字舊段落 |
 
 其他：`research-method-spec.md` 研究方法規格；`scripts/` 產生資料、自動檢查的程式；`material-review.xlsx`、`parts-table.xlsx` 給老師確認的教材清單。
 人看的完整文件（claude.ai 文件，需擁有者分享才能開）：識字評量規格書、GitHub 新手使用說明。docs 裡的檔案是它們給 Claude 的摘要。
