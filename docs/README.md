@@ -73,3 +73,4 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
 ### 合併審核要不要用 GitHub 強制執行（待決）
 （2026-10-22 從 `docs/pending.md` 移來；pending.md 只留一行摘要）
 - **合併審核要不要用 GitHub 強制執行（CODEOWNERS）**（2026-10-22 加）：現在「動到共用檔案、識字評量要 repo 擁有者同意」只是約定。等夥伴用自己的 GitHub 帳號發 PR，就可以加 `.github/CODEOWNERS`（列出歸擁有者管的路徑）、在 Settings → Rules 設定「要 Code Owners 審核」與「自動檢查要通過」，並把擁有者加進 Bypass list（GitHub 不允許自己審核自己的 PR，不加會卡住擁有者自己的 PR），再發測試 PR 確認。步驟寫在「GitHub 新手使用說明」的「合併規則與審核設定」。
+  - **進度**（2026-10-22）：維護者決定要做。已加 `.github/CODEOWNERS`（共用檔案、`tools/literacy/`、`tools/bingo/` 要擁有者 @slddq237-eng 審核）；還要由擁有者在 GitHub 網頁 Settings → Rules 打開「Require review from Code Owners」並把自己加進 Bypass list，再發測試 PR 確認。完成後把這一項移到 `history.md`。
