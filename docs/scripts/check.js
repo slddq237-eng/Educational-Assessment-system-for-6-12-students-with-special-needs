@@ -18,9 +18,7 @@ const err = (where, msg) => errors.push(`${where}：${msg}`);
 const warn = (where, msg) => warns.push(`${where}：${msg}`);
 
 /* 已知、等決定的教材問題：key＝「課本代號-課次字」 */
-const KNOWN = {
-  '4-11扇': '語詞只有一個字「扇」（唸題目變成「扇的扇」），待維護者決定改成「扇子」或「一扇」（2026-10-22）'
-};
+const KNOWN = {};
 
 /* repo 裡所有檔案（略過 .git） */
 function walk(dir, out = []) {
