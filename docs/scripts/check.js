@@ -80,7 +80,7 @@ try {
       }
     }
   }
-  if (few) warn('shared/lessons.js', `${few} 個字的干擾字少於 2 個，出題時會用課文字補（例如 ${fewEx.join('、')}；怎麼處理見規格書 A3）`);
+  if (few) warn('shared/lessons.js', `${few} 個字的干擾字少於 2 個，出題時會用課文字補（例如 ${fewEx.join('、')}；候選干擾字在 docs/material-review.xlsx「干擾字候選」頁；怎麼處理見規格書 A3）`);
 } catch (e) {
   err('shared/lessons.js', `讀不進來：${e.message}`);
 }
