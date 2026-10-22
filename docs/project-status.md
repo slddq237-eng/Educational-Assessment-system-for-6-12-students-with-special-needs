@@ -26,6 +26,7 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
 - 開工就先發草稿 PR（2026-10-20 維護者決定），讓 PR 清單成為「誰正在改哪裡」的即時看板；做完再改成可合併。人多了之後（3～5 人）再加 GitHub Projects 看板與 CODEOWNERS，更多人時加 GitHub Actions 自動提醒同檔案衝突（規格書「合作規則」、待決問題 H 類）。
 - 新功能開分支、發 PR；不直接推 main。原則上由另一位確認再合併；維護者明確要求直接合併時可以，仍要告知夥伴。
 - 純前端、無建置工具。repo 公開：嚴禁把學生姓名、照片、成績寫進任何檔案。
+- **自動檢查**（2026-10-22 加）：每次發 PR、改 main，GitHub Actions 會跑 `docs/scripts/check.js`（設定檔 `.github/workflows/check.yml`），檢查程式語法、教材資料（語詞裡有沒有這個字、干擾字有沒有包含答案等）、各頁版本號是否一致、有沒有照片或備份檔等學生資料。PR 頁面出現紅叉就先修好再合併；本機可以跑 `node docs/scripts/check.js`。已知、等決定的教材問題放在檔案裡的 `KNOWN`（只提醒不失敗）。建議 repo 擁有者在 Settings → Rules 設定「main 要檢查通過才能合併」。
 - 維護者是新手：回覆用繁體中文，術語附白話解釋；程式碼每個段落開頭加中文說明（不逐行註解）。
 
 ## 2-1. 開發路線圖（2026-10-21 重整，詳細版在規格書「開發路線圖」）
