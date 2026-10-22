@@ -22,6 +22,8 @@
   需要 pdftotext（在 poppler-utils 套件裡）；沒有的話只會提醒，注音照樣產生。
   程式會列出語詞、例句、生字裡和審訂表不一致的讀音，請維護者對照課本後決定：
   要改就加進下面的 FIX，確認沒錯就加進 CHECKED，下次就不會再列出來。
+  讀音以課本為主（2026-10-22 維護者決定）：課本 → 審訂表 → 詞庫。和審訂表不同但課本就是這樣標的，
+  放進 CHECKED 並寫課本出處（例如「悶悶不樂」課本標變調）。
 
 讀音怎麼決定：語詞、例句裡出現的每個詞庫詞（2 字以上）一起投票，詞越常用、越長票越重；
 找到的讀音在字型裡排第幾個，就記第幾個（0＝字型預設讀音，不用記）。
@@ -287,7 +289,7 @@ if MOE_PDF:
             w = (L['WORDS_ED'].get(b) or {}).get(c) or L['WORDS'].get(c) or ''
             if c in w: check(w, {w.index(c): r}, f'生字（{b}）', only=w.index(c))
     seen_f = set(); uniq = [f for f in found if not (f[1:] in seen_f or seen_f.add(f[1:]))]
-    print(f'\n比對審訂表 88 年版：審訂表 {len(T)} 字，和平台讀音不一致 {len(uniq)} 處（請對照課本：要改加進 FIX，沒錯加進 CHECKED）')
+    print(f'\n比對審訂表 88 年版：審訂表 {len(T)} 字，和平台讀音不一致 {len(uniq)} 處（讀音以課本為主，請對照課本：課本和平台不同就加進 FIX，課本就是這樣標就加進 CHECKED 並寫出處）')
     for where, t, c, p, why in uniq: print(f'  {c}：平台{p}，{why}｜{where}：{t}')
 
 print(f'字數 {len(chars)}，字型 {OUT_FONT_INFO}，讀音表 {os.path.getsize(OUT_JS)//1024} KB，'
