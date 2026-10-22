@@ -24,7 +24,8 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
 - 分資料夾負責；`shared/`、首頁 `index.html`、`privacy.html`、`README.md`、`CLAUDE.md`、`docs/` 是共用檔案，改前提醒維護者告知夥伴，PR 說明要標出。
 - 開工前到 GitHub 的 Pull requests 檢查是否有未合併的 PR 動到同一批檔案（Files changed）；有的話先說好誰先改。
 - 開工就先發草稿 PR（2026-10-20 維護者決定），讓 PR 清單成為「誰正在改哪裡」的即時看板；做完再改成可合併。人多了之後（3～5 人）再加 GitHub Projects 看板與 CODEOWNERS，更多人時加 GitHub Actions 自動提醒同檔案衝突（規格書「合作規則」、待決問題 H 類）。
-- 新功能開分支、發 PR；不直接推 main。**合併進 main 一律要 repo 擁有者（slddq237-eng）同意**（2026-10-22 維護者要求，也寫在 CLAUDE.md）：Claude 不自己合併，夥伴的 PR 也請擁有者確認後再合併；合併後告知夥伴。
+- 新功能開分支、發 PR；不直接推 main。**合併分級**（2026-10-22 維護者決定，也寫在 CLAUDE.md）：動到共用檔案（`shared/`、`docs/`、首頁、`privacy.html`、`CLAUDE.md`、`README.md`、`.github/`）、識字評量 `tools/literacy/`、作答紀錄格式或正式評量條件的，要 repo 擁有者（slddq237-eng）同意才合併，Claude 不自己合併；只改自己新工具資料夾 `tools/<工具名稱>/` 的，自動檢查通過後作者可以自己合併，合併後告知擁有者（首頁加入口那段仍要同意）。
+- **文件同步分級**（2026-10-22 維護者決定，也寫在 CLAUDE.md）：新想法、老師回饋、做了決定都要記進本文件和規格書；新功能或改變行為的改動在同一個 PR 更新本文件，影響設計時才更新規格書；修 bug、改錯字、小調整不用記。打不開規格書的人只更新本文件，標「待同步規格書」，由擁有者的 Claude 統一補。
 - 純前端、無建置工具。repo 公開：嚴禁把學生姓名、照片、成績寫進任何檔案。
 - **自動檢查**（2026-10-22 加）：每次發 PR、改 main，GitHub Actions 會跑 `docs/scripts/check.js`（設定檔 `.github/workflows/check.yml`），檢查程式語法、教材資料（語詞裡有沒有這個字、干擾字有沒有包含答案等）、各頁版本號是否一致、有沒有照片或備份檔等學生資料。PR 頁面出現紅叉就先修好再合併；本機可以跑 `node docs/scripts/check.js`。已知、等決定的教材問題放在檔案裡的 `KNOWN`（只提醒不失敗）。建議 repo 擁有者在 Settings → Rules 設定「main 要檢查通過才能合併」。
 - 維護者是新手：回覆用繁體中文，術語附白話解釋；程式碼每個段落開頭加中文說明（不逐行註解）。
