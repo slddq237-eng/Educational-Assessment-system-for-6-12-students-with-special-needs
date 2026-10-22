@@ -27,7 +27,7 @@
 
 讀音怎麼決定：語詞、例句裡出現的每個詞庫詞（2 字以上）一起投票，詞越常用、越長票越重；
 找到的讀音在字型裡排第幾個，就記第幾個（0＝字型預設讀音，不用記）。
-單獨一個字（沒有組成詞）用字型的預設讀音；「一」「不」標本調；
+單獨一個字（沒有組成詞）用字型的預設讀音；「一」「不」照課本標變調（2026-10-22 維護者查課本確定，規則見 sandhi()）；
 「們、麼、個、和」詞庫常收口語讀音，一律用預設讀音。
 """
 import json, math, re, subprocess, sys, unicodedata
@@ -64,8 +64,11 @@ for line in open(TSI, encoding='utf8'):
 def zi(c, p): rs = Z.get(c, []); return rs.index(p) if p in rs else 99
 # 同一個詞有好幾種讀音時：選詞頻最高的；一樣高就選比較標準的（在讀音表排越前面越標準）
 DICT = {w: (max(f for f, _ in es), min(es, key=lambda e: (-e[0], sum(zi(c, p) for c, p in zip(w, e[1]))))[1]) for w, es in RAW.items()}
-# 這些字詞庫常收口語讀音（我們ㄇㄣˊ、什麼ㄇㄛˊ、一個˙ㄍㄜ、和ㄏㄢˋ），課本照預設讀音標
+# 這些字詞庫常收口語讀音（我們ㄇㄣˊ、什麼ㄇㄛˊ、一個˙ㄍㄜ、和ㄏㄢˋ），課本照預設讀音標；「一」「不」另外用變調規則
 KEEP = set('一不們麼個和')
+# 「一」不變調的情況：統一、唯一這類詞的最後一個字（後面接別的字也不變）
+YI_END = ('統一', '唯一', '獨一', '萬一', '之一', '單一', '劃一', '專一', '均一', '第一', '十一', '初一')
+DIGITS = set('一二三四五六七八九十零〇')   # 數數、序數（一百、一千會變調，不放進來）
 MAXW = 8
 
 # 詞庫裡會造成誤判的詞（「都會到」的都不是都市的都）
@@ -90,8 +93,7 @@ CHECKED = {('肚子', '肚'): '人的肚子（例句：把肚皮都吃撐了）�
            ('淡淡', '淡'): '淡淡的花香、清香，審訂表的ㄧㄢˇ是「若隱若現貌」',
            ('中的', '中'): '審訂表的「中的」是射中目標；課文是「傳說中」「故事中」＋「的」',
            ('馬偕', '偕'): '2026-10-22 維護者決定人名「馬偕」照課本唸ㄐㄧㄝ；其他有「偕」的語詞照審訂表ㄒㄧㄝˊ',
-           ('馬偕博士在臺灣創辦了醫院。', '偕'): '同上（馬偕）',
-           ('悶悶不樂', '不'): '2026-10-22 維護者查南一三上第 4 課課本標變調ㄅㄨˊ（審訂表只列本調）'}
+           ('馬偕博士在臺灣創辦了醫院。', '偕'): '同上（馬偕）'}
 
 def readings(text):
     """投票：這段文字裡所有出現在詞庫的詞（2 個字以上）都投票，詞越常用、越長，票越重；
@@ -111,7 +113,36 @@ def readings(text):
         if not v or (c in KEEP and i not in forced): continue
         p = max(v, key=v.get); rs = Z.get(c, [])
         if p in rs: out[i] = rs.index(p)
+    sandhi(text, out, forced)
     return out
+
+def tone(r):
+    return 0 if r.startswith('˙') else 2 if r.endswith('ˊ') else 3 if r.endswith('ˇ') else 4 if r.endswith('ˋ') else 1
+
+def sandhi(text, out, forced):
+    """「一」「不」照課本標變調（課本的做法，2026-10-22 維護者查康軒、南一課本確定）：
+    不：後面是第四聲 → ㄅㄨˊ（不是、不要），其他 → ㄅㄨˋ（不同、不懂）
+    一：後面是第四聲 → ㄧˊ（一定、一個），第一、二、三聲 → ㄧˋ（一起、一天、一點）
+    不變調（標ㄧ）：單獨、在句尾或標點前、序數（第一、一月、一年級）、數數（一二三、十一）、
+    統一、唯一這類詞的最後一個字、「看一看」這種重疊（課本標輕聲，字型沒有輕聲，先標本調）
+    人工修正表 FIX 的詞照 FIX"""
+    n = len(text)
+    for i, c in enumerate(text):
+        if c not in '一不' or i in forced: continue
+        nx = text[i + 1] if i + 1 < n else ''
+        if not nx or nx not in Z: out[i] = 0; continue
+        t = tone(Z[nx][out[i + 1]])
+        if t == 0: t = tone(Z[nx][0])               # 後面是輕聲：看它的本調
+        if c == '不':
+            out[i] = Z['不'].index('ㄅㄨˊ') if t == 4 else 0
+            continue
+        prev = text[i - 1] if i else ''
+        if ((prev and prev in '第初') or nx in DIGITS or prev in DIGITS
+                or text[i + 1:i + 2] == '月' or text[i + 1:i + 3] == '年級'
+                or any(text[max(0, i - len(w) + 1):i + 1] == w for w in YI_END)
+                or (prev and prev == nx)):
+            out[i] = 0; continue
+        out[i] = Z['一'].index('ㄧˊ' if t == 4 else 'ㄧˋ')
 
 # 4. 讀音表：語詞、例句裡有破音字要換讀音的位置 [[第幾個字, 第幾個讀音], ...]
 texts = set(L['WORDS'].values()) | set(L['SENT'].values())
@@ -127,7 +158,7 @@ for b, book in L['BOOKS'].items():
     for les in book['lessons'].values():
         for c in les['write'] + les['read']:
             w = (L['WORDS_ED'].get(b) or {}).get(c) or L['WORDS'].get(c) or ''
-            r = readings(w)[w.index(c)] if c in w else 0
+            r = readings(w)[w.index(c)] if c in w and c not in '一不' else 0   # 一、不單獨出現時唸本調
             if r: CH.setdefault(b, {})[c] = r
 
 # 5. 字型子集：所有課本生字、干擾字、語詞、例句用到的字，加上提示用的符號
@@ -172,7 +203,7 @@ head = '''/* =========================================================
    注音讀音表（自動產生，不要手改；新增課本後請 Claude 重新執行 docs/scripts/make_bpmf.py）
    搭配 shared/fonts/bpmf-kai.css（改自 But Ko「ㄅ字嗨注音標楷」bpmfvs：漢字 CC BY 4.0、其餘 SIL OFL 1.1）。
    注音字型裡每個字都有預設讀音；破音字在字後面加一個看不見的記號（異體字選擇子）換成別的讀音。
-   語詞的讀音依新酷音詞庫（libchewing-data，LGPL-2.1）判斷，少數詞人工修正；「一」「不」標本調。
+   語詞的讀音依新酷音詞庫（libchewing-data，LGPL-2.1）判斷，少數詞人工修正；「一」「不」照課本標變調。
 
    BPMF_TXT：語詞、例句 → 要換讀音的位置 [[第幾個字(從 0 算), 第幾個讀音(0＝預設)], ...]
    BPMF_CH：各課本的生字 → 在這本課本語詞裡的讀音（選項加注音時用）
@@ -273,6 +304,7 @@ if MOE_PDF:
     def check(t, pos_reading, where, only=None):
         for i, c in enumerate(t):
             if c not in T or c not in Z or (only is not None and i != only) or (t, c) in CHECKED: continue
+            if c in '一不': continue    # 照課本標變調，審訂表只列本調，不比對
             p = Z[c][pos_reading.get(i, 0)]; ok, alt, ex = T[c]
             # 詞例：審訂表列出的詞出現在這段文字裡，而且蓋到這個字
             for w, wp in ex.items():
