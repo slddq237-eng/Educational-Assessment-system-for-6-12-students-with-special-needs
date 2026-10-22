@@ -17,7 +17,7 @@ privacy.html      資料與隱私說明（給學校、家長、老師看）
 about.html        關於我們：平台介紹、資料來源與出處（加入新的外部資料時要一起改）
 favicon.svg       網站小圖示
 docs/
-  project-status.md  專案現況與決策紀錄（交接用）
+  README.md       文件索引（交接用，先讀這份）：要做什麼工作 → 讀哪些檔案；設計、路線圖、教材、紀錄、待決問題、決策歷史各一個檔案
   research-method-spec.md  識字教學單一受試研究方法規格書（實驗設計、分析分層）
   scripts/        給 Claude 用的資料產生程式：make_parts.py（部件拆解）、make_bpmf.py（注音字型與破音字讀音），新增課本後各執行一次
 shared/

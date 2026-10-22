@@ -2,11 +2,12 @@
 自動檢查（GitHub Actions 每次發 PR、改 main 都會跑；本機也可以跑：在 repo 最上層執行 node docs/scripts/check.js）
 不用安裝任何套件，只要 Node.js。
 
-檢查四件事：
+檢查五件事：
   1. 程式語法：所有 .js 檔和 HTML 裡的 <script>，有沒有打錯字、少括號（有的話網頁會整個壞掉）
   2. 教材資料（shared/lessons.js）：語詞裡有沒有這個字、干擾字有沒有包含答案本身等
   3. 版本號：每個頁面的 ?v= 要一樣（改了 js、css 卻忘了改版本號，老師的瀏覽器會用舊檔）
   4. 學生資料：repo 是公開的，不能有照片、備份檔、作答紀錄
+  5. 文件長度：docs/ 裡的說明文件太長時提醒拆分（太長的文件 Claude 一次讀不完、容易讀到過時內容）
 
 「錯誤」會讓檢查失敗（紅叉），要修好才合併；「提醒」只列出來，不會失敗。
 已知、等維護者決定的問題放在 KNOWN，寫明原因；修好後從 KNOWN 拿掉。
@@ -110,6 +111,13 @@ for (const f of files) {
     if (/"kidName"\s*:\s*"[^"]+"/.test(t) || /"app"\s*:\s*"literacy"\s*,\s*"kind"\s*:\s*"(backup|archive)"/.test(t))
       err(f, '看起來有作答紀錄或備份檔的內容（學生資料），不能放進 repo');
   }
+}
+
+/* ---------- 5. 文件長度 ---------- */
+const DOC_MAX = 10000;   /* 字數；超過就提醒拆成小檔案，並更新 docs/README.md 的索引 */
+for (const f of files.filter(f => /^(docs\/[^/]+|CLAUDE)\.md$/.test(f))) {
+  const n = [...read(f)].length;
+  if (n > DOC_MAX) warn(f, `文件有 ${n} 字，超過 ${DOC_MAX} 字，建議拆成小檔案（見 docs/README.md「寫文件的規則」）`);
 }
 
 /* ---------- 結果 ---------- */
