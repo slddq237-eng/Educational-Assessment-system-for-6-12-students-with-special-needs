@@ -490,15 +490,15 @@ const LIST_VIEWS = {
     const conf = {}; wrong.forEach(r => { const k = `${r.char}→${r.firstPick}`; conf[k] = (conf[k] || 0) + 1; });
     const pairs = Object.entries(conf).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, n]) => k.replace("→", " 選成 ") + `（${n} 次）`).join("、");
     const top = rows.slice().sort((a, b) => b.v - a.v)[0];
-    /* 比隨便猜更常選到的類別：至少 3 次、而且是隨機猜的 1.5 倍以上 */
+    /* 特別容易搞混的類別：至少 3 次、而且是隨便點的 1.5 倍以上 */
     const over = rows.filter(r => r.v >= 3 && r.ratio >= 1.5).sort((a, b) => b.ratio - a.ratio);
-    return {title: whoTitle("錯誤類型"), chart: barChart(rows, {label: r => `${r.v} 次（${r.share}%）${r.chance == null ? "" : `・隨機猜約 ${r.chance}%`}`}), rows,
+    return {title: whoTitle("錯誤類型"), chart: barChart(rows, {label: r => `${r.v} 次（${r.share}%）${r.chance == null ? "" : `・隨便點約 ${r.chance}%`}`}), rows,
       note: `第一次就選錯時，選到的是哪一類的字。同詞易混＝同一個語詞裡的另一個字（例如「新聞」的「聞」）；同部件＝有相同部件的字（只在部件重組）。`
-        + `<br>「隨機猜約占」：如果學生是在干擾字裡隨便猜，這類字被選到的比例（依每一題實際出現的選項算；選項的類別用現在的教材資料重新判斷，教材改過的話可能和當時略有不同）。「實際 ÷ 隨機」1.5 倍以上、又至少 3 次，代表不是亂猜，而是有系統地把這類字搞混。`
+        + `<br>「隨便點會占」：如果學生不會、隨便點一個，這類字大概會被點到幾 %（例如 3 個選項裡只有 1 個同詞易混字，隨便點選錯時就有一半會點到它）。實際比例除以它，就是「隨便點的幾倍」。到 1.5 倍以上、又至少錯 3 次，會列在上方「特別容易搞混」：代表學生不是亂點，而是一直把這類字當成答案。（字屬於哪一類是照現在的教材判斷，教材改過的話可能稍有出入。）`
         + `${pairs ? `<br>最常搞混：${esc(pairs)}` : ""}${wposNote(rs)}`,
-      cols:[["錯誤類型", r => r.label], ["次數", r => r.v], ["比例", r => `${r.share}%`], ["隨機猜約占", r => r.chance == null ? "—" : `${r.chance}%`], ["實際 ÷ 隨機", r => r.ratio == null ? "—" : `${r.ratio} 倍`]],
+      cols:[["錯誤類型", r => r.label], ["次數", r => r.v], ["比例", r => `${r.share}%`], ["隨便點會占", r => r.chance == null ? "—" : `${r.chance}%`], ["是隨便點的幾倍", r => r.ratio == null ? "—" : `${r.ratio} 倍`]],
       tiles:[["第一次就選錯", `${wrong.length} 題`, `共 ${rs.length} 題`], ["最常見", top ? top.label : "—", top ? `${top.share}%` : "沒有錯誤"],
-        ["比隨機猜明顯偏多", over.length ? over.map(r => r.label).join("、") : "—", over.length ? `${over[0].label} ${over[0].ratio} 倍` : wrong.length < 5 ? "錯誤還太少" : "看不出偏向，接近亂猜"]]};
+        ["特別容易搞混", over.length ? over.map(r => r.label).join("、") : "—", over.length ? `${over[0].label}是隨便點的 ${over[0].ratio} 倍` : wrong.length < 5 ? "錯的題目還太少" : "沒有特別偏哪一類，比較像隨便點"]]};
   },
   hint(rs){
     const g = groupBy(rs, r => r.hintLevel || 0), levels = [...g.keys()].sort((a, b) => a - b);
