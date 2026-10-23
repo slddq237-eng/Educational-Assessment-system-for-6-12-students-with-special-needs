@@ -321,6 +321,12 @@ function fitOpts(){
   if(optsRO){ optsRO.disconnect(); optsRO.observe(box); }
 }
 if(NO_CQ && !optsRO) addEventListener("resize", fitOpts);
+/* 舊的 Safari：字型（例如注音字型）下載完以後沒有重新排版，選項的字會偏右、注音被切掉（2026-10-23 iPad Air 2 實測）。
+   字型下載完就讓選項重新排一次 */
+if(document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", () => {
+  const o = $("#pBody .opts"); if(!o) return;
+  o.style.display = "none"; void o.offsetHeight; o.style.display = "";
+});
 function newItem(it){
   const b = splitKey(it.k)[0], board = G.layout === "bingo" ? bingoBoard(it.kid, it.k) : null;
   const regroup = G.goal === "4-1";   /* 目標 4-1 部件重組：看部件選字，不唸題目 */
@@ -339,7 +345,7 @@ function newItem(it){
         <div class="hintbox" id="hintbox" aria-live="polite"></div>
       </div>
       <div class="optsbox"><div class="opts ${board ? "bingo" : ""}" style="--cols:${cols};--rows:${rows}">
-        ${G.cur.opts.map((o, i) => `<button class="opt-big${cellClass(i)}${G.bpmf ? " bpmf" : ""}" data-i="${i}" ${board && board.marks.has(i) ? "disabled" : ""}>${esc(G.bpmf ? Bpmf.char(o.ch, b) : o.ch)}${board && board.marks.has(i) ? stamp : ""}</button>`).join("")}
+        ${G.cur.opts.map((o, i) => `<button class="opt-big${cellClass(i)}${G.bpmf ? " bpmf" : ""}" data-i="${i}" ${board && board.marks.has(i) ? "disabled" : ""}><span class="och">${esc(G.bpmf ? Bpmf.char(o.ch, b) : o.ch)}</span>${board && board.marks.has(i) ? stamp : ""}</button>`).join("")}
       </div></div>
     </div>
     ${G.noHelp ? "" : `<div class="tbar"><span>老師提示紀錄：</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
