@@ -2,12 +2,13 @@
 自動檢查（GitHub Actions 每次發 PR、改 main 都會跑；本機也可以跑：在 repo 最上層執行 node docs/scripts/check.js）
 不用安裝任何套件，只要 Node.js。
 
-檢查五件事：
+檢查六件事：
   1. 程式語法：所有 .js 檔和 HTML 裡的 <script>，有沒有打錯字、少括號（有的話網頁會整個壞掉）
   2. 教材資料（shared/lessons.js）：語詞裡有沒有這個字、干擾字有沒有包含答案本身等
   3. 版本號：每個頁面的 ?v= 要一樣（改了 js、css 卻忘了改版本號，老師的瀏覽器會用舊檔）
   4. 學生資料：repo 是公開的，不能有照片、備份檔、作答紀錄
   5. 文件長度：docs/ 裡的說明文件太長時提醒拆分（太長的文件 Claude 一次讀不完、容易讀到過時內容）
+  6. 程式地圖：每個 .js 檔都要寫在 docs/architecture.md（沒寫只提醒，不會失敗）
 
 「錯誤」會讓檢查失敗（紅叉），要修好才合併；「提醒」只列出來，不會失敗。
 已知、等維護者決定的問題放在 KNOWN，寫明原因；修好後從 KNOWN 拿掉。
@@ -118,6 +119,15 @@ const DOC_MAX = 10000;   /* 字數；超過就提醒拆成小檔案，並更新 
 for (const f of files.filter(f => /^(docs\/[^/]+|CLAUDE)\.md$/.test(f))) {
   const n = [...read(f)].length;
   if (n > DOC_MAX) warn(f, `文件有 ${n} 字，超過 ${DOC_MAX} 字，建議拆成小檔案（見 docs/README.md「寫文件的規則」）`);
+}
+
+/* ---------- 6. 程式地圖 ---------- */
+/* 新增或改名的 .js 檔要寫進 docs/architecture.md，之後改程式的人才找得到它和誰有關係 */
+if (files.includes('docs/architecture.md')) {
+  const map = read('docs/architecture.md');
+  for (const f of files.filter(f => f.endsWith('.js') && !f.startsWith('shared/vendor/'))) {
+    if (!map.includes(path.basename(f))) warn(f, '這個 .js 檔沒有寫在程式地圖 docs/architecture.md，請補上它做什麼、誰會用到');
+  }
 }
 
 /* ---------- 結果 ---------- */
