@@ -128,14 +128,25 @@ function tabletStart(){
   $("#rHome").onclick = () => { G = null; showScreen("#tabPick"); };
   tabletKids();
 }
+/* 平板沒有中文語音時，題目和喇叭都不會唸：點名字的畫面和結果畫面提醒怎麼裝
+   （Android 的語音清單要過一下子才會出來，所以等 voiceschanged 或 2 秒後再判斷） */
+const VOICE_HELP = "這台平板找不到中文語音，題目和喇叭不會唸出來（作答還是可以進行）。"
+  + "Android：設定 → 一般管理 → 語言 → 文字轉換語音輸出，偏好的引擎選「Google 語音服務」，語言選「中文（台灣）」並下載語音資料；"
+  + "iPad：設定 → 輔助使用 → 朗讀內容 → 聲音 → 中文（台灣）。設定好後重新整理這一頁。";
+function tabletVoice(){
+  if(!TABLET) return;
+  const bad = !("speechSynthesis" in window) || !hasZhVoice();
+  for(const id of ["#tpVoice", "#rVoice"]){ $(id).textContent = VOICE_HELP; $(id).hidden = !bad; }
+}
+if(TABLET){ setTimeout(tabletVoice, 2000);
+  if("speechSynthesis" in window && speechSynthesis.addEventListener) speechSynthesis.addEventListener("voiceschanged", () => setTimeout(tabletVoice, 0)); }
 function tabletKids(){
   if(!TABLET || TABLET.bad || !TABLET.st) return;
   /* 顯示名字（沒填名字顯示代號）；同名的學生加上代號才分得出來 */
   const same = k => k.name && kids.filter(x => x.name === k.name).length > 1;
   $("#tpList").innerHTML = kids.map(k => `<button class="chip kidchip" data-k="${esc(k.code)}">${Rewards.avatarHtml(k.code)}${esc(same(k) ? kidLabel(k) : kidShow(k))}</button>`).join("");
+  /* 只有一位學生也要點一下才開始：手機、平板的瀏覽器要「使用者點過」才肯唸題目（2026-10-23 改，原本一位學生直接開始） */
   $("#tpList").querySelectorAll("button").forEach(b => b.onclick = () => { state.kids = new Set([b.dataset.k]); chooseTheme(); });
-  /* 只有一位學生就不用點，直接開始 */
-  if(kids.length === 1 && !G && !$("#tabPick").hidden) $("#tpList button").click();
 }
 /* 做完（finish）時呼叫：這次的紀錄每 10 題一包送出；送不出去可以再送，或下載紀錄檔交給老師（同樣用「匯入檔案」） */
 function tabletSend(g){

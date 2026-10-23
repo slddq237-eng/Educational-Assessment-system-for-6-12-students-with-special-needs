@@ -116,18 +116,23 @@ const pickVoice = () => voices.find(v => v.lang === "zh-TW" && /Google/i.test(v.
    找不到就不唸名字（speak 回傳 false，由呼叫的地方改成不含名字的說法）。題目的生字語詞照常用 pickVoice()。 */
 const localVoice = () => voices.find(v => v.localService && /zh[-_]TW/i.test(v.lang)) || voices.find(v => v.localService && /^zh/i.test(v.lang)) || null;
 const hasZhVoice = () => voices.some(v => /^zh/i.test(v.lang));
+/* Android 的 Chrome（2026-10-23 維護者用 Samsung A52 測到喇叭沒聲音）：
+   cancel() 後馬上 speak() 有時整句被吃掉，所以只有正在唸的時候才 cancel，而且稍等一下再唸；
+   唸的句子要留著（lastUtter），不然可能被瀏覽器提早清掉，唸完的通知（onend）不會來 */
+let lastUtter = null;
 function speak(text, onend, rate, withName){
   const done = () => { const sp = $("#speaker"); if(sp) sp.classList.remove("talk"); if(onend) onend(); };
   if(!("speechSynthesis" in window)){ setTimeout(done, 300); return !withName; }
   const v = withName ? localVoice() : pickVoice();
   if(withName && !v) return false;
   try {
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
+    const busy = speechSynthesis.speaking || speechSynthesis.pending;
+    if(busy) speechSynthesis.cancel();
+    const u = lastUtter = new SpeechSynthesisUtterance(text);
     u.lang = "zh-TW"; if(v) u.voice = v; u.rate = rate || settings.rate;
     u.onend = u.onerror = done;
     const sp = $("#speaker"); if(sp) sp.classList.add("talk");
-    speechSynthesis.speak(u);
+    if(busy) setTimeout(() => { if(lastUtter === u) speechSynthesis.speak(u); }, 80); else speechSynthesis.speak(u);
   } catch(e){ setTimeout(done, 300); }
   return true;
 }
