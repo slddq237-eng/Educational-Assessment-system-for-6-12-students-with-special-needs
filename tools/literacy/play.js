@@ -14,6 +14,8 @@ const charsOf = k => { const [b,n] = splitKey(k); const L = BOOKS[b].lessons[n];
 const ALL_CHARS = [...new Set(BOOK_ORDER.flatMap(b => Object.keys(BOOKS[b].lessons).flatMap(n => charsOf(key(b,n)))))];
 /* 唸題目「語詞的字」；電腦語音會唸錯的破音字，唸的時候換成同音字（見 shared/bpmf.js 的 BPMF_SAY，畫面不變） */
 const sayOf = (c, b) => wordOf(c, b) ? Bpmf.say(wordOf(c, b), c) : c;
+/* 題目唸法：課次設了 sayChar（例如康軒一上「真簡單」的數字）只唸字本身，其他唸「語詞的字」；「詞帶字」提示的報讀仍唸語詞 */
+const promptOf = it => { const [b, n] = splitKey(it.k); return BOOKS[b].lessons[n].sayChar ? it.c : sayOf(it.c, b); };
 const isHan = ch => /\p{Script=Han}/u.test(ch);
 /* 這次要考的字（只考有教的字，見 wordsets.js）；選項裡的「課文字」干擾字仍然用整課的字 */
 const testChars = k => wsPick(k);
@@ -325,13 +327,13 @@ function newItem(it){
     </div>
     ${G.noHelp ? "" : `<div class="tbar"><span>老師提示紀錄：</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
   $("#pBody").querySelectorAll(".opt-big").forEach(btn => btn.onclick = () => pick(+btn.dataset.i, btn));
-  if(!regroup) $("#speaker").onclick = () => speak(sayOf(it.c, b));
+  if(!regroup) $("#speaker").onclick = () => speak(promptOf(it));
   $("#pBody").querySelectorAll("[data-t]").forEach(btn => btn.onclick = () => {
     G.cur.teacher = Math.max(G.cur.teacher, +btn.dataset.t); btn.classList.add("on");
   });
   if(regroup){ G.cur.t0 = performance.now(); return; }   /* 部件重組沒有唸題目：畫面出現就開始計時 */
   const startClock = () => { if(G && G.cur && G.cur.it === it && !G.cur.t0) G.cur.t0 = performance.now(); };
-  speak(sayOf(it.c, b), startClock);
+  speak(promptOf(it), startClock);
   setTimeout(startClock, 6000);   /* 萬一這台電腦沒有語音，6 秒後也開始計時 */
 }
 
@@ -384,7 +386,7 @@ function showNextHint(){
       if(cur.done) return;
       cur.reads.add(id); speak(id === "word" ? sayOf(cur.it.c, cur.b) : Bpmf.sayText(sentOf(cur.it.c, cur.b)));
     });
-    if(id === "sound") speak(sayOf(cur.it.c, cur.b), null, Math.max(0.5, settings.rate - 0.25));
+    if(id === "sound") speak(promptOf(cur.it), null, Math.max(0.5, settings.rate - 0.25));
     return;
   }
 }
@@ -394,7 +396,7 @@ function reveal(){
   const cur = G.cur;
   const i = cur.opts.findIndex(o => o.type === "答案");
   const btn = $(`#pBody .opt-big[data-i="${i}"]`); if(btn) btn.classList.add("show");
-  speak(sayOf(cur.it.c, cur.b));
+  speak(promptOf(cur.it));
   endItem(false, null, true);
 }
 
