@@ -12,7 +12,7 @@
   - 新增課本的做法：在檔案最後加一段 `BOOKS.<代號> = {...}`，並視需要加 `WORDS_ED`、`SENT_ED`、`CONF_ED`、`POLY_ED`。識字評量會自動依版本、年級、學期排序，不用改程式。
   - `CONF_ED`：各版本自己的干擾字，優先於共用 `CONF`，避免影響其他版本。
   - `POLY_ED`：多音字（字 → 各唸法的例詞），保留給之後的多音字題型。
-  - 第 0 課＝課前單元（例如康軒一上「真簡單」數字一到十），畫面直接顯示單元名稱；課次可有 `title`。
+  - 第 0 課＝課前單元（例如康軒一上「真簡單」數字一到十），畫面直接顯示單元名稱；課次可有 `title`。課次設 `sayChar: true` 時，題目只唸字本身、不唸「語詞的字」（2026-10-23 康軒一上「真簡單」，維護者要求；紀錄的 `word` 欄仍記這個字的語詞，用在「詞帶字」提示）。
 - 學生名單、教學日期、評量設定：瀏覽器 localStorage（`literacy-kids`、`literacy-teach`、`literacy-settings`、`literacy-ui`）。
 - 學生的貼紙收藏與頭像：瀏覽器 IndexedDB（資料庫 `platform-rewards`、store `kids`，以學生代號為鍵），平台共用，見 `shared/rewards.js`。主題與貼紙圖形在 `shared/themes.js`、`shared/themes.css`（取自賓果，賓果本身未改）。
 - 作答紀錄：瀏覽器 IndexedDB（資料庫 `literacy`、store `records`），每題一筆，欄位見 `tools/literacy/records.js` 的 COLS（2026-10-22 共 51 欄，匯出 Excel 的欄位和它一致）；超過 30 天沒備份會提醒，以前學年可以封存（2026-10-20）。2026-10-20 起新增 `hintSet`（當時的提示設定）、`rule`（答錯規則，`none`＝答錯就記錯）、`layout`、`theme`、`game`、`reward`；舊紀錄沒有這些欄位，Excel 顯示「未記錄」或「無」。

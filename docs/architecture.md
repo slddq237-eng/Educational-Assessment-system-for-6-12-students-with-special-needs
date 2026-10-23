@@ -50,7 +50,7 @@
 
 | 檔案 | 內容（主要名稱） | 誰在用 | 怎麼改 |
 |---|---|---|---|
-| `lessons.js` | `BOOKS`（課本→課次→習寫字 write、認讀字 read）、`WORDS`/`WORDS_ED` 語詞、`SENT`/`SENT_ED` 例句、`CONF`/`CONF_ED` 干擾字、`PARTS` 人工部件、`PICS`、`POLY_ED` | 識字評量、備課分析、自動檢查、所有 make_*.py | 人工改；新增課本後要跑三支 make_*.py |
+| `lessons.js` | `BOOKS`（課本→課次→習寫字 write、認讀字 read；課次可有 `title`、`sayChar`＝題目只唸字，見 play.js 的 `promptOf`）、`WORDS`/`WORDS_ED` 語詞、`SENT`/`SENT_ED` 例句、`CONF`/`CONF_ED` 干擾字、`PARTS` 人工部件、`PICS`、`POLY_ED` | 識字評量、備課分析、自動檢查、所有 make_*.py | 人工改；新增課本後要跑三支 make_*.py |
 | `parts.js` | `PARTS_AUTO` 自動拆的部件 | 透過 `common.js` 的 `rawParts` | `make_parts.py` 只新增，可手改錯的 |
 | `bpmf.js` | `BPMF_TXT`、`BPMF_CH`、`BPMF_SAY`、`Bpmf`（注音顯示、唸題換字） | 識字評量（`play.js` 的 `sayOf`、選項注音） | **不要手改**，跑 `make_bpmf.py`；讀音例外寫在它的 `CHECKED` |
 | `freq.js` | `FREQ`（字→排名） | 識字評量（常用字、字頻優先、高字頻）、備課分析 | 從原始檔重新產生 |
