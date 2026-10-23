@@ -427,6 +427,32 @@ function charStats(rs){
       err: pct(wrong.length, list.length), acc: pct(list.length - wrong.length, list.length), conf: top.map(([x, n]) => `${x}（${n}）`).join("、"), sec: secOf(list).v};
   });
 }
+/* 和隨機猜比較：每一題選錯時，如果是在干擾字裡隨便猜，各類字被選到的機會＝那類字在干擾字裡占幾分之幾。
+   把每一題的機會加起來，就是「隨機猜的話預期幾次」。選項的類別用 play.js 的 optType 依現在的教材重新判斷（紀錄只存了選項的字） */
+function chanceOf(wrong){
+  const exp = {};
+  wrong.forEach(r => {
+    const opts = [...(r.options || "")].filter(x => x !== r.char);
+    if(!opts.length) return;
+    opts.forEach(x => {
+      let t; try { t = optType(r.char, x, key(r.book, r.lesson), r.goal); } catch(e){ t = "其他字"; }
+      if(t !== "答案") exp[t] = (exp[t] || 0) + 1 / opts.length;
+    });
+  });
+  return exp;
+}
+/* 目標字在語詞的哪個位置（例如「蘋果」的「蘋」在詞首、「果」在詞尾）；單字或沒有語詞回傳空字串。進階分析也用 */
+const WPOS_ORDER = ["詞首（第 1 個字）", "詞中", "詞尾（最後一個字）", "單字或沒有語詞"];
+const wposOf = r => { const w = [...(r.word || "")], i = w.indexOf(r.char); return w.length < 2 || i < 0 ? "" : i === 0 ? WPOS_ORDER[0] : i === w.length - 1 ? WPOS_ORDER[2] : WPOS_ORDER[1]; };
+/* 錯誤類型說明的最後一段：目標字在詞首、詞尾時的第一次就答對率與同詞易混次數（語詞是整塊記的學生，常常一邊比較穩） */
+function wposNote(rs){
+  const g = groupBy(rs.filter(r => wposOf(r) && r.goal !== "4-1"), wposOf);
+  const parts = WPOS_ORDER.filter(p => g.has(p)).map(p => {
+    const list = g.get(p), a = accOf(list), mix = list.filter(r => !r.firstCorrect && r.errorType === "同詞易混").length;
+    return `${p}：第一次就答對 ${fmt("acc", a.v)}（${a.n} 題），同詞易混 ${mix} 次`;
+  });
+  return parts.length > 1 ? `<br>目標字在語詞的位置——${esc(parts.join("；"))}。兩邊差很多（例如詞首穩、詞尾常選成同詞的另一字），代表語詞還是整塊記，字還沒從詞裡分出來。` : "";
+}
 const LIST_VIEWS = {
   gap(rs){
     const G = GAP_BUCKETS[T.gap], g = groupBy(rs, r => gapBucket(r, T.gap));
@@ -456,14 +482,23 @@ const LIST_VIEWS = {
   },
   etype(rs){
     const wrong = rs.filter(r => !r.firstCorrect && r.errorType), g = groupBy(wrong, r => r.errorType);
-    const rows = ETYPES.filter(t => g.has(t)).map(t => ({label:t, v:g.get(t).length, n:g.get(t).length, share:pct(g.get(t).length, wrong.length)}));
+    const exp = chanceOf(wrong), expAll = Object.values(exp).reduce((a, b) => a + b, 0);
+    const rows = ETYPES.filter(t => g.has(t) || exp[t]).map(t => {
+      const v = g.has(t) ? g.get(t).length : 0, e = exp[t] || 0;
+      return {label:t, v, n:v, share:pct(v, wrong.length), chance: expAll ? pct(e, expAll) : null, ratio: e ? Math.round(v / e * 10) / 10 : null};
+    });
     const conf = {}; wrong.forEach(r => { const k = `${r.char}→${r.firstPick}`; conf[k] = (conf[k] || 0) + 1; });
     const pairs = Object.entries(conf).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, n]) => k.replace("→", " 選成 ") + `（${n} 次）`).join("、");
     const top = rows.slice().sort((a, b) => b.v - a.v)[0];
-    return {title: whoTitle("錯誤類型"), chart: barChart(rows, {label: r => `${r.v} 次（${r.share}%）`}), rows,
-      note: `第一次就選錯時，選到的是哪一類的字。同詞易混＝同一個語詞裡的另一個字（例如「新聞」的「聞」）；同部件＝有相同部件的字（只在部件重組）。${pairs ? `<br>最常搞混：${esc(pairs)}` : ""}`,
-      cols:[["錯誤類型", r => r.label], ["次數", r => r.v], ["比例", r => `${r.share}%`]],
-      tiles:[["第一次就選錯", `${wrong.length} 題`, `共 ${rs.length} 題`], ["最常見", top ? top.label : "—", top ? `${top.share}%` : "沒有錯誤"], ["錯誤率", `${pct(wrong.length, rs.length)}%`, ""]]};
+    /* 特別容易搞混的類別：至少 3 次、而且實際比例是亂猜會佔的 1.5 倍以上（倍數只拿來判斷，不顯示） */
+    const over = rows.filter(r => r.v >= 3 && r.ratio >= 1.5).sort((a, b) => b.ratio - a.ratio);
+    return {title: whoTitle("錯誤類型"), chart: barChart(rows, {label: r => `${r.v} 次（${r.share}%）${r.chance == null ? "" : `・亂猜會佔 ${r.chance}%`}`}), rows,
+      note: `第一次就選錯時，選到的是哪一類的字。同詞易混＝同一個語詞裡的另一個字（例如「新聞」的「聞」）；同部件＝有相同部件的字（只在部件重組）。`
+        + `<br>「亂猜會佔」：如果學生不會、亂猜一個，這類字大概會被點到幾 %（例如 3 個選項裡只有 1 個同詞易混字，亂猜選錯時就有一半會點到它）。實際比例是它的 1.5 倍以上、又至少錯 3 次，會列在上方「特別容易搞混」：代表學生不是亂猜，而是一直把這類字當成答案。（字屬於哪一類是照現在的教材判斷，教材改過的話可能稍有出入。）`
+        + `${pairs ? `<br>最常搞混：${esc(pairs)}` : ""}${wposNote(rs)}`,
+      cols:[["錯誤類型", r => r.label], ["次數", r => r.v], ["比例", r => `${r.share}%`], ["亂猜會佔", r => r.chance == null ? "—" : `${r.chance}%`]],
+      tiles:[["第一次就選錯", `${wrong.length} 題`, `共 ${rs.length} 題`], ["最常見", top ? top.label : "—", top ? `${top.share}%` : "沒有錯誤"],
+        ["特別容易搞混", over.length ? over.map(r => r.label).join("、") : "—", over.length ? `${over[0].label}：實際 ${over[0].share}%，亂猜會佔 ${over[0].chance}%` : wrong.length < 5 ? "樣本數不夠" : "看不出錯誤類型，接近亂猜"]]};
   },
   hint(rs){
     const g = groupBy(rs, r => r.hintLevel || 0), levels = [...g.keys()].sort((a, b) => a - b);

@@ -110,6 +110,9 @@ async function tabletQr(){
    學生平板：讀取條（先下載這次要用的字型）→ 點自己的名字 → 再按「是我，開始！」確認 → 作答 → 送出
    ========================================================= */
 const TABLET_FORM = TABLET && !TABLET.bad ? {id:TABLET.f, entry:TABLET.e} : null;
+/* 同一個分頁再掃一次 QR code（或打開另一個 QR 網址）：網址只有 # 後面不同，瀏覽器不會重新載入，
+   要自己重新載入，才會回到讀取畫面和選名字（data.js 只在打開網頁時讀網址） */
+addEventListener("hashchange", () => { if(/^#t=/.test(location.hash)) location.reload(); });
 function tabletStart(){
   showScreen("#tabPick");
   const s = TABLET.st;

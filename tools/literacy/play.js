@@ -362,11 +362,12 @@ function bingoBoard(kid, k){
   }
   return G.boards[id];
 }
-/* 賓果卡上每個字和目標字的關係，用來記錄「錯誤類型」 */
-function optType(c, x, k){
+/* 賓果卡上每個字和目標字的關係，用來記錄「錯誤類型」。
+   老師專區錯誤類型的「亂猜會佔」也用它替舊紀錄的每個選項重新分類，那時用 goal 傳入紀錄當時的評量目標 */
+function optType(c, x, k, goal = G && G.goal){
   const b = splitKey(k)[0], [sound = "", shape = ""] = confOf(c, b) || [];
   if(x === c) return "答案";
-  if(G && G.goal === "4-1"){   /* 部件重組：沒有唸題目，只分形近、同部件 */
+  if(goal === "4-1"){   /* 部件重組：沒有唸題目，只分形近、同部件 */
     if(shape.includes(x)) return "形近";
     if((partsOf(x) || []).some(p => (partsOf(c) || []).includes(p))) return "同部件";
     return charsOf(k).includes(x) ? "課文字" : "其他字";
