@@ -3,7 +3,7 @@
 整個平台的程式「誰做什麼、誰用誰、資料從哪裡來、存到哪裡」。**改程式前先看這份**，找出會一起受影響的地方，避免改一處壞另一處。
 （2026-10-23 建立。只寫「關係」，細節看各檔案開頭的中文說明；檔案內的「第 ○ 節」就是下面表格的節號。）
 
-**維護規則**：新增、刪除、改名 `.js` 檔，或改了檔案之間的關係（新的共用函數、新的儲存位置、新的對外連線），在同一個 PR 更新這份。自動檢查 `docs/scripts/check.js` 會提醒「有 .js 檔沒列在這份地圖」。
+**維護規則**：新增、刪除、改名 `.js` 檔，或改了檔案之間的關係（新的共用函數、新的儲存位置、新的對外連線），在同一個 PR 更新這份。整理（重構）程式時照 `docs/refactor.md` 的規則，做完更新那裡的進度清單。自動檢查 `docs/scripts/check.js` 會幫忙抓：有 .js 檔或儲存名稱沒列在這份地圖、有檔案繞過入口直接存資料（見 `refactor.md` 規則 1）。
 
 ## 1. 全景
 
@@ -104,6 +104,7 @@
 | localStorage | `literacy-ui`、`literacy-preset` | 設定畫面停在哪 | `setup.js` |
 | localStorage | `literacy-teacher`、`literacy-pivot`、`literacy-pivots` | 老師專區、進階分析的選單 | `teacher.js`、`pivot.js` |
 | localStorage | `literacy-tour` | 看過新手導覽沒 | `tour.js` |
+| localStorage | `literacy-lastBackup` | 上次下載備份檔的日期（超過 30 天提醒） | `records.js` |
 | localStorage | `prep-ui`、`prep-ranges` | 備課分析的選擇 | `prep.js` |
 
 - **備份檔**（.json）：`records.js` 組成，內含作答紀錄、學生名單、教學日期、設定，以及用 `addBackupPart` 登記的其他資料（目前有字組 `wordsets.js`、貼紙與頭像 `collect.js`）。新增要存的資料時，記得用 `addBackupPart` 加進備份。
@@ -139,7 +140,7 @@
 
 | 程式 | 產生什麼 | 什麼時候跑 |
 |---|---|---|
-| `check.js` | 不產生檔案；檢查語法、教材、版本號、學生資料、文件長度、這份地圖 | 每次推之前；GitHub 每個 PR 自動跑 |
+| `check.js` | 不產生檔案；檢查語法、教材、版本號、學生資料、文件長度、這份地圖與存資料的入口 | 每次推之前；GitHub 每個 PR 自動跑 |
 | `make_parts.py` | `shared/parts.js`、`docs/parts-table.xlsx` | 新增課本後 |
 | `make_bpmf.py` | `shared/bpmf.js`、`shared/fonts/bpmf-kai*` | 新增課本、改讀音後 |
 | `make_kai.py` | `shared/fonts/tw-kai*` | 新增課本、部件，或改了頁面文字後 |
@@ -150,3 +151,4 @@
 - **共用名稱**：識字評量的檔案靠「上面定義、下面直接用」溝通，沒有明確的介面。改名稱前先在整個 repo 搜尋這個名稱（例如在 GitHub 或請 Claude 搜尋），確定所有用到的地方都一起改。`themes.js`、`rewards.js` 只對外提供 `window.Themes`、`window.Rewards`，比較不會撞名，新的共用程式建議照這個寫法。
 - **作答紀錄只有 `records.js` 直接存取 IndexedDB**：這是之後要換成線上資料庫（階段 F）時最需要守住的界線；其他檔案只讀 `records` 陣列、透過 `saveRecord`／`updateRecord` 寫入。
 - **日期以打開網頁那天為準**（`data.js` 的 `today`）：網頁開過夜會提醒重新整理（`app.js`）。
+- **整理（重構）程式**：規則與進度清單在 `docs/refactor.md`。

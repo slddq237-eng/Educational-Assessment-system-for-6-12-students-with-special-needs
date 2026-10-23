@@ -8,7 +8,8 @@
   3. 版本號：每個頁面的 ?v= 要一樣（改了 js、css 卻忘了改版本號，老師的瀏覽器會用舊檔）
   4. 學生資料：repo 是公開的，不能有照片、備份檔、作答紀錄
   5. 文件長度：docs/ 裡的說明文件太長時提醒拆分（太長的文件 Claude 一次讀不完、容易讀到過時內容）
-  6. 程式地圖：每個 .js 檔都要寫在 docs/architecture.md（沒寫只提醒，不會失敗）
+  6. 程式地圖：每個 .js 檔、每個儲存名稱都要寫在 docs/architecture.md（沒寫只提醒）；
+     只有入口檔案可以直接存取 localStorage、indexedDB（其他檔案直接用是錯誤，見 docs/refactor.md 規則 1）
 
 「錯誤」會讓檢查失敗（紅叉），要修好才合併；「提醒」只列出來，不會失敗。
 已知、等維護者決定的問題放在 KNOWN，寫明原因；修好後從 KNOWN 拿掉。
@@ -128,6 +129,17 @@ if (files.includes('docs/architecture.md')) {
   for (const f of files.filter(f => f.endsWith('.js') && !f.startsWith('shared/vendor/'))) {
     if (!map.includes(path.basename(f))) warn(f, '這個 .js 檔沒有寫在程式地圖 docs/architecture.md，請補上它做什麼、誰會用到');
   }
+  /* 儲存名稱（literacy-xxx 等）要寫在地圖第 6 節，之後換線上資料庫、做備份時才不會漏 */
+  for (const f of files.filter(f => /\.(js|html)$/.test(f) && !f.startsWith('docs/') && !f.startsWith('shared/vendor/'))) {
+    for (const m of read(f).matchAll(/["'`]((?:literacy|prep|platform)-[A-Za-z]+)["'`]/g))
+      if (!map.includes('`' + m[1] + '`')) warn(f, `儲存名稱「${m[1]}」沒有寫在 docs/architecture.md 第 6 節，請補上存什麼、要不要放進備份檔`);
+  }
+}
+/* 存資料一律走入口（docs/refactor.md 規則 1）：只有這些檔案可以直接用 localStorage、indexedDB */
+const STORAGE_ENTRY = ['tools/literacy/data.js', 'tools/literacy/records.js', 'shared/rewards.js', 'tools/prep/prep.js'];
+for (const f of files.filter(f => /\.(js|html)$/.test(f) && !f.startsWith('docs/') && !f.startsWith('shared/vendor/') && !STORAGE_ENTRY.includes(f))) {
+  if (/\b(localStorage|sessionStorage|indexedDB)\s*\./.test(read(f)))
+    err(f, `直接存取瀏覽器儲存空間。請改用入口（識字評量用 data.js 的 load、store；作答紀錄用 records.js；貼紙頭像用 Rewards），見 docs/refactor.md 規則 1`);
 }
 
 /* ---------- 結果 ---------- */
