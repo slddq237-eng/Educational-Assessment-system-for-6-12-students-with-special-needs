@@ -9,11 +9,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-23f">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-23k">
 <!-- 平台共用的主題外觀、頭像、貼紙樣式 -->
-<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-23f">
+<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-23k">
 <!-- 注音字型（3-4）：語詞、句子提示和練習的選項加注音；畫面用到注音時才會下載 -->
-<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-23f">
+<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-23k">
 <style>
 /* 版面：沿用生字賓果的生字簿方格紙。
    設定畫面：左邊六個步驟，右邊固定的「本次評量」摘要；評量設定、教學日期、學生名單、作答紀錄放在彈出面板。
@@ -312,9 +312,11 @@ details.howto{margin:10px 0 0}
 @supports not (width:1cqw){
   .opts{--cell:min(calc((var(--bw,600px) - (var(--cols) - 1) * var(--gap)) / var(--cols)), calc((var(--bh,400px) - (var(--rows) - 1) * var(--gap) - 10px) / var(--rows)))}
 }
-.opt-big{width:var(--cell);height:var(--cell);border:4px solid var(--ink);background:var(--card);border-radius:24px;font-family:var(--kai);
+/* 選項的字用 flex 置中（.och），不靠按鈕本身的文字置中：舊的 Safari 換上注音字型後不會重新置中 */
+.opt-big{display:inline-flex;align-items:center;justify-content:center;padding:0;width:var(--cell);height:var(--cell);border:4px solid var(--ink);background:var(--card);border-radius:24px;font-family:var(--kai);
   font-size:min(calc(var(--cell) * .42 * var(--fs,1)), calc(var(--cell) * .78));line-height:1;box-shadow:0 6px 0 var(--ink);position:relative}
 .opt-big:disabled{cursor:default}
+.opt-big .och{white-space:nowrap;flex:none}
 .opt-big.wrong{opacity:.4;box-shadow:none;border-style:dashed}
 .opt-big.wrong::after{content:"✕";position:absolute;inset:0;display:grid;place-items:center;color:var(--red);font-family:var(--ui);font-size:.9em}
 .opt-big.right{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 6px 0 #1c5246}
@@ -563,8 +565,26 @@ details.howto{margin:10px 0 0}
 html.tablet #setup{display:none}
 .qrbox{display:flex;justify-content:center;background:#fff;padding:12px;border-radius:12px}
 .qrbox svg{width:min(62vh,100%);height:auto;max-width:520px}
-.tpkids{justify-content:center;gap:14px;margin-top:18px}
-.tpkids .chip{font-size:24px;padding:14px 22px}
+.tpkids{justify-content:center;gap:18px;margin-top:18px}
+.tpkids .chip{font-size:clamp(26px,4vw,40px);padding:14px 30px 14px 16px;min-height:96px}
+.tpkids .kidchip .av{--s:clamp(60px,9vw,96px);margin-right:12px}
+.tpload{display:grid;gap:18px;justify-items:center;margin:12vh auto 0;width:min(520px,90%)}
+/* 讀取中只留圖片和讀取條（2026-10-23 維護者要求：不要太多字） */
+#tabPick.loading > :not(.tpload){display:none}
+.loadpic{width:clamp(120px,24vw,200px);aspect-ratio:1}
+.loadpic svg{width:100%;height:100%}
+@media (prefers-reduced-motion:no-preference){ .loadpic{animation:bob 1.2s ease-in-out infinite} }
+@keyframes bob{50%{transform:translateY(-10px) rotate(-4deg)}}
+.tpconfirm{display:grid;gap:16px;justify-items:center;margin-top:24px;text-align:center}
+.tpme{display:grid;justify-items:center;gap:10px;font-size:clamp(36px,6vw,60px);font-weight:700}
+.tpme .av{--s:clamp(120px,22vw,200px)}
+.tpask{font-size:28px;margin:0}
+.tpconfirm .go{font-size:26px;padding:14px 32px}
+.tpconfirm .ghost{font-size:20px}
+/* 讀取條（平板點名字前、電腦按開始後，見 play.js 的 prepareThen） */
+.loadbar{width:100%;height:18px;border-radius:999px;background:var(--grid);border:2px solid var(--ink);overflow:hidden}
+.loadbar i{display:block;height:100%;width:0;background:var(--green);transition:width .3s}
+.loadsheet{width:min(460px,100%);margin-top:20vh;justify-items:center;text-align:center}
 .tsend{text-align:center;margin-top:16px;display:grid;gap:8px;justify-items:center}
 /* 練習的結果畫面：卡片一張一張彈出來（正式評量不用，見 docs/literacy-design.md） */
 .res.wait{visibility:hidden}
@@ -747,7 +767,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
         <div id="choiceArea"></div>
       </section>
 
-      <section class="panel adv-only" aria-labelledby="h6">
+      <section class="panel" aria-labelledby="h6">
         <h2 id="h6">學生怎麼作答？</h2>
         <p class="hint" id="answerHint">同一份題目可以用不同方式作答。</p>
         <div class="kinds" id="answers"></div>
@@ -756,7 +776,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
       <section class="panel" aria-labelledby="h4">
         <h2 id="h4"><span class="adv-only">哪些學生要評量？</span><span class="quick-only">誰要做？</span></h2>
         <p class="hint adv-only">學生的年級在「學生名單」設定，系統會用年級判斷每一課對這位學生是哪個時期。</p>
-        <p class="hint quick-only">點選要做的學生，最多 4 位輪流。</p>
+        <p class="hint quick-only" id="kidsHintQ">點選要做的學生，最多 4 位輪流。</p>
         <div class="row" id="kids"></div>
         <p class="note"><button class="linkbtn" data-open="kids">新增學生或修改年級</button></p>
       </section>
@@ -844,6 +864,15 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
     <div id="kTable" style="display:grid;gap:8px"></div>
     <div class="add"><input id="newKid" maxlength="8" placeholder="新增代號，例如 S07"><button class="chip" id="addKid">加入</button></div>
     <footer><button class="save" data-close>完成</button></footer>
+  </div>
+</div>
+
+<!-- 開始前下載字型的讀取畫面（play.js 的 prepareThen） -->
+<div class="overlay" id="loadSheet" hidden>
+  <div class="sheet loadsheet" role="dialog" aria-modal="true" aria-label="準備中">
+    <div class="loadpic" id="ldPic" aria-hidden="true"></div>
+    <div class="loadbar" id="ldBar" role="progressbar" aria-label="準備中" aria-valuemin="0" aria-valuemax="100"><i></i></div>
+    <button class="go" id="ldGo" hidden>開始</button>
   </div>
 </div>
 
@@ -972,11 +1001,19 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 </div>
 
 <!-- =================== 平板作答：點自己的代號（tablet.js） =================== -->
-<div class="wrap" id="tabPick" hidden>
+<div class="wrap loading" id="tabPick" hidden>
   <header class="top"><div class="brand"><div class="stamp">練</div><div><small>識字評量・平板練習</small><h1>請點你的名字</h1></div></div></header>
   <p class="hint" id="tpInfo"></p>
   <p class="warnbar" id="tpVoice" role="alert" hidden></p>
-  <div class="row tpkids" id="tpList"></div>
+  <!-- 先下載這次要用的字型（讀取條），下載完才出現名字 -->
+  <div class="tpload" id="tpLoad"><div class="loadpic" id="tpPic" aria-hidden="true"></div><div class="loadbar" id="tpBar" role="progressbar" aria-label="準備中" aria-valuemin="0" aria-valuemax="100"><i></i></div></div>
+  <div class="row tpkids" id="tpList" hidden></div>
+  <!-- 防點錯：點了名字要再按一次「是我，開始！」 -->
+  <div class="tpconfirm" id="tpConfirm" hidden>
+    <div class="tpme" id="tpMe"></div>
+    <p class="tpask">是你嗎？</p>
+    <div class="row" style="justify-content:center"><button class="go" id="tpYes">是我，開始！</button><button class="ghost" id="tpNo">不是，重選</button></div>
+  </div>
   <p class="note" id="tpMsg" role="status" style="text-align:center"></p>
 </div>
 
@@ -1026,30 +1063,30 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <!-- 每個檔案後面的 ?v=日期 是版本號：改了任何 .js、.css 檔，就把這頁所有的 ?v= 一起改成當天日期（用「全部取代」；同一天改第二次就在日期後面加 b、c）。
      這樣老師的瀏覽器才會下載新檔案，不會新網頁配到舊程式（例如按「下一步」沒反應）。 -->
 <!-- 生字資料：平台共用的教材資料（shared/lessons.js） -->
-<script src="../../shared/lessons.js?v=2026-10-23f"></script>
+<script src="../../shared/lessons.js?v=2026-10-23k"></script>
 <!-- 注音讀音表（shared/bpmf.js）：語詞、例句裡的破音字該念哪一個音 -->
-<script src="../../shared/bpmf.js?v=2026-10-23f"></script>
+<script src="../../shared/bpmf.js?v=2026-10-23k"></script>
 <!-- 字頻：教育部字頻總表（shared/freq.js），練習的常用字、字頻優先、老師專區高字頻生字會用到 -->
-<script src="../../shared/freq.js?v=2026-10-23f"></script>
+<script src="../../shared/freq.js?v=2026-10-23k"></script>
 <!-- 自動部件拆解（shared/parts.js）：部件提示在 lessons.js 的 PARTS 沒有這個字時才用 -->
-<script src="../../shared/parts.js?v=2026-10-23f"></script>
+<script src="../../shared/parts.js?v=2026-10-23k"></script>
 <!-- 共用小工具（課本排序與名稱、語詞、部件查詢、按匯出時才載入 Excel 元件），識字評量與備課分析共用 -->
-<script src="../../shared/common.js?v=2026-10-23f"></script>
+<script src="../../shared/common.js?v=2026-10-23k"></script>
 <!-- 平台共用：主題與貼紙、每位學生的收藏與頭像 -->
-<script src="../../shared/themes.js?v=2026-10-23f"></script>
-<script src="../../shared/rewards.js?v=2026-10-23f"></script>
+<script src="../../shared/themes.js?v=2026-10-23k"></script>
+<script src="../../shared/rewards.js?v=2026-10-23k"></script>
 <!-- 程式本體：分成八個檔案，順序不能換（說明見 app.js 開頭） -->
-<script src="data.js?v=2026-10-23f"></script>
-<script src="setup.js?v=2026-10-23f"></script>
-<script src="records.js?v=2026-10-23f"></script>
-<script src="wordsets.js?v=2026-10-23f"></script>
-<script src="play.js?v=2026-10-23f"></script>
-<script src="collect.js?v=2026-10-23f"></script>
-<script src="scenes.js?v=2026-10-23f"></script>
-<script src="teacher.js?v=2026-10-23f"></script>
-<script src="pivot.js?v=2026-10-23f"></script>
-<script src="tablet.js?v=2026-10-23f"></script>
-<script src="app.js?v=2026-10-23f"></script>
-<script src="tour.js?v=2026-10-23f"></script>
+<script src="data.js?v=2026-10-23k"></script>
+<script src="setup.js?v=2026-10-23k"></script>
+<script src="records.js?v=2026-10-23k"></script>
+<script src="wordsets.js?v=2026-10-23k"></script>
+<script src="play.js?v=2026-10-23k"></script>
+<script src="collect.js?v=2026-10-23k"></script>
+<script src="scenes.js?v=2026-10-23k"></script>
+<script src="teacher.js?v=2026-10-23k"></script>
+<script src="pivot.js?v=2026-10-23k"></script>
+<script src="tablet.js?v=2026-10-23k"></script>
+<script src="app.js?v=2026-10-23k"></script>
+<script src="tour.js?v=2026-10-23k"></script>
 </body>
 </html>

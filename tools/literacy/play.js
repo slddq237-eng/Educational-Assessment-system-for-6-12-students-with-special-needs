@@ -180,6 +180,74 @@ function showScreen(id){
   window.scrollTo(0, 0);
 }
 
+/* ---------- 開始前先下載這次要用的字型（2026-10-23 維護者要求：讀取畫面＋讀取條，平板和電腦都要） ----------
+   楷書（TWKai）、注音字型（BpmfKai）切成很多小檔，畫面出現那個字才下載（見 docs/scripts/make_kai.py）。
+   第一次打開時，選項會先用別的字型、下載完才換（舊的 Safari 還會排錯位置），所以開始前先把選項會出現的字
+   （課次的生字、干擾字；部件重組再加部件）所在的檔下載好；選項加注音時用注音字型。
+   語詞、例句只在提示出現，用到才下載：干擾字分散在各本課本，一課的選項就會用到一半以上的字型檔（約 1.5～2.5 MB），
+   不要再加上提示，讓第一次的等待太久。 */
+function sessionText(lessons, bpmf){
+  let kai = "", ruby = "";
+  for(const k of lessons){
+    const b = splitKey(k)[0];
+    for(const c of charsOf(k)){
+      const [sound = "", shape = ""] = confOf(c, b) || [], opts = c + sound + shape + (state.goal === "4-1" ? (partsOf(c) || []).join("") : "");
+      if(bpmf) ruby += [...opts].map(x => Bpmf.char(x, b)).join(""); else kai += opts;   /* 加注音時選項只用注音字型 */
+    }
+  }
+  return {TWKai:kai, BpmfKai:ruby};
+}
+/* 字型檔的 unicode-range（例如「U+4E00, U+4E09-4E0B」）有沒有包含要用的字 */
+function rangeHits(range, need){
+  for(const part of (range || "").split(",")){
+    const m = part.trim().match(/^U\+([0-9A-F]+)(?:-([0-9A-F]+))?$/i);
+    if(!m) return true;   /* 看不懂的寫法：當作要下載，比較保險 */
+    const lo = parseInt(m[1], 16), hi = m[2] ? parseInt(m[2], 16) : lo;
+    if(lo === hi){ if(need.has(lo)) return true; }
+    else for(const c of need) if(c >= lo && c <= hi) return true;
+  }
+  return false;
+}
+/* 還沒下載、又會用到的字型檔（瀏覽器不支援 document.fonts 就當作不用等） */
+function fontsToLoad(texts){
+  const list = [];
+  if(!document.fonts || !document.fonts.forEach) return list;
+  const need = Object.fromEntries(Object.entries(texts).map(([f, s]) => [f, new Set([...s].map(c => c.codePointAt(0)))]));
+  document.fonts.forEach(face => {
+    const n = need[face.family.replace(/["']/g, "")];
+    if(n && face.status !== "loaded" && rangeHits(face.unicodeRange, n)) list.push(face);
+  });
+  return list;
+}
+/* 下載這些字型檔，每下載完一個呼叫 onStep(已完成, 全部)；最多等 wait 毫秒（網路很慢時不要卡住，沒下載完的會在背景繼續） */
+function loadFonts(faces, onStep, wait = 10000){
+  let n = 0;
+  onStep(0, faces.length);
+  const all = Promise.all(faces.map(f => f.load().catch(() => {}).then(() => onStep(++n, faces.length))));
+  return Promise.race([all.then(() => true), new Promise(res => setTimeout(() => res(false), wait))]);
+}
+/* 讀取畫面的圖片：這次主題的貼紙隨機一張；沒有主題就隨機一個主題 */
+function loadPic(theme){
+  const ids = Object.keys(Themes.THEMES), id = Themes.THEMES[theme] ? theme : ids[Math.floor(Math.random() * ids.length)];
+  const st = Themes.THEMES[id].stickers;
+  return Themes.icon(id, st[Math.floor(Math.random() * st.length)][0]);
+}
+const setBar = (sel, n, all) => { const p = all ? Math.round(n / all * 100) : 100; $(sel + " i").style.width = p + "%"; $(sel).setAttribute("aria-valuenow", p); };
+/* 電腦：按「開始」後先下載；都下載過就直接開始。等超過 3 秒的，讀完要再按一次「開始」
+   （瀏覽器要「使用者剛點過」才肯唸題目，等太久就不算剛點過） */
+function prepareThen(go){
+  const faces = fontsToLoad(sessionText(state.lessons, state.kind !== "formal" && !!settings.practiceBpmf));
+  if(!faces.length) return go();
+  const box = $("#loadSheet"), t0 = performance.now();
+  $("#ldGo").hidden = true; $("#ldPic").innerHTML = loadPic(state.theme); setBar("#ldBar", 0, 1); box.hidden = false;
+  loadFonts(faces, (n, all) => setBar("#ldBar", n, all)).then(() => {
+    const start = () => { box.hidden = true; go(); };
+    if(performance.now() - t0 < 3000) return start();
+    setBar("#ldBar", 1, 1);   /* 沒下載完（網路很慢）也先讓老師開始，字會慢慢出現 */
+    $("#ldGo").hidden = false; $("#ldGo").onclick = start; $("#ldGo").focus();
+  });
+}
+
 function startSession(){
   const c = current(), q = quizPlan(), list = selKids();
   G = {
@@ -322,6 +390,12 @@ function fitOpts(){
   if(optsRO){ optsRO.disconnect(); optsRO.observe(box); }
 }
 if(NO_CQ && !optsRO) addEventListener("resize", fitOpts);
+/* 舊的 Safari：字型（例如注音字型）下載完以後沒有重新排版，選項的字會偏右、注音被切掉（2026-10-23 iPad Air 2 實測）。
+   字型下載完就讓選項重新排一次 */
+if(document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", () => {
+  const o = $("#pBody .opts"); if(!o) return;
+  o.style.display = "none"; void o.offsetHeight; o.style.display = "";
+});
 function newItem(it){
   const b = splitKey(it.k)[0], board = G.layout === "bingo" ? bingoBoard(it.kid, it.k) : null;
   const regroup = G.goal === "4-1";   /* 目標 4-1 部件重組：看部件選字，不唸題目 */
@@ -340,7 +414,7 @@ function newItem(it){
         <div class="hintbox" id="hintbox" aria-live="polite"></div>
       </div>
       <div class="optsbox"><div class="opts ${board ? "bingo" : ""}" style="--cols:${cols};--rows:${rows}">
-        ${G.cur.opts.map((o, i) => `<button class="opt-big${cellClass(i)}${G.bpmf ? " bpmf" : ""}" data-i="${i}" ${board && board.marks.has(i) ? "disabled" : ""}>${esc(G.bpmf ? Bpmf.char(o.ch, b) : o.ch)}${board && board.marks.has(i) ? stamp : ""}</button>`).join("")}
+        ${G.cur.opts.map((o, i) => `<button class="opt-big${cellClass(i)}${G.bpmf ? " bpmf" : ""}" data-i="${i}" ${board && board.marks.has(i) ? "disabled" : ""}><span class="och">${esc(G.bpmf ? Bpmf.char(o.ch, b) : o.ch)}</span>${board && board.marks.has(i) ? stamp : ""}</button>`).join("")}
       </div></div>
     </div>
     ${G.noHelp ? "" : `<div class="tbar"><span>老師提示紀錄：</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;

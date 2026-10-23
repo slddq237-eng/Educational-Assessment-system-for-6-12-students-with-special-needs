@@ -67,7 +67,7 @@
 | `setup.js` | 4～5 | 設定畫面（快速開始、四個步驟、學扶前後測）、學生名單／教學日期／細部設定面板 | `render()`（任何設定改變都呼叫）、`setUi`、`splitKey`、`rtiDays`、`openSheet` |
 | `records.js` | 6～7 | 作答紀錄存取（IndexedDB）、`COLS` 紀錄欄位、Excel 匯出、紀錄面板、備份還原、匯入檔案 | `records`（全部紀錄）、`saveRecord`、`updateRecord`、`exportXlsx`、`addBackupPart` |
 | `wordsets.js` | — | 只考有教的字（字組、鎖定、分享） | `wsPick`（這課要考哪些字）、`wsStart`、`wsImport` |
-| `play.js` | 8～10 | 出題、組選項、提示、語音、作答畫面、賓果卡、血量、打怪獸過場、流暢性、結果畫面 | `startSession`、`endItem`、`finish`、`G`（這次作答的狀態） |
+| `play.js` | 8～10 | 出題、組選項、提示、語音、開始前先下載字型（讀取條）、作答畫面、賓果卡、血量、打怪獸過場、流暢性、結果畫面 | `startSession`、`prepareThen`（`collect.js` 的 `chooseTheme` 呼叫）、`sessionText`、`loadFonts`（`tablet.js` 也用）、`endItem`、`finish`、`G`（這次作答的狀態） |
 | `collect.js` | 11～14 | 選主題、頭像、得到貼紙、貼紙簿 | `chooseTheme`、`giveStickers` |
 | `scenes.js` | — | 打怪獸的四個場景動畫 | 由 `play.js` 的 3-3 呼叫 |
 | `teacher.js` | 15～20 | 老師專區：一位學生的圖表、全班總表、逐字學習紀錄 | `renderTeacher`、`openCharLog` |

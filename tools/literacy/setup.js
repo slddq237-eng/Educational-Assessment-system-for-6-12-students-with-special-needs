@@ -32,8 +32,10 @@ const isQuick = () => ui === "quick";
 function applyPreset(id){
   if(state.preset !== id) state.rti = "";
   state.preset = id; store("literacy-preset", id);
-  Object.assign(state, {answer:"turn", qCount:null, qMethod:"even"});   /* 評量目標沿用第 1 步選的 */
+  Object.assign(state, {qCount:null, qMethod:"even"});   /* 評量目標沿用第 1 步選的 */
   PRESETS.find(p => p.id === id).apply();
+  /* 作答方式：快速開始只有大螢幕輪流、平板掃 QR code 兩種；平板只能練習，換到小考、學扶前後測就改回大螢幕 */
+  if(state.answer !== "qr" || state.kind === "formal") state.answer = "turn";
 }
 function setUi(mode){
   ui = mode; store("literacy-ui", ui);
@@ -90,7 +92,8 @@ function step2Miss(){
   const n = selKids().length;
   if(isQuick()){
     if(state.preset === "rti" && !state.rti) return "請先選教學前、中、後";
-    return !n ? "請先點選要做的學生" : n > 4 ? "一次最多 4 位學生" : "";
+    const max = ANSWERS.find(x => x.id === state.answer).max;
+    return !n ? "請先點選要做的學生" : n > max ? `一次最多 ${max} 位學生` : "";
   }
   const a = ANSWERS.find(x => x.id === state.answer);
   if(a.id === "qr" && state.kind === "formal") return "平板作答目前只能用在練習，正式評量請換別的作答模式";
@@ -428,16 +431,19 @@ function renderQuiz(){
   box.querySelectorAll("[data-qm]").forEach(b => b.onclick = () => { state.qMethod = b.dataset.qm; render(); });
 }
 
-/* 平板作答（tablet.js）：只在進階設定；目前只能練習（正式評量的作答裝置屬 A3，先討論） */
-const qrOn = () => !isQuick() && state.answer === "qr";
+/* 平板作答（tablet.js）：快速開始和進階設定都有（2026-10-23 維護者要求放進快速開始）；
+   目前只能練習（正式評量要等 A3 定案，見 docs/pending.md） */
+const qrOn = () => state.answer === "qr";
 function renderAnswers(){
   const offOf = a => a.off || (a.id === "qr" && state.kind === "formal" ? "目前只能練習" : "");
-  $("#answers").innerHTML = ANSWERS.map(a => `<button class="opt ${state.answer===a.id?"on":""}" data-a="${a.id}" ${offOf(a)?"disabled":""} aria-pressed="${state.answer===a.id}">${a.name}<small>${offOf(a)?`${a.desc}（${offOf(a)}）`:a.desc}</small></button>`).join("");
+  /* 快速開始只列現在能用的兩種：大螢幕輪流、平板掃 QR code */
+  $("#answers").innerHTML = ANSWERS.filter(a => !isQuick() || a.id === "turn" || a.id === "qr").map(a => `<button class="opt ${state.answer===a.id?"on":""}" data-a="${a.id}" ${offOf(a)?"disabled":""} aria-pressed="${state.answer===a.id}">${a.name}<small>${offOf(a)?`${a.desc}（${offOf(a)}）`:a.desc}</small></button>`).join("");
   $("#answers").querySelectorAll("button:not(:disabled)").forEach(b => b.onclick = () => { state.answer = b.dataset.a; render(); });
 }
 
 function renderKids(){
   const a = ANSWERS.find(x => x.id === state.answer);
+  $("#kidsHintQ").textContent = a.id === "qr" ? `點選這次用平板作答的學生，最多 ${a.max} 位；每人用自己的平板或手機掃 QR code。` : `點選要做的學生，最多 ${a.max} 位輪流。`;
   $("#answerHint").textContent = a.max < 99 ? `同一份題目可以用不同方式作答。「${a.name}」可選 ${a.min}～${a.max} 位學生。` : "同一份題目可以用不同方式作答。呈現模式可以全班一起，人數不限。";
   $("#kids").innerHTML = kids.map(k => `<button class="chip kidchip ${state.kids.has(k.code)?"on":""}" data-k="${esc(k.code)}" aria-pressed="${state.kids.has(k.code)}">${Rewards.avatarHtml(k.code)}${esc(kidLabel(k))}<small>${gradeText(k)}</small></button>`).join("");
   $("#kids").querySelectorAll("button").forEach(b => b.onclick = () => { const k = b.dataset.k; state.kids.has(k) ? state.kids.delete(k) : state.kids.add(k); render(); });
@@ -513,7 +519,8 @@ function renderSummary(){
     const rows = [
       ["今天做什麼", `${p.name}（${g.name}）`],
       ...(p.id === "rti" ? [["現在是", state.rti ? RTI_PHASES.find(x => x[0] === state.rti)[1] : null, "還沒選教學前、中、後"]] : []),
-      ["學生", n && n <= 4 ? selKids().map(c => esc(kidLabel(kidBy(c)))).join("、") : null, n ? "一次最多 4 位學生" : "還沒選"],
+      ["學生", n && n <= a.max ? selKids().map(c => esc(kidLabel(kidBy(c)))).join("、") : null, n ? `一次最多 ${a.max} 位學生` : "還沒選"],
+      ...(qrOn() ? [["作答方式", "平板掃 QR code"], ["回傳表單", settings.tabletForm ? "你自己的 Google 表單" : null, "請到「⚙ 細部設定 → 練習與遊戲」貼上 Google 表單網址"]] : []),
       ["課次", state.lessons.length ? esc(lessonsText()) : null],
       ["時間", !state.lessons.length ? null : c.flu ? `每位學生 ${LIMITS.find(l => l[0]===state.limit)[1]}` : `${q.count} 題，${minutes(q.sec)}`],
       ["玩法", playText()],
@@ -521,7 +528,7 @@ function renderSummary(){
     ];
     $("#sum").innerHTML = rows.map(([t,v,miss]) => `<div><dt>${t}</dt><dd class="${v?"":"miss"}">${v || miss || "還沒選"}</dd></div>`).join("");
     $("#go").disabled = rows.some(r => !r[1]);
-    $("#go").textContent = "開始";
+    $("#go").textContent = qrOn() ? "產生 QR code" : "開始";
     return;
   }
   $("#go").textContent = "開始評量";

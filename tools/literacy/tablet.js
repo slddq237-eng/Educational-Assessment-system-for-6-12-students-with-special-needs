@@ -61,7 +61,7 @@ function tabletPack(){
   return {
     v:1, f:settings.tabletForm.id, e:settings.tabletForm.entry,
     d:{
-      "literacy-ui": "adv",
+      "literacy-ui": ui,   /* 快速開始或進階設定（快速開始不用每位學生不同的提示，見 data.js 的 kidCfg） */
       /* 正式評量的條件、設定畫面大小、表單網址平板用不到 */
       "literacy-settings": Object.fromEntries(Object.entries(settings).filter(([k]) => !/^(formal|clockFormal$|uiScale$|tabletForm$)/.test(k))),
       "literacy-kids": codes.map(c => { const k = kidBy(c), p = planOf(k);
@@ -73,7 +73,7 @@ function tabletPack(){
       goal:state.goal, mode:state.mode, limit:state.limit, aim:+$("#aim").value || 30, lessons:state.lessons,
       pChoices:state.pChoices, pHints:[...state.pHints], pRule:state.pRule, qCount:state.qCount, qMethod:state.qMethod,
       manual:pick(state.manual, state.lessons), themePick:state.themePick,
-      kidHints:Object.fromEntries(codes.filter(c => state.kidHints[c]).map(c => [c, {hints:[...state.kidHints[c].hints], rule:state.kidHints[c].rule}]))
+      kidHints:isQuick() ? {} : Object.fromEntries(codes.filter(c => state.kidHints[c]).map(c => [c, {hints:[...state.kidHints[c].hints], rule:state.kidHints[c].rule}]))
     }
   };
 }
@@ -107,15 +107,18 @@ async function tabletQr(){
 }
 
 /* =========================================================
-   學生平板：點自己的代號 → 作答 → 送出
+   學生平板：讀取條（先下載這次要用的字型）→ 點自己的名字 → 再按「是我，開始！」確認 → 作答 → 送出
    ========================================================= */
 const TABLET_FORM = TABLET && !TABLET.bad ? {id:TABLET.f, entry:TABLET.e} : null;
+/* 同一個分頁再掃一次 QR code（或打開另一個 QR 網址）：網址只有 # 後面不同，瀏覽器不會重新載入，
+   要自己重新載入，才會回到讀取畫面和選名字（data.js 只在打開網頁時讀網址） */
+addEventListener("hashchange", () => { if(/^#t=/.test(location.hash)) location.reload(); });
 function tabletStart(){
   showScreen("#tabPick");
   const s = TABLET.st;
-  if(TABLET.bad || TABLET.v !== 1 || !s || !TABLET_FORM){ $("#tpMsg").textContent = "讀不到這次練習的設定，請重新掃描 QR code；還是不行，請老師重新產生一次。"; return; }
+  if(TABLET.bad || TABLET.v !== 1 || !s || !TABLET_FORM){ $("#tpLoad").hidden = true; $("#tabPick").classList.remove("loading"); $("#tpMsg").textContent = "讀不到這次練習的設定，請重新掃描 QR code；還是不行，請老師重新產生一次。"; return; }
   /* 用不到的課（例如老師的網頁比較新）：請平板重新整理 */
-  if(!s.lessons.length || s.lessons.some(k => !lessonChars(k).length)){ $("#tpMsg").textContent = "這個 QR code 的課本這台平板找不到，請重新整理網頁，或請老師重新產生。"; return; }
+  if(!s.lessons.length || s.lessons.some(k => !lessonChars(k).length)){ $("#tpLoad").hidden = true; $("#tabPick").classList.remove("loading"); $("#tpMsg").textContent = "這個 QR code 的課本這台平板找不到，請重新整理網頁，或請老師重新產生。"; return; }
   Object.assign(state, {kind:"practice", answer:"qr", goal:s.goal, mode:s.mode, limit:s.limit, lessons:s.lessons,
     pChoices:s.pChoices, pHints:new Set(s.pHints), pRule:s.pRule, qCount:s.qCount, qMethod:s.qMethod, manual:s.manual || {},
     themePick:s.themePick || "none",
@@ -123,11 +126,18 @@ function tabletStart(){
   $("#aim").value = s.aim;
   const g = GOALS.find(x => x.id === state.goal);
   $("#tpInfo").textContent = `今天練習：${lessonsText()}（目標 ${g.id} ${g.name}）`;
-  /* 結果畫面：沒有「回到設定」，改成換下一位學生；平板上不匯出 Excel */
-  $("#rHome").textContent = "換人作答"; $("#rHome").hidden = kids.length < 2; $("#rExport").hidden = true;
-  $("#rHome").onclick = () => { G = null; showScreen("#tabPick"); };
+  /* 結果畫面只留「再玩一次」（2026-10-23 維護者決定，不用換人）：沒有「回到設定」，平板上也不匯出 Excel */
+  $("#rHome").hidden = true; $("#rExport").hidden = true;
   tabletKids();
+  /* 讀取條：先下載這次要用的字型（play.js 的 sessionText、loadFonts，最多等 10 秒），下載完才出現名字 */
+  const faces = fontsToLoad(sessionText(state.lessons, !!settings.practiceBpmf));
+  const ready = () => { $("#tpLoad").hidden = true; $("#tabPick").classList.remove("loading"); tpList(); };
+  if(!faces.length) return ready();
+  $("#tpPic").innerHTML = loadPic(state.themePick);   /* 讀取中（#tabPick 一開始就有 loading）：只看得到圖片和讀取條 */
+  loadFonts(faces, (n, all) => setBar("#tpBar", n, all)).then(ready);
 }
+/* 顯示名字清單（收起確認畫面） */
+function tpList(){ if($("#tpLoad").hidden){ $("#tpList").hidden = false; $("#tpConfirm").hidden = true; } }
 /* 平板沒有中文語音時，題目和喇叭都不會唸：點名字的畫面和結果畫面提醒怎麼裝
    （Android 的語音清單要過一下子才會出來，所以等 voiceschanged 或 2 秒後再判斷） */
 const VOICE_HELP = "這台平板找不到中文語音，題目和喇叭不會唸出來（作答還是可以進行）。"
@@ -145,9 +155,17 @@ function tabletKids(){
   /* 顯示名字（沒填名字顯示代號）；同名的學生加上代號才分得出來 */
   const same = k => k.name && kids.filter(x => x.name === k.name).length > 1;
   $("#tpList").innerHTML = kids.map(k => `<button class="chip kidchip" data-k="${esc(k.code)}">${Rewards.avatarHtml(k.code)}${esc(same(k) ? kidLabel(k) : kidShow(k))}</button>`).join("");
-  /* 只有一位學生也要點一下才開始：手機、平板的瀏覽器要「使用者點過」才肯唸題目（2026-10-23 改，原本一位學生直接開始） */
-  $("#tpList").querySelectorAll("button").forEach(b => b.onclick = () => { state.kids = new Set([b.dataset.k]); chooseTheme(); });
+  /* 防點錯（2026-10-23 維護者要求）：點了名字先出現大頭像和「是你嗎？」，再按「是我，開始！」才開始。
+     只有一位學生也要點：手機、平板的瀏覽器要「使用者剛點過」才肯唸題目 */
+  $("#tpList").querySelectorAll("button").forEach(b => b.onclick = () => {
+    const k = kidBy(b.dataset.k);
+    $("#tpMe").innerHTML = `${Rewards.avatarHtml(k.code)}<span>${esc(b.lastChild.textContent)}</span>`;
+    $("#tpList").hidden = true; $("#tpConfirm").hidden = false;
+    $("#tpYes").onclick = () => { state.kids = new Set([k.code]); chooseTheme(); };
+    $("#tpYes").focus();
+  });
 }
+$("#tpNo").onclick = () => tpList();
 /* 做完（finish）時呼叫：這次的紀錄每 10 題一包送出；送不出去可以再送，或下載紀錄檔交給老師（同樣用「匯入檔案」） */
 function tabletSend(g){
   /* 送出去的紀錄不放名字（表單、試算表、下載的紀錄檔都只有代號） */
