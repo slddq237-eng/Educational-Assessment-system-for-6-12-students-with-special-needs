@@ -91,4 +91,4 @@ document.addEventListener("keydown", e => { if(tourAt >= 0 && e.key === "Escape"
 $("#tourBtn").onclick = startTour;
 
 /* 這台電腦第一次打開：自動開始 */
-if(load("literacy-tour", "") !== "done") startTour();
+if(!TABLET && load("literacy-tour", "") !== "done") startTour();

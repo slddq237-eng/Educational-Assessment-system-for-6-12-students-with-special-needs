@@ -74,7 +74,8 @@ const ANSWERS = [
   {id:"turn",    name:"大螢幕・輪流",   desc:"1～4 人輪流在同一個螢幕作答", min:1, max:4},
   {id:"split",   name:"大螢幕・同時",   desc:"螢幕分成 2～4 區，各自作答（需支援多點觸控）", min:2, max:4, off:"第 2 版"},
   {id:"present", name:"呈現模式・紙筆", desc:"螢幕只出題，學生寫在紙上，老師改完再登錄", min:1, max:99, off:"第 2 版"},
-  {id:"qr",      name:"平板掃 QR code", desc:"學生用自己的平板作答，結果傳回老師電腦", off:"第 4 版之後"}
+  /* 平板作答（tablet.js）：一個 QR code 可以給幾位學生，每位在自己的平板點自己的代號；目前只能用在練習 */
+  {id:"qr",      name:"平板掃 QR code", desc:"學生用自己的平板掃描作答，做完傳回老師的 Google 表單（目前只能練習）", min:1, max:12}
 ];
 const TAUGHT = [["","依學生年級自動判斷"],["dates","輸入教學日期"],["notYet","還沒教"]];
 const PHASES = ["基線期","教學中","教學後","維持期"];
@@ -96,8 +97,18 @@ const today = new Date(); today.setHours(0,0,0,0);
 const iso = d => new Date(d.getTime() - d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
 const md = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()}`; };
-const load = (k, fallback) => { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return v ?? fallback; } catch(e){ return fallback; } };
-const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
+/* 平板作答（tablet.js）：學生掃老師電腦上的 QR code 打開網頁，網址 #t= 後面帶著這次練習的設定。
+   這時設定、學生、教學日期、字組都從網址讀（TABLET.d，名稱和 localStorage 相同），也不寫回平板（平板可能也是別的老師在用的）。
+   讀不出來時 TABLET＝{bad:true}，tablet.js 會請老師重新產生。 */
+const TABLET = (() => {
+  const m = location.hash.match(/^#t=([\w-]+)/);
+  if(!m) return null;
+  try { const b = atob(m[1].replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(new TextDecoder().decode(Uint8Array.from(b, c => c.charCodeAt(0)))); } catch(e){ return {bad:true}; }
+})();
+if(TABLET) document.documentElement.classList.add("tablet");
+const load = (k, fallback) => { if(TABLET) return (TABLET.d || {})[k] ?? fallback; try { const v = JSON.parse(localStorage.getItem(k) || "null"); return v ?? fallback; } catch(e){ return fallback; } };
+const store = (k, v) => { if(TABLET) return; try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
 
 /* =========================================================
    2. 存在這台電腦的資料（設定、學生、教學日期）

@@ -9,11 +9,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-23a">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-23b">
 <!-- 平台共用的主題外觀、頭像、貼紙樣式 -->
-<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-23a">
+<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-23b">
 <!-- 注音字型（3-4）：語詞、句子提示和練習的選項加注音；畫面用到注音時才會下載 -->
-<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-23a">
+<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-23b">
 <style>
 /* 版面：沿用生字賓果的生字簿方格紙。
    設定畫面：左邊六個步驟，右邊固定的「本次評量」摘要；評量設定、教學日期、學生名單、作答紀錄放在彈出面板。
@@ -554,6 +554,13 @@ details.howto{margin:10px 0 0}
 .rcard .cheer2{background:#fff6d6;border:2px dashed #e0b23a;border-radius:14px;padding:8px 12px;font-size:17px;color:#5a4410;margin-top:4px}
 .rcard .sticker{justify-self:center}
 .rbtns{justify-content:center;margin-top:22px}
+/* 平板作答（tablet.js）：平板上不顯示設定畫面；QR code、點代號、送出狀態 */
+html.tablet #setup{display:none}
+.qrbox{display:flex;justify-content:center;background:#fff;padding:12px;border-radius:12px}
+.qrbox svg{width:min(62vh,100%);height:auto;max-width:520px}
+.tpkids{justify-content:center;gap:14px;margin-top:18px}
+.tpkids .chip{font-size:24px;padding:14px 22px}
+.tsend{text-align:center;margin-top:16px;display:grid;gap:8px;justify-items:center}
 /* 練習的結果畫面：卡片一張一張彈出來（正式評量不用，見 docs/literacy-design.md） */
 .res.wait{visibility:hidden}
 @media (prefers-reduced-motion:no-preference){.res.lively .rcard{animation:cardpop .5s cubic-bezier(.2,1.4,.4,1) both;animation-delay:calc(var(--i) * .18s)}}
@@ -835,6 +842,18 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
   </div>
 </div>
 
+<!-- 平板作答的 QR code（tablet.js） -->
+<div class="overlay" id="qrSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
+    <header><h2 id="qrTitle">請學生用平板掃描</h2><button class="ghost" data-close>關閉</button></header>
+    <div class="qrbox" id="qrBox"></div>
+    <p class="hint" id="qrInfo" style="margin:0"></p>
+    <p class="note" style="margin:0">用平板內建的相機對準 QR code，點出現的網址就會打開練習，每位學生點自己的代號。做完紀錄會自動送到你的 Google 表單；有空時從 Google 試算表下載 Excel，在「作答紀錄」按「匯入檔案」。</p>
+    <div class="row"><button class="chip" id="qrCopy">複製連結</button><span class="note" id="qrMsg" style="margin:0" role="status"></span></div>
+    <footer><button class="save" data-close>完成</button></footer>
+  </div>
+</div>
+
 <!-- ⚙ 細部設定：評量設定（正式評量的條件）、練習與遊戲、畫面與聲音 三個分頁（2026-10-22 合併成一個面板，元素 id 沿用） -->
 <div class="overlay" id="setSheet" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sTitle">
@@ -872,6 +891,17 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
       <h3>計時</h3>
       <label class="group"><input type="checkbox" id="vClock" style="width:20px;height:20px;accent-color:var(--green)"> 練習時在右上角顯示計時</label>
       <p class="note" style="margin:0">正式評量要不要顯示計時，在「評量設定」調整（預設不顯示）。</p>
+      <h3>平板作答：紀錄送到哪個 Google 表單</h3>
+      <p class="note" style="margin:0">第 2 步「作答模式」選「平板掃 QR code」時，學生做完會把紀錄送到這裡填的 Google 表單，存在你自己的 Google 帳號。表單和紀錄裡只有學生代號，沒有名字。</p>
+      <details class="why"><summary>怎麼建立表單（只要做一次）</summary>
+        <ol style="margin:6px 0;padding-left:22px">
+          <li>到 forms.google.com 按「空白表單」，第一題的題目填 <code>data</code>，類型選「詳答」。</li>
+          <li>「設定」→「回覆」：不收集電子郵件、關閉「限制只能回覆 1 次」；學校帳號要關閉「只有本校使用者可以回覆」。</li>
+          <li>「回覆」分頁 →「連結至試算表」→ 建立新試算表。右上角有「發布」就按下去。</li>
+          <li>右上角「⋮」→「取得預先填入的連結」→ 在 data 打 <code>test</code> →「取得連結」→「複製連結」，貼到下面。</li>
+        </ol></details>
+      <input id="tabForm" style="width:100%" aria-label="Google 表單的預先填入連結" placeholder="貼上「預先填入的連結」（https://docs.google.com/forms/d/e/…entry.數字=test）">
+      <div class="group"><button class="chip" id="tabFormTest">送一筆測試</button><span class="note" id="tabFormMsg" style="margin:0" role="status"></span></div>
     </section>
     <section class="dpane" data-pane="view" role="tabpanel">
   <p class="hint" style="margin:0">這些設定只存在這台電腦。改了會從下一題開始套用，並記在每一筆作答紀錄裡。</p>
@@ -936,11 +966,20 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
   </div>
 </div>
 
+<!-- =================== 平板作答：點自己的代號（tablet.js） =================== -->
+<div class="wrap" id="tabPick" hidden>
+  <header class="top"><div class="brand"><div class="stamp">練</div><div><small>識字評量・平板練習</small><h1>請點你的代號</h1></div></div></header>
+  <p class="hint" id="tpInfo"></p>
+  <div class="row tpkids" id="tpList"></div>
+  <p class="note" id="tpMsg" role="status" style="text-align:center"></p>
+</div>
+
 <!-- =================== 結果畫面 =================== -->
 <div class="wrap" id="result" hidden>
   <header class="top"><div class="brand"><div class="stamp">讚</div><div><small>識字評量</small><h1 id="rTitle">完成了！</h1></div></div></header>
   <p class="hint" id="rNote"></p>
   <div class="res" id="rList"></div>
+  <div class="tsend" id="rSend" role="status" hidden></div>
   <div class="row rbtns">
     <button class="go" id="rAgain" style="font-size:19px">再玩一次</button>
     <button class="ghost" id="rHome">回到設定</button>
@@ -961,9 +1000,9 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
     <div class="recgroups">
       <section class="recgroup">
         <h3>備份與匯入（換電腦用）</h3>
-        <p class="note" style="margin:0">學生名單、作答紀錄、教學日期、評量設定、字組存成一個檔案。換電腦、清除瀏覽資料前先下載；到新電腦按「匯入檔案」。同事分享的字組檔也是按「匯入檔案」。</p>
+        <p class="note" style="margin:0">學生名單、作答紀錄、教學日期、評量設定、字組存成一個檔案。換電腦、清除瀏覽資料前先下載；到新電腦按「匯入檔案」。同事分享的字組檔、平板作答從 Google 試算表下載的 Excel 檔，也是按「匯入檔案」。</p>
         <div class="row"><button class="save" id="recBackup">下載備份檔</button>
-          <label class="ghost" for="recRestore" style="cursor:pointer">匯入檔案</label><input type="file" id="recRestore" accept=".json,application/json" hidden></div>
+          <label class="ghost" for="recRestore" style="cursor:pointer">匯入檔案</label><input type="file" id="recRestore" accept=".json,application/json,.xlsx,.csv" hidden></div>
       </section>
       <section class="recgroup">
         <h3>匯出 Excel（做報告用）</h3>
@@ -980,29 +1019,30 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <!-- 每個檔案後面的 ?v=日期 是版本號：改了任何 .js、.css 檔，就把這頁所有的 ?v= 一起改成當天日期（用「全部取代」；同一天改第二次就在日期後面加 b、c）。
      這樣老師的瀏覽器才會下載新檔案，不會新網頁配到舊程式（例如按「下一步」沒反應）。 -->
 <!-- 生字資料：平台共用的教材資料（shared/lessons.js） -->
-<script src="../../shared/lessons.js?v=2026-10-23a"></script>
+<script src="../../shared/lessons.js?v=2026-10-23b"></script>
 <!-- 注音讀音表（shared/bpmf.js）：語詞、例句裡的破音字該念哪一個音 -->
-<script src="../../shared/bpmf.js?v=2026-10-23a"></script>
+<script src="../../shared/bpmf.js?v=2026-10-23b"></script>
 <!-- 字頻：教育部字頻總表（shared/freq.js），練習的常用字、字頻優先、老師專區高字頻生字會用到 -->
-<script src="../../shared/freq.js?v=2026-10-23a"></script>
+<script src="../../shared/freq.js?v=2026-10-23b"></script>
 <!-- 自動部件拆解（shared/parts.js）：部件提示在 lessons.js 的 PARTS 沒有這個字時才用 -->
-<script src="../../shared/parts.js?v=2026-10-23a"></script>
+<script src="../../shared/parts.js?v=2026-10-23b"></script>
 <!-- 共用小工具（課本排序與名稱、語詞、部件查詢、按匯出時才載入 Excel 元件），識字評量與備課分析共用 -->
-<script src="../../shared/common.js?v=2026-10-23a"></script>
+<script src="../../shared/common.js?v=2026-10-23b"></script>
 <!-- 平台共用：主題與貼紙、每位學生的收藏與頭像 -->
-<script src="../../shared/themes.js?v=2026-10-23a"></script>
-<script src="../../shared/rewards.js?v=2026-10-23a"></script>
+<script src="../../shared/themes.js?v=2026-10-23b"></script>
+<script src="../../shared/rewards.js?v=2026-10-23b"></script>
 <!-- 程式本體：分成八個檔案，順序不能換（說明見 app.js 開頭） -->
-<script src="data.js?v=2026-10-23a"></script>
-<script src="setup.js?v=2026-10-23a"></script>
-<script src="records.js?v=2026-10-23a"></script>
-<script src="wordsets.js?v=2026-10-23a"></script>
-<script src="play.js?v=2026-10-23a"></script>
-<script src="collect.js?v=2026-10-23a"></script>
-<script src="scenes.js?v=2026-10-23a"></script>
-<script src="teacher.js?v=2026-10-23a"></script>
-<script src="pivot.js?v=2026-10-23a"></script>
-<script src="app.js?v=2026-10-23a"></script>
-<script src="tour.js?v=2026-10-23a"></script>
+<script src="data.js?v=2026-10-23b"></script>
+<script src="setup.js?v=2026-10-23b"></script>
+<script src="records.js?v=2026-10-23b"></script>
+<script src="wordsets.js?v=2026-10-23b"></script>
+<script src="play.js?v=2026-10-23b"></script>
+<script src="collect.js?v=2026-10-23b"></script>
+<script src="scenes.js?v=2026-10-23b"></script>
+<script src="teacher.js?v=2026-10-23b"></script>
+<script src="pivot.js?v=2026-10-23b"></script>
+<script src="tablet.js?v=2026-10-23b"></script>
+<script src="app.js?v=2026-10-23b"></script>
+<script src="tour.js?v=2026-10-23b"></script>
 </body>
 </html>
