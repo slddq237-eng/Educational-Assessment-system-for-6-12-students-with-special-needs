@@ -18,7 +18,8 @@ const willFight = () => gameAllowed() && useRewards() && (state.kind === "formal
 
 function chooseTheme(){
   state.theme = useRewards() && state.themePick !== "none" ? state.themePick : "";
-  startSession();
+  /* 先下載這次要用的字型（play.js 的 prepareThen）；平板在點名字的畫面已經下載過（tablet.js） */
+  TABLET ? startSession() : prepareThen(startSession);
 }
 
 /* 作答畫面換上主題的顏色；角落放一個主題小圖示（不會動） */

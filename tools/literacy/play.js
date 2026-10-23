@@ -180,6 +180,68 @@ function showScreen(id){
   window.scrollTo(0, 0);
 }
 
+/* ---------- 開始前先下載這次要用的字型（2026-10-23 維護者要求：讀取畫面＋讀取條，平板和電腦都要） ----------
+   楷書（TWKai）、注音字型（BpmfKai）切成很多小檔，畫面出現那個字才下載（見 docs/scripts/make_kai.py）。
+   第一次打開時，選項會先用別的字型、下載完才換（舊的 Safari 還會排錯位置），所以開始前先把選項會出現的字
+   （課次的生字、干擾字；部件重組再加部件）所在的檔下載好；選項加注音時用注音字型。
+   語詞、例句只在提示出現，用到才下載：干擾字分散在各本課本，一課的選項就會用到一半以上的字型檔（約 1.5～2.5 MB），
+   不要再加上提示，讓第一次的等待太久。 */
+function sessionText(lessons, bpmf){
+  let kai = "", ruby = "";
+  for(const k of lessons){
+    const b = splitKey(k)[0];
+    for(const c of charsOf(k)){
+      const [sound = "", shape = ""] = confOf(c, b) || [], opts = c + sound + shape + (state.goal === "4-1" ? (partsOf(c) || []).join("") : "");
+      if(bpmf) ruby += [...opts].map(x => Bpmf.char(x, b)).join(""); else kai += opts;   /* 加注音時選項只用注音字型 */
+    }
+  }
+  return {TWKai:kai, BpmfKai:ruby};
+}
+/* 字型檔的 unicode-range（例如「U+4E00, U+4E09-4E0B」）有沒有包含要用的字 */
+function rangeHits(range, need){
+  for(const part of (range || "").split(",")){
+    const m = part.trim().match(/^U\+([0-9A-F]+)(?:-([0-9A-F]+))?$/i);
+    if(!m) return true;   /* 看不懂的寫法：當作要下載，比較保險 */
+    const lo = parseInt(m[1], 16), hi = m[2] ? parseInt(m[2], 16) : lo;
+    if(lo === hi){ if(need.has(lo)) return true; }
+    else for(const c of need) if(c >= lo && c <= hi) return true;
+  }
+  return false;
+}
+/* 還沒下載、又會用到的字型檔（瀏覽器不支援 document.fonts 就當作不用等） */
+function fontsToLoad(texts){
+  const list = [];
+  if(!document.fonts || !document.fonts.forEach) return list;
+  const need = Object.fromEntries(Object.entries(texts).map(([f, s]) => [f, new Set([...s].map(c => c.codePointAt(0)))]));
+  document.fonts.forEach(face => {
+    const n = need[face.family.replace(/["']/g, "")];
+    if(n && face.status !== "loaded" && rangeHits(face.unicodeRange, n)) list.push(face);
+  });
+  return list;
+}
+/* 下載這些字型檔，每下載完一個呼叫 onStep(已完成, 全部)；最多等 wait 毫秒（網路很慢時不要卡住，沒下載完的會在背景繼續） */
+function loadFonts(faces, onStep, wait = 10000){
+  let n = 0;
+  onStep(0, faces.length);
+  const all = Promise.all(faces.map(f => f.load().catch(() => {}).then(() => onStep(++n, faces.length))));
+  return Promise.race([all.then(() => true), new Promise(res => setTimeout(() => res(false), wait))]);
+}
+const setBar = (sel, n, all) => { const p = all ? Math.round(n / all * 100) : 100; $(sel + " i").style.width = p + "%"; $(sel).setAttribute("aria-valuenow", p); };
+/* 電腦：按「開始」後先下載；都下載過就直接開始。等超過 3 秒的，讀完要再按一次「開始」
+   （瀏覽器要「使用者剛點過」才肯唸題目，等太久就不算剛點過） */
+function prepareThen(go){
+  const faces = fontsToLoad(sessionText(state.lessons, state.kind !== "formal" && !!settings.practiceBpmf));
+  if(!faces.length) return go();
+  const box = $("#loadSheet"), t0 = performance.now();
+  $("#ldGo").hidden = true; $("#ldMsg").textContent = "正在下載這次要用的字，第一次會比較久。"; box.hidden = false;
+  loadFonts(faces, (n, all) => setBar("#ldBar", n, all)).then(ok => {
+    const start = () => { box.hidden = true; go(); };
+    if(performance.now() - t0 < 3000) return start();
+    $("#ldMsg").textContent = ok ? "準備好了！" : "網路比較慢，還有一些字沒下載完，可以先開始（字會慢慢出現）。";
+    $("#ldGo").hidden = false; $("#ldGo").onclick = start; $("#ldGo").focus();
+  });
+}
+
 function startSession(){
   const c = current(), q = quizPlan(), list = selKids();
   G = {
