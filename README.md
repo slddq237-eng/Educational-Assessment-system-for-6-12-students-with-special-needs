@@ -9,46 +9,11 @@
 | 識字評量 | `tools/literacy/` | 第 1 版：目標 3 形音辨識、大螢幕輪流作答、作答紀錄與 Excel 匯出 |
 | 備課分析 | `tools/prep/` | 第 1 版：依課次／段考範圍統計常見部件、列出學過的舊字、字頻排序（教育部字頻總表）、匯出 Excel |
 
-## 資料夾說明
+## 文件在哪裡
 
-```
-index.html        平台首頁（工具選單、最後更新日期）
-privacy.html      資料與隱私說明（給學校、家長、老師看）
-about.html        關於我們：平台介紹、資料來源與出處（加入新的外部資料時要一起改）
-favicon.svg       網站小圖示
-docs/
-  README.md       文件索引（交接用，先讀這份）：要做什麼工作 → 讀哪些檔案；設計、路線圖、教材、紀錄、待決問題、決策歷史各一個檔案
-  research-method-spec.md  識字教學單一受試研究方法規格書（實驗設計、分析分層）
-  scripts/        給 Claude 用的資料產生程式：make_parts.py（部件拆解）、make_bpmf.py（注音字型與破音字讀音），新增課本後各執行一次
-shared/
-  lessons.js      共用教材資料：生字、語詞、例句、部件、形近同音字
-  common.js       共用小工具：課本排序與名稱、語詞、干擾字、部件查詢、按匯出時才載入 Excel 元件（識字評量、備課分析共用）
-  vendor/         放進網站的外部程式元件：SheetJS 0.18.5（匯出 Excel，Apache 2.0），不用連外網
-  themes.js       共用主題與貼紙（海洋、太空、恐龍、甜點；取自原本的生字賓果）
-  themes.css      主題配色、頭像、貼紙的樣式
-  rewards.js      每位學生的貼紙收藏與頭像（存在這台電腦）
-  parts.js        自動產生的部件拆解（所有生字＋部件再往下拆；見 docs/scripts/make_parts.py，新增課本後要補產生）
-  freq.js         字頻排名（教育部字頻總表，5,731 字）
-  bpmf.js         破音字讀音表（自動產生，見 docs/scripts/make_bpmf.py；新增課本後要重新產生）
-  fonts/          注音字型（字嗨注音標楷子集，依課本拆成幾個檔，用到才下載）
-tools/
-  bingo/          只剩一頁轉址：生字賓果 2026-10-21 移除，玩法已整合進識字評量
-  literacy/       識字評量（讀取 shared/lessons.js）
-    index.html    畫面
-    data.js       基本設定、學生與教學日期、評量時機判斷
-    setup.js      設定畫面與彈出面板
-    records.js    作答紀錄、Excel 匯出、備份、匯入檔案
-    wordsets.js   只考有教的字（字組：每課要考哪些字、鎖定、分享）
-    play.js       出題、作答畫面、結果畫面
-    collect.js    選主題、頭像、得到貼紙、貼紙簿
-    scenes.js     打怪獸的四個場景（移植自生字賓果）
-    teacher.js    老師專區（一位學生的圖表、全班總表、逐字學習紀錄）
-    pivot.js      老師專區的進階分析（樞紐分析表）
-    guide.html    學扶前後測快速指南（可列印成一張 A4）
-    analysis-guide.html  分析教學：老師專區怎麼看、名詞解釋、進階分析範例
-    app.js        程式入口（說明各檔案的載入順序）
-  prep/           備課分析（讀取 shared/lessons.js、shared/parts.js）
-```
+- **每個檔案做什麼、檔案之間的關係**：[`docs/architecture.md`](docs/architecture.md)（程式地圖）
+- **交接文件索引、合作規則、改完要更新哪些檔案**：[`docs/README.md`](docs/README.md)
+- 資料與隱私說明：[`privacy.html`](privacy.html)；資料來源與出處：[`about.html`](about.html)
 
 ## 怎麼修改或新增部件
 
@@ -74,14 +39,11 @@ tools/
 
 ## 合作規則
 
-1. 每個新功能開一個分支（branch，一份可以放心修改的複本），完成後發 Pull Request（PR，請對方確認後合併回 main 的申請），由另一位夥伴確認再合併。維護者明確要求直接合併時可以，但仍要告知夥伴。
-2. 每個工具放在 `tools/` 底下自己的資料夾，盡量不要兩人同時改同一個工具。
-3. **開工前先到 GitHub 檢查有沒有人在改同一批檔案**：打開 repo 的「Pull requests」分頁，點進每個還沒合併的 PR 看「Files changed」。有改到同一個檔案，就先說好誰先改，或等對方合併後再開工。不然兩個 PR 改到同一段，後合併的會出現「衝突」（conflict：Git 不知道要留哪個版本，得手動挑）。
-4. **開工就先發「草稿 PR」**（Draft，還沒做完、不能合併的 PR），做完再按「Ready for review」改成可合併。這樣 Pull requests 清單就是大家「正在改哪裡」的即時看板。
-5. **不要把學生的真實姓名、照片或成績放進程式碼**。這個 repo 是公開的。
-6. `shared/`、`docs/` 和首頁 `index.html`、`privacy.html`、`README.md`、`CLAUDE.md` 是共用檔案，修改前先告訴夥伴，PR 說明要特別標出。
+詳細規則只寫在一個地方：[`docs/README.md`](docs/README.md) 第 2 節（避免多份說法不一致）。最重要的三條：
 
-完整版（含人多了之後的看板規劃）見規格書「平台架構與分工 → 合作規則」。
+1. 新功能開分支、發 Pull Request，不直接改 main；開工就先發「草稿 PR」，開工前先看有沒有人在改同一批檔案。
+2. **不要把學生的真實姓名、照片或成績放進任何檔案**。這個 repo 是公開的。
+3. `shared/`、`docs/`、首頁 `index.html`、`privacy.html`、`README.md`、`CLAUDE.md` 是共用檔案，修改前先告訴夥伴，PR 說明要特別標出。
 
 ## 授權說明
 
