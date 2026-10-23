@@ -634,25 +634,97 @@ function finish(){
   const left = g.kids.filter(code => !g.done.has(code));
   if(left.length) records.filter(r => r.session === g.session && left.includes(r.kid)).forEach(r => { r.quit = true; updateRecord(r); });
   $("#rTitle").textContent = left.length ? "這次先到這裡" : "完成了！";
-  $("#rList").innerHTML = g.kids.map(code => {
+  /* 練習才有鼓勵的話、獎盃和卡片彈出；正式評量要不要加等 A3 討論（見 docs/pending.md） */
+  const lively = g.kind !== "formal";
+  $("#rList").classList.remove("lively", "wait");
+  $("#rList").innerHTML = g.kids.map((code, i) => {
     const t = g.tally[code], k = kidBy(code), name = esc(k ? kidShow(k) : code);
-    if(!g.done.has(code)) return `<div class="rcard" data-kid="${esc(code)}"><b class="rname2">${Rewards.avatarHtml(code)}${name}</b><span class="big">沒有做完</span>
+    const head = `<div class="rcard" data-kid="${esc(code)}" style="--i:${i}"><b class="rname2">${Rewards.avatarHtml(code)}${name}</b>`;
+    if(!g.done.has(code)) return `${head}<span class="big">沒有做完</span>
       <span class="sm">這次中途結束，紀錄不列入分析，也沒有貼紙。下次做完就可以抽貼紙喔！</span></div>`;
+    const cheer = lively ? `<div class="cheer2">${esc(cheerLine(g, code))}</div>` : "";
     if(g.mode === "flu"){
       const perMin = Math.round((t.roundCorrect || 0) * 60 / g.limit);
-      return `<div class="rcard" data-kid="${esc(code)}"><b class="rname2">${Rewards.avatarHtml(code)}${name}</b><span class="big">每分鐘 ${perMin} 個</span>
-        <span class="sm">答對 ${t.roundCorrect || 0} 個、答錯 ${t.roundWrong || 0} 個（${LIMITS.find(l => +l[0] === g.limit)[1]}），目標每分鐘 ${g.aim} 個${perMin >= g.aim ? "，達到目標！" : ""}</span></div>`;
+      return `${head}<span class="rlabel">每分鐘認出</span><span class="big">${perMin} 個</span>
+        <div class="rstats"><span>答對 ${t.roundCorrect || 0} 個</span><span>答錯 ${t.roundWrong || 0} 個</span><span>${LIMITS.find(l => +l[0] === g.limit)[1]}</span></div>
+        <span class="sm">目標每分鐘 ${g.aim} 個${perMin >= g.aim ? "，達到目標！" : ""}</span>${cheer}</div>`;
     }
     const avg = t.secs.length ? (t.secs.reduce((a, b) => a + b, 0) / t.secs.length).toFixed(1) : "—";
     const hp = g.hpMax ? g.pools[code] : null;
-    return `<div class="rcard" data-kid="${esc(code)}"><b class="rname2">${Rewards.avatarHtml(code)}${name}</b><span class="big">${t.first} / ${t.n}</span>
-      <span class="sm">第一次就答對 ${t.first} 題${t.n ? `（${Math.round(t.first / t.n * 100)}%）` : ""}，最後答對 ${t.passed} 題，答對平均 ${avg} 秒</span>
-      ${hp ? `<span class="sm">${hp.out ? "💔 血量用完了" : `血量剩下 ${"❤".repeat(hp.hp)}（${hp.hp} / ${g.hpMax}）`}</span>` : ""}</div>`;
+    return `${head}<span class="rlabel">答對率</span><span class="big">${t.n ? Math.round(t.first / t.n * 100) : 0}%</span>
+      <div class="rstats"><span>第一次就答對 ${t.first} / ${t.n} 題</span><span>答對平均 ${avg} 秒</span></div>
+      ${t.passed > t.first ? `<span class="sm">再試一次後，最後答對 ${t.passed} 題</span>` : ""}
+      ${hp ? `<span class="sm">${hp.out ? "💔 血量用完了" : `血量剩下 ${"❤".repeat(hp.hp)}（${hp.hp} / ${g.hpMax}）`}</span>` : ""}${cheer}</div>`;
   }).join("") || `<p class="note">這次沒有作答紀錄。</p>`;
   $("#rNote").textContent = (g.kind === "formal" ? "這次是正式評量，做完的結果會納入學習分析。" : "這次是練習，結果另外統計。")
     + (left.length ? "沒有做完的紀錄會保留，但標成「中途結束」，不列入分析。" : "");
   showScreen("#result");
-  giveStickers(g);   /* 每位有作答的學生抽一張貼紙（見 collect.js） */
+  /* 每位有作答的學生抽一張貼紙（見 collect.js）；練習先播完獎盃、卡片彈出後再抽 */
+  if(!lively) return giveStickers(g);
+  /* 卡片先藏著，獎盃消失後才一張張彈出 */
+  const list = $("#rList"), go = () => { list.classList.replace("wait", "lively"); setTimeout(() => { if(G === g) giveStickers(g); }, g.kids.length * 180 + 400); };
+  list.classList.add("wait");
+  if(g.done.size) showTrophy(g, go); else go();
+}
+
+/* 一次作答（同一位學生、同一個 session）的成績：第一次就答對幾題、答對平均秒數、每分鐘幾個 */
+function sessionStats(rs){
+  const secs = rs.filter(r => r.passed && r.correctSec != null).map(r => r.correctSec);
+  const first = rs.filter(r => r.firstCorrect).length;
+  return {n: rs.length, first, avg: secs.length ? secs.reduce((a, b) => a + b, 0) / secs.length : null,
+    perMin: rs[0] && rs[0].timeLimit ? first * 60 / rs[0].timeLimit : null};
+}
+/* 練習結果的鼓勵語：跟「同一位學生、同一個目標和模式、考同一批字的上一次練習」比，
+   只說進步的地方，沒進步或第一次做就說努力的話（不說退步）。只從舊紀錄算，不新增紀錄欄位。 */
+function cheerLine(g, code){
+  const pick = list => list[Math.floor(Math.random() * list.length)];
+  const charsOf = rs => [...new Set(rs.map(r => r.char))].sort().join("");
+  const mine = records.filter(r => r.session === g.session && r.kid === code);
+  const now = sessionStats(mine), chars = charsOf(mine);
+  const past = {};
+  for(const r of records) if(r.kid === code && r.session !== g.session && !r.quit && r.kind === "practice" && r.goal === g.goal && r.mode === g.mode) (past[r.session] = past[r.session] || []).push(r);
+  const prev = Object.values(past).filter(rs => charsOf(rs) === chars).sort((a, b) => a[0].at < b[0].at ? 1 : -1)[0];
+  if(prev){
+    const p = sessionStats(prev);
+    if(g.mode === "flu"){
+      const d = Math.round(now.perMin) - Math.round(p.perMin);
+      if(d > 0) return pick([`每分鐘比上次多認出 ${d} 個字，進步好多！`, `比上次多認出 ${d} 個字，你越來越快了！`]);
+    } else {
+      const more = now.first - p.first, faster = now.avg != null && p.avg != null ? Math.round((p.avg - now.avg) * 10) / 10 : 0;
+      if(more > 0) return pick([`你比上次多答對 ${more} 個字，好厲害！`, `這次多答對了 ${more} 個字，越來越會了！`]);
+      if(more >= 0 && faster >= 0.1) return pick([`你比上次快了 ${faster} 秒，超棒！`, `反應比上次快 ${faster} 秒，好厲害！`]);
+    }
+  }
+  if(g.mode !== "flu" && now.n && now.first === now.n) return pick(["全部第一次就答對，太強了！", "一題都沒錯，真厲害！"]);
+  return pick([`今天完成了 ${now.n} 題，很認真！`, "你很努力，繼續加油！", "每練習一次，就更熟一點喔！", "認真做完了，給自己拍拍手！"]);
+}
+/* 練習做完先跳出獎盃與彩帶，約 2.5 秒自己消失，點一下或按任意鍵就跳過；
+   電腦設定「減少動態效果」時不播，直接看結果 */
+function showTrophy(g, then){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return then();
+  const n = g.done.size, box = document.createElement("div");
+  box.className = "trophy"; box.setAttribute("role", "dialog"); box.setAttribute("aria-label", "完成了");
+  const colors = ["#d64534", "#f5b400", "#2c7a69", "#2a78d6", "#e87ba4"];
+  const conf = Array.from({length: 36}, (_, i) => `<i class="conf" style="left:${Math.random() * 100}%;background:${colors[i % 5]};--x:${Math.round(Math.random() * 160 - 80)}px;--d:${(Math.random() * .8).toFixed(2)}s"></i>`).join("");
+  box.innerHTML = `${conf}<div class="tbox">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <path d="M30 22h60v18c0 22-13 36-30 36S30 62 30 40z" fill="#f5b400" stroke="#1f3d36" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M30 30H16c0 16 8 24 18 25M90 30h14c0 16-8 24-18 25" fill="none" stroke="#1f3d36" stroke-width="4" stroke-linecap="round"/>
+      <path d="M53 75h14v14H53z" fill="#e0a300" stroke="#1f3d36" stroke-width="4"/>
+      <rect x="38" y="89" width="44" height="14" rx="4" fill="#2c7a69" stroke="#1f3d36" stroke-width="4"/>
+      <circle cx="51" cy="44" r="3.5" fill="#1f3d36"/><circle cx="69" cy="44" r="3.5" fill="#1f3d36"/>
+      <path d="M52 53q8 7 16 0" fill="none" stroke="#1f3d36" stroke-width="3.5" stroke-linecap="round"/>
+      <circle cx="45" cy="51" r="3" fill="#ff9d8a"/><circle cx="75" cy="51" r="3" fill="#ff9d8a"/>
+      <path class="tstar" d="M14 10l2.5 5 5.5.8-4 3.9 1 5.5-5-2.6-5 2.6 1-5.5-4-3.9 5.5-.8z" fill="#f5b400"/>
+      <path class="tstar" d="M104 6l2 4 4.4.6-3.2 3.1.8 4.4-4-2.1-4 2.1.8-4.4-3.2-3.1 4.4-.6z" fill="#e87ba4" style="animation-delay:.5s"/>
+    </svg>
+    <div class="tmsg">${n > 1 && n === g.kids.length ? "大家都完成了！" : "完成了！"}</div><div class="tskip">點一下繼續</div></div>`;
+  document.body.appendChild(box);
+  sfx.fanfare();
+  let gone = false;
+  const close = () => { if(gone) return; gone = true; box.remove(); removeEventListener("keydown", close); then(); };
+  box.onclick = close; addEventListener("keydown", close);
+  setTimeout(close, 2600);
 }
 $("#rAgain").onclick = () => { if(G) chooseTheme(); };
 $("#rHome").onclick = () => { G = null; showScreen("#setup"); render(); };
