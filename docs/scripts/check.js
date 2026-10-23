@@ -10,6 +10,7 @@
   5. 文件長度：docs/ 裡的說明文件太長時提醒拆分（太長的文件 Claude 一次讀不完、容易讀到過時內容）
   6. 程式地圖：每個 .js 檔、每個儲存名稱都要寫在 docs/architecture.md（沒寫只提醒）；
      只有入口檔案可以直接存取 localStorage、indexedDB（其他檔案直接用是錯誤，見 docs/refactor.md 規則 1）
+  7. 待同步規格書：列出 docs/ 裡還標著「待同步規格書」的地方，提醒擁有者同步（只提醒）
 
 「錯誤」會讓檢查失敗（紅叉），要修好才合併；「提醒」只列出來，不會失敗。
 已知、等維護者決定的問題放在 KNOWN，寫明原因；修好後從 KNOWN 拿掉。
@@ -140,6 +141,16 @@ const STORAGE_ENTRY = ['tools/literacy/data.js', 'tools/literacy/records.js', 's
 for (const f of files.filter(f => /\.(js|html)$/.test(f) && !f.startsWith('docs/') && !f.startsWith('shared/vendor/') && !STORAGE_ENTRY.includes(f))) {
   if (/\b(localStorage|sessionStorage|indexedDB)\s*\./.test(read(f)))
     err(f, `直接存取瀏覽器儲存空間。請改用入口（識字評量用 data.js 的 load、store；作答紀錄用 records.js；貼紙頭像用 Rewards），見 docs/refactor.md 規則 1`);
+}
+
+/* ---------- 7. 待同步規格書 ---------- */
+/* 打不開規格書的 Claude 會在 docs/ 標「待同步規格書」；這裡列出來，提醒擁有者說「同步規格書」（docs/README.md「規格書怎麼跟上」） */
+{
+  /* 標記寫成「（待同步規格書：要補什麼）」；前面是「的，是在說明規則，不算 */
+  const SYNC = '待同步規格書', count = t => (t.match(/(^|[^「])待同步規格書/g) || []).length;
+  const left = files.filter(f => /^docs\/[^/]+\.md$/.test(f) && !/^docs\/history/.test(f))
+    .map(f => [f, count(read(f))]).filter(([, n]) => n);
+  if (left.length) warn('規格書', `docs/ 裡有 ${left.reduce((a, [, n]) => a + n, 0)} 處標「${SYNC}」（${left.map(([f, n]) => `${f} ${n} 處`).join('、')}），請擁有者說「同步規格書」`);
 }
 
 /* ---------- 結果 ---------- */
