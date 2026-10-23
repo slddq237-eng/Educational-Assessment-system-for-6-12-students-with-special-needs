@@ -84,7 +84,7 @@
 3. **出題**（`play.js` 第 8 節）：`pickItems` 抽字（「常錯優先」會讀 `records`）→ `makeOptions` 組選項（用 `common.js` 的 `confOf`、`wordOf`）→ `hintHtml` 做提示（`data.js` 的 `fitHints` 跳過不適合的提示）。
 4. **作答**（第 9 節）：每題結束呼叫 `endItem` → 組成一筆紀錄，時期用 `data.js` 的 `phaseFor` 判斷、字組資訊用 `wordsets.js` → `records.js` 的 `saveRecord` 存進 IndexedDB。
 5. **結果**（第 10 節 `finish`）：中途離開的紀錄標 `quit` → `collect.js` 的 `giveStickers` 發貼紙（`Rewards.award`）。
-6. **老師專區**（`teacher.js`、`pivot.js`）：只讀 `records`，不寫回。
+6. **老師專區**（`teacher.js`、`pivot.js`）：只讀 `records`，不寫回。錯誤類型的「亂猜會佔」用 `play.js` 的 `optType`（傳入紀錄的 `goal`）替舊紀錄的選項重新分類，改 `optType` 時要一起檢查；`pivot.js` 的「目標字在語詞的位置」用 `teacher.js` 的 `wposOf`。
 
 ## 5. 備課分析 `tools/prep/`
 

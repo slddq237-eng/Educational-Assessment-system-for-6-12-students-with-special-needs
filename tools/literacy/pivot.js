@@ -41,7 +41,10 @@ const DIMS = {
   month:     ["日期（月）", r => dayOf(r).slice(0, 7)],
   boost:     ["常用字加題", r => r.boost ? "常用字加題" : "一般題"],
   fontScale: ["作答字的大小", r => r.fontScale ? (FONT_SIZES.find(f => f[0] === r.fontScale) || [, r.fontScale])[1] : "未記錄"],
-  freq:      ["字頻（分組）", freqGroup, ["前 100 名","101～300 名","301～1000 名","1000 名以後","沒有字頻資料"]]
+  freq:      ["字頻（分組）", freqGroup, ["前 100 名","101～300 名","301～1000 名","1000 名以後","沒有字頻資料"]],
+  /* 2026-10-23 加：目標字在語詞的位置（wposOf 在 teacher.js）、作答裝置（紀錄格式第 2 版起才有） */
+  wpos:      ["目標字在語詞的位置", r => wposOf(r) || WPOS_ORDER[3], WPOS_ORDER],
+  device:    ["裝置", r => r.device || "未記錄"]
 };
 const dimList = () => Object.entries(DIMS).filter(([k]) => k !== "freq" || hasFreq());
 /* [名稱, 計算（回傳 {v, n}）, 單位] */
@@ -70,6 +73,8 @@ const PIVOT_EXAMPLES = [
     read:"排在最上面、又不是淡色的字，是學生最容易錯的字。點字可以看是誰錯、選成什麼。"},
   {id:"etype", name:"常犯哪一種錯", cfg:{metric:"n", row:"etype", col:"phase"},
     read:"每一欄是一個時期，「第一次就對」應該越來越多；某一類錯誤一直很多，教學可以針對它。"},
+  {id:"wpos", name:"詞首詞尾哪邊不穩", cfg:{metric:"err", row:"wpos", col:"kid"},
+    read:"一邊錯得明顯比較多（例如詞尾），再搭配列改成「第一次的結果／錯誤類型」看是不是同詞易混，代表語詞還是整塊記、字還沒從詞裡分出來。"},
   {id:"forget", name:"學完多久會忘", cfg:{metric:"acc", row:"gapAfter", chart:"line"},
     read:"線往右下掉得越快，越需要早一點複習。「教學前或教學中」那一組是對照。"},
   {id:"start", name:"起點能力", cfg:{metric:"acc", row:"lesson", col:"kid", firstOnly:true},
