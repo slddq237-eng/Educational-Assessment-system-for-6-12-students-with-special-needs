@@ -123,9 +123,8 @@ function tabletStart(){
   $("#aim").value = s.aim;
   const g = GOALS.find(x => x.id === state.goal);
   $("#tpInfo").textContent = `今天練習：${lessonsText()}（目標 ${g.id} ${g.name}）`;
-  /* 結果畫面：沒有「回到設定」，改成換下一位學生；平板上不匯出 Excel */
-  $("#rHome").textContent = "換人作答"; $("#rHome").hidden = kids.length < 2; $("#rExport").hidden = true;
-  $("#rHome").onclick = () => { G = null; showScreen("#tabPick"); tpList(); };
+  /* 結果畫面只留「再玩一次」（2026-10-23 維護者決定，不用換人）：沒有「回到設定」，平板上也不匯出 Excel */
+  $("#rHome").hidden = true; $("#rExport").hidden = true;
   tabletKids();
   /* 讀取條：先下載這次要用的字型（play.js 的 sessionText、loadFonts，最多等 10 秒），下載完才出現名字 */
   const faces = fontsToLoad(sessionText(state.lessons, !!settings.practiceBpmf));
