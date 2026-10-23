@@ -289,7 +289,7 @@ function bingoBoard(kid, k){
   return G.boards[id];
 }
 /* 賓果卡上每個字和目標字的關係，用來記錄「錯誤類型」。
-   老師專區錯誤類型的「隨便點會占」也用它替舊紀錄的每個選項重新分類，那時用 goal 傳入紀錄當時的評量目標 */
+   老師專區錯誤類型的「亂猜會佔」也用它替舊紀錄的每個選項重新分類，那時用 goal 傳入紀錄當時的評量目標 */
 function optType(c, x, k, goal = G && G.goal){
   const b = splitKey(k)[0], [sound = "", shape = ""] = confOf(c, b) || [];
   if(x === c) return "答案";
