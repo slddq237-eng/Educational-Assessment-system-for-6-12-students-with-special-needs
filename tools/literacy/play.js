@@ -226,6 +226,12 @@ function loadFonts(faces, onStep, wait = 10000){
   const all = Promise.all(faces.map(f => f.load().catch(() => {}).then(() => onStep(++n, faces.length))));
   return Promise.race([all.then(() => true), new Promise(res => setTimeout(() => res(false), wait))]);
 }
+/* 讀取畫面的圖片：這次主題的貼紙隨機一張；沒有主題就隨機一個主題 */
+function loadPic(theme){
+  const ids = Object.keys(Themes.THEMES), id = Themes.THEMES[theme] ? theme : ids[Math.floor(Math.random() * ids.length)];
+  const st = Themes.THEMES[id].stickers;
+  return Themes.icon(id, st[Math.floor(Math.random() * st.length)][0]);
+}
 const setBar = (sel, n, all) => { const p = all ? Math.round(n / all * 100) : 100; $(sel + " i").style.width = p + "%"; $(sel).setAttribute("aria-valuenow", p); };
 /* 電腦：按「開始」後先下載；都下載過就直接開始。等超過 3 秒的，讀完要再按一次「開始」
    （瀏覽器要「使用者剛點過」才肯唸題目，等太久就不算剛點過） */
@@ -233,11 +239,11 @@ function prepareThen(go){
   const faces = fontsToLoad(sessionText(state.lessons, state.kind !== "formal" && !!settings.practiceBpmf));
   if(!faces.length) return go();
   const box = $("#loadSheet"), t0 = performance.now();
-  $("#ldGo").hidden = true; $("#ldMsg").textContent = "正在下載這次要用的字，第一次會比較久。"; box.hidden = false;
-  loadFonts(faces, (n, all) => setBar("#ldBar", n, all)).then(ok => {
+  $("#ldGo").hidden = true; $("#ldPic").innerHTML = loadPic(state.theme); setBar("#ldBar", 0, 1); box.hidden = false;
+  loadFonts(faces, (n, all) => setBar("#ldBar", n, all)).then(() => {
     const start = () => { box.hidden = true; go(); };
     if(performance.now() - t0 < 3000) return start();
-    $("#ldMsg").textContent = ok ? "準備好了！" : "網路比較慢，還有一些字沒下載完，可以先開始（字會慢慢出現）。";
+    setBar("#ldBar", 1, 1);   /* 沒下載完（網路很慢）也先讓老師開始，字會慢慢出現 */
     $("#ldGo").hidden = false; $("#ldGo").onclick = start; $("#ldGo").focus();
   });
 }

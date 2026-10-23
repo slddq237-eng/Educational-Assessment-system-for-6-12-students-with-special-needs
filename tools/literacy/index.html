@@ -9,11 +9,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-23g">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-23h">
 <!-- 平台共用的主題外觀、頭像、貼紙樣式 -->
-<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-23g">
+<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-23h">
 <!-- 注音字型（3-4）：語詞、句子提示和練習的選項加注音；畫面用到注音時才會下載 -->
-<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-23g">
+<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-23h">
 <style>
 /* 版面：沿用生字賓果的生字簿方格紙。
    設定畫面：左邊六個步驟，右邊固定的「本次評量」摘要；評量設定、教學日期、學生名單、作答紀錄放在彈出面板。
@@ -568,7 +568,13 @@ html.tablet #setup{display:none}
 .tpkids{justify-content:center;gap:18px;margin-top:18px}
 .tpkids .chip{font-size:clamp(26px,4vw,40px);padding:14px 30px 14px 16px;min-height:96px}
 .tpkids .kidchip .av{--s:clamp(60px,9vw,96px);margin-right:12px}
-.tpload{display:grid;gap:10px;justify-items:center;margin:40px auto 0;width:min(520px,90%);text-align:center}
+.tpload{display:grid;gap:18px;justify-items:center;margin:12vh auto 0;width:min(520px,90%)}
+/* 讀取中只留圖片和讀取條（2026-10-23 維護者要求：不要太多字） */
+#tabPick.loading > :not(.tpload){display:none}
+.loadpic{width:clamp(120px,24vw,200px);aspect-ratio:1}
+.loadpic svg{width:100%;height:100%}
+@media (prefers-reduced-motion:no-preference){ .loadpic{animation:bob 1.2s ease-in-out infinite} }
+@keyframes bob{50%{transform:translateY(-10px) rotate(-4deg)}}
 .tpconfirm{display:grid;gap:16px;justify-items:center;margin-top:24px;text-align:center}
 .tpme{display:grid;justify-items:center;gap:10px;font-size:clamp(36px,6vw,60px);font-weight:700}
 .tpme .av{--s:clamp(120px,22vw,200px)}
@@ -863,10 +869,9 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 
 <!-- 開始前下載字型的讀取畫面（play.js 的 prepareThen） -->
 <div class="overlay" id="loadSheet" hidden>
-  <div class="sheet loadsheet" role="dialog" aria-modal="true" aria-labelledby="ldTitle">
-    <h2 id="ldTitle" style="margin:0">準備中…</h2>
+  <div class="sheet loadsheet" role="dialog" aria-modal="true" aria-label="準備中">
+    <div class="loadpic" id="ldPic" aria-hidden="true"></div>
     <div class="loadbar" id="ldBar" role="progressbar" aria-label="準備中" aria-valuemin="0" aria-valuemax="100"><i></i></div>
-    <p class="note" id="ldMsg" style="margin:0"></p>
     <button class="go" id="ldGo" hidden>開始</button>
   </div>
 </div>
@@ -996,12 +1001,12 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 </div>
 
 <!-- =================== 平板作答：點自己的代號（tablet.js） =================== -->
-<div class="wrap" id="tabPick" hidden>
+<div class="wrap loading" id="tabPick" hidden>
   <header class="top"><div class="brand"><div class="stamp">練</div><div><small>識字評量・平板練習</small><h1>請點你的名字</h1></div></div></header>
   <p class="hint" id="tpInfo"></p>
   <p class="warnbar" id="tpVoice" role="alert" hidden></p>
   <!-- 先下載這次要用的字型（讀取條），下載完才出現名字 -->
-  <div class="tpload" id="tpLoad"><div class="loadbar" id="tpBar" role="progressbar" aria-label="準備中" aria-valuemin="0" aria-valuemax="100"><i></i></div><p class="note" style="margin:0">準備中，請稍等…</p></div>
+  <div class="tpload" id="tpLoad"><div class="loadpic" id="tpPic" aria-hidden="true"></div><div class="loadbar" id="tpBar" role="progressbar" aria-label="準備中" aria-valuemin="0" aria-valuemax="100"><i></i></div></div>
   <div class="row tpkids" id="tpList" hidden></div>
   <!-- 防點錯：點了名字要再按一次「是我，開始！」 -->
   <div class="tpconfirm" id="tpConfirm" hidden>
@@ -1058,30 +1063,30 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <!-- 每個檔案後面的 ?v=日期 是版本號：改了任何 .js、.css 檔，就把這頁所有的 ?v= 一起改成當天日期（用「全部取代」；同一天改第二次就在日期後面加 b、c）。
      這樣老師的瀏覽器才會下載新檔案，不會新網頁配到舊程式（例如按「下一步」沒反應）。 -->
 <!-- 生字資料：平台共用的教材資料（shared/lessons.js） -->
-<script src="../../shared/lessons.js?v=2026-10-23g"></script>
+<script src="../../shared/lessons.js?v=2026-10-23h"></script>
 <!-- 注音讀音表（shared/bpmf.js）：語詞、例句裡的破音字該念哪一個音 -->
-<script src="../../shared/bpmf.js?v=2026-10-23g"></script>
+<script src="../../shared/bpmf.js?v=2026-10-23h"></script>
 <!-- 字頻：教育部字頻總表（shared/freq.js），練習的常用字、字頻優先、老師專區高字頻生字會用到 -->
-<script src="../../shared/freq.js?v=2026-10-23g"></script>
+<script src="../../shared/freq.js?v=2026-10-23h"></script>
 <!-- 自動部件拆解（shared/parts.js）：部件提示在 lessons.js 的 PARTS 沒有這個字時才用 -->
-<script src="../../shared/parts.js?v=2026-10-23g"></script>
+<script src="../../shared/parts.js?v=2026-10-23h"></script>
 <!-- 共用小工具（課本排序與名稱、語詞、部件查詢、按匯出時才載入 Excel 元件），識字評量與備課分析共用 -->
-<script src="../../shared/common.js?v=2026-10-23g"></script>
+<script src="../../shared/common.js?v=2026-10-23h"></script>
 <!-- 平台共用：主題與貼紙、每位學生的收藏與頭像 -->
-<script src="../../shared/themes.js?v=2026-10-23g"></script>
-<script src="../../shared/rewards.js?v=2026-10-23g"></script>
+<script src="../../shared/themes.js?v=2026-10-23h"></script>
+<script src="../../shared/rewards.js?v=2026-10-23h"></script>
 <!-- 程式本體：分成八個檔案，順序不能換（說明見 app.js 開頭） -->
-<script src="data.js?v=2026-10-23g"></script>
-<script src="setup.js?v=2026-10-23g"></script>
-<script src="records.js?v=2026-10-23g"></script>
-<script src="wordsets.js?v=2026-10-23g"></script>
-<script src="play.js?v=2026-10-23g"></script>
-<script src="collect.js?v=2026-10-23g"></script>
-<script src="scenes.js?v=2026-10-23g"></script>
-<script src="teacher.js?v=2026-10-23g"></script>
-<script src="pivot.js?v=2026-10-23g"></script>
-<script src="tablet.js?v=2026-10-23g"></script>
-<script src="app.js?v=2026-10-23g"></script>
-<script src="tour.js?v=2026-10-23g"></script>
+<script src="data.js?v=2026-10-23h"></script>
+<script src="setup.js?v=2026-10-23h"></script>
+<script src="records.js?v=2026-10-23h"></script>
+<script src="wordsets.js?v=2026-10-23h"></script>
+<script src="play.js?v=2026-10-23h"></script>
+<script src="collect.js?v=2026-10-23h"></script>
+<script src="scenes.js?v=2026-10-23h"></script>
+<script src="teacher.js?v=2026-10-23h"></script>
+<script src="pivot.js?v=2026-10-23h"></script>
+<script src="tablet.js?v=2026-10-23h"></script>
+<script src="app.js?v=2026-10-23h"></script>
+<script src="tour.js?v=2026-10-23h"></script>
 </body>
 </html>

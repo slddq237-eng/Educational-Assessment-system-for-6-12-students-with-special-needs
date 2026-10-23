@@ -113,9 +113,9 @@ const TABLET_FORM = TABLET && !TABLET.bad ? {id:TABLET.f, entry:TABLET.e} : null
 function tabletStart(){
   showScreen("#tabPick");
   const s = TABLET.st;
-  if(TABLET.bad || TABLET.v !== 1 || !s || !TABLET_FORM){ $("#tpLoad").hidden = true; $("#tpMsg").textContent = "讀不到這次練習的設定，請重新掃描 QR code；還是不行，請老師重新產生一次。"; return; }
+  if(TABLET.bad || TABLET.v !== 1 || !s || !TABLET_FORM){ $("#tpLoad").hidden = true; $("#tabPick").classList.remove("loading"); $("#tpMsg").textContent = "讀不到這次練習的設定，請重新掃描 QR code；還是不行，請老師重新產生一次。"; return; }
   /* 用不到的課（例如老師的網頁比較新）：請平板重新整理 */
-  if(!s.lessons.length || s.lessons.some(k => !lessonChars(k).length)){ $("#tpLoad").hidden = true; $("#tpMsg").textContent = "這個 QR code 的課本這台平板找不到，請重新整理網頁，或請老師重新產生。"; return; }
+  if(!s.lessons.length || s.lessons.some(k => !lessonChars(k).length)){ $("#tpLoad").hidden = true; $("#tabPick").classList.remove("loading"); $("#tpMsg").textContent = "這個 QR code 的課本這台平板找不到，請重新整理網頁，或請老師重新產生。"; return; }
   Object.assign(state, {kind:"practice", answer:"qr", goal:s.goal, mode:s.mode, limit:s.limit, lessons:s.lessons,
     pChoices:s.pChoices, pHints:new Set(s.pHints), pRule:s.pRule, qCount:s.qCount, qMethod:s.qMethod, manual:s.manual || {},
     themePick:s.themePick || "none",
@@ -129,8 +129,10 @@ function tabletStart(){
   tabletKids();
   /* 讀取條：先下載這次要用的字型（play.js 的 sessionText、loadFonts，最多等 10 秒），下載完才出現名字 */
   const faces = fontsToLoad(sessionText(state.lessons, !!settings.practiceBpmf));
-  const ready = () => { $("#tpLoad").hidden = true; tpList(); };
-  if(!faces.length) ready(); else loadFonts(faces, (n, all) => setBar("#tpBar", n, all)).then(ready);
+  const ready = () => { $("#tpLoad").hidden = true; $("#tabPick").classList.remove("loading"); tpList(); };
+  if(!faces.length) return ready();
+  $("#tpPic").innerHTML = loadPic(state.themePick);   /* 讀取中（#tabPick 一開始就有 loading）：只看得到圖片和讀取條 */
+  loadFonts(faces, (n, all) => setBar("#tpBar", n, all)).then(ready);
 }
 /* 顯示名字清單（收起確認畫面） */
 function tpList(){ if($("#tpLoad").hidden){ $("#tpList").hidden = false; $("#tpConfirm").hidden = true; } }
