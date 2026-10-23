@@ -19,6 +19,7 @@
 | 網頁字型 LXGW WenKai TC（霞鶩文楷） | 不再使用（2026-10-21 最後一個用到的生字賓果移除） | Google Fonts | — | SIL OFL 1.1 | 已停用：字形和教育部標準楷書不同，改用全字庫正楷體 |
 | 標準楷書字型 全字庫正楷體（TW-Kai 98.1） | `shared/fonts/tw-kai-*.woff2`、`tw-kai.css`（所有頁面） | 行政院全字庫 cns11643.gov.tw | 98.1（npm `@fontpkg/tw-kai` 98.1.0） | 政府資料開放授權條款－第 1 版 | 2026-10-21 加入；已列入關於我們；用 `docs/scripts/make_kai.py` 產生 |
 | SheetJS 0.18.5 | `shared/vendor/`（識字評量、備課分析，按匯出時才載入） | SheetJS | 0.18.5 | Apache 2.0（授權全文 `shared/vendor/xlsx-LICENSE.txt`） | 已列入關於我們；2026-10-20 放進 repo |
+| qrcode-generator 1.4.4 | `shared/vendor/qrcode-generator-1.4.4.js`（識字評量平板作答，按「產生 QR code」時才載入） | Kazuhiko Arase（npm `qrcode-generator`） | 1.4.4 | MIT（授權全文 `shared/vendor/qrcode-LICENSE.txt`）；「QR Code」是 DENSO WAVE 的註冊商標 | 2026-10-23 放進 repo；已列入關於我們 |
 | 注音字型（識字評量） | `shared/fonts/`、`shared/bpmf.js` | ButTaiwan/bpmfvs（字嗨注音標楷） | bpmfvs commit fa20c2b（2026-03-27） | 漢字 CC BY 4.0、其餘 SIL OFL 1.1 | 2026-10-20 加入；已列入關於我們 |
 | 新酷音詞庫 | 只在產生 `shared/bpmf.js` 時使用，不放進 repo | chewing/libchewing-data | libchewing-data commit c44e81a（2026-03-22；詞庫標示 2025.11.17） | LGPL-2.1 | 2026-10-20；已列入關於我們 |
 | 教育部《國語一字多音審訂表》88 年版 PDF | 只在執行 `make_bpmf.py` 比對讀音時自動下載到電腦的暫存資料夾，不放進 repo | language.moe.gov.tw/001/Upload/Files/wxiao89/a.pdf | 88 年版（PDF 檔案日期 2025-09-18，2026-10-21 下載） | 教育部公告的標準，只拿來比對 | 2026-10-21；已列入關於我們 |

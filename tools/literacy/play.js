@@ -170,7 +170,7 @@ let G = null;
 const SPEAKER_SVG = `<svg viewBox="0 0 24 24" width="55%" height="55%" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>`;
 
 function showScreen(id){
-  for(const s of ["#setup", "#play", "#result", "#book", "#teacher"]) $(s).hidden = s !== id;
+  for(const s of ["#setup", "#play", "#result", "#book", "#teacher", "#tabPick"]) $(s).hidden = s !== id;
   window.scrollTo(0, 0);
 }
 
@@ -659,6 +659,7 @@ function finish(){
   $("#rNote").textContent = (g.kind === "formal" ? "這次是正式評量，做完的結果會納入學習分析。" : "這次是練習，結果另外統計。")
     + (left.length ? "沒有做完的紀錄會保留，但標成「中途結束」，不列入分析。" : "");
   showScreen("#result");
+  if(TABLET) tabletSend(g);   /* 平板作答：把這次的紀錄送到老師的 Google 表單（見 tablet.js） */
   /* 每位有作答的學生抽一張貼紙（見 collect.js）；練習先播完獎盃、卡片彈出後再抽 */
   if(!lively) return giveStickers(g);
   /* 卡片先藏著，獎盃消失後才一張張彈出 */

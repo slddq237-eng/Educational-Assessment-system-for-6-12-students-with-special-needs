@@ -39,12 +39,12 @@
 
 | 頁面 | 載入順序 |
 |---|---|
-| `tools/literacy/index.html` | lessons → bpmf → freq → parts → common → themes → rewards → data → setup → records → wordsets → play → collect → scenes → teacher → pivot → app → tour |
+| `tools/literacy/index.html` | lessons → bpmf → freq → parts → common → themes → rewards → data → setup → records → wordsets → play → collect → scenes → teacher → pivot → tablet → app → tour |
 | `tools/prep/index.html` | lessons → parts → freq → common → prep |
 | `tools/literacy/guide.html`、`analysis-guide.html`（使用說明、分析教學） | 頁面裡的 `DEMOS` → demo.js（示範動畫）；樣式 demo.css |
 
 - 每個 `<script src>`、`<link>` 後面都有 `?v=日期`，**所有頁面要一樣**；改了任何 js、css 就全部換成新的版本號，老師的瀏覽器才會抓新檔（自動檢查第 3 項）。
-- Excel 元件 `shared/vendor/xlsx-0.18.5.full.min.js` 不在上表：要匯出、匯入 Excel 時才由 `common.js` 的 `loadXlsx()` 載入。
+- Excel 元件 `shared/vendor/xlsx-0.18.5.full.min.js` 不在上表：要匯出、匯入 Excel 時才由 `common.js` 的 `loadXlsx()` 載入。QR code 元件 `shared/vendor/qrcode-generator-1.4.4.js` 也一樣，按「產生 QR code」時才由 `tablet.js` 的 `loadQr()` 載入。
 
 ## 3. 共用檔案 `shared/`
 
@@ -72,7 +72,8 @@
 | `scenes.js` | — | 打怪獸的四個場景動畫 | 由 `play.js` 的 3-3 呼叫 |
 | `teacher.js` | 15～20 | 老師專區：一位學生的圖表、全班總表、逐字學習紀錄 | `renderTeacher`、`openCharLog` |
 | `pivot.js` | 21～23 | 進階分析（樞紐分析表） | `renderPivot` |
-| `app.js` | — | 全部載入後畫出第一個畫面、過夜換日提醒 | — |
+| `tablet.js` | — | 平板作答（F2）：表單網址設定、產生 QR code、平板點代號與送出、匯入 Google 試算表的 Excel | `tabletQr`、`tabletStart`、`tabletSend`（`finish` 呼叫）、`tabletSheet`（`records.js` 的匯入檔案呼叫） |
+| `app.js` | — | 全部載入後畫出第一個畫面（平板作答時改成點代號的畫面）、過夜換日提醒 | — |
 | `tour.js` | — | 新手導覽 | — |
 | `demo.js`、`demo.css` | — | 使用說明、分析教學頁的示範動畫 | 只給 guide.html、analysis-guide.html 用 |
 
@@ -117,6 +118,7 @@
 | Google Fonts（fonts.googleapis.com、fonts.gstatic.com） | 介面字型 Huninn | 改用電腦內建字型，照常使用 |
 | 瀏覽器的語音（Chrome 的 Google 語音會連雲端） | 唸題目；唸學生名字只用本機語音 | 沒有語音時提醒老師 |
 | Google 表單（docs.google.com） | 問題回報連結 | 只是連結 |
+| 老師自己的 Google 表單（docs.google.com/forms/…/formResponse） | 平板作答：學生做完送出作答紀錄（只有代號），見 `tablet.js` | 結果畫面顯示「送不出去」，可再送或下載紀錄檔 |
 
 新增對外連線時要更新 `privacy.html` 和 `docs/data-sources.md`。
 
@@ -149,6 +151,7 @@
 ## 10. 現在架構的特點與注意事項
 
 - **共用名稱**：識字評量的檔案靠「上面定義、下面直接用」溝通，沒有明確的介面。改名稱前先在整個 repo 搜尋這個名稱（例如在 GitHub 或請 Claude 搜尋），確定所有用到的地方都一起改。`themes.js`、`rewards.js` 只對外提供 `window.Themes`、`window.Rewards`，比較不會撞名，新的共用程式建議照這個寫法。
+- **平板作答模式**（網址有 `#t=`，`data.js` 的 `TABLET`）：`load` 改從網址讀、`store` 不寫，`records.js` 不開資料庫，其他程式照常跑。新增要存的資料時記得它在平板上不會存下來。
 - **作答紀錄只有 `records.js` 直接存取 IndexedDB**：這是之後要換成線上資料庫（階段 F）時最需要守住的界線；其他檔案只讀 `records` 陣列、透過 `saveRecord`／`updateRecord` 寫入。
 - **日期以打開網頁那天為準**（`data.js` 的 `today`）：網頁開過夜會提醒重新整理（`app.js`）。
 - **整理（重構）程式**：規則與進度清單在 `docs/refactor.md`。

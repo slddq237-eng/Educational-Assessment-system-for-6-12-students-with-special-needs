@@ -55,7 +55,8 @@ function clearRecords(){
   if(!recDb) return;
   try { recDb.transaction(REC_STORE, "readwrite").objectStore(REC_STORE).clear(); } catch(e){}
 }
-(async () => { recDb = await openRecDb(); records = await loadRecords(); $("#dbWarn").hidden = !!recDb; checkBackup(); })();
+/* 平板作答（data.js 的 TABLET）不存進平板的資料庫：紀錄只放在記憶體、送到老師的 Google 表單（見 tablet.js） */
+(async () => { recDb = TABLET ? null : await openRecDb(); records = await loadRecords(); $("#dbWarn").hidden = !!recDb || !!TABLET; checkBackup(); })();
 
 /* 備份提醒：有紀錄、而且超過 30 天沒下載備份檔（或從來沒備份過）時，設定畫面上方提醒一次 */
 const BACKUP_KEY = "literacy-lastBackup", BACKUP_DAYS = 30;
@@ -189,7 +190,8 @@ function downloadJson(data, filename, msgSel = "#recMsg"){
    平台存的檔案都是「平台資料檔」（.json），檔案裡的 kind 寫著是哪一種：
      backup＝備份檔、archive＝封存檔（兩種格式相同）、wordsets＝字組檔（見 wordsets.js）。
    以前的備份檔、封存檔沒有 kind，看有沒有 archive 判斷，照樣可以匯入。
-   選了檔案先說明「這是什麼檔、裡面有什麼」，老師按「匯入」才真的加進來。Excel 檔只能看，不能匯入。 */
+   選了檔案先說明「這是什麼檔、裡面有什麼」，老師按「匯入」才真的加進來。
+   Excel 檔只有一種能匯入：從 Google 試算表下載的平板作答紀錄（kind＝tablet，見 tablet.js 的 tabletSheet）；平台匯出的 Excel 只能看。 */
 const fileKind = d => d.kind || (d.archive ? "archive" : "backup");
 const recKey = r => `${r.session}|${r.at}|${r.kid}|${r.char}`;
 const savedDay = d => { const t = new Date(d.savedAt); return isNaN(t) ? "" : `${t.getFullYear()}/${t.getMonth() + 1}/${t.getDate()} `; };
@@ -198,7 +200,10 @@ $("#recRestore").onchange = async e => {
   if(!f) return;
   const ask = $("#importAsk"); ask.hidden = true;
   let data;
-  try { data = JSON.parse(await f.text()); } catch(err){ $("#recMsg").textContent = "沒辦法讀取這個檔案：這不是平台存的資料檔（Excel 檔只能看，不能匯入）。"; return; }
+  if(/\.(xlsx|csv)$/i.test(f.name)){
+    try { data = await tabletSheet(f); } catch(err){ $("#recMsg").textContent = `沒辦法讀取這個 Excel 檔：${err.message}`; return; }
+    if(!data){ $("#recMsg").textContent = "這個 Excel 檔裡找不到平板作答的紀錄。平台匯出的 Excel 只能看，不能匯入；換電腦請用備份檔。"; return; }
+  } else try { data = JSON.parse(await f.text()); } catch(err){ $("#recMsg").textContent = "沒辦法讀取這個檔案：這不是平台存的資料檔（Excel 檔只能看，不能匯入）。"; return; }
   if(!data || data.app !== "literacy"){ $("#recMsg").textContent = "沒辦法讀取這個檔案：這不是識字評量存的資料檔。"; return; }
   const kind = fileKind(data);
   let text, doIt;
@@ -214,6 +219,18 @@ $("#recRestore").onchange = async e => {
       + (plan.skip.length ? `<br><span class="warn">${esc(plan.skip.join("、"))}：這台電腦的字組已經用在正式評量，不會被換掉（要換，請先在第 3 步按「重新開始一組」再匯入）。</span>` : "")
       + (plan.none.length ? `<br>${esc(plan.none.join("、"))}：這個版本的網頁沒有這一課的字，會略過。` : "");
     doIt = () => { wsImport(plan); render(); return `已匯入 ${plan.ok.length} 課的字組${plan.skip.length ? `，${plan.skip.length} 課沒有換掉` : ""}。到第 3 步選課次就會看到。`; };
+  } else if(kind === "tablet"){
+    const have = new Set(records.map(recKey)), add = data.records.filter(r => !have.has(recKey(r)));
+    const unknown = [...new Set(data.records.map(r => r.kid))].filter(c => !kidBy(c));
+    text = `這是${data.sheet ? "從 Google 試算表下載的平板作答紀錄" : "平板上下載的紀錄檔（送不出去時用）"}：${data.sessions} 次練習、${data.records.length} 筆作答紀錄（其中 ${add.length} 筆是這台電腦還沒有的）。`
+      + (data.missing ? `<br><span class="warn">有 ${data.missing} 次練習少了一部分資料（可能沒有送完），收到的部分照樣匯入。</span>` : "")
+      + (unknown.length ? `<br><span class="warn">代號 ${esc(unknown.join("、"))} 不在這台電腦的學生名單裡，紀錄照樣匯入，請到「學生名單」加上這些代號。</span>` : "");
+    doIt = () => {
+      /* 平板沒有學生名字，用這台電腦的學生名單補上 */
+      add.forEach(r => { const k = kidBy(r.kid); r.kidName = k ? k.name : ""; saveRecord(r); });
+      render();
+      return `已匯入 ${add.length} 筆新的作答紀錄（重複的紀錄不會再加一次）。`;
+    };
   } else { $("#recMsg").textContent = "這個檔案是比較新版本的網頁存的，請重新整理網頁後再匯入一次。"; return; }
   $("#recMsg").textContent = "";
   ask.innerHTML = `<p style="margin:0">${text}</p><p style="margin:0"><b>要匯入嗎？</b></p>
