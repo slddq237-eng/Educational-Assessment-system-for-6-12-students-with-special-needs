@@ -93,6 +93,7 @@ function step2Miss(){
     return !n ? "請先點選要做的學生" : n > 4 ? "一次最多 4 位學生" : "";
   }
   const a = ANSWERS.find(x => x.id === state.answer);
+  if(a.id === "qr" && state.kind === "formal") return "平板作答目前只能用在練習，正式評量請換別的作答模式";
   return !n ? "請先點選要評量的學生" : n < a.min || n > a.max ? `「${a.name}」需要 ${a.min}～${a.max} 位學生，目前 ${n} 位` : "";
 }
 function renderWizard(){
@@ -427,8 +428,11 @@ function renderQuiz(){
   box.querySelectorAll("[data-qm]").forEach(b => b.onclick = () => { state.qMethod = b.dataset.qm; render(); });
 }
 
+/* 平板作答（tablet.js）：只在進階設定；目前只能練習（正式評量的作答裝置屬 A3，先討論） */
+const qrOn = () => !isQuick() && state.answer === "qr";
 function renderAnswers(){
-  $("#answers").innerHTML = ANSWERS.map(a => `<button class="opt ${state.answer===a.id?"on":""}" data-a="${a.id}" ${a.off?"disabled":""} aria-pressed="${state.answer===a.id}">${a.name}<small>${a.off?`${a.desc}（${a.off}）`:a.desc}</small></button>`).join("");
+  const offOf = a => a.off || (a.id === "qr" && state.kind === "formal" ? "目前只能練習" : "");
+  $("#answers").innerHTML = ANSWERS.map(a => `<button class="opt ${state.answer===a.id?"on":""}" data-a="${a.id}" ${offOf(a)?"disabled":""} aria-pressed="${state.answer===a.id}">${a.name}<small>${offOf(a)?`${a.desc}（${offOf(a)}）`:a.desc}</small></button>`).join("");
   $("#answers").querySelectorAll("button:not(:disabled)").forEach(b => b.onclick = () => { state.answer = b.dataset.a; render(); });
 }
 
@@ -540,12 +544,15 @@ function renderSummary(){
     ["題目", quizText],
     ["評量時機", state.lessons.length && n && !ph.includes(null) ? ph.join("<br>") : null, n ? "請回第 3 步，在課次卡片設定教學日期" : "先選學生才能判斷"],
     ["作答模式", a.name],
+    ...(qrOn() ? [["回傳表單", settings.tabletForm ? "你自己的 Google 表單" : null, "請到「⚙ 細部設定 → 練習與遊戲」貼上 Google 表單網址"]] : []),
     ["學生", n ? (kidsOk ? `${selKids().map(c => esc(kidLabel(kidBy(c)))).join("、")}（${n} 位）` : null) : null, n ? `「${a.name}」需要 ${a.min}～${a.max} 位，目前 ${n} 位` : "還沒選"]
   ];
   $("#sum").innerHTML = rows.map(([t,v,miss]) => `<div><dt>${t}</dt><dd class="${v?"":"miss"}">${v || miss || "還沒選"}</dd></div>`).join("");
   $("#go").disabled = rows.some(r => !r[1]);
+  if(qrOn()) $("#go").textContent = "產生 QR code";
 }
-$("#go").onclick = () => chooseTheme();   /* 先選主題（見 collect.js），再開始 */
+/* 先選主題（見 collect.js），再開始；平板作答改成顯示 QR code（見 tablet.js） */
+$("#go").onclick = () => qrOn() ? tabletQr() : chooseTheme();
 $("#aim").addEventListener("input", renderSummary);
 
 /* 教學日期管理面板：每一課一列「全班」，下面可以加「個別學生不同」的列（A8：同一課學生進度不同） */

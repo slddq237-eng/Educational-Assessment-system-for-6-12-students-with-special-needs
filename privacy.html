@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="shared/fonts/tw-kai.css?v=2026-10-23b">
+<link rel="stylesheet" href="shared/fonts/tw-kai.css?v=2026-10-23f">
 <style>
 /* 資料與隱私說明：給學校、家長與使用的老師看。內容對應規格書「資料來源、授權與隱私」表二。
    功能改變（新增會存學生資料的功能、新的對外連線）時，這一頁要一起改。 */
@@ -73,6 +73,7 @@ td:first-child{font-weight:700;white-space:nowrap}
       <tr><td>頭像、貼紙收藏</td><td>老師電腦的瀏覽器</td><td>預設用卡通動物。<b>上傳照片是選填</b>，照片會縮小後存在這台電腦；上傳前建議先取得家長同意。</td></tr>
       <tr><td>教學日期（可以依學生不同）、評量設定、每課要考的字（字組）</td><td>老師電腦的瀏覽器</td><td>不含學生名字；個別學生的教學日期只用學生代號。</td></tr>
       <tr><td>字組檔（.json，分享給同事用）</td><td>老師自己下載的檔案</td><td>只有每課要考哪些字，沒有學生資料，可以寄給同事。</td></tr>
+      <tr><td>平板作答的紀錄（選用）</td><td>老師自己的 Google 表單與試算表</td><td>只有作答模式選「平板掃 QR code」時才有。送到表單的紀錄只有學生代號，沒有名字；平板上不留作答紀錄。QR code 裡有這次練習的設定和學生名字（讓學生在平板上點自己的名字），只給學生掃，不要貼到公開的地方。</td></tr>
       <tr><td>備份檔（.json）、匯出的 Excel</td><td>老師自己下載的檔案</td><td>裡面有學生名字和成績，見下方「老師要注意」。</td></tr>
     </table></div>
     <p class="note">「瀏覽器」指的是 Chrome、Edge、Safari 這些上網的程式。資料只在<b>同一台電腦、同一個瀏覽器、同一個網址</b>看得到；換電腦或換瀏覽器就看不到，要用備份檔搬過去。</p>
@@ -80,10 +81,11 @@ td:first-child{font-weight:700;white-space:nowrap}
 
   <section class="card">
     <h2>網站會連到哪裡</h2>
-    <p style="margin:0">打開網頁時會從下面這些地方下載網頁、字型和程式元件。這些服務會收到一般的連線紀錄（例如 IP 位址），<b>不會收到學生資料</b>。作答時不需要連網。</p>
+    <p style="margin:0">打開網頁時會從下面這些地方下載網頁、字型和程式元件。這些服務會收到一般的連線紀錄（例如 IP 位址），<b>不會收到學生資料</b>。作答時不需要連網（平板作答除外，見下方）。</p>
     <ul>
       <li><b>GitHub Pages</b>：放網頁的地方。</li>
       <li><b>Google Fonts</b>：網頁用的中文字型。</li>
+      <li><b>老師自己的 Google 表單（平板作答，選用）</b>：學生用平板做完練習後，把作答紀錄（學生代號，沒有名字）送到老師自己建立的 Google 表單，存在老師的 Google 帳號。</li>
       <li><b>Google 表單</b>：只有按「問題回報」時才會打開。填寫內容會存在 Google，<b>請勿填學生的姓名、成績、照片</b>。</li>
     </ul>
     <p style="margin:0"><b>語音唸讀</b>用的是瀏覽器內建的語音。有些瀏覽器的語音（例如 Chrome 的「Google 國語」）會把要唸的文字送到雲端合成，所以：</p>
@@ -100,6 +102,7 @@ td:first-child{font-weight:700;white-space:nowrap}
       <li><b>換電腦、換瀏覽器、清除瀏覽器資料之前，一定要先下載備份檔</b>，到新電腦再按「選單 → 匯入檔案」。清除瀏覽資料後，紀錄就找不回來了。</li>
       <li><b>不要用無痕視窗</b>：關掉視窗後，名單和紀錄都會不見。</li>
       <li><b>備份檔和 Excel 裡有學生名字和成績</b>：不要傳到公開的雲端、群組或社群；檔名不要寫學生姓名；不用了就刪除。</li>
+      <li><b>用平板作答時</b>，Google 試算表裡有學生代號和作答紀錄：表單和試算表不要分享給不相關的人；用在研究或論文前，要另外取得家長同意。</li>
       <li><b>共用電腦</b>（例如教室電腦）的其他人打開同一個網站看得到名單和紀錄。共用電腦請只填代號，或用自己的電腦。</li>
     </ul>
     <div class="warn">這一頁說明平台本身怎麼存資料，不能取代學校的個資規定。使用前請依學校的規定辦理；有疑問請洽平台維護老師。</div>

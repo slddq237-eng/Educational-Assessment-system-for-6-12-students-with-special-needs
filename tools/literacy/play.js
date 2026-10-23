@@ -91,8 +91,9 @@ function hintHtml(id, c, b){
   /* 語詞、句子提示加注音（3-4）：目標字挖空，不會看到它的注音；破音字依 shared/bpmf.js 的讀音 */
   /* 報讀提示：這次有開（G.read）就在語詞、句子提示旁加小喇叭，按了念出完整語詞或句子（見 showNextHint） */
   const read = G && G.read ? `<button class="hspk" data-read="${id}" aria-label="念給我聽">${SPEAKER_SVG}</button>` : "";
-  if(id === "word"){ const w = wordOf(c, b); return w ? `<div class="h bpmf">${esc(Bpmf.blank(w, c, "○"))}的○${read}</div>` : ""; }
-  if(id === "sent"){ const t = sentOf(c, b); return t ? `<div class="h sent bpmf">${esc(Bpmf.blank(t, c, "（　）"))}${read}</div>` : ""; }
+  const spk = read ? " withspk" : "";   /* 有喇叭的提示框右邊留位置（舊的 Safari 不支援 :has，所以用 class） */
+  if(id === "word"){ const w = wordOf(c, b); return w ? `<div class="h bpmf${spk}">${esc(Bpmf.blank(w, c, "○"))}的○${read}</div>` : ""; }
+  if(id === "sent"){ const t = sentOf(c, b); return t ? `<div class="h sent bpmf${spk}">${esc(Bpmf.blank(t, c, "（　）"))}${read}</div>` : ""; }
   if(id === "pic") return PICS[c] ? `<div class="pic" role="img" aria-label="圖片提示">${PICS[c]}</div>` : "";
   if(id === "sound") return `<div class="h">再慢慢唸一次</div>`;
   if(id === "parts"){
@@ -116,18 +117,23 @@ const pickVoice = () => voices.find(v => v.lang === "zh-TW" && /Google/i.test(v.
    找不到就不唸名字（speak 回傳 false，由呼叫的地方改成不含名字的說法）。題目的生字語詞照常用 pickVoice()。 */
 const localVoice = () => voices.find(v => v.localService && /zh[-_]TW/i.test(v.lang)) || voices.find(v => v.localService && /^zh/i.test(v.lang)) || null;
 const hasZhVoice = () => voices.some(v => /^zh/i.test(v.lang));
+/* Android 的 Chrome（2026-10-23 維護者用 Samsung A52 測到喇叭沒聲音）：
+   cancel() 後馬上 speak() 有時整句被吃掉，所以只有正在唸的時候才 cancel，而且稍等一下再唸；
+   唸的句子要留著（lastUtter），不然可能被瀏覽器提早清掉，唸完的通知（onend）不會來 */
+let lastUtter = null;
 function speak(text, onend, rate, withName){
   const done = () => { const sp = $("#speaker"); if(sp) sp.classList.remove("talk"); if(onend) onend(); };
   if(!("speechSynthesis" in window)){ setTimeout(done, 300); return !withName; }
   const v = withName ? localVoice() : pickVoice();
   if(withName && !v) return false;
   try {
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
+    const busy = speechSynthesis.speaking || speechSynthesis.pending;
+    if(busy) speechSynthesis.cancel();
+    const u = lastUtter = new SpeechSynthesisUtterance(text);
     u.lang = "zh-TW"; if(v) u.voice = v; u.rate = rate || settings.rate;
     u.onend = u.onerror = done;
     const sp = $("#speaker"); if(sp) sp.classList.add("talk");
-    speechSynthesis.speak(u);
+    if(busy) setTimeout(() => { if(lastUtter === u) speechSynthesis.speak(u); }, 80); else speechSynthesis.speak(u);
   } catch(e){ setTimeout(done, 300); }
   return true;
 }
@@ -170,7 +176,7 @@ let G = null;
 const SPEAKER_SVG = `<svg viewBox="0 0 24 24" width="55%" height="55%" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>`;
 
 function showScreen(id){
-  for(const s of ["#setup", "#play", "#result", "#book", "#teacher"]) $(s).hidden = s !== id;
+  for(const s of ["#setup", "#play", "#result", "#book", "#teacher", "#tabPick"]) $(s).hidden = s !== id;
   window.scrollTo(0, 0);
 }
 
@@ -305,6 +311,17 @@ function optType(c, x, k, goal = G && G.goal){
 }
 
 /* 準備一題：組選項、畫畫面、唸題目；唸完才開始計時 */
+/* 舊的 Safari（iOS 15 以前，例如 iPad Air 2，2026-10-23 維護者實測選項變很小）不支援 CSS 的 cqw、cqh：
+   量出選項區的寬高交給 CSS（index.html 的 @supports not (width:1cqw)），畫面大小改變時重新量 */
+const NO_CQ = !(window.CSS && CSS.supports && CSS.supports("width", "1cqw"));
+const optsRO = NO_CQ && window.ResizeObserver ? new ResizeObserver(() => fitOpts()) : null;
+function fitOpts(){
+  const box = NO_CQ && $("#pBody .optsbox"), o = box && box.querySelector(".opts");
+  if(!o) return;
+  o.style.setProperty("--bw", box.clientWidth + "px"); o.style.setProperty("--bh", box.clientHeight + "px");
+  if(optsRO){ optsRO.disconnect(); optsRO.observe(box); }
+}
+if(NO_CQ && !optsRO) addEventListener("resize", fitOpts);
 function newItem(it){
   const b = splitKey(it.k)[0], board = G.layout === "bingo" ? bingoBoard(it.kid, it.k) : null;
   const regroup = G.goal === "4-1";   /* 目標 4-1 部件重組：看部件選字，不唸題目 */
@@ -327,6 +344,7 @@ function newItem(it){
       </div></div>
     </div>
     ${G.noHelp ? "" : `<div class="tbar"><span>老師提示紀錄：</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
+  fitOpts();
   $("#pBody").querySelectorAll(".opt-big").forEach(btn => btn.onclick = () => pick(+btn.dataset.i, btn));
   if(!regroup) $("#speaker").onclick = () => speak(promptOf(it));
   $("#pBody").querySelectorAll("[data-t]").forEach(btn => btn.onclick = () => {
@@ -660,6 +678,7 @@ function finish(){
   $("#rNote").textContent = (g.kind === "formal" ? "這次是正式評量，做完的結果會納入學習分析。" : "這次是練習，結果另外統計。")
     + (left.length ? "沒有做完的紀錄會保留，但標成「中途結束」，不列入分析。" : "");
   showScreen("#result");
+  if(TABLET) tabletSend(g);   /* 平板作答：把這次的紀錄送到老師的 Google 表單（見 tablet.js） */
   /* 每位有作答的學生抽一張貼紙（見 collect.js）；練習先播完獎盃、卡片彈出後再抽 */
   if(!lively) return giveStickers(g);
   /* 卡片先藏著，獎盃消失後才一張張彈出 */
