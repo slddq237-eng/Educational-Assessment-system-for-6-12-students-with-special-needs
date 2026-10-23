@@ -4,7 +4,8 @@
 
 檢查六件事：
   1. 程式語法：所有 .js 檔和 HTML 裡的 <script>，有沒有打錯字、少括號（有的話網頁會整個壞掉）
-  2. 教材資料（shared/lessons.js）：語詞裡有沒有這個字、干擾字有沒有包含答案本身等
+  2. 教材資料（shared/lessons.js）：語詞裡有沒有這個字、干擾字有沒有包含答案本身等；
+     語詞、例句裡有語音替換詞（shared/bpmf.js 的 BPMF_SAY）但還沒確認過的，提醒確認讀音
   3. 版本號：每個頁面的 ?v= 要一樣（改了 js、css 卻忘了改版本號，老師的瀏覽器會用舊檔）
   4. 學生資料：repo 是公開的，不能有照片、備份檔、作答紀錄
   5. 文件長度：docs/ 裡的說明文件太長時提醒拆分（太長的文件 Claude 一次讀不完、容易讀到過時內容）
@@ -22,6 +23,24 @@ const warn = (where, msg) => warns.push(`${where}：${msg}`);
 
 /* 已知、等決定的教材問題：key＝「課本代號-課次字」 */
 const KNOWN = {};
+/* 語音替換詞（make_bpmf.py 的 SAY）會換掉語詞、例句裡「所有」出現的地方。
+   比替換詞長的語詞或例句，確認裡面那個字的讀音和替換詞一樣，就把整句加進這裡，不再提醒；
+   讀音不一樣（例如「不禁止」的禁是ㄐㄧㄣˋ，不能換成「今」）就要改 make_bpmf.py 的 SAY。 */
+const SAY_OK = new Set([   /* 2026-10-23 確認：都是同一個意思、同一個讀音 */
+  '壁球是利用反彈原理所發展出的運動。',
+  '大家都熱情的參與這次活動。',
+  '馬偕博士在臺灣創辦了醫院。',
+  '過了一個暑假，我長高了，位子被換到最後一排。',
+  '旅居國外的他吃到家鄉特有的雞絲飯時，不禁十分感動。',
+  '今年暑假，他報名參加許多夏令營活動。',
+  '我最期待每年暑假的家庭旅行。',
+  '他看著全家的合照，不禁思念住在遠方的爺爺和奶奶。',
+  '哥哥已經辦理好註冊手續，暑假過後，就是那所學校的新生。',
+  '他上體育課時，不小心跌倒受傷了。',
+  '年糕裹上麵粉後油炸，就成為美味可口的點心。',
+  '重地街亭失守後，讓諸葛亮陣營元氣大傷。',
+  '諸葛亮是三國故事中的傳奇人物，他足智多謀、忠心耿耿，受到後人的景仰。',
+]);
 
 /* repo 裡所有檔案（略過 .git） */
 function walk(dir, out = []) {
@@ -57,6 +76,7 @@ try {
     ';Object.assign(this,{BOOKS,WORDS,WORDS_ED,SENT,SENT_ED,CONF,CONF_ED})').call(ctx);
   const { BOOKS, WORDS, WORDS_ED, SENT, SENT_ED, CONF, CONF_ED } = ctx;
   let few = 0, fewEx = [];
+  const texts = new Map();   /* 所有語詞、例句 → 第一次出現的位置（給語音替換詞檢查用） */
   for (const b in BOOKS) {
     if (b.includes('-')) err('shared/lessons.js', `課本代號「${b}」不能有「-」（程式用「-」分開課本和課次）`);
     const seen = {};
@@ -77,6 +97,7 @@ try {
         else if ([...w].length < 2) err(where, `語詞「${w}」只有一個字（唸題目會變成「${c}的${c}」）`);
         const s = ((SENT_ED[b] || {})[c]) || SENT[c] || '';
         if (s && !s.includes(c)) err(where, `例句裡沒有這個字：${s}`);
+        for (const t of [w, s]) if (t && !texts.has(t)) texts.set(t, where);
         const cf = ((CONF_ED[b] || {})[c]) || CONF[c];
         if (!cf) { err(where, '沒有干擾字資料（同音字、形近字）'); continue; }
         const all = [...(cf[0] || '') + (cf[1] || '')];
@@ -87,6 +108,11 @@ try {
       }
     }
   }
+  const sctx = {};
+  new Function(read('shared/bpmf.js') + ';this.SAY=BPMF_SAY').call(sctx);
+  for (const [t, where] of texts) for (const [w, [from, to]] of Object.entries(sctx.SAY))
+    if (t !== w && t.includes(w) && !SAY_OK.has(t))
+      warn(where, `「${t}」裡有語音替換詞「${w}」，唸的時候「${from}」會換成「${to}」；讀音一樣就把這句加進 check.js 的 SAY_OK，不一樣請改 make_bpmf.py 的 SAY`);
   if (few) warn('shared/lessons.js', `${few} 個字的干擾字少於 2 個，出題時會用課文字補（例如 ${fewEx.join('、')}；候選干擾字在 docs/material-review.xlsx「干擾字候選」頁；怎麼處理見規格書 A3）`);
 } catch (e) {
   err('shared/lessons.js', `讀不進來：${e.message}`);
