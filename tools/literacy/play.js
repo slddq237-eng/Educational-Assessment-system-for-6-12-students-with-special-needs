@@ -91,8 +91,9 @@ function hintHtml(id, c, b){
   /* 語詞、句子提示加注音（3-4）：目標字挖空，不會看到它的注音；破音字依 shared/bpmf.js 的讀音 */
   /* 報讀提示：這次有開（G.read）就在語詞、句子提示旁加小喇叭，按了念出完整語詞或句子（見 showNextHint） */
   const read = G && G.read ? `<button class="hspk" data-read="${id}" aria-label="念給我聽">${SPEAKER_SVG}</button>` : "";
-  if(id === "word"){ const w = wordOf(c, b); return w ? `<div class="h bpmf">${esc(Bpmf.blank(w, c, "○"))}的○${read}</div>` : ""; }
-  if(id === "sent"){ const t = sentOf(c, b); return t ? `<div class="h sent bpmf">${esc(Bpmf.blank(t, c, "（　）"))}${read}</div>` : ""; }
+  const spk = read ? " withspk" : "";   /* 有喇叭的提示框右邊留位置（舊的 Safari 不支援 :has，所以用 class） */
+  if(id === "word"){ const w = wordOf(c, b); return w ? `<div class="h bpmf${spk}">${esc(Bpmf.blank(w, c, "○"))}的○${read}</div>` : ""; }
+  if(id === "sent"){ const t = sentOf(c, b); return t ? `<div class="h sent bpmf${spk}">${esc(Bpmf.blank(t, c, "（　）"))}${read}</div>` : ""; }
   if(id === "pic") return PICS[c] ? `<div class="pic" role="img" aria-label="圖片提示">${PICS[c]}</div>` : "";
   if(id === "sound") return `<div class="h">再慢慢唸一次</div>`;
   if(id === "parts"){
@@ -309,6 +310,17 @@ function optType(c, x, k){
 }
 
 /* 準備一題：組選項、畫畫面、唸題目；唸完才開始計時 */
+/* 舊的 Safari（iOS 15 以前，例如 iPad Air 2，2026-10-23 維護者實測選項變很小）不支援 CSS 的 cqw、cqh：
+   量出選項區的寬高交給 CSS（index.html 的 @supports not (width:1cqw)），畫面大小改變時重新量 */
+const NO_CQ = !(window.CSS && CSS.supports && CSS.supports("width", "1cqw"));
+const optsRO = NO_CQ && window.ResizeObserver ? new ResizeObserver(() => fitOpts()) : null;
+function fitOpts(){
+  const box = NO_CQ && $("#pBody .optsbox"), o = box && box.querySelector(".opts");
+  if(!o) return;
+  o.style.setProperty("--bw", box.clientWidth + "px"); o.style.setProperty("--bh", box.clientHeight + "px");
+  if(optsRO){ optsRO.disconnect(); optsRO.observe(box); }
+}
+if(NO_CQ && !optsRO) addEventListener("resize", fitOpts);
 function newItem(it){
   const b = splitKey(it.k)[0], board = G.layout === "bingo" ? bingoBoard(it.kid, it.k) : null;
   const regroup = G.goal === "4-1";   /* 目標 4-1 部件重組：看部件選字，不唸題目 */
@@ -331,6 +343,7 @@ function newItem(it){
       </div></div>
     </div>
     ${G.noHelp ? "" : `<div class="tbar"><span>老師提示紀錄：</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
+  fitOpts();
   $("#pBody").querySelectorAll(".opt-big").forEach(btn => btn.onclick = () => pick(+btn.dataset.i, btn));
   if(!regroup) $("#speaker").onclick = () => speak(promptOf(it));
   $("#pBody").querySelectorAll("[data-t]").forEach(btn => btn.onclick = () => {
