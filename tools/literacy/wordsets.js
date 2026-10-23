@@ -69,21 +69,24 @@ function wsStart(lessons, kind){
 
 /* ---------- 第 3 步的畫面 ---------- */
 state.wsOpen = false; state.wsMsg = "";
+/* 按了「全部清除」、還沒點字的課：畫面全部不選，存的字組先回到整課（每課至少要考一個字，沒點就整課考） */
+state.wsCleared = new Set();
 function renderTaught(){
   const box = $("#taught");
   if(!state.lessons.length){ box.innerHTML = ""; return; }
   const formal = state.kind === "formal";
   const partN = state.lessons.filter(k => wsPartial(k)).length;
   const rows = state.lessons.map(k => {
-    const [b, n] = splitKey(k), s = wordSets[k], all = lessonChars(k), pick = wsPick(k);
+    const [b, n] = splitKey(k), s = wordSets[k], all = lessonChars(k);
     const lockedNow = formal && s && s.locked;
+    const cleared = !lockedNow && state.wsCleared.has(k), pick = cleared ? [] : wsPick(k);
     let note = "";
     if(s && s.locked && formal) note = `這組字（第 ${s.ver} 組）已經用在正式評量，為了前後成績能比較，正式評量時不能改。課程真的改了，請按「重新開始一組」，之後的成績會標成第 ${s.ver + 1} 組。`;
     else if(s && s.locked) note = `正式評量用的第 ${s.ver} 組已鎖定；這裡點的字只用在練習。`;
     else if(s && s.ver > 1) note = `第 ${s.ver} 組，還沒用在正式評量，可以改。`;
     return `<div class="tl" data-k="${k}"><div class="row" style="gap:6px 10px"><b>${bookName(b)} ${esc(lessonName(b, n))}</b>
-        <span class="${pick.length < all.length ? "warn" : "note"}" style="margin:0">考 ${pick.length}／${all.length} 字</span>
-        ${!lockedNow && pick.length < all.length ? `<button class="linkbtn" data-wall>全部選回來</button>` : ""}
+        <span class="${pick.length < all.length ? "warn" : "note"}" style="margin:0">${cleared ? "已全部清除，請點要考的字（都沒點就整課考）" : `考 ${pick.length}／${all.length} 字`}</span>
+        ${!lockedNow ? `<button class="linkbtn" data-wall ${pick.length === all.length ? "disabled" : ""}>全選</button><button class="linkbtn" data-wnone ${cleared ? "disabled" : ""}>全部清除</button>` : ""}
         ${s && s.locked && !formal && s.pchars !== undefined ? `<button class="linkbtn" data-wsame>跟正式評量一樣</button>` : ""}
         ${s && s.locked ? `<button class="linkbtn" data-wnew>重新開始一組</button>` : ""}</div>
       <div class="tchars">${all.map((c, i) => `<button class="tc ${pick.includes(c) ? "on" : ""}" data-i="${i}" aria-pressed="${pick.includes(c)}" ${lockedNow ? "disabled" : ""} aria-label="${c}${pick.includes(c) ? "，要考" : "，不考"}">${esc(c)}</button>`).join("")}</div>
@@ -98,9 +101,11 @@ function renderTaught(){
   box.querySelectorAll(".tl").forEach(r => {
     const k = r.dataset.k, all = lessonChars(k);
     r.querySelectorAll(".tc").forEach(btn => btn.onclick = () => {
+      if(state.wsCleared.delete(k)){ wsSetChars(k, all[+btn.dataset.i]); state.wsMsg = ""; render(); return; }
       state.wsMsg = wsToggle(k, all[+btn.dataset.i]) ? "" : "每一課至少要考一個字。"; render();
     });
-    const a = r.querySelector("[data-wall]"); if(a) a.onclick = () => { wsSetChars(k, all.join("")); state.wsMsg = ""; render(); };
+    const a = r.querySelector("[data-wall]"); if(a) a.onclick = () => { state.wsCleared.delete(k); wsSetChars(k, all.join("")); state.wsMsg = ""; render(); };
+    const none = r.querySelector("[data-wnone]"); if(none) none.onclick = () => { wsSetChars(k, all.join("")); state.wsCleared.add(k); state.wsMsg = ""; render(); };
     const same = r.querySelector("[data-wsame]"); if(same) same.onclick = () => { delete wordSets[k].pchars; saveWordSets(); render(); };
     const nw = r.querySelector("[data-wnew]"); if(nw) nw.onclick = () => {
       if(!nw.classList.contains("armed")){ nw.classList.add("armed"); nw.textContent = "確定要重新開始？再按一次"; return; }
