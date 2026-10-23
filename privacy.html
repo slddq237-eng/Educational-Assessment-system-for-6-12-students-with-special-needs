@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="shared/fonts/tw-kai.css?v=2026-10-23b">
+<link rel="stylesheet" href="shared/fonts/tw-kai.css?v=2026-10-23c">
 <style>
 /* 資料與隱私說明：給學校、家長與使用的老師看。內容對應規格書「資料來源、授權與隱私」表二。
    功能改變（新增會存學生資料的功能、新的對外連線）時，這一頁要一起改。 */
@@ -73,7 +73,7 @@ td:first-child{font-weight:700;white-space:nowrap}
       <tr><td>頭像、貼紙收藏</td><td>老師電腦的瀏覽器</td><td>預設用卡通動物。<b>上傳照片是選填</b>，照片會縮小後存在這台電腦；上傳前建議先取得家長同意。</td></tr>
       <tr><td>教學日期（可以依學生不同）、評量設定、每課要考的字（字組）</td><td>老師電腦的瀏覽器</td><td>不含學生名字；個別學生的教學日期只用學生代號。</td></tr>
       <tr><td>字組檔（.json，分享給同事用）</td><td>老師自己下載的檔案</td><td>只有每課要考哪些字，沒有學生資料，可以寄給同事。</td></tr>
-      <tr><td>平板作答的紀錄（選用）</td><td>老師自己的 Google 表單與試算表</td><td>只有作答模式選「平板掃 QR code」時才有。只用學生代號，沒有名字；平板上不留作答紀錄。QR code 裡只有這次練習的設定和學生代號。</td></tr>
+      <tr><td>平板作答的紀錄（選用）</td><td>老師自己的 Google 表單與試算表</td><td>只有作答模式選「平板掃 QR code」時才有。送到表單的紀錄只有學生代號，沒有名字；平板上不留作答紀錄。QR code 裡有這次練習的設定和學生名字（讓學生在平板上點自己的名字），只給學生掃，不要貼到公開的地方。</td></tr>
       <tr><td>備份檔（.json）、匯出的 Excel</td><td>老師自己下載的檔案</td><td>裡面有學生名字和成績，見下方「老師要注意」。</td></tr>
     </table></div>
     <p class="note">「瀏覽器」指的是 Chrome、Edge、Safari 這些上網的程式。資料只在<b>同一台電腦、同一個瀏覽器、同一個網址</b>看得到；換電腦或換瀏覽器就看不到，要用備份檔搬過去。</p>
