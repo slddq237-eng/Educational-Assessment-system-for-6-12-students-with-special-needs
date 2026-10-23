@@ -61,7 +61,7 @@ function tabletPack(){
   return {
     v:1, f:settings.tabletForm.id, e:settings.tabletForm.entry,
     d:{
-      "literacy-ui": "adv",
+      "literacy-ui": ui,   /* 快速開始或進階設定（快速開始不用每位學生不同的提示，見 data.js 的 kidCfg） */
       /* 正式評量的條件、設定畫面大小、表單網址平板用不到 */
       "literacy-settings": Object.fromEntries(Object.entries(settings).filter(([k]) => !/^(formal|clockFormal$|uiScale$|tabletForm$)/.test(k))),
       "literacy-kids": codes.map(c => { const k = kidBy(c), p = planOf(k);
@@ -73,7 +73,7 @@ function tabletPack(){
       goal:state.goal, mode:state.mode, limit:state.limit, aim:+$("#aim").value || 30, lessons:state.lessons,
       pChoices:state.pChoices, pHints:[...state.pHints], pRule:state.pRule, qCount:state.qCount, qMethod:state.qMethod,
       manual:pick(state.manual, state.lessons), themePick:state.themePick,
-      kidHints:Object.fromEntries(codes.filter(c => state.kidHints[c]).map(c => [c, {hints:[...state.kidHints[c].hints], rule:state.kidHints[c].rule}]))
+      kidHints:isQuick() ? {} : Object.fromEntries(codes.filter(c => state.kidHints[c]).map(c => [c, {hints:[...state.kidHints[c].hints], rule:state.kidHints[c].rule}]))
     }
   };
 }
