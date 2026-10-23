@@ -99,11 +99,16 @@ const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y
 const md = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()}`; };
 /* 平板作答（tablet.js）：學生掃老師電腦上的 QR code 打開網頁，網址 #t= 後面帶著這次練習的設定。
    這時設定、學生、教學日期、字組都從網址讀（TABLET.d，名稱和 localStorage 相同），也不寫回平板（平板可能也是別的老師在用的）。
-   讀不出來時 TABLET＝{bad:true}，tablet.js 會請老師重新產生。 */
+   網址裡有學生名字：一打開就把設定移到這個分頁的 sessionStorage（關掉分頁就不見），網址列只留 #t，
+   瀏覽紀錄比較不會留下名字；重新整理時從 sessionStorage 讀回來。
+   讀不出來時 TABLET＝{bad:true}，tablet.js 會請學生重新掃描。 */
 const TABLET = (() => {
   const m = location.hash.match(/^#t=([\w-]+)/);
-  if(!m) return null;
-  try { const b = atob(m[1].replace(/-/g, "+").replace(/_/g, "/"));
+  let raw = m && m[1];
+  if(raw){ try { sessionStorage.setItem("literacy-tablet", raw); history.replaceState(null, "", location.pathname + location.search + "#t"); } catch(e){} }
+  else if(location.hash === "#t"){ try { raw = sessionStorage.getItem("literacy-tablet"); } catch(e){} if(!raw) return {bad:true}; }
+  else return null;
+  try { const b = atob(raw.replace(/-/g, "+").replace(/_/g, "/"));
     return JSON.parse(new TextDecoder().decode(Uint8Array.from(b, c => c.charCodeAt(0)))); } catch(e){ return {bad:true}; }
 })();
 if(TABLET) document.documentElement.classList.add("tablet");

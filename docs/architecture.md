@@ -107,6 +107,7 @@
 | localStorage | `literacy-tour` | 看過新手導覽沒 | `tour.js` |
 | localStorage | `literacy-lastBackup` | 上次下載備份檔的日期（超過 30 天提醒） | `records.js` |
 | localStorage | `prep-ui`、`prep-ranges` | 備課分析的選擇 | `prep.js` |
+| sessionStorage | `literacy-tablet` | 平板作答：這個分頁的練習設定（含學生名字），關掉分頁就不見；不放進備份 | `data.js` |
 
 - **備份檔**（.json）：`records.js` 組成，內含作答紀錄、學生名單、教學日期、設定，以及用 `addBackupPart` 登記的其他資料（目前有字組 `wordsets.js`、貼紙與頭像 `collect.js`）。新增要存的資料時，記得用 `addBackupPart` 加進備份。
 - 作答紀錄格式的規則在 `docs/records.md`：只加新欄位、不改舊欄位的意思，**改格式前先討論**。

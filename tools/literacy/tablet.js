@@ -2,10 +2,11 @@
    識字評量：平板作答（tablet.js）（開發路線圖 F2；2026-10-23 先做練習，見 docs/records.md「平板作答回傳到 Google 表單」）
    1. 老師電腦：「⚙ 細部設定 → 練習與遊戲」貼上自己的 Google 表單網址；第 2 步作答模式選「平板掃 QR code」，
       按「產生 QR code」。QR code 是一個網址，#t= 後面帶著這次練習的設定（讀法見 data.js 的 TABLET）。
-   2. 學生平板：用相機掃描打開網頁 → 點自己的代號 → 作答 → 做完把這次的紀錄每 10 題一包，送到老師的 Google 表單。
+   2. 學生平板：用相機掃描打開網頁 → 點自己的名字（沒填名字的顯示代號）→ 作答 → 做完把這次的紀錄每 10 題一包，送到老師的 Google 表單。
       平板不讀、不改平板自己存的設定，作答紀錄也不存進平板（見 records.js）。
    3. 老師電腦：從 Google 試算表下載 Excel，在「作答紀錄」按「匯入檔案」（見 records.js 的匯入檔案、本檔的 tabletSheet）。
-   學生名字不放進 QR code、也不送到表單；匯入時用老師電腦的學生名單補上。紀錄格式和平常一樣（作答模式 answer＝qr）。
+   學生名字放進 QR code，讓學生在平板上點自己的名字（2026-10-23 維護者要求：代號容易點錯）；平板一打開就把名字從網址列拿掉（見 data.js 的 TABLET）。
+   送到表單的紀錄不放名字（kidName 空白），匯入時用老師電腦的學生名單補上。紀錄格式和平常一樣（作答模式 answer＝qr）。
    ========================================================= */
 
 /* 一次送幾題：2026-10-23 實測 20 題（約 1.6 萬字）收得到、50 題（約 4 萬字）整筆收不到，取 10 題留空間 */
@@ -53,7 +54,7 @@ renderTabForm();
 
 /* =========================================================
    老師電腦：產生 QR code
-   只帶這次練習用得到的資料：設定、選的學生（只有代號和年級，沒有名字）、這幾課的教學日期與字組、第 2～4 步的選擇
+   只帶這次練習用得到的資料：設定、選的學生（代號、名字、年級）、這幾課的教學日期與字組、第 2～4 步的選擇
    ========================================================= */
 function tabletPack(){
   const codes = selKids(), pick = (o, ks) => Object.fromEntries(ks.filter(k => o[k] !== undefined).map(k => [k, o[k]]));
@@ -64,7 +65,7 @@ function tabletPack(){
       /* 正式評量的條件、設定畫面大小、表單網址平板用不到 */
       "literacy-settings": Object.fromEntries(Object.entries(settings).filter(([k]) => !/^(formal|clockFormal$|uiScale$|tabletForm$)/.test(k))),
       "literacy-kids": codes.map(c => { const k = kidBy(c), p = planOf(k);
-        return {code:k.code, grade:k.grade, sy:k.sy, ...(p.adjust ? {plans:{[PLAN_KEY]:{adjust:true, level:p.level}}} : {})}; }),
+        return {code:k.code, name:k.name || "", grade:k.grade, sy:k.sy, ...(p.adjust ? {plans:{[PLAN_KEY]:{adjust:true, level:p.level}}} : {})}; }),
       "literacy-teach": pick(teach, state.lessons),
       "literacy-wordsets": pick(wordSets, state.lessons)
     },
@@ -101,7 +102,7 @@ async function tabletQr(){
   } catch(e){
     $("#qrBox").innerHTML = `<p class="warn">${/overflow/.test(e && e.message || e) ? "這次選的學生或設定太多，QR code 放不下。請少選幾位學生，分成幾個 QR code。" : "QR code 產生失敗，請重新整理網頁再試；也可以按「複製連結」，用其他方式傳給學生。"}</p>`;
   }
-  $("#qrCopy").onclick = () => navigator.clipboard.writeText(url).then(() => $("#qrMsg").textContent = "已複製連結。連結裡沒有學生名字。",
+  $("#qrCopy").onclick = () => navigator.clipboard.writeText(url).then(() => $("#qrMsg").textContent = "已複製連結。連結裡有學生名字，只傳給學生，不要貼到公開的地方。",
     () => $("#qrMsg").textContent = "這個瀏覽器不允許複製，請改用 QR code。");
 }
 
@@ -112,7 +113,7 @@ const TABLET_FORM = TABLET && !TABLET.bad ? {id:TABLET.f, entry:TABLET.e} : null
 function tabletStart(){
   showScreen("#tabPick");
   const s = TABLET.st;
-  if(TABLET.bad || TABLET.v !== 1 || !s || !TABLET_FORM){ $("#tpMsg").textContent = "這個 QR code 讀不出來，請老師重新產生一次。"; return; }
+  if(TABLET.bad || TABLET.v !== 1 || !s || !TABLET_FORM){ $("#tpMsg").textContent = "讀不到這次練習的設定，請重新掃描 QR code；還是不行，請老師重新產生一次。"; return; }
   /* 用不到的課（例如老師的網頁比較新）：請平板重新整理 */
   if(!s.lessons.length || s.lessons.some(k => !lessonChars(k).length)){ $("#tpMsg").textContent = "這個 QR code 的課本這台平板找不到，請重新整理網頁，或請老師重新產生。"; return; }
   Object.assign(state, {kind:"practice", answer:"qr", goal:s.goal, mode:s.mode, limit:s.limit, lessons:s.lessons,
@@ -127,16 +128,30 @@ function tabletStart(){
   $("#rHome").onclick = () => { G = null; showScreen("#tabPick"); };
   tabletKids();
 }
+/* 平板沒有中文語音時，題目和喇叭都不會唸：點名字的畫面和結果畫面提醒怎麼裝
+   （Android 的語音清單要過一下子才會出來，所以等 voiceschanged 或 2 秒後再判斷） */
+const VOICE_HELP = "這台平板找不到中文語音，題目和喇叭不會唸出來（作答還是可以進行）。"
+  + "Android：設定 → 一般管理 → 語言 → 文字轉換語音輸出，偏好的引擎選「Google 語音服務」，語言選「中文（台灣）」並下載語音資料；"
+  + "iPad：設定 → 輔助使用 → 朗讀內容 → 聲音 → 中文（台灣）。設定好後重新整理這一頁。";
+function tabletVoice(){
+  if(!TABLET) return;
+  const bad = !("speechSynthesis" in window) || !hasZhVoice();
+  for(const id of ["#tpVoice", "#rVoice"]){ $(id).textContent = VOICE_HELP; $(id).hidden = !bad; }
+}
+if(TABLET){ setTimeout(tabletVoice, 2000);
+  if("speechSynthesis" in window && speechSynthesis.addEventListener) speechSynthesis.addEventListener("voiceschanged", () => setTimeout(tabletVoice, 0)); }
 function tabletKids(){
   if(!TABLET || TABLET.bad || !TABLET.st) return;
-  $("#tpList").innerHTML = kids.map(k => `<button class="chip kidchip" data-k="${esc(k.code)}">${Rewards.avatarHtml(k.code)}${esc(k.code)}</button>`).join("");
+  /* 顯示名字（沒填名字顯示代號）；同名的學生加上代號才分得出來 */
+  const same = k => k.name && kids.filter(x => x.name === k.name).length > 1;
+  $("#tpList").innerHTML = kids.map(k => `<button class="chip kidchip" data-k="${esc(k.code)}">${Rewards.avatarHtml(k.code)}${esc(same(k) ? kidLabel(k) : kidShow(k))}</button>`).join("");
+  /* 只有一位學生也要點一下才開始：手機、平板的瀏覽器要「使用者點過」才肯唸題目（2026-10-23 改，原本一位學生直接開始） */
   $("#tpList").querySelectorAll("button").forEach(b => b.onclick = () => { state.kids = new Set([b.dataset.k]); chooseTheme(); });
-  /* 只有一位學生就不用點，直接開始 */
-  if(kids.length === 1 && !G && !$("#tabPick").hidden) $("#tpList button").click();
 }
 /* 做完（finish）時呼叫：這次的紀錄每 10 題一包送出；送不出去可以再送，或下載紀錄檔交給老師（同樣用「匯入檔案」） */
 function tabletSend(g){
-  const list = records.filter(r => r.session === g.session).map(({id, dirty, ...r}) => r), box = $("#rSend");
+  /* 送出去的紀錄不放名字（表單、試算表、下載的紀錄檔都只有代號） */
+  const list = records.filter(r => r.session === g.session).map(({id, dirty, ...r}) => ({...r, kidName:""})), box = $("#rSend");
   if(!list.length){ box.hidden = true; return; }
   const parts = [];
   for(let i = 0; i < list.length; i += TAB_CHUNK) parts.push(list.slice(i, i + TAB_CHUNK));
