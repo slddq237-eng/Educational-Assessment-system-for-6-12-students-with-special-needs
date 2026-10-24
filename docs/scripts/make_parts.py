@@ -27,7 +27,7 @@ PARTS_JS, TABLE = 'shared/parts.js', 'docs/parts-table.xlsx'
 # 1. 讀 lessons.js 與 parts.js（用 Node 執行後轉成 JSON）
 JS = r'''
 const fs=require("fs");const o={};
-new Function(fs.readFileSync("shared/lessons.js","utf8")+";Object.assign(this,{BOOKS,PARTS})").call(o);
+new Function(require("./docs/scripts/lessons-src.js")()+";Object.assign(this,{BOOKS,PARTS})").call(o);
 new Function(fs.readFileSync("shared/parts.js","utf8")+";this.PA=PARTS_AUTO").call(o);
 console.log(JSON.stringify({BOOKS:o.BOOKS,PARTS:o.PARTS,PA:o.PA}));'''
 L = json.loads(subprocess.run(['node', '-e', JS], capture_output=True, text=True, check=True).stdout)

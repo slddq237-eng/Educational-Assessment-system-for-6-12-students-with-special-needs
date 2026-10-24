@@ -31,7 +31,7 @@
 | 儲存名稱集中 | 名稱散在 `data.js`、`setup.js`、`records.js`、`wordsets.js`、`teacher.js`、`pivot.js`、`tour.js` | 集中寫成一張名稱表（例如 `data.js` 的 `KEYS`），各檔案從表裡拿 | 下次改到這些檔案的存資料時 | 待做 |
 | 作答紀錄的「資料存取層」 | `records.js` 直接操作 IndexedDB | 把開資料庫、讀、寫包成一個入口（例如 `RecordStore`），之後換線上資料庫只換它；紀錄改存事實（見 `records.md`） | 和 A8 定案、紀錄格式第 3 版一起（要先討論） | 待做 |
 | 備課分析和識字評量各有一份 `load`／`store` | 兩份寫法幾乎一樣 | 搬到 `shared/common.js` 共用 | 下次改 `prep.js` 時 | 待做 |
-| 識字評量檔案之間靠共用名稱溝通 | 見 `architecture.md` 第 10 節 | 不特地改；新程式照規則 2 | 平常 | 持續 |
+| 識字評量檔案之間靠共用名稱溝通 | 見 `architecture-notes.md`（原 `architecture.md` 第 10 節） | 不特地改；新程式照規則 2 | 平常 | 持續 |
 
 ## 3. 設定流程與作答畫面的待修問題（2026-10-23 維護者回報，還沒改）
 

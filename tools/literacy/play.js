@@ -11,7 +11,8 @@
    ========================================================= */
 const shuffle = a => { for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const charsOf = k => { const [b,n] = splitKey(k); const L = BOOKS[b].lessons[n]; return [...(L.write + L.read)]; };
-const ALL_CHARS = [...new Set(BOOK_ORDER.flatMap(b => Object.keys(BOOKS[b].lessons).flatMap(n => charsOf(key(b,n)))))];
+/* 所有課本的字：shared/lessons.js 先算好的 ALL_LESSON_CHARS（平板只載入這次用到的課本，用算好的才和電腦一樣） */
+const ALL_CHARS = [...ALL_LESSON_CHARS];
 /* 唸題目「語詞的字」；電腦語音會唸錯的破音字，唸的時候換成同音字（見 shared/bpmf.js 的 BPMF_SAY，畫面不變） */
 const sayOf = (c, b) => wordOf(c, b) ? Bpmf.say(wordOf(c, b), c) : c;
 /* 題目唸法：課次設了 sayChar（例如康軒一上「真簡單」的數字）只唸字本身，其他唸「語詞的字」；「詞帶字」提示的報讀仍唸語詞 */

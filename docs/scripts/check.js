@@ -4,7 +4,7 @@
 
 檢查十一件事：
   1. 程式語法：所有 .js 檔和 HTML 裡的 <script>，有沒有打錯字、少括號（有的話網頁會整個壞掉）
-  2. 教材資料（shared/lessons.js）：語詞裡有沒有這個字、干擾字有沒有包含答案本身等；
+  2. 教材資料（shared/lessons.js 和各本課本檔 lessons-代號.js）：BOOK_FILES、ALL_LESSON_CHARS 要是最新的（make_lessons.js）；語詞裡有沒有這個字、干擾字有沒有包含答案本身等；
      語詞、例句裡有語音替換詞（shared/bpmf.js 的 BPMF_SAY）但還沒確認過的，提醒確認讀音
   3. 版本號：每個頁面的 ?v= 要一樣（改了 js、css 卻忘了改版本號，老師的瀏覽器會用舊檔）；
      和 main 比，改了網頁的 js、css 卻沒換版本號時提醒（改版本號用 node docs/scripts/bump.js）
@@ -26,6 +26,7 @@
 */
 const fs = require('fs'), path = require('path'), vm = require('vm'), { execSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..', '..');
+const lessonsSrc = require('./lessons-src.js');   /* 課本資料：lessons.js 加上各本課本檔 */
 const errors = [], warns = [];
 const err = (where, msg) => errors.push(`${where}：${msg}`);
 const warn = (where, msg) => warns.push(`${where}：${msg}`);
@@ -89,9 +90,17 @@ for (const f of files.filter(f => f.endsWith('.html'))) {
 const han = x => /\p{Script=Han}/u.test(x);
 try {
   const ctx = {};
-  new Function(['shared/lessons.js', 'shared/parts.js'].map(read).join('\n') +
-    ';Object.assign(this,{BOOKS,WORDS,WORDS_ED,SENT,SENT_ED,CONF,CONF_ED})').call(ctx);
-  const { BOOKS, WORDS, WORDS_ED, SENT, SENT_ED, CONF, CONF_ED } = ctx;
+  /* 課本資料：shared/lessons.js 加上各本課本檔 shared/lessons-代號.js（2026-10-24 拆開，見 lessons-src.js） */
+  new Function(lessonsSrc() + '\n' + read('shared/parts.js') +
+    ';Object.assign(this,{BOOKS,WORDS,WORDS_ED,SENT,SENT_ED,CONF,CONF_ED,BOOK_FILES,ALL_LESSON_CHARS})').call(ctx);
+  const { BOOKS, WORDS, WORDS_ED, SENT, SENT_ED, CONF, CONF_ED, BOOK_FILES, ALL_LESSON_CHARS } = ctx;
+  /* 課本檔清單、所有課本的字要是最新的（新增課本後要跑 make_lessons.js） */
+  const bookFiles = fs.readdirSync(path.join(ROOT, 'shared')).map(f => (f.match(/^lessons-(\w+)\.js$/) || [])[1]).filter(Boolean);
+  const notListed = bookFiles.filter(x => !BOOK_FILES.includes(x));
+  if (notListed.length) err('shared/lessons.js', `課本檔 ${notListed.map(x => `lessons-${x}.js`).join('、')} 沒寫在 BOOK_FILES，網頁不會載入：執行 node docs/scripts/make_lessons.js`);
+  const allChars = new Set(Object.values(BOOKS).flatMap(bk => Object.values(bk.lessons).flatMap(L => [...(L.write + L.read)])));
+  const listed = new Set([...ALL_LESSON_CHARS]);
+  if (allChars.size !== listed.size || [...allChars].some(c => !listed.has(c))) err('shared/lessons.js', 'ALL_LESSON_CHARS（所有課本的字）和課本不一致，平板挑「其他字」的範圍會不對：執行 node docs/scripts/make_lessons.js');
   let few = 0, fewEx = [];
   const texts = new Map();   /* 所有語詞、例句 → 第一次出現的位置（給語音替換詞檢查用） */
   for (const b in BOOKS) {
@@ -181,7 +190,8 @@ for (const f of files.filter(f => /^(docs\/[^/]+|CLAUDE)\.md$/.test(f))) {
 if (files.includes('docs/architecture.md')) {
   const map = read('docs/architecture.md');
   for (const f of files.filter(f => f.endsWith('.js') && !f.startsWith('shared/vendor/'))) {
-    if (!map.includes(path.basename(f))) warn(f, '這個 .js 檔沒有寫在程式地圖 docs/architecture.md，請補上它做什麼、誰會用到');
+    const name = /^shared\/lessons-\w+\.js$/.test(f) ? 'lessons-代號.js' : path.basename(f);   /* 各本課本檔合寫成一列 */
+    if (!map.includes(name)) warn(f, '這個 .js 檔沒有寫在程式地圖 docs/architecture.md，請補上它做什麼、誰會用到');
   }
   /* 儲存名稱（literacy-xxx 等）要寫在地圖第 6 節，之後換線上資料庫、做備份時才不會漏 */
   for (const f of files.filter(f => /\.(js|html)$/.test(f) && !f.startsWith('docs/') && !f.startsWith('shared/vendor/'))) {
@@ -248,7 +258,7 @@ const KAI_NOT_IN_FONT = '龶冫勹龰亠龴龵龸龷龹';   /* 全字庫正楷�
     for (let c = a; c <= b; c++) have.add(c);
   }
   const text = files.filter(f => own(f) && (/\.html$/.test(f) || /^tools\/.*\.js$/.test(f))).map(f => stripComments(read(f))).join('')
-    + read('shared/lessons.js') + read('shared/parts.js');
+    + lessonsSrc() + read('shared/parts.js');
   const miss = [...new Set([...text].filter(c => { const p = c.codePointAt(0); return (p >= 0x3400 && p <= 0x9FFF) && !have.has(p) && !KAI_NOT_IN_FONT.includes(c); }))];
   if (miss.length) warn('shared/fonts/tw-kai.css', `有 ${miss.length} 個字不在楷書字型裡（${miss.slice(0, 20).join('')}${miss.length > 20 ? '…' : ''}），請跑 docs/scripts/make_kai.py`);
 }
