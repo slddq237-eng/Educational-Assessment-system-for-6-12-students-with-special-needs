@@ -45,6 +45,10 @@ const SFX = {
 };
 
 /* --- 海洋：釣神秘大魚 --- */
+/* 神秘大魚的剪影（2026-10-24 維護者決定 O2）：遊戲中和結尾都用同一個通用的形狀，不用這次戰利品的真實形狀，
+   學生才猜不到是哪一條；扭蛋機打開時才揭曉（gacha.js）。座標和 themes.js 的 fishBody 一樣（魚頭朝左、嘴在 x≈0） */
+const MYSTERY_FISH = `<path d="M126 0 L164 -34 L156 0 L164 34Z" fill="#333"/><path d="M60 -38 L80 -62 L98 -36Z" fill="#333"/>
+  <path d="M0 2 Q14 -46 74 -44 Q134 -40 140 0 Q134 40 74 44 Q14 46 0 2Z" fill="#333"/><path d="M70 30 L60 52 L88 34Z" fill="#333"/>`;
 function oceanScene(el, goal, prize){
   const DEEP=280, NEAR=150, SURF=112;
   let ticks=""; for(let m=0;m<=10;m+=2){ const y=SURF+m/10*(DEEP-SURF); ticks+=`<line x1="14" x2="24" y1="${y}" y2="${y}" stroke="#d7f3ff" stroke-width="2" opacity=".8"/><text x="28" y="${y+4}" font-size="12" fill="#d7f3ff">${m}</text>`; }
@@ -63,7 +67,7 @@ function oceanScene(el, goal, prize){
   <g>${ticks}<text x="10" y="${DEEP+24}" font-size="12" fill="#d7f3ff">水深(公尺)</text><path id="oMark" d="M0 0 L-8 -6 L-8 6Z" fill="#ffcc4d"/></g>
   <path id="oLine" fill="none" stroke="#ffffff" stroke-width="1.6"/>
   <g id="oFish"><path d="M-1 0 Q-10 -1 -10 -10 Q-10 -16 -4 -16" fill="none" stroke="#dfe7ee" stroke-width="2.5" stroke-linecap="round"/>
-    <g id="oSkin" style="filter:brightness(0);opacity:.6;transition:filter .9s,opacity .9s">${fishBody(prize)}</g></g>
+    <g id="oSkin" style="filter:brightness(0);opacity:.6;transition:opacity .9s">${MYSTERY_FISH}</g></g>
   <path id="oFront" fill="#0b5f88" opacity=".2" pointer-events="none"/>
   <g id="oBub"></g>
   <g transform="translate(110 0)"><g id="oBoat">
@@ -116,14 +120,15 @@ function oceanScene(el, goal, prize){
     spl.appendChild(c); setTimeout(()=>c.remove(),1100); } }
   let qLeft=goal;   /* 還剩幾題 */
   function label(){ const depth=Math.round((S.ty-SURF)/(DEEP-SURF)*10);
-    q("sceneLab").textContent = S.win ? `釣到${FISH[prize].name}了！` : `神秘大魚在水深 ${depth} 公尺，再答 ${qLeft} 題！`; }
+    q("sceneLab").textContent = S.win ? "釣到神秘大魚了！拉拉桿看看是哪一條" : `神秘大魚在水深 ${depth} 公尺，再答 ${qLeft} 題！`; }
   label();
   return {
     setPlayer(p){ setSvgAv(q("oAv"), q("oFace"), p); },
     hit(done, left){ S.done=done; if(left!=null) qLeft=left; S.ty = DEEP-(DEEP-NEAR)*(done/goal); S.ten=1; S.wob=14; bubbles(6); SFX.reel(); label(); },
     miss(left){ if(left!=null){ qLeft=left; label(); } const keep=S.ty; S.ty=Math.min(DEEP+20,keep+28); S.ten=.9; S.wob=22; bubbles(4); SFX.bloop(); setTimeout(()=>{ if(!S.win) S.ty=keep; },600); },
     win(){ S.win=true; S.done=goal; S.ty=40; S.ten=1; S.wob=18; SFX.reel(); label();
-      setTimeout(()=>{ splash(); SFX.splash(); const sk=q("oSkin"); sk.innerHTML=fishBody(prize,true); sk.style.filter="none"; sk.style.opacity="1"; },500);
+      /* 釣起來了，但還是黑影（不暴雷）：顏色和名字留到扭蛋機揭曉 */
+      setTimeout(()=>{ splash(); SFX.splash(); q("oSkin").style.opacity="1"; },500);
       setTimeout(splash,800);
       return {bannerAt:900, delay:3000}; },
     stop(){ cancelAnimationFrame(raf); }
@@ -216,7 +221,8 @@ function spaceScene(el, goal){
 
 /* --- 恐龍谷：神秘恐龍蛋 --- */
 function dinoScene(el, goal, hatchIdx){
-  const glow = RARE_GLOW[DINOS[hatchIdx].stars];
+  /* 光芒用固定的顏色（2026-10-24）：以前照星等變色，金色就知道是傳說 */
+  const glow = "#ffe9a8";
   const EGG="M160 148 C205 148 232 210 232 255 C232 300 200 332 160 332 C120 332 88 300 88 255 C88 210 115 148 160 148Z";
   const ZZ="M90 240 L108 226 L124 242 L142 224 L160 242 L178 224 L196 242 L212 226 L230 240";
   const TOP=`${ZZ} C228 200 204 148 160 148 C116 148 92 200 90 240Z`;
@@ -251,12 +257,12 @@ function dinoScene(el, goal, hatchIdx){
   <path d="M48 326 Q160 372 272 326 L274 344 Q160 394 46 344Z" fill="#a8743a"/>
   <g stroke="#7a4e22" stroke-width="2.5" fill="none" stroke-linecap="round"><path d="M60 334 l22 10"/><path d="M96 346 l26 4"/><path d="M140 352 l24 0"/><path d="M186 350 l26 -4"/><path d="M232 342 l24 -10"/><path d="M78 352 l20 -4"/><path d="M216 354 l22 -6"/></g>
   <g id="dChips"></g>
-  <g class="dpop" id="dPop"><svg x="92" y="168" width="136" height="113" viewBox="0 0 120 100">${dinoSvg(hatchIdx).replace(/^<svg[^>]*>|<\/svg>$/g,"")}</svg></g>
+  <text id="dBig" x="160" y="262" text-anchor="middle" font-size="96" font-weight="700" fill="#e3672f" stroke="#fff" stroke-width="4" paint-order="stroke" opacity="0">?</text>
   <text id="dQ" x="210" y="160" font-size="40" font-weight="700" fill="#e3672f" opacity="0">?</text>
   </g></svg><div class="scenelab" id="sceneLab"></div>`;
   const q=id=>el.querySelector("#"+id), egg=q("dEgg");
   let done=0, qLeft=goal;   /* done＝累計答對題數（裂痕），qLeft＝還剩幾題 */
-  const label=()=>{ q("sceneLab").textContent = qLeft>0 ? `再答 ${qLeft} 題，蛋就會打開` : "蛋打開了！"; };
+  const label=()=>{ q("sceneLab").textContent = qLeft>0 ? `再答 ${qLeft} 題，蛋就會打開` : "蛋快孵出來了！拉拉桿看看是誰"; };
   function render(){
     const p=done/goal, n=Math.ceil(p*CR.length);
     const crk=q("dCr").querySelectorAll(".crk");
@@ -275,9 +281,10 @@ function dinoScene(el, goal, hatchIdx){
     setPlayer(){},
     hit(d, left){ done=d; if(left!=null) qLeft=left; retrigger(egg,"wob",750); SFX.crack(); setTimeout(()=>{ render(); chips(5); label(); },250); },
     miss(left){ if(left!=null){ qLeft=left; label(); } retrigger(egg,"huh",550); retrigger(q("dQ"),"qm",1000); },
+    /* 結尾（2026-10-24 維護者決定 D2，不暴雷）：蛋裂開、透出光和大大的「？」，看不到恐龍；拉扭蛋機才孵出來（gacha.js） */
     win(){ done=goal; qLeft=0; render(); label(); retrigger(egg,"wob",750); SFX.crack();
-      setTimeout(()=>{ q("dTop").classList.add("fly"); q("dIn").style.display="none"; q("dRays").classList.add("on"); chips(14); SFX.hatch(); },650);
-      setTimeout(()=>{ q("dPop").classList.add("on"); },850);
+      setTimeout(()=>{ q("dRays").classList.add("on"); chips(14); SFX.hatch(); },650);
+      setTimeout(()=>{ q("dBig").classList.add("bigq"); },850);
       return {bannerAt:900, delay:3300}; },
     stop(){}
   };

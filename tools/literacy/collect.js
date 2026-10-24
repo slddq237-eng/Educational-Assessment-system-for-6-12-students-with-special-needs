@@ -101,9 +101,12 @@ function importStickers(recs){
   }
   return n;
 }
-/* 一位一位顯示「得到貼紙」的大畫面，按「收進貼紙簿」換下一位 */
+/* 一位一位：先開扭蛋機（gacha.js，拉拉桿揭曉），再顯示「得到貼紙」的大畫面，按「收進貼紙簿」換下一位 */
 function showReveals(list){
   if(!list.length) return;
+  showGacha(list[0], () => showCard(list));
+}
+function showCard(list){
   const {code, theme, idx} = list[0], k = kidBy(code), name = k ? kidShow(k) : code;
   const t = Themes.THEMES[theme], stars = Themes.stars(theme, idx), label = Themes.rareLabel(theme, idx);
   const box = document.createElement("div"); box.className = "reveal";
@@ -116,7 +119,7 @@ function showReveals(list){
     <button class="go" data-ok>收進貼紙簿</button></div>`;
   document.body.appendChild(box);
   box.querySelector("[data-ok]").focus();
-  sfx.fanfare();
+  if(stars < 3) sfx.fanfare();   /* 極稀有、傳說在扭蛋機打開時已經有一大段音效 */
   /* 唸名字只用本機語音，沒有就只唸得到什麼（見 play.js 的 speak） */
   setTimeout(() => { if(!speak(`${name}${VERB(theme)}${t.stickers[idx][1]}！`, null, null, true)) speak(`${VERB(theme)}${t.stickers[idx][1]}！`); }, 600);
   box.querySelector("[data-ok]").onclick = () => { box.remove(); showReveals(list.slice(1)); };

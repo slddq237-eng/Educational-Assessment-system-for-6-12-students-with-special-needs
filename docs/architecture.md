@@ -69,6 +69,7 @@
 | `wordsets.js` | — | 只考有教的字（字組、鎖定、分享） | `wsPick`（這課要考哪些字）、`wsStart`、`wsImport` |
 | `play.js` | 8～10 | 出題、組選項、提示、語音、開始前先下載字型（讀取條）、作答畫面、賓果卡、血量、打怪獸過場、流暢性、結果畫面 | `startSession`、`prepareThen`（`collect.js` 的 `chooseTheme` 呼叫）、`sessionText`、`loadFonts`（`tablet.js` 也用）、`endItem`、`finish`、`G`（這次作答的狀態） |
 | `collect.js` | 11～14 | 選主題、頭像、得到貼紙、貼紙簿 | `chooseTheme`、`drawStickers`、`giveStickers`、`importStickers` |
+| `gacha.js` | — | 扭蛋機：拉拉桿揭曉貼紙、各星等特效與聲音 | `showGacha`（`collect.js` 的 `showReveals` 呼叫） |
 | `scenes.js` | — | 打怪獸的四個場景動畫 | 由 `play.js` 的 3-3 呼叫 |
 | `teacher.js` | 15～20 | 老師專區：一位學生的圖表、全班總表、逐字學習紀錄 | `renderTeacher`、`openCharLog` |
 | `pivot.js` | 21～23 | 進階分析（樞紐分析表） | `renderPivot` |
@@ -83,7 +84,7 @@
 2. **選主題**（`collect.js` `chooseTheme`）→ 呼叫 `play.js` 的 `startSession()`。
 3. **出題**（`play.js` 第 8 節）：`pickItems` 抽字（「常錯優先」會讀 `records`）→ `makeOptions` 組選項（用 `common.js` 的 `confOf`、`wordOf`）→ `hintHtml` 做提示（`data.js` 的 `fitHints` 跳過不適合的提示）。
 4. **作答**（第 9 節）：每題結束呼叫 `endItem` → 組成一筆紀錄，時期用 `data.js` 的 `phaseFor` 判斷、字組資訊用 `wordsets.js` → `records.js` 的 `saveRecord` 存進 IndexedDB。
-5. **結果**（第 10 節 `finish`）：中途離開的紀錄標 `quit` → `collect.js` 的 `drawStickers` 抽好寫進紀錄 → 平板送出 → `giveStickers` 揭曉。
+5. **結果**（第 10 節 `finish`）：中途離開的紀錄標 `quit` → `collect.js` 的 `drawStickers` 抽好寫進紀錄 → 平板送出 → `giveStickers` → 扭蛋機 `showGacha` 揭曉。
 6. **老師專區**（`teacher.js`、`pivot.js`）：只讀 `records`，不寫回。錯誤類型的「亂猜會佔」用 `play.js` 的 `optType`（傳入紀錄的 `goal`）替舊紀錄的選項重新分類，改 `optType` 時要一起檢查；`pivot.js` 的「目標字在語詞的位置」用 `teacher.js` 的 `wposOf`。
 
 ## 5. 備課分析 `tools/prep/`
