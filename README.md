@@ -6,14 +6,16 @@
 
 | 工具 | 資料夾 | 狀態 |
 |---|---|---|
-| 識字評量 | `tools/literacy/` | 第 1 版：目標 3 形音辨識、大螢幕輪流作答、作答紀錄與 Excel 匯出 |
-| 備課分析 | `tools/prep/` | 第 1 版：依課次／段考範圍統計常見部件、列出學過的舊字、字頻排序（教育部字頻總表）、匯出 Excel |
+| 識字評量 | `tools/literacy/` | 試用階段：目標 3 形音辨識、目標 4-1 部件重組；大螢幕輪流作答，或平板掃 QR code 作答（只限練習）；作答紀錄、老師專區、Excel 匯出 |
+| 備課分析 | `tools/prep/` | 試用階段：依課次／段考範圍統計常見部件、列出學過的舊字、字頻排序（教育部字頻總表）、匯出 Excel |
 
 ## 文件在哪裡
 
 - **每個檔案做什麼、檔案之間的關係**：[`docs/architecture.md`](docs/architecture.md)（程式地圖）
 - **交接文件索引、合作規則、改完要更新哪些檔案**：[`docs/README.md`](docs/README.md)
+- **某件事每次改了什麼、想法怎麼變**：[`docs/changelog.md`](docs/changelog.md)（變更紀錄）
 - 資料與隱私說明：[`privacy.html`](privacy.html)；資料來源與出處：[`about.html`](about.html)
+- 給新手的 GitHub 與 Claude Code 使用說明、怎麼讀這個 repo：claude.ai 文件「GitHub 新手使用說明」（需擁有者分享）
 
 ## 怎麼修改或新增部件
 
