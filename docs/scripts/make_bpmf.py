@@ -41,7 +41,7 @@ OUT_DIR, OUT_JS = 'shared/fonts', 'shared/bpmf.js'
 
 # 1. 讀 lessons.js（用 Node 執行後轉成 JSON）
 JS = r'''
-const fs=require("fs");const src=fs.readFileSync("shared/lessons.js","utf8");
+const fs=require("fs");const src=require("./docs/scripts/lessons-src.js")();
 const o={};new Function(src+";Object.assign(this,{BOOKS,WORDS,WORDS_ED,SENT,SENT_ED,CONF,CONF_ED});").call(o);
 console.log(JSON.stringify(o));'''
 L = json.loads(subprocess.run(['node', '-e', JS], capture_output=True, text=True, check=True).stdout)

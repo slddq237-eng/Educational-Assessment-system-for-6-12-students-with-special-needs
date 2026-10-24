@@ -50,7 +50,8 @@
 
 | 檔案 | 內容（主要名稱） | 誰在用 | 怎麼改 |
 |---|---|---|---|
-| `lessons.js` | `BOOKS`（課本→課次→習寫字 write、認讀字 read；課次可有 `title`、`sayChar`＝題目只唸字，見 play.js 的 `promptOf`）、`WORDS`/`WORDS_ED` 語詞、`SENT`/`SENT_ED` 例句、`CONF`/`CONF_ED` 干擾字、`PARTS` 人工部件、`PICS`、`POLY_ED` | 識字評量、備課分析、自動檢查、所有 make_*.py | 人工改；新增課本後要跑三支 make_*.py |
+| `lessons.js` | `BOOKS`（課本→課次→習寫字 write、認讀字 read；課次可有 `title`、`sayChar`＝題目只唸字，見 play.js 的 `promptOf`）、`WORDS`/`WORDS_ED` 語詞、`SENT`/`SENT_ED` 例句、`CONF`/`CONF_ED` 干擾字、`PARTS` 人工部件、`PICS`、`POLY_ED`；最早四本和共用表在這裡，`BOOK_FILES` 依序載入其他課本、`ALL_LESSON_CHARS` 所有課本的字（2026-10-24 R4b） | 識字評量、備課分析、自動檢查、所有 make_*.py | 人工改；新增課本後跑 `make_lessons.js` 和三支 make_*.py |
+| `lessons-代號.js` | 其他各本課本：`BOOKS.代號` 和這本的 `*_ED`（例如 `lessons-k5.js`）；平板只載入用到的（`tools/literacy/index.html` 的 `LESSON_ONLY`） | 同上 | 人工改 |
 | `parts.js` | `PARTS_AUTO` 自動拆的部件 | 透過 `common.js` 的 `rawParts` | `make_parts.py` 只新增，可手改錯的 |
 | `bpmf.js` | `BPMF_TXT`、`BPMF_CH`、`BPMF_SAY`、`Bpmf`（注音顯示、唸題換字） | 識字評量（`play.js` 的 `sayOf`、選項注音） | **不要手改**，跑 `make_bpmf.py`；讀音例外寫在它的 `CHECKED` |
 | `freq.js` | `FREQ`（字→排名） | 識字評量（常用字、字頻優先、高字頻）、備課分析 | 從原始檔重新產生 |
@@ -128,7 +129,7 @@
 
 | 要改的東西 | 會一起受影響 |
 |---|---|
-| `shared/lessons.js` 新增課本 | 跑 `make_parts.py`、`make_bpmf.py`、`make_kai.py`；跑自動檢查；兩個工具的課本清單會自動更新 |
+| 新增課本（加一個 `shared/lessons-代號.js`） | 跑 `make_lessons.js`（更新課本檔清單和所有課本的字）、`make_parts.py`、`make_bpmf.py`、`make_kai.py`；跑自動檢查；兩個工具的課本清單會自動更新 |
 | `shared/common.js` 的任何函數 | 識字評量**和**備課分析都要打開試一次 |
 | 作答紀錄欄位（`play.js` 的 `endItem`、`records.js` 的 `COLS`） | Excel 匯出、老師專區、進階分析（`pivot.js` 的 `DIMS`）、備份與匯入、`RECORD_FORMAT` 版本、`docs/records.md`；**先討論** |
 | 時期判斷（`data.js` 第 3 節 `phaseFor`） | 寫進每筆紀錄的 `phase`、老師專區依時期的圖、學扶前後測；屬 A8，**先討論** |
@@ -142,12 +143,8 @@
 
 ## 9. 自動產生資料的程式 `docs/scripts/`
 
-`check.js`、`bump.js`、`changelog.js`、`make_parts.py`、`make_bpmf.py`、`make_kai.py`、`make_conf_candidates.py`：各產生什麼、什麼時候跑，見 `docs/scripts/README.md`（2026-10-24 搬去）。
+`check.js`、`bump.js`、`changelog.js`、`make_lessons.js`、`lessons-src.js`、`make_parts.py`、`make_bpmf.py`、`make_kai.py`、`make_conf_candidates.py`：各產生什麼、什麼時候跑，見 `docs/scripts/README.md`（2026-10-24 搬去）。
 
 ## 10. 現在架構的特點與注意事項
 
-- **共用名稱**：識字評量的檔案靠「上面定義、下面直接用」溝通，沒有明確的介面。改名稱前先在整個 repo 搜尋這個名稱（例如在 GitHub 或請 Claude 搜尋），確定所有用到的地方都一起改。`themes.js`、`rewards.js` 只對外提供 `window.Themes`、`window.Rewards`，比較不會撞名，新的共用程式建議照這個寫法。
-- **平板作答模式**（網址有 `#t=`，`data.js` 的 `TABLET`）：`load` 改從網址讀、`store` 不寫，`records.js` 不開資料庫，其他程式照常跑。新增要存的資料時記得它在平板上不會存下來。**平板不載入 `teacher.js`、`pivot.js`、`tour.js`**（2026-10-24 R4a）：平板會跑到的程式**不能用這三個檔案的東西**，共用小工具放 `data.js`（例如 `chipRow`）。
-- **作答紀錄只有 `records.js` 直接存取 IndexedDB**：這是之後要換成線上資料庫（階段 F）時最需要守住的界線；其他檔案只讀 `records` 陣列、透過 `saveRecord`／`updateRecord` 寫入。
-- **日期以打開網頁那天為準**（`data.js` 的 `today`）：網頁開過夜會提醒重新整理（`app.js`）。
-- **整理（重構）程式**：規則與進度清單在 `docs/refactor.md`。
+見 `architecture-notes.md`（2026-10-24 拆出）：共用名稱、平板作答模式、作答紀錄的存取界線、日期、整理程式。**改程式前一定要讀。**

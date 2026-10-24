@@ -35,7 +35,7 @@ OUT_DIR = 'shared/fonts'
 
 # 1. 讀 lessons.js（用 Node 執行後轉成 JSON，和 make_bpmf.py 相同）
 JS = r'''
-const fs=require("fs");const src=fs.readFileSync("shared/lessons.js","utf8");
+const fs=require("fs");const src=require("./docs/scripts/lessons-src.js")();
 const o={};new Function(src+";Object.assign(this,{BOOKS,WORDS,WORDS_ED,SENT,SENT_ED,CONF,CONF_ED});").call(o);
 console.log(JSON.stringify(o));'''
 L = json.loads(subprocess.run(['node', '-e', JS], capture_output=True, text=True, check=True).stdout)
@@ -44,6 +44,11 @@ L = json.loads(subprocess.run(['node', '-e', JS], capture_output=True, text=True
 CMAP = TTFont(FONT).getBestCmap()
 def cjk(s): return {c for c in s if ord(c) >= 0x2E80 and ord(c) in CMAP}
 def read(f): return open(f, encoding='utf8').read()
+# 課本資料：shared/lessons.js 加上 BOOK_FILES 列的各本課本檔（2026-10-24 拆開），順序和網頁載入一樣
+def lessons_src():
+    head = read('shared/lessons.js')
+    files = json.loads(re.search(r'^const BOOK_FILES = (\[[^\]]*\]);', head, re.M).group(1))
+    return '\n'.join([head] + [read(f'shared/lessons-{b}.js') for b in files])
 # 拿掉程式說明（註解）：畫面上不會出現。// 前面要是空白或行首，網址裡的 https:// 不會被當成註解
 def strip_comments(t):
     t = re.sub(r'<!--.*?-->', '', t, flags=re.S)
@@ -68,7 +73,7 @@ def book_chars(b):
         for c in les['write'] + les['read']: s += list(S.get(c) or L['SENT'].get(c) or '')   # 例句只在提示出現，排在這課後面
     return ordered(s)
 groups, seen = [], set()
-for g in [pages] + [book_chars(b) for b in order] + [ordered(read('shared/lessons.js')), ordered(read('shared/parts.js'))]:
+for g in [pages] + [book_chars(b) for b in order] + [ordered(lessons_src()), ordered(read('shared/parts.js'))]:
     g = [c for c in g if c not in seen]; seen |= set(g)
     groups += [g[i:i + CHUNK] for i in range(0, len(g), CHUNK)]
 

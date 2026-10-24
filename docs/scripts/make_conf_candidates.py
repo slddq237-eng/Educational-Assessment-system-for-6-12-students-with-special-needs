@@ -29,7 +29,7 @@ N_SOUND, N_SHAPE = 6, 6      # 每個字最多列幾個候選
 
 data = json.loads(subprocess.run(['node', '-e', '''
 const fs = require("fs");
-const src = ["shared/lessons.js", "shared/parts.js", "shared/bpmf.js"].map(f => fs.readFileSync(f, "utf8")).join("\\n");
+const src = [require("./docs/scripts/lessons-src.js")(), ...["shared/parts.js", "shared/bpmf.js"].map(f => fs.readFileSync(f, "utf8"))].join("\\n");
 new Function(src + ";process.stdout.write(JSON.stringify({BOOKS,WORDS,WORDS_ED,CONF,CONF_ED,PARTS,PARTS_AUTO,BPMF_CH}))")();
 '''], capture_output=True, text=True, check=True).stdout)
 BOOKS, CONF, CONF_ED = data['BOOKS'], data['CONF'], data['CONF_ED']
