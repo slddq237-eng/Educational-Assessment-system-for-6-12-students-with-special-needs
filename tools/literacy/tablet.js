@@ -2,15 +2,36 @@
    識字評量：平板作答（tablet.js）（開發路線圖 F2；2026-10-23 先做練習，見 docs/records.md「平板作答回傳到 Google 表單」）
    1. 老師電腦：「⚙ 細部設定 → 練習與遊戲」貼上自己的 Google 表單網址；第 2 步作答模式選「平板掃 QR code」，
       按「產生 QR code」。QR code 是一個網址，#t= 後面帶著這次練習的設定（讀法見 data.js 的 TABLET）。
-   2. 學生平板：用相機掃描打開網頁 → 點自己的名字（沒填名字的顯示代號）→ 作答 → 做完把這次的紀錄每 10 題一包，送到老師的 Google 表單。
+   2. 學生平板：用相機掃描打開網頁 → 點自己的名字（沒填名字的顯示代號）→ 作答 → 做完把這次的紀錄每 20 題一包，送到老師的 Google 表單。
       平板不讀、不改平板自己存的設定，作答紀錄也不存進平板（見 records.js）。
    3. 老師電腦：從 Google 試算表下載 Excel，在「作答紀錄」按「匯入檔案」（見 records.js 的匯入檔案、本檔的 tabletSheet）。
    學生名字放進 QR code，讓學生在平板上點自己的名字（2026-10-23 維護者要求：代號容易點錯）；平板一打開就把名字從網址列拿掉（見 data.js 的 TABLET）。
-   送到表單的紀錄不放名字（kidName 空白），匯入時用老師電腦的學生名單補上。紀錄格式和平常一樣（作答模式 answer＝qr）。
+   送到表單的紀錄不放名字，匯入時用老師電腦的學生名單補上。還原後的紀錄格式和平常一樣（作答模式 answer＝qr）。
+   打包方式（第 2 版，2026-10-24）：這次每一題都一樣的欄位（學生、課本、設定…）只在包頭 head 寫一次，
+   每題只放不一樣的欄位；推算得出來的 kidName、bookName、crossed（＝wrongCount）不送。匯入時 {...head, ...每題} 再補回來。
+   第 1 版（每題寫完整紀錄）不再讀（2026-10-24 維護者決定：當時還沒有人在用）。
    ========================================================= */
 
-/* 一次送幾題：2026-10-23 實測 20 題（約 1.6 萬字）收得到、50 題（約 4 萬字）整筆收不到，取 10 題留空間 */
-const TAB_CHUNK = 10;
+/* 一次送幾題：2026-10-23 實測一包約 1.6 萬字收得到、約 4 萬字整筆收不到。
+   第 2 版打包後一題約 400 字，20 題約 8 千字，留一倍的空間 */
+const TAB_CHUNK = 20, TAB_VERSION = 2;
+const TAB_DROP = ["kidName", "bookName", "crossed"];   /* 推算得出來、不用送的欄位 */
+/* 第 2 版打包：每一題都一樣的欄位放進 head，每題只留不一樣的 */
+function tabletPackRecords(list){
+  const slim = list.map(r => { const o = {...r}; TAB_DROP.forEach(k => delete o[k]); return o; });
+  const head = {};
+  for(const k of Object.keys(slim[0] || {})){
+    const v = JSON.stringify(slim[0][k]);
+    if(slim.every(r => k in r && JSON.stringify(r[k]) === v)) head[k] = slim[0][k];
+  }
+  return {head, rows:slim.map(r => { const o = {}; for(const k in r) if(!(k in head)) o[k] = r[k]; return o; })};
+}
+/* 匯入時還原成完整的紀錄 */
+function tabletUnpack(head, row){
+  const r = {...head, ...row};
+  r.kidName = ""; r.crossed = r.wrongCount; r.bookName = r.book ? bookName(r.book) : "";
+  return r;
+}
 /* 老師貼上的網址要有表單代碼（/forms/d/e/代碼）和題目編號（entry.數字）；「取得預先填入的連結」兩個都有 */
 function parseFormUrl(s){
   const id = (s.match(/\/forms\/d\/e\/([\w-]+)/) || [])[1], entry = (s.match(/entry\.(\d+)/) || [])[1];
@@ -166,15 +187,15 @@ function tabletKids(){
   });
 }
 $("#tpNo").onclick = () => tpList();
-/* 做完（finish）時呼叫：這次的紀錄每 10 題一包送出；送不出去可以再送，或下載紀錄檔交給老師（同樣用「匯入檔案」） */
+/* 做完（finish）時呼叫：這次的紀錄每 20 題一包送出（第 2 版打包）；送不出去可以再送，或下載紀錄檔交給老師（同樣用「匯入檔案」） */
 function tabletSend(g){
   /* 送出去的紀錄不放名字（表單、試算表、下載的紀錄檔都只有代號） */
   const list = records.filter(r => r.session === g.session).map(({id, dirty, ...r}) => ({...r, kidName:""})), box = $("#rSend");
   if(!list.length){ box.hidden = true; return; }
-  const parts = [];
-  for(let i = 0; i < list.length; i += TAB_CHUNK) parts.push(list.slice(i, i + TAB_CHUNK));
-  const texts = parts.map((recs, i) => JSON.stringify({app:"literacy", kind:"tablet", version:1, session:g.session,
-    part:i + 1, parts:parts.length, savedAt:new Date().toISOString(), records:recs}));
+  const {head, rows} = tabletPackRecords(list), parts = [];
+  for(let i = 0; i < rows.length; i += TAB_CHUNK) parts.push(rows.slice(i, i + TAB_CHUNK));
+  const texts = parts.map((recs, i) => JSON.stringify({app:"literacy", kind:"tablet", version:TAB_VERSION, session:g.session,
+    part:i + 1, parts:parts.length, savedAt:new Date().toISOString(), head, records:recs}));
   const go = async () => {
     box.hidden = false; box.innerHTML = `<p class="note" style="margin:0">正在把紀錄送給老師…</p>`;
     try {
@@ -203,10 +224,10 @@ async function tabletSheet(f){
   for(const name of wb.SheetNames) for(const row of XLSX.utils.sheet_to_json(wb.Sheets[name], {header:1, raw:true})) for(const v of row){
     if(typeof v !== "string" || !v.trim().startsWith("{")) continue;
     let d; try { d = JSON.parse(v); } catch(e){ continue; }
-    if(!d || d.app !== "literacy" || d.kind !== "tablet" || !Array.isArray(d.records)) continue;
+    if(!d || d.app !== "literacy" || d.kind !== "tablet" || d.version !== TAB_VERSION || !d.head || !Array.isArray(d.records)) continue;
     const s = got.get(d.session) || {parts:d.parts || 1, have:new Set()};
     s.have.add(d.part || 1); got.set(d.session, s);
-    for(const r of d.records) all.set(recKey(r), r);   /* 同一包送了兩次（再送一次）只算一次 */
+    for(const row of d.records){ const r = tabletUnpack(d.head, row); all.set(recKey(r), r); }   /* 同一包送了兩次（再送一次）只算一次 */
   }
   if(!got.size) return null;
   return {app:"literacy", kind:"tablet", sheet:true, sessions:got.size, missing:[...got.values()].filter(s => s.have.size < s.parts).length, records:[...all.values()]};

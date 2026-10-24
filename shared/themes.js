@@ -8,16 +8,16 @@
 (function(){
 /* ===================== 扭蛋恐龍 ===================== */
 const DINOS = [
-  {name:"草草小暴龍", color:"#6cc66a", stars:1, w:34, label:"普通"},
-  {name:"橘子三角龍", color:"#ff9f43", stars:1, w:30, label:"普通"},
-  {name:"天空翼龍",   color:"#4fa8f0", stars:2, w:18, label:"稀有"},
-  {name:"彩虹劍龍",   color:"#a77cf0", stars:2, w:13, label:"稀有"},
-  {name:"黃金腕龍",   color:"#f5c02e", stars:3, w:5,  label:"超稀有"},
-  {name:"火焰迅猛龍", color:"#ff6b4a", stars:2, w:3.5, label:"稀有"},
-  {name:"冰晶雷龍",   color:"#7fdcf5", stars:2, w:3,   label:"稀有"},
-  {name:"棉花糖鴨嘴龍", color:"#ffb3d9", stars:2, w:3, label:"稀有"},
-  {name:"熔岩甲龍",   color:"#c0502e", stars:3, w:1.5, label:"超稀有"},
-  {name:"星空龍王",   color:"#3b2f8f", stars:4, w:0.7, label:"傳說"}
+  {code:"dino-01", name:"草草小暴龍", color:"#6cc66a", stars:1, w:34, label:"普通"},
+  {code:"dino-02", name:"橘子三角龍", color:"#ff9f43", stars:1, w:30, label:"普通"},
+  {code:"dino-03", name:"天空翼龍",   color:"#4fa8f0", stars:2, w:18, label:"稀有"},
+  {code:"dino-04", name:"彩虹劍龍",   color:"#a77cf0", stars:2, w:13, label:"稀有"},
+  {code:"dino-05", name:"黃金腕龍",   color:"#f5c02e", stars:3, w:5,  label:"極稀有"},
+  {code:"dino-06", name:"火焰迅猛龍", color:"#ff6b4a", stars:2, w:3.5, label:"稀有"},
+  {code:"dino-07", name:"冰晶雷龍",   color:"#7fdcf5", stars:2, w:3,   label:"稀有"},
+  {code:"dino-08", name:"棉花糖鴨嘴龍", color:"#ffb3d9", stars:2, w:3, label:"稀有"},
+  {code:"dino-09", name:"熔岩甲龍",   color:"#c0502e", stars:3, w:1.5, label:"極稀有"},
+  {code:"dino-10", name:"星空龍王",   color:"#3b2f8f", stars:4, w:0.7, label:"傳說"}
 ];
 const RARE_GLOW = {1:"#fff3b8", 2:"#7fd6ff", 3:"#ffd23f", 4:"#ff9ad5"};
 function gacha(){ const tot=DINOS.reduce((a,d)=>a+d.w,0); let r=Math.random()*tot; for(let i=0;i<DINOS.length;i++){ r-=DINOS[i].w; if(r<0) return i; } return 0; }
@@ -101,16 +101,16 @@ function dinoSvg(i){
 
 /* ===================== 扭蛋大魚 ===================== */
 const FISH = [
-  {name:"胖胖河豚",   color:"#ffcf3f", stars:1, w:34, label:"普通",   vb:"-8 -74 148 148"},
-  {name:"大嘴石斑魚", color:"#e98a4a", stars:1, w:30, label:"普通",   vb:"-8 -70 192 140"},
-  {name:"閃電劍旗魚", color:"#3d8fd8", stars:2, w:18, label:"稀有",   vb:"-58 -90 254 180"},
-  {name:"燈籠鮟鱇魚", color:"#7a4fc0", stars:2, w:13, label:"稀有",   vb:"-28 -92 192 184"},
-  {name:"黃金大鯊魚", color:"#f5c02e", stars:3, w:5,  label:"超稀有", vb:"-8 -80 210 160"},
-  {name:"條紋小丑魚", color:"#ff7a2e", stars:2, w:3.5, label:"稀有",   vb:"-8 -62 182 124"},
-  {name:"彩虹神仙魚", color:"#5fd0e8", stars:2, w:3,   label:"稀有",   vb:"-10 -100 182 200"},
-  {name:"藍斑魔鬼魟", color:"#4a5fa8", stars:2, w:3,   label:"稀有",   vb:"-30 -100 240 200"},
-  {name:"皇冠獅子魚", color:"#d94a4a", stars:3, w:1.5, label:"超稀有", vb:"-30 -96 220 190"},
-  {name:"月光龍王魚", color:"#7be0c8", stars:4, w:0.7, label:"傳說",   vb:"-44 -76 290 152"}
+  {code:"ocean-01", name:"胖胖河豚",   color:"#ffcf3f", stars:1, w:34, label:"普通",   vb:"-8 -74 148 148"},
+  {code:"ocean-02", name:"大嘴石斑魚", color:"#e98a4a", stars:1, w:30, label:"普通",   vb:"-8 -70 192 140"},
+  {code:"ocean-03", name:"閃電劍旗魚", color:"#3d8fd8", stars:2, w:18, label:"稀有",   vb:"-58 -90 254 180"},
+  {code:"ocean-04", name:"燈籠鮟鱇魚", color:"#7a4fc0", stars:2, w:13, label:"稀有",   vb:"-28 -92 192 184"},
+  {code:"ocean-05", name:"黃金大鯊魚", color:"#f5c02e", stars:3, w:5,  label:"極稀有", vb:"-8 -80 210 160"},
+  {code:"ocean-06", name:"條紋小丑魚", color:"#ff7a2e", stars:2, w:3.5, label:"稀有",   vb:"-8 -62 182 124"},
+  {code:"ocean-07", name:"彩虹神仙魚", color:"#5fd0e8", stars:2, w:3,   label:"稀有",   vb:"-10 -100 182 200"},
+  {code:"ocean-08", name:"藍斑魔鬼魟", color:"#4a5fa8", stars:2, w:3,   label:"稀有",   vb:"-30 -100 240 200"},
+  {code:"ocean-09", name:"皇冠獅子魚", color:"#d94a4a", stars:3, w:1.5, label:"極稀有", vb:"-30 -96 220 190"},
+  {code:"ocean-10", name:"月光龍王魚", color:"#7be0c8", stars:4, w:0.7, label:"傳說",   vb:"-44 -76 290 152"}
 ];
 function fishBody(i, dizzy){
   const c=FISH[i].color, k="#2a2140", S=`stroke="${k}" stroke-width="3.5" stroke-linejoin="round"`, S2=`stroke="${k}" stroke-width="2.5" stroke-linejoin="round"`;
@@ -224,13 +224,13 @@ function prizeSvg(theme,k){ return theme==="ocean" ? fishSvg(k) : dinoSvg(k); }
 /* ===================== 主題 ===================== */
 const THEMES = {
   ocean:{ name:"海洋探險", line:"釣起神秘大魚，看看是哪一種！", monster:"神秘大魚", coopWin:"大家一起釣到大魚了！", winBanner:"釣到了！",
-    stickers:FISH.map(d=>[d.color,d.name]) },
+    stickers:FISH.map(d=>[d.color,d.name,d.code]) },
   space:{ name:"太空任務", line:"勇士出擊，打敗外星人！", monster:"搗蛋外星人", coopWin:"大家一起打敗外星人！", winBanner:"打敗外星人！",
-    stickers:[["#ffd23f","金色流星"],["#ff8a3d","火紅彗星"],["#6fd3ff","冰藍星球"],["#b58cff","紫色星雲"],["#7bd389","綠色衛星"],["#ff6fa8","粉紅月亮"]] },
+    stickers:[["#ffd23f","金色流星","space-01"],["#ff8a3d","火紅彗星","space-02"],["#6fd3ff","冰藍星球","space-03"],["#b58cff","紫色星雲","space-04"],["#7bd389","綠色衛星","space-05"],["#ff6fa8","粉紅月亮","space-06"]] },
   dino:{ name:"恐龍谷", line:"敲開神秘恐龍蛋，看看孵出誰！", monster:"神秘恐龍蛋", coopWin:"恐龍蛋孵出來了！", winBanner:"孵出來了！",
-    stickers:DINOS.map(d=>[d.color,d.name]) },
+    stickers:DINOS.map(d=>[d.color,d.name,d.code]) },
   dessert:{ name:"甜點店", line:"當甜點師傅，疊出超級大蛋糕！", monster:"甜點師傅", coopWin:"大家一起做出超級大蛋糕！", winBanner:"蛋糕完成！",
-    stickers:[["#ff8fb3","草莓杯子蛋糕"],["#8b5a3c","巧克力杯子蛋糕"],["#ffe28a","香草杯子蛋糕"],["#9fe0a8","抹茶杯子蛋糕"],["#b9a3ff","藍莓杯子蛋糕"],["#ffb36b","橘子杯子蛋糕"]] }
+    stickers:[["#ff8fb3","草莓杯子蛋糕","dessert-01"],["#8b5a3c","巧克力杯子蛋糕","dessert-02"],["#ffe28a","香草杯子蛋糕","dessert-03"],["#9fe0a8","抹茶杯子蛋糕","dessert-04"],["#b9a3ff","藍莓杯子蛋糕","dessert-05"],["#ffb36b","橘子杯子蛋糕","dessert-06"]] }
 };
 function icon(theme,color){
   color = color || "#ffcc4d";
@@ -251,7 +251,15 @@ function drawSticker(theme, owned){
   const from = pool.length ? pool : all;
   return from[Math.floor(Math.random() * from.length)];
 }
-/* 貼紙的文字說明，例如「恐龍谷・黃金腕龍（超稀有）」 */
+/* 貼紙代號（2026-10-24 維護者決定）：每張貼紙一個固定代號，例如 "dino-05"，收藏、作答紀錄、平板回傳都用它。
+   代號一旦用過就不能改、也不能給別張用；新增貼紙就給新的代號（順序可以調整，不影響收藏）。 */
+const codeOf = (theme, i) => { const t = THEMES[theme]; return t && t.stickers[i] ? t.stickers[i][2] : ""; };
+/* 代號 → {theme, idx}；找不到回傳 null */
+function findCode(code){
+  for(const id of Object.keys(THEMES)){ const i = THEMES[id].stickers.findIndex(s => s[2] === code); if(i >= 0) return {theme:id, idx:i}; }
+  return null;
+}
+/* 貼紙的文字說明，例如「恐龍谷・黃金腕龍（極稀有）」 */
 function stickerName(theme, i){
   const t = THEMES[theme]; if(!t || !t.stickers[i]) return "";
   const g = GACHA[theme] && GACHA[theme][i];
@@ -307,7 +315,7 @@ window.Themes = {
   THEMES, GACHA, GACHA_VERB, RARE_GLOW,
   FISH, DINOS, fishBody, dinoSvg,   /* 打怪獸場景要畫大魚和恐龍（識字評量 scenes.js） */
   ids: Object.keys(THEMES),
-  icon, stickerSvg, drawSticker, stickerName, backdrop,
+  icon, stickerSvg, drawSticker, stickerName, codeOf, findCode, backdrop,
   stars: (theme, i) => GACHA[theme] && GACHA[theme][i] ? GACHA[theme][i].stars : 0
 };
 })();

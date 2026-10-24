@@ -273,7 +273,7 @@ function startSession(){
   G.game = gameFor(G);
   setupHearts(G);
   /* 打怪獸的戰利品（大魚、恐龍等）開始前就決定好，打敗怪獸後就是這次的貼紙 */
-  if(G.game) G.prize = Themes.drawSticker(G.theme, (Rewards.get(list[0]).stickers || {})[G.theme] || []);
+  if(G.game) G.prize = Themes.drawSticker(G.theme, Rewards.owned(list[0], G.theme));
   applySkin(G.theme, G.kind !== "formal");
   $("#pScene").hidden = true; $("#pScene").innerHTML = ""; $("#pBody").hidden = false;
   startClockShow();
@@ -516,7 +516,7 @@ function endItem(passed, correctSec, revealed){
     phase: phaseFor(it.kid, b, n) || "", daysAfter: state.rtiKeys.includes(key(b,n)) ? rtiDays(key(b,n), it.kid) : state.manual[key(b,n)] ? "" : (a.days ?? ""),
     /* 當時的條件（研究用的進階分析會用到）：提示設定、答錯規則用代碼存，Excel 再翻成中文 */
     hintSet: G.per[it.kid].hints.join(","), rule: G.noHelp ? "none" : G.per[it.kid].rule.join(","), layout: G.layout,
-    theme: G.theme, game: G.game, reward: "", bpmf: !!G.bpmf,
+    theme: G.theme, game: G.game, reward: "", rewardCode: "", bpmf: !!G.bpmf,   /* 抽到的貼紙：文字和代號（做完時由 collect.js 的 drawStickers 填）*/
     read: !!G.read, readUsed: [...cur.reads].map(id => ({word:"語詞", sent:"句子"})[id]).join("、"),   /* 報讀：這次有沒有開、這題按了哪幾種提示的喇叭 */
     fontScale: settings.fontScale, rate: settings.rate, sfx: settings.sfx,
     aim: G.mode === "flu" ? G.aim : "",   /* 流暢性的目標（每分鐘幾個），老師專區畫目標線用 */
@@ -752,6 +752,7 @@ function finish(){
   $("#rNote").textContent = (g.kind === "formal" ? "這次是正式評量，做完的結果會納入學習分析。" : "這次是練習，結果另外統計。")
     + (left.length ? "沒有做完的紀錄會保留，但標成「中途結束」，不列入分析。" : "");
   showScreen("#result");
+  drawStickers(g);             /* 先抽好貼紙、寫進紀錄（見 collect.js），平板送出的紀錄才有抽到什麼 */
   if(TABLET) tabletSend(g);   /* 平板作答：把這次的紀錄送到老師的 Google 表單（見 tablet.js） */
   /* 每位有作答的學生抽一張貼紙（見 collect.js）；練習先播完獎盃、卡片彈出後再抽 */
   if(!lively) return giveStickers(g);
