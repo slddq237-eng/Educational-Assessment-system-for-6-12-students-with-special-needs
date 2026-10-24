@@ -8,6 +8,8 @@
    1. 基本設定與小工具
    ========================================================= */
 /* 課本排序與名稱（BOOK_ORDER、bookName、lessonName）、語詞（wordOf、sentOf）、干擾字（confOf）、esc 都在 shared/common.js */
+/* 一排可以點選的小按鈕：list＝[[值, 顯示文字]…]，cur＝目前選的值，key＝data-○○ 的名字（設定畫面、老師專區都用；2026-10-24 從 teacher.js 搬來，因為平板不載入 teacher.js） */
+const chipRow = (list, cur, key, extra = () => "") => list.map(([v, t]) => `<button class="chip ${cur === v ? "on" : ""}" data-${key}="${v}" aria-pressed="${cur === v}" ${extra(v)}>${t}</button>`).join("");
 /* 部件（查法見 shared/common.js 的 rawParts）：拆成 2 個以上、而且不含字本身才算「拆得開」；
    拆不開（獨體字、只拆出一塊、PARTS 寫成自己）回傳 null，部件提示和部件重組會改成把字切成碎塊（見 play.js 的 cutHtml），不會直接顯示答案 */
 function partsOf(c){
