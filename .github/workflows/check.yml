@@ -1,5 +1,5 @@
 # 自動檢查（GitHub Actions）：每次發 PR、改 main 都會跑 docs/scripts/check.js
-# 檢查程式語法、教材資料、版本號、學生資料；結果顯示在 PR 頁面（綠勾＝通過，紅叉＝有問題，點進去看哪一項）
+# 檢查程式語法、教材資料、版本號、學生資料、文件與效能等 11 項（見 check.js 開頭）；結果顯示在 PR 頁面（綠勾＝通過，紅叉＝有問題，點進去看哪一項）
 # 本機也可以跑：在 repo 最上層執行 node docs/scripts/check.js
 name: 自動檢查
 on:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 jobs:
   check:
-    name: 程式、教材、版本號、學生資料
+    name: 自動檢查   # 名稱改了要同步 GitHub Settings → Rules 的「Require status checks to pass」（2026-10-24 從「程式、教材、版本號、學生資料」改名）
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
