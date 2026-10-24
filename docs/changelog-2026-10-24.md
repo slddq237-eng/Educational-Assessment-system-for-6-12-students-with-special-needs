@@ -5,4 +5,4 @@
 | 日期 | PR | 動到哪裡 | 改了什麼 | 想法或決定的變化 |
 |---|---|---|---|---|
 | 2026-10-24 | [#103](https://github.com/slddq237-eng/Educational-Assessment-system-for-6-12-students-with-special-needs/pull/103) | 專案簡介、文件 | 「GitHub 與 Claude code 新手使用說明」的資料夾地圖搬進根目錄 `README.md`（加網站網址）；`rules.md`「改完要更新哪些檔案」加一句改資料夾時更新地圖；新手說明那一段改成連結（**還沒合併**） | 地圖原本只在 claude.ai 文件，要分享才看得到、也容易忘記同步；搬進 repo，同一個 PR 就能一起改，新手說明只留連結 |
-| 2026-10-24 | （本 PR） | 文件 | `roadmap.md` 加 B9 玩法相容表、E5 加「貼紙夥伴打怪獸」的決定；`pending.md`「相關小組討論」加相容表內容、貼紙夥伴的兩個待決問題 | 「學生用貼紙角色互相對戰」改成「貼紙角色一起打怪獸」（合作，只在練習）；玩法、作答方式、主題的搭配規則要集中成一張相容表，先做相容表再做新玩法 |
+| 2026-10-24 | [#104](https://github.com/slddq237-eng/Educational-Assessment-system-for-6-12-students-with-special-needs/pull/104) | 文件 | `roadmap.md` 加 B9 玩法相容表、E5 加「貼紙夥伴打怪獸」的決定；`pending.md`「相關小組討論」加相容表內容、貼紙夥伴的兩個待決問題 | 「學生用貼紙角色互相對戰」改成「貼紙角色一起打怪獸」（合作，只在練習）；玩法、作答方式、主題的搭配規則要集中成一張相容表，先做相容表再做新玩法 |
