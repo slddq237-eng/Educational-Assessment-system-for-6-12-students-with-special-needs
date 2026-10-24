@@ -229,7 +229,7 @@ function howTo(M){
     if(T.view === "lesson") return `<p>每一條是一課，長度是那一課全部作答合起來的${esc(M.name)}（${better}）。括號是用了幾題。比較哪一課比較難，可以優先複習。</p>${more("one")}`;
     if(T.view === "phase") return `<p>每一條是一個時期，${esc(M.name)}${better}。理想的樣子：基線期低 → 教學中升高 → 教學後更高 → 維持期仍然高（學了有記住）。</p>
       <p>括號是筆數；某個時期只有幾題時，數字容易大幅變動，先多評量幾次再下結論。時期是作答當下判斷的。</p>${more("one")}`;
-    return `<p>${T.split === "lesson" ? "每一課一張小圖，橫軸對齊，可以上下比較：先教的課有沒有先進步、還沒教的課是不是維持原樣。" : "全部的課合成一條線。"}一個點＝一次評量（流暢性是一回合），${esc(M.name)}${better}。背景顏色＝時期（顏色對照在圖的上方），虛線＝時期改變的地方；直線＝本學期安排的學扶、資源班開始日${M.id === "flu" ? "；水平線＝目標每分鐘幾個" : ""}。空心點＝那一點不到 3 題，數字容易大起大落。滑鼠移到點上看數字。</p>
+    return `<p>${T.split === "lesson" ? "最上面「全部課合計」是每次評量全部的課合起來一個點，不分時期，看整體的起伏；下面每一課一張小圖，橫軸對齊，可以上下比較：先教的課有沒有先進步、還沒教的課是不是維持原樣。" : "全部的課合成一條線。"}一個點＝一次評量（流暢性是一回合），${esc(M.name)}${better}。背景顏色＝時期（顏色對照在圖的上方），虛線＝時期改變的地方；直線＝本學期安排的學扶、資源班開始日${M.id === "flu" ? "；水平線＝目標每分鐘幾個" : ""}。空心點＝那一點不到 3 題，數字容易大起大落。滑鼠移到點上看數字。</p>
       ${T.split === "all" ? "<p>時期是每一課各自算的；合成一條時，同一次評量含好幾課，背景顏色用的是那次最多題目的時期，可能前後跳來跳去。要看時期請切回「每課分開」。</p>" : ""}
       <ul><li><b>水準</b>：每個時期大約在多高？</li><li><b>趨勢</b>：時期裡的點往上、持平還是往下？基線期已經一直往上的話，很難說進步是教學造成的。</li>
       <li><b>穩定</b>：點有沒有忽高忽低？基線期最好至少 3 次而且穩定。</li><li><b>立即效果</b>：教學開始後頭幾個點，是不是馬上和基線期不同。</li></ul>${more("one")}`;
@@ -292,7 +292,7 @@ function trendView(rs, m){
     const o = {metric:m, xLabel: d => `${d}`, events:[{x:0, label:"教學開始"}], xName:"教學開始後第幾天"};
     if(T.split === "lesson"){
       ({chart, groups} = lessonPanels(withStart, (r, kk) => daysBetween(teachFor(kk, r.kid).start, dayOf(r)), fn,
-        (x, list) => ({label: x < 0 ? `開始前 ${-x} 天` : `第 ${x} 天`}), o));
+        (x, list) => ({label: x < 0 ? `開始前 ${-x} 天` : `第 ${x} 天`}), o, null, groups));
     } else chart = phaseLegend(groups) + lineChart(groups, o);
   } else if(T.view === "time"){
     /* 測驗日期：每一次評量一個點（流暢性是每一回合）。
@@ -309,7 +309,7 @@ function trendView(rs, m){
       aim: m === "flu" ? (rounds(src).map(x => x.aim).filter(Boolean).pop() || null) : null};
     if(T.split === "lesson"){
       const at = new Map(sess.map(p => [p.rs[0].session, p]));
-      ({chart, groups} = lessonPanels(src, r => at.get(r.session).x, fn, x => ({label: sess[x].label, day: sess[x].day}), o, sess));
+      ({chart, groups} = lessonPanels(src, r => at.get(r.session).x, fn, x => ({label: sess[x].label, day: sess[x].day}), o, sess, sess));
       latest = sess[sess.length - 1];
     } else chart = phaseLegend(groups) + lineChart(groups, o);
     if(Object.values(perDay).some(n => n > 1)) note = "同一天評量好幾次時，每次各畫一個點；橫軸每格是一次評量，不代表相隔幾天。";
@@ -349,8 +349,9 @@ function planEvents(groups){
 
 /* ---------- 依時間・每課分開（2026-10-24 維護者決定）----------
    時期是每一課各自算的，全部合成一條線時時期會來回跳；改成一課一張小圖、上下排、共用橫軸（單一受試研究的多基線圖）。
-   xOf(r, 課)＝這筆紀錄在橫軸的位置；info(x, list)＝這一點的標籤等；all＝共用橫軸的全部點（給橫軸標籤和範圍用） */
-function lessonPanels(src, xOf, fn, info, o, all){
+   xOf(r, 課)＝這筆紀錄在橫軸的位置；info(x, list)＝這一點的標籤等；all＝共用橫軸的全部點（給橫軸標籤和範圍用）；
+   total＝全部課合起來的點：畫在最上面「全部課合計」，每次評量一個點，不分時期（2026-10-24 維護者要求） */
+function lessonPanels(src, xOf, fn, info, o, all, total){
   const order = k => { const [b, n] = splitKey(k); return BOOK_ORDER.indexOf(b) * 1000 + (+n); };
   if(!src.length) return {chart:"", groups:[]};
   const byLesson = [...groupBy(src, r => key(r.book, r.lesson))].sort((a, b) => order(a[0]) - order(b[0]));
@@ -363,8 +364,8 @@ function lessonPanels(src, xOf, fn, info, o, all){
   const xs = (all || lessons.flatMap(l => l.pts)).map(p => p.x).concat((o.events || []).map(e => e.x));
   const domain = xs.length ? [Math.min(...xs), Math.max(...xs)] : [0, 1];
   /* 縱軸也統一，各課才比得出高低（正確率本來就固定 0～100%） */
-  const ymax = Math.max(...lessons.flatMap(l => l.pts.map(p => p.v || 0)), o.aim || 0);
-  const chart = phaseLegend(lessons.flatMap(l => l.pts)) + lessons.map((l, i) =>
+  const ymax = Math.max(...lessons.flatMap(l => l.pts.map(p => p.v || 0)), ...(total || []).map(p => p.v || 0), o.aim || 0);
+  const chart = (total && total.length ? lineChart(total, {...o, domain, ymax, axisPts: all, title:"全部課合計（每次評量一個點，不分時期）", compact:true, noPhase:true, xName:""}) : "") + phaseLegend(lessons.flatMap(l => l.pts)) + lessons.map((l, i) =>
     lineChart(l.pts, {...o, domain, ymax, axisPts: all, title:l.name, compact:true, xName: i === lessons.length - 1 ? o.xName : ""})).join("");
   return {chart, groups: lessons.flatMap(l => l.pts).sort((a, b) => a.x - b.x)};
 }
@@ -378,7 +379,7 @@ function phaseLegend(pts){
 /* ---------- 圖：折線圖（依時間） ----------
    一條線（單一學生、單一指標），2px 線、8px 點；背景顏色＝時期，時期改變的地方畫虛線（2026-10-24 起不在圖上寫時期名稱，看上方圖例）；
    直線＝教學安排開始日；流暢性有目標線。滑鼠或鍵盤移到點上會顯示數字；不到 3 題的點畫空心。
-   o.domain＝共用的橫軸範圍、o.ymax＝共用的縱軸最大值、o.title＝小圖標題、o.compact＝矮一點（每課分開時用） */
+   o.domain＝共用的橫軸範圍、o.ymax＝共用的縱軸最大值、o.title＝小圖標題、o.compact＝矮一點（每課分開時用）、o.noPhase＝不畫時期（全部課合計） */
 const SVGW = 760;
 function niceMax(v){ if(v <= 5) return 5; const p = Math.pow(10, Math.floor(Math.log10(v))); for(const m of [1, 2, 2.5, 5, 10]) if(m * p >= v) return m * p; return 10 * p; }
 /* 縱軸刻度：分成 4 格，每格是 1、2、5 的整數倍（例如 0、1、2、3、4 秒），不會出現 1.3、3.8 這種數字 */
@@ -401,7 +402,7 @@ function lineChart(pts, o){
   let g = "", lines = "";
   const segs = []; pts.forEach((p, i) => { if(!i || p.phase !== pts[i-1].phase) segs.push({phase:p.phase, from:i, to:i}); else segs[segs.length - 1].to = i; });
   const pad = pts.length > 1 ? Math.min(24, (X(pts[1].x) - X(pts[0].x)) / 2) : 24;
-  segs.forEach((s, i) => {
+  if(!o.noPhase) segs.forEach((s, i) => {
     const first = pts[s.from], lastP = pts[s.to];
     const a = i ? (X(pts[s.from - 1].x) + X(first.x)) / 2 : (first.x <= x0 ? L : Math.max(L, X(first.x) - pad));
     const b = i < segs.length - 1 ? (X(lastP.x) + X(pts[s.to + 1].x)) / 2 : (lastP.x >= x1 ? SVGW - R : Math.min(SVGW - R, X(lastP.x) + pad));
@@ -416,7 +417,7 @@ function lineChart(pts, o){
   const ok = pts.filter(p => p.v != null);
   const path = ok.map((p, i) => `${i ? "L" : "M"}${X(p.x).toFixed(1)} ${Y(p.v).toFixed(1)}`).join(" ");
   g += `<path class="line" d="${path}"/>`;
-  g += ok.map(p => `<circle class="dot${p.n < 3 ? " few" : ""}" cx="${X(p.x)}" cy="${Y(p.v)}" r="5" tabindex="0" data-tip="${esc(`${p.label}｜${p.lesson ? p.lesson + "｜" : ""}${p.phase}｜${fmt(o.metric, p.v)}（${p.n} ${unitN(o.metric)}）`)}"/>`).join("");
+  g += ok.map(p => `<circle class="dot${p.n < 3 ? " few" : ""}" cx="${X(p.x)}" cy="${Y(p.v)}" r="5" tabindex="0" data-tip="${esc(`${p.label}｜${p.lesson ? p.lesson + "｜" : ""}${o.noPhase ? "" : p.phase + "｜"}${fmt(o.metric, p.v)}（${p.n} ${unitN(o.metric)}）`)}"/>`).join("");
   /* 最後一點標數字（只標一個，其餘看表格或移上去看）；前一點太近就不標，避免疊在一起 */
   const lp = ok[ok.length - 1], lp0 = ok[ok.length - 2];
   const below = o.aim && Math.abs(Y(lp ? lp.v : 0) - Y(o.aim)) < 24 && lp.v < o.aim;   /* 靠近目標線時把數字放到點的下面 */
