@@ -47,6 +47,52 @@
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes pop{from{transform:scale(0) rotate(-30deg)}to{transform:scale(1) rotate(0)}}
 
+/* ---------- 扭蛋機（識字評量 gacha.js，2026-10-24）：拉拉桿 → 搖一搖 → 轉蛋掉出來 → 依星等不同的特效打開 ----------
+   動畫只在電腦沒設「減少動態效果」時播；沒有快速閃爍（光敏性癲癇），變暗、發光都是慢慢淡入 */
+.reveal.gacha::before{content:"";position:absolute;inset:0;background:#000;opacity:0;transition:opacity .8s;pointer-events:none}
+.reveal.gacha.suspense::before{opacity:.45}
+.gbox{position:relative;background:#fffaf0;border-radius:28px;border:6px solid #2d2a26;padding:18px 26px 20px;display:grid;justify-items:center;gap:8px;
+  text-align:center;color:#3a2f12;max-width:92vw;box-sizing:border-box}
+.gsay{margin:0;font-size:clamp(20px,3vw,26px);font-weight:700}
+.gstage{position:relative;width:min(280px,60vw);aspect-ratio:200/330}
+.gmac{width:100%;height:auto;display:block}
+.glever{position:absolute;right:-12%;top:38%;width:24%;height:26%;background:none;border:0;padding:0;cursor:grab;touch-action:none}
+.glever .gstick{position:absolute;left:44%;top:22%;width:12%;height:62%;background:#9aa3ad;border:3px solid #2d2a26;border-radius:6px;transform-origin:50% 100%;transition:transform .35s}
+.glever .gknob{position:absolute;left:22%;top:0;width:56%;aspect-ratio:1;border-radius:50%;background:#ffd23f;border:3px solid #2d2a26;transition:transform .35s}
+.glever:focus-visible{outline:4px solid #2a78d6;outline-offset:4px;border-radius:12px}
+.gdrop{position:absolute;left:50%;top:56%;width:30%;transform:translate(-50%,0) scale(.3);opacity:0}
+.gcap{width:100%;height:auto;display:block;overflow:visible}
+.gcap .gtop{transition:transform .45s,opacity .45s;transform-origin:50% 50%}
+.gfx{position:absolute;left:50%;top:86%;width:0;height:0}
+.gfx i{position:absolute;left:-5px;top:-7px;width:10px;height:14px;border-radius:3px;opacity:0}
+.godds{width:min(560px,86vw);text-align:left}
+.godds .odds{margin:0}
+.reveal.gacha .row{gap:10px}
+@media (prefers-reduced-motion:no-preference){
+  .glever:not(:disabled){animation:gnudge 1.6s ease-in-out infinite}
+  .pulled .glever{animation:none}
+  .pulled .glever .gstick{transform:scaleY(.45)}
+  .pulled .glever .gknob{transform:translateY(130%)}
+  .pulled .gmac{animation:gshake .6s ease-in-out 2}
+  .dropped .gdrop{animation:gdrop .55s cubic-bezier(.3,1.4,.5,1) forwards}
+  .suspense .gdrop .gcap{animation:gwobble .3s ease-in-out 3}
+  .suspense.s4 .gdrop .gcap{animation-iteration-count:5}
+  .opened .gcap .gtop{transform:translate(18%,-45%) rotate(35deg);opacity:0}
+  .opened .gdrop{filter:drop-shadow(0 0 14px var(--gc))}
+  .opened.t3 .gdrop::before,.opened.t4 .gdrop::before{content:"";position:absolute;left:50%;top:50%;width:420%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
+    background:repeating-conic-gradient(var(--gc) 0 10deg,transparent 10deg 20deg);opacity:.5;
+    -webkit-mask:radial-gradient(circle,#000 10%,transparent 60%);mask:radial-gradient(circle,#000 10%,transparent 60%);animation:spin 8s linear infinite}
+  .opened.t4 .gfx::before{content:"";position:absolute;left:-40px;bottom:0;width:80px;height:340px;background:linear-gradient(to top,rgba(255,210,63,.85),rgba(255,243,160,0));
+    border-radius:40px;animation:gpillar .7s ease-out forwards;transform-origin:bottom}
+  .opened .gfx i{animation:gburst 1s ease-out forwards}
+}
+@keyframes gnudge{0%,70%,100%{transform:none}80%{transform:translateY(8%)}}
+@keyframes gshake{25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
+@keyframes gdrop{0%{opacity:1;transform:translate(-50%,0) scale(.3)}100%{opacity:1;transform:translate(-50%,150%) scale(1.2)}}
+@keyframes gwobble{25%{transform:rotate(-14deg)}75%{transform:rotate(14deg)}}
+@keyframes gburst{0%{opacity:1;transform:rotate(var(--a)) translateY(0)}100%{opacity:0;transform:rotate(var(--a)) translateY(calc(-1 * var(--d))) rotate(200deg)}}
+@keyframes gpillar{from{transform:scaleY(0);opacity:0}to{transform:scaleY(1);opacity:1}}
+
 /* ---------- 結果卡片上的小貼紙 ---------- */
 .sticker{display:flex;align-items:center;gap:12px;background:#fff5d6;border-radius:14px;padding:8px 14px;font-size:18px}
 .sticker svg{width:64px;height:64px;flex:none}
