@@ -21,11 +21,11 @@ for(const [bk, b] of Object.entries(BOOKS)) for(const L of Object.values(b.lesso
 }
 
 const GOALS = [
-  {id:"1",  order:"建議第 1 步", name:"聽音選圖",  what:"聽語詞，點出正確的圖片（音 ↔ 義）", off:"第 2 版開放"},
-  {id:"2",  order:"建議第 2 步", name:"看字選圖",  what:"看字或語詞，點出正確的圖片（形 ↔ 義）", off:"第 2 版開放"},
+  {id:"1",  order:"建議第 1 步", name:"聽音選圖",  what:"聽語詞，點出正確的圖片（音 ↔ 義）", off:"準備中"},
+  {id:"2",  order:"建議第 2 步", name:"看字選圖",  what:"看字或語詞，點出正確的圖片（形 ↔ 義）", off:"準備中"},
   {id:"3",  order:"建議第 3 步", name:"形音辨識",  what:"聽「努力的努」，從形近字、同音字、同詞易混字中選出目標字"},
   {id:"4-1",order:"建議第 4 步", name:"部件重組",  what:"看拆開的部件，選出組成的字"},
-  {id:"4-2",order:"建議第 4 步", name:"看提示書寫", what:"寫出目標字；先用紙筆作答、老師登錄", off:"第 4 版開放"}
+  {id:"4-2",order:"建議第 4 步", name:"看提示書寫", what:"寫出目標字；先用紙筆作答、老師登錄", off:"準備中"}
 ];
 const KINDS = [
   {id:"formal",   name:"正式評量", desc:"條件固定（在「評量設定」調整），結果納入學習分析"},
@@ -72,8 +72,8 @@ const hintName = id => LEVELS.flatMap(l => l.items).find(i => i[0] === id)[1];
 const REACT = {remove:"選錯的選項打叉", next:"出現下一個提示", reveal:"顯示答案並唸一次，進入下一題"};
 const ANSWERS = [
   {id:"turn",    name:"大螢幕・輪流",   desc:"1～4 人輪流在同一個螢幕作答", min:1, max:4},
-  {id:"split",   name:"大螢幕・同時",   desc:"螢幕分成 2～4 區，各自作答（需支援多點觸控）", min:2, max:4, off:"第 2 版"},
-  {id:"present", name:"呈現模式・紙筆", desc:"螢幕只出題，學生寫在紙上，老師改完再登錄", min:1, max:99, off:"第 2 版"},
+  {id:"split",   name:"大螢幕・同時",   desc:"螢幕分成 2～4 區，各自作答（需支援多點觸控）", min:2, max:4, off:"準備中"},
+  {id:"present", name:"呈現模式・紙筆", desc:"螢幕只出題，學生寫在紙上，老師改完再登錄", min:1, max:99, off:"準備中"},
   /* 平板作答（tablet.js）：一個 QR code 可以給幾位學生，每位在自己的平板點自己的代號；目前只能用在練習 */
   {id:"qr",      name:"平板掃 QR code", desc:"學生用自己的平板掃描作答，做完傳回老師的 Google 表單（目前只能練習）", min:1, max:12}
 ];
