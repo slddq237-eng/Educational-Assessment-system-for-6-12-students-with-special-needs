@@ -11,15 +11,15 @@
   4. 學生資料：repo 是公開的，不能有照片、備份檔、作答紀錄
   5. 文件長度：docs/ 裡的說明文件太長時提醒拆分（太長的文件 Claude 一次讀不完、容易讀到過時內容）；
      CLAUDE.md 每則訊息都會載入，上限另外設得比較小
-  6. 程式地圖：每個 .js 檔、每個儲存名稱都要寫在 docs/architecture.md（沒寫只提醒）；
+  6. 程式地圖：每個 .js 檔、每個儲存名稱都要寫在 docs/code/architecture.md（沒寫只提醒）；
   7. 文件裡的指向：docs/ 和 CLAUDE.md 寫的「`檔名`」「`檔名`「某一節」」「`檔名` 第 N 節」要找得到（只提醒）
   8. 大檔案清單：超過 30KB 的程式檔、超過 20KB 的 docs 文件要寫在 CLAUDE.md 的「省 token」清單（Claude 才知道先搜尋、不要整份讀）
   9. 楷書字型缺字：畫面文字、教材裡的字要在楷書字型裡，沒有就提醒跑 make_kai.py
   10. 網頁下載量：每個頁面一打開要下載的程式和樣式（不含字型）超過上限就提醒，避免越來越慢
-  11. 對外連線：程式裡新的外部網址要寫進 docs/architecture.md 第 7 節（也要更新 privacy.html）
-  12. 變更紀錄：docs/changes/ 的小檔案要有「日期」「動到哪裡」「改了什麼」（只提醒）
+  11. 對外連線：程式裡新的外部網址要寫進 docs/code/architecture.md 第 7 節（也要更新 privacy.html）
+  12. 變更紀錄：docs/changelog/changes/ 的小檔案要有「日期」「動到哪裡」「改了什麼」（只提醒）
   8～12 都只提醒（2026-10-24 維護者要求加）
-     只有入口檔案可以直接存取 localStorage、indexedDB（其他檔案直接用是錯誤，見 docs/refactor.md 規則 1）
+     只有入口檔案可以直接存取 localStorage、indexedDB（其他檔案直接用是錯誤，見 docs/code/refactor.md 規則 1）
 
 「錯誤」會讓檢查失敗（紅叉），要修好才合併；「提醒」只列出來，不會失敗。
 已知、等維護者決定的問題放在 KNOWN，寫明原因；修好後從 KNOWN 拿掉。
@@ -139,7 +139,7 @@ try {
   for (const [t, where] of texts) for (const [w, [from, to]] of Object.entries(sctx.SAY))
     if (t !== w && t.includes(w) && !SAY_OK.has(t))
       warn(where, `「${t}」裡有語音替換詞「${w}」，唸的時候「${from}」會換成「${to}」；讀音一樣就把這句加進 check.js 的 SAY_OK，不一樣請改 make_bpmf.py 的 SAY`);
-  if (few) warn('shared/lessons.js', `${few} 個字的干擾字少於 2 個，出題時會用課文字補（例如 ${fewEx.join('、')}；候選干擾字在 docs/material-review.xlsx「干擾字候選」頁；怎麼處理見規格書 A3）`);
+  if (few) warn('shared/lessons.js', `${few} 個字的干擾字少於 2 個，出題時會用課文字補（例如 ${fewEx.join('、')}；候選干擾字在 docs/materials/material-review.xlsx「干擾字候選」頁；怎麼處理見規格書 A3）`);
 } catch (e) {
   err('shared/lessons.js', `讀不進來：${e.message}`);
 }
@@ -162,7 +162,7 @@ try {
 } catch (e) { /* 沒有 git 或沒有 origin/main：不比 */ }
 
 /* ---------- 4. 學生資料 ---------- */
-const ALLOW_DATA = ['docs/material-review.xlsx', 'docs/parts-table.xlsx'];   /* 教材資料，沒有學生資料 */
+const ALLOW_DATA = ['docs/materials/material-review.xlsx', 'docs/materials/parts-table.xlsx'];   /* 教材資料，沒有學生資料 */
 for (const f of files) {
   const ext = path.extname(f).toLowerCase();
   if (['.jpg', '.jpeg', '.png', '.gif', '.heic', '.webp', '.bmp', '.mp4', '.mov', '.m4a', '.mp3', '.wav'].includes(ext))
@@ -179,31 +179,31 @@ for (const f of files) {
 /* ---------- 5. 文件長度 ---------- */
 const DOC_MAX = 10000;   /* 字數；超過就提醒拆成小檔案，並更新 docs/INDEX.md 的索引 */
 const CLAUDE_MAX = 2000;   /* CLAUDE.md 每則訊息都會載入，越短越省（2026-10-24 維護者決定） */
-for (const f of files.filter(f => /^(docs\/[^/]+|CLAUDE)\.md$/.test(f))) {
+for (const f of files.filter(f => /^(docs\/.+|CLAUDE)\.md$/.test(f))) {
   const n = [...read(f)].length;
   if (f === 'CLAUDE.md' && n > CLAUDE_MAX) warn(f, `CLAUDE.md 有 ${n} 字，超過 ${CLAUDE_MAX} 字（每則訊息都會載入）；詳細規則請寫在 docs/，這裡只留一定要做的事`);
   else if (n > DOC_MAX) warn(f, `文件有 ${n} 字，超過 ${DOC_MAX} 字，建議拆成小檔案（見 docs/INDEX.md「寫文件的規則」）`);
 }
 
 /* ---------- 6. 程式地圖 ---------- */
-/* 新增或改名的 .js 檔要寫進 docs/architecture.md，之後改程式的人才找得到它和誰有關係 */
-if (files.includes('docs/architecture.md')) {
-  const map = read('docs/architecture.md');
+/* 新增或改名的 .js 檔要寫進 docs/code/architecture.md，之後改程式的人才找得到它和誰有關係 */
+if (files.includes('docs/code/architecture.md')) {
+  const map = read('docs/code/architecture.md');
   for (const f of files.filter(f => f.endsWith('.js') && !f.startsWith('shared/vendor/'))) {
     const name = /^shared\/lessons-\w+\.js$/.test(f) ? 'lessons-代號.js' : path.basename(f);   /* 各本課本檔合寫成一列 */
-    if (!map.includes(name)) warn(f, '這個 .js 檔沒有寫在程式地圖 docs/architecture.md，請補上它做什麼、誰會用到');
+    if (!map.includes(name)) warn(f, '這個 .js 檔沒有寫在程式地圖 docs/code/architecture.md，請補上它做什麼、誰會用到');
   }
   /* 儲存名稱（literacy-xxx 等）要寫在地圖第 6 節，之後換線上資料庫、做備份時才不會漏 */
   for (const f of files.filter(f => /\.(js|html)$/.test(f) && !f.startsWith('docs/') && !f.startsWith('shared/vendor/'))) {
     for (const m of read(f).matchAll(/["'`]((?:literacy|prep|platform)-[A-Za-z]+)["'`]/g))
-      if (!map.includes('`' + m[1] + '`')) warn(f, `儲存名稱「${m[1]}」沒有寫在 docs/architecture.md 第 6 節，請補上存什麼、要不要放進備份檔`);
+      if (!map.includes('`' + m[1] + '`')) warn(f, `儲存名稱「${m[1]}」沒有寫在 docs/code/architecture.md 第 6 節，請補上存什麼、要不要放進備份檔`);
   }
 }
-/* 存資料一律走入口（docs/refactor.md 規則 1）：只有這些檔案可以直接用 localStorage、indexedDB */
+/* 存資料一律走入口（docs/code/refactor.md 規則 1）：只有這些檔案可以直接用 localStorage、indexedDB */
 const STORAGE_ENTRY = ['tools/literacy/data.js', 'tools/literacy/records.js', 'shared/rewards.js', 'tools/prep/prep.js'];
 for (const f of files.filter(f => /\.(js|html)$/.test(f) && !f.startsWith('docs/') && !f.startsWith('shared/vendor/') && !STORAGE_ENTRY.includes(f))) {
   if (/\b(localStorage|sessionStorage|indexedDB)\s*\./.test(read(f)))
-    err(f, `直接存取瀏覽器儲存空間。請改用入口（識字評量用 data.js 的 load、store；作答紀錄用 records.js；貼紙頭像用 Rewards），見 docs/refactor.md 規則 1`);
+    err(f, `直接存取瀏覽器儲存空間。請改用入口（識字評量用 data.js 的 load、store；作答紀錄用 records.js；貼紙頭像用 Rewards），見 docs/code/refactor.md 規則 1`);
 }
 
 /* ---------- 7. 文件裡的指向 ----------
@@ -214,7 +214,7 @@ const findDoc = (from, p) => {
   if (p.includes('/')) return [p, path.posix.join(path.posix.dirname(from), p)].find(x => files.includes(x));
   return [path.posix.join(path.posix.dirname(from), p), 'docs/' + p, p].find(x => files.includes(x)) || files.find(x => x.endsWith('/' + p));
 };
-for (const f of files.filter(f => /^(docs\/[^/]+|CLAUDE)\.md$/.test(f))) {
+for (const f of files.filter(f => /^(docs\/.+|CLAUDE)\.md$/.test(f))) {
   read(f).split('\n').forEach((line, i) => {
     if (/原列|例如/.test(line)) return;
     const at = `${f} 第 ${i + 1} 行`;
@@ -243,7 +243,7 @@ for (const f of files.filter(f => own(f) && /\.(js|html|css)$/.test(f) && !f.sta
     warn(f, `超過 30KB（${Math.round(fs.statSync(path.join(ROOT, f)).size / 1024)}KB），請加進 CLAUDE.md「省 token」的大檔案清單`);
 /* docs/ 的文件超過約 20KB 也要列出（2026-10-24 維護者決定）；history、changelog 平常不讀，不用列 */
 const BIG_DOC = 20 * 1024;
-for (const f of files.filter(f => /^docs\/[^/]+\.md$/.test(f) && !/^docs\/(history|changelog)/.test(f)))
+for (const f of files.filter(f => /^docs\/.+\.md$/.test(f) && !/^docs\/(history|changelog)\//.test(f)))
   if (fs.statSync(path.join(ROOT, f)).size > BIG_DOC && !read('CLAUDE.md').includes(path.posix.basename(f)))
     warn(f, `超過 20KB（${Math.round(fs.statSync(path.join(ROOT, f)).size / 1024)}KB），請加進 CLAUDE.md「省 token」的 docs 大檔案清單`);
 
@@ -280,24 +280,24 @@ for (const f of files.filter(f => own(f) && f.endsWith('.html'))) {
 }
 
 /* ---------- 11. 對外連線 ----------
-   程式（不含註解）和頁面的 script、stylesheet、預先連線裡的外部網址，主機名稱要寫在 docs/architecture.md（第 7 節「對外連線」），
+   程式（不含註解）和頁面的 script、stylesheet、預先連線裡的外部網址，主機名稱要寫在 docs/code/architecture.md（第 7 節「對外連線」），
    並同步更新 privacy.html；一般的 <a> 連結只是讓人點的，不算。www.w3.org 是 SVG 的固定寫法，不是連線 */
 {
-  const arch = read('docs/architecture.md'), hosts = new Map();
+  const arch = read('docs/code/architecture.md'), hosts = new Map();
   for (const f of files.filter(f => own(f) && /\.(js|html|css)$/.test(f))) {
     let t = stripComments(read(f));
     if (f.endsWith('.html')) t = t.replace(/<a\b[^>]*>/g, '');
     for (const m of t.matchAll(/https?:\/\/([\w.-]+)/g))
       if (m[1] !== 'www.w3.org' && !arch.includes(m[1])) hosts.set(m[1], f);
   }
-  for (const [h, f] of hosts) warn(f, `連到外部網站「${h}」，請寫進 docs/architecture.md 第 7 節「對外連線」，並更新 privacy.html`);
+  for (const [h, f] of hosts) warn(f, `連到外部網站「${h}」，請寫進 docs/code/architecture.md 第 7 節「對外連線」，並更新 privacy.html`);
 }
 
 /* ---------- 12. 變更紀錄 ----------
-   2026-10-24 起每個 PR 在 docs/changes/ 加一個小檔案（見 docs/changelog.md「怎麼寫」），這裡檢查有沒有該有的欄位 */
-for (const f of files.filter(f => /^docs\/changes\/\d{4}-\d{2}-\d{2}.*\.md$/.test(f))) {
+   2026-10-24 起每個 PR 在 docs/changelog/changes/ 加一個小檔案（見 docs/changelog/changelog.md「怎麼寫」），這裡檢查有沒有該有的欄位 */
+for (const f of files.filter(f => /^docs\/changelog\/changes\/\d{4}-\d{2}-\d{2}.*\.md$/.test(f))) {
   const s = read(f), miss = ['日期', '動到哪裡', '改了什麼'].filter(k => !new RegExp(`^- ${k}：\\S`, 'm').test(s));
-  if (miss.length) warn(f, `變更紀錄少了「${miss.join('」「')}」：照 docs/changelog.md「怎麼寫」的格式，每一欄一行，例如「- 日期：2026-10-25」`);
+  if (miss.length) warn(f, `變更紀錄少了「${miss.join('」「')}」：照 docs/changelog/changelog.md「怎麼寫」的格式，每一欄一行，例如「- 日期：2026-10-25」`);
 }
 
 /* ---------- 結果 ---------- */

@@ -2,7 +2,7 @@
 干擾字候選清單（給 Claude 或熟悉程式的人執行，老師不用動）
 
 有些字的干擾字（同音字＋形近字）少於 2 個，出題時程式只好用課文裡的其他字補。
-這支程式幫這些字找「候選干擾字」，寫進 docs/material-review.xlsx 的「干擾字候選」頁，請老師挑。
+這支程式幫這些字找「候選干擾字」，寫進 docs/materials/material-review.xlsx 的「干擾字候選」頁，請老師挑。
 只是準備資料：不會改 shared/lessons.js，老師挑好後再由 Claude 改進教材資料。
 
 候選字只從平台課本的生字裡找（學生比較可能學過，字型裡也一定有這個字），
@@ -23,7 +23,7 @@ import json, subprocess, sys
 import openpyxl
 from openpyxl.styles import Alignment, Font, PatternFill
 
-XLSX = 'docs/material-review.xlsx'
+XLSX = 'docs/materials/material-review.xlsx'
 SHEET = '干擾字候選'
 N_SOUND, N_SHAPE = 6, 6      # 每個字最多列幾個候選
 

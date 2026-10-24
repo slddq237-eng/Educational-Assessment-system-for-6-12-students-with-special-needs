@@ -740,7 +740,7 @@ function finish(){
   const left = g.kids.filter(code => !g.done.has(code));
   if(left.length) records.filter(r => r.session === g.session && left.includes(r.kid)).forEach(r => { r.quit = true; updateRecord(r); });
   $("#rTitle").textContent = left.length ? "這次先到這裡" : "完成了！";
-  /* 練習才有鼓勵的話、獎盃和卡片彈出；正式評量要不要加等 A3 討論（見 docs/pending.md） */
+  /* 練習才有鼓勵的話、獎盃和卡片彈出；正式評量要不要加等 A3 討論（見 docs/plans/pending.md） */
   const lively = g.kind !== "formal";
   $("#rList").classList.remove("lively", "wait");
   $("#rList").innerHTML = g.kids.map((code, i) => {

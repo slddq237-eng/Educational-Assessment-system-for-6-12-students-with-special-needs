@@ -3,7 +3,7 @@
 整個平台的程式「誰做什麼、誰用誰、資料從哪裡來、存到哪裡」。**改程式前先看這份**，找出會一起受影響的地方，避免改一處壞另一處。
 （2026-10-23 建立。只寫「關係」，細節看各檔案開頭的中文說明；檔案內的「第 ○ 節」就是下面表格的節號。）
 
-**維護規則**：新增、刪除、改名 `.js` 檔，或改了檔案之間的關係（新的共用函數、新的儲存位置、新的對外連線），在同一個 PR 更新這份。整理（重構）程式時照 `docs/refactor.md` 的規則，做完更新那裡的進度清單。自動檢查 `docs/scripts/check.js` 會幫忙抓：有 .js 檔或儲存名稱沒列在這份地圖、有檔案繞過入口直接存資料（見 `refactor.md` 規則 1）。
+**維護規則**：新增、刪除、改名 `.js` 檔，或改了檔案之間的關係（新的共用函數、新的儲存位置、新的對外連線），在同一個 PR 更新這份。整理（重構）程式時照 `docs/code/refactor.md` 的規則，做完更新那裡的進度清單。自動檢查 `docs/scripts/check.js` 會幫忙抓：有 .js 檔或儲存名稱沒列在這份地圖、有檔案繞過入口直接存資料（見 `refactor.md` 規則 1）。
 
 ## 1. 全景
 
@@ -112,7 +112,7 @@
 | sessionStorage | `literacy-tablet` | 平板作答：這個分頁的練習設定（含學生名字），關掉分頁就不見；不放進備份 | `data.js` |
 
 - **備份檔**（.json）：`records.js` 組成，內含作答紀錄、學生名單、教學日期、設定，以及用 `addBackupPart` 登記的其他資料（目前有字組 `wordsets.js`、貼紙與頭像 `collect.js`）。新增要存的資料時，記得用 `addBackupPart` 加進備份。
-- 作答紀錄格式的規則在 `docs/records.md`：只加新欄位、不改舊欄位的意思，**改格式前先討論**。
+- 作答紀錄格式的規則在 `docs/design/records.md`：只加新欄位、不改舊欄位的意思，**改格式前先討論**。
 
 ## 7. 對外連線
 
@@ -123,7 +123,7 @@
 | Google 表單（docs.google.com） | 問題回報連結 | 只是連結 |
 | 老師自己的 Google 表單（docs.google.com/forms/…/formResponse） | 平板作答：學生做完送出作答紀錄（只有代號），見 `tablet.js` | 結果畫面顯示「送不出去」，可再送或下載紀錄檔 |
 
-新增對外連線時要更新 `privacy.html` 和 `docs/data-sources.md`。
+新增對外連線時要更新 `privacy.html` 和 `docs/materials/data-sources.md`。
 
 ## 8. 改這裡，要一起檢查哪裡
 
@@ -131,7 +131,7 @@
 |---|---|
 | 新增課本（加一個 `shared/lessons-代號.js`） | 跑 `make_lessons.js`（更新課本檔清單和所有課本的字）、`make_parts.py`、`make_bpmf.py`、`make_kai.py`；跑自動檢查；兩個工具的課本清單會自動更新 |
 | `shared/common.js` 的任何函數 | 識字評量**和**備課分析都要打開試一次 |
-| 作答紀錄欄位（`play.js` 的 `endItem`、`records.js` 的 `COLS`） | Excel 匯出、老師專區、進階分析（`pivot.js` 的 `DIMS`）、備份與匯入、`RECORD_FORMAT` 版本、`docs/records.md`；**先討論** |
+| 作答紀錄欄位（`play.js` 的 `endItem`、`records.js` 的 `COLS`） | Excel 匯出、老師專區、進階分析（`pivot.js` 的 `DIMS`）、備份與匯入、`RECORD_FORMAT` 版本、`docs/design/records.md`；**先討論** |
 | 時期判斷（`data.js` 第 3 節 `phaseFor`） | 寫進每筆紀錄的 `phase`、老師專區依時期的圖、學扶前後測；屬 A8，**先討論** |
 | 教學日期的存法（`teach`、`teachFor`） | 時期判斷、老師專區「教學開始後第幾天」（用現在的教學日期回推）、備份 |
 | 提示的種類或順序（`data.js` 的 `HINT_ORDER`、`HINT_UNFIT`） | 設定畫面、`play.js` 的 `hintHtml`、紀錄的 `hintSet`、老師專區「提示層級」 |

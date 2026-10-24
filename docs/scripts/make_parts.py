@@ -3,7 +3,7 @@
 
 新增課本（改了 shared/lessons.js）之後執行一次：
   shared/parts.js        只「新增」還沒有拆法的字（新字＋拆出來的部件再往下拆），原有內容一個字都不改
-  docs/parts-table.xlsx  新字加在最後面；原本就有的字，在「出現課次」補上新課本的課次；老師填的綠色欄位不動
+  docs/materials/parts-table.xlsx  新字加在最後面；原本就有的字，在「出現課次」補上新課本的課次；老師填的綠色欄位不動
 再執行一次不會有任何變化（已經有的就跳過）。
 
 需要：Python 3、openpyxl（pip install openpyxl）、Node.js
@@ -22,7 +22,7 @@ from openpyxl.styles import PatternFill
 from openpyxl.worksheet.cell_range import MultiCellRange
 
 IDS = sys.argv[1]
-PARTS_JS, TABLE = 'shared/parts.js', 'docs/parts-table.xlsx'
+PARTS_JS, TABLE = 'shared/parts.js', 'docs/materials/parts-table.xlsx'
 
 # 1. 讀 lessons.js 與 parts.js（用 Node 執行後轉成 JSON）
 JS = r'''
