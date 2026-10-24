@@ -2,7 +2,7 @@
 自動檢查（GitHub Actions 每次發 PR、改 main 都會跑；本機也可以跑：在 repo 最上層執行 node docs/scripts/check.js）
 不用安裝任何套件，只要 Node.js。
 
-檢查十一件事：
+檢查十三件事：
   1. 程式語法：所有 .js 檔和 HTML 裡的 <script>，有沒有打錯字、少括號（有的話網頁會整個壞掉）
   2. 教材資料（shared/lessons.js 和各本課本檔 lessons-代號.js）：BOOK_FILES、ALL_LESSON_CHARS 要是最新的（make_lessons.js）；語詞裡有沒有這個字、干擾字有沒有包含答案本身等；
      語詞、例句裡有語音替換詞（shared/bpmf.js 的 BPMF_SAY）但還沒確認過的，提醒確認讀音
@@ -18,6 +18,7 @@
   10. 網頁下載量：每個頁面一打開要下載的程式和樣式（不含字型）超過上限就提醒，避免越來越慢
   11. 對外連線：程式裡新的外部網址要寫進 docs/code/architecture.md 第 7 節（也要更新 privacy.html）
   12. 變更紀錄：docs/changelog/changes/ 的小檔案要有「日期」「動到哪裡」「改了什麼」（只提醒）
+  13. 網頁打得開測試的清單：每個網頁（.html）都要寫在 docs/scripts/smoke.js 的 PAGES，漏了是錯誤
   8～12 都只提醒（2026-10-24 維護者要求加）
      只有入口檔案可以直接存取 localStorage、indexedDB（其他檔案直接用是錯誤，見 docs/code/refactor.md 規則 1）
 
@@ -313,6 +314,18 @@ for (const f of files.filter(f => own(f) && f.endsWith('.html'))) {
 for (const f of files.filter(f => /^docs\/changelog\/changes\/\d{4}-\d{2}-\d{2}.*\.md$/.test(f))) {
   const s = read(f), miss = ['日期', '動到哪裡', '改了什麼'].filter(k => !new RegExp(`^- ${k}：\\S`, 'm').test(s));
   if (miss.length) warn(f, `變更紀錄少了「${miss.join('」「')}」：照 docs/changelog/changelog.md「怎麼寫」的格式，每一欄一行，例如「- 日期：2026-10-25」`);
+}
+
+/* ---------- 13. 網頁打得開測試的清單 ----------
+   smoke.js 只打開 PAGES 裡的頁面；加了新網頁忘了加，那一頁壞掉也不會被抓到（2026-10-24 維護者要求改成自動擋） */
+{
+  const m = read('docs/scripts/smoke.js').match(/const PAGES = \[([\s\S]*?)\]/);
+  const pages = m ? [...m[1].matchAll(/'([^']+)'/g)].map(x => x[1]) : [];
+  if (!m) err('docs/scripts/smoke.js', '找不到 const PAGES = [...]，檢查不了網頁清單');
+  for (const f of files.filter(f => own(f) && f.endsWith('.html') && !pages.includes(f)))
+    err(f, '沒寫在 docs/scripts/smoke.js 的 PAGES，網頁打得開測試不會打開它；請在 PAGES 加一行');
+  for (const p of pages.filter(p => !files.includes(p)))
+    err('docs/scripts/smoke.js', `PAGES 裡的「${p}」找不到這個檔案，改名或刪掉了請一起改`);
 }
 
 /* ---------- 結果 ---------- */
