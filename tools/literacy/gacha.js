@@ -64,7 +64,7 @@ function showGacha(item, done){
       <div class="who2">${Rewards.avatarHtml(code)}<b>${esc(name)}</b></div>
       <p class="gsay">拉一下拉桿，看看會扭出什麼！</p>
       <div class="gstage">${gachaMachineSvg()}
-        <button class="glever" aria-label="拉拉桿"><span class="gstick"></span><span class="gknob"></span></button>
+        <button class="glever" aria-label="拉拉桿"><span class="gbase"></span><span class="grod"></span><span class="gknob"></span></button>
         <div class="gdrop">${capsuleSvg(st)}</div><div class="gfx"></div></div>
       <div class="grain" aria-hidden="true"></div>
       <div class="row" style="justify-content:center"><button class="ghost gskip">跳過</button><button class="ghost gq" aria-expanded="false">？抽中機會</button></div>
@@ -90,11 +90,31 @@ function showGacha(item, done){
     at(t += T.pre[st], () => { gachaSfx.open(st); box.classList.add("opened", "t" + st); celebrate($g(".gfx"), $g(".grain"), st); });   /* 5. 打開 */
     at(t + T.post[st], finish);
   };
-  lever.onclick = pull;
-  let y0 = null;
-  lever.onpointerdown = e => { y0 = e.clientY; };
-  lever.onpointermove = e => { if(y0 !== null && e.clientY - y0 > 30){ y0 = null; pull(); } };
-  lever.onpointerup = lever.onpointercancel = () => { y0 = null; };
+  /* ---------- 拉桿（2026-10-24 維護者要求：看得到一根桿子往下拉） ----------
+     p＝拉到哪裡（0＝最上面，1＝拉到底）。圓球從上面滑到底座下方，桿子從底座的軸心連到圓球，跟著變長變短。
+     點一下：自己慢慢滑到底（0.6 秒）再彈回去；用手指拉：圓球跟著手指，拉過一半放手就算拉了，沒過一半就彈回去 */
+  const knob = $g(".gknob"), rod = $g(".grod"), PIVOT = 0.55;   /* 軸心在拉桿區的 55% 高度 */
+  const setP = p => { const k = p * 0.9, top = Math.min(k, PIVOT), len = Math.abs(PIVOT - k);
+    knob.style.top = (k * 100) + "%"; rod.style.top = (top * 100 + 6) + "%"; rod.style.height = (len * 100) + "%"; };
+  setP(0);
+  let anim = 0;
+  const glide = (from, to, ms, then) => { cancelAnimationFrame(anim); const t0 = performance.now();
+    const step = now => { const r = Math.min(1, (now - t0) / ms), e = r < .5 ? 2 * r * r : 1 - Math.pow(-2 * r + 2, 2) / 2;
+      setP(from + (to - from) * e); if(r < 1) anim = requestAnimationFrame(step); else if(then) then(); };
+    anim = requestAnimationFrame(step); };
+  let cur = 0, y0 = null, dragged = false;
+  const goDown = from => { lever.classList.add("held");
+    if(calmMotion()){ setP(1); pull(); return; }
+    glide(from, 1, 600 * (1 - from) + 100, () => { pull(); setTimeout(() => glide(1, 0, 450), 250); }); };
+  lever.onclick = () => { if(!dragged && !pulled) goDown(0); dragged = false; };
+  lever.onpointerdown = e => { if(pulled) return; y0 = e.clientY; dragged = false; try { lever.setPointerCapture(e.pointerId); } catch(err){} };
+  lever.onpointermove = e => { if(y0 === null || pulled) return;
+    const h = lever.getBoundingClientRect().height * 0.9, d = Math.max(0, e.clientY - y0);
+    if(d > 6) dragged = true;
+    cur = Math.min(1, d / h); lever.classList.add("held"); setP(cur); };
+  lever.onpointerup = lever.onpointercancel = () => { if(y0 === null) return; y0 = null;
+    if(!dragged) return;   /* 只是點一下：交給 onclick */
+    if(cur > 0.5) goDown(cur); else { lever.classList.remove("held"); glide(cur, 0, 300); } };
 }
 /* 打開時的星星、彩帶：分幾波噴出（稀有 2 波、極稀有和傳說 3 波，每波 12～20 個），極稀有和傳說再加從上面慢慢落下的閃亮雨；
    數量不多，舊平板也跑得動 */

@@ -62,10 +62,13 @@
 .gsay{margin:0;font-size:clamp(20px,3vw,26px);font-weight:700}
 .gstage{position:relative;z-index:1;height:min(60vh,140vw);aspect-ratio:200/330;max-width:86vw}
 .gmac{width:100%;height:auto;display:block}
-.glever{position:absolute;right:-12%;top:38%;width:24%;height:26%;background:none;border:0;padding:0;cursor:grab;touch-action:none}
-.glever .gstick{position:absolute;left:44%;top:22%;width:12%;height:62%;background:#9aa3ad;border:3px solid #2d2a26;border-radius:6px;transform-origin:50% 100%;transition:transform .35s}
-.glever .gknob{position:absolute;left:22%;top:0;width:56%;aspect-ratio:1;border-radius:50%;background:#ffd23f;border:3px solid #2d2a26;transition:transform .35s}
-.glever:focus-visible{outline:4px solid #2a78d6;outline-offset:4px;border-radius:12px}
+/* 拉桿：機器側邊的底座＋一根桿子＋頂端圓球；拉的時候圓球往下滑、桿子跟著變長變短（位置由 gacha.js 的 setP 算） */
+.glever{position:absolute;left:74%;top:16%;width:30%;height:58%;background:none;border:0;padding:0;cursor:grab;touch-action:none}
+.glever .gbase{position:absolute;left:0;top:46%;width:62%;height:18%;background:#c8322a;border:3px solid #2d2a26;border-radius:0 14px 14px 0;box-sizing:border-box}
+.glever .grod{position:absolute;left:50%;width:14%;transform:translateX(-50%);background:#dfe3e8;border:3px solid #2d2a26;border-radius:8px;box-sizing:border-box}
+.glever .gknob{position:absolute;left:50%;width:46%;aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:#ffd23f;border:3px solid #2d2a26;box-sizing:border-box;box-shadow:inset -4px -4px 0 rgba(0,0,0,.12)}
+.glever:focus-visible{outline:none}
+.glever:focus-visible .gknob{outline:4px solid #2a78d6;outline-offset:3px}
 .gdrop{position:absolute;left:50%;top:56%;width:30%;transform:translate(-50%,0) scale(.3);opacity:0}
 .gcap{width:100%;height:auto;display:block;overflow:visible}
 .gcap .gtop{transition:transform .45s,opacity .45s;transform-origin:50% 50%}
@@ -78,10 +81,7 @@
 .godds .odds{margin:0}
 .reveal.gacha .row{gap:10px}
 @media (prefers-reduced-motion:no-preference){
-  .glever:not(:disabled){animation:gnudge 1.6s ease-in-out infinite}
-  .pulled .glever{animation:none}
-  .pulled .glever .gstick{transform:scaleY(.45)}
-  .pulled .glever .gknob{transform:translateY(130%)}
+  .glever:not(.held) .gknob{animation:gnudge 1.6s ease-in-out infinite}
   .pulled .gmac{animation:gshake .6s ease-in-out 2}
   .dropped .gdrop{animation:gdrop .55s cubic-bezier(.3,1.4,.5,1) forwards}
   .turning .gcrank{animation:gcrank 1s ease-in-out}
@@ -99,7 +99,7 @@
     border-radius:40px;animation:gpillar .7s ease-out forwards;transform-origin:bottom}
   .opened .gfx i{animation:gburst 1s ease-out forwards}
 }
-@keyframes gnudge{0%,70%,100%{transform:none}80%{transform:translateY(8%)}}
+@keyframes gnudge{0%,70%,100%{transform:translateX(-50%)}80%{transform:translateX(-50%) translateY(14%)}}
 @keyframes gshake{25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
 @keyframes gdrop{0%{opacity:1;transform:translate(-50%,0) scale(.3)}100%{opacity:1;transform:translate(-50%,100%) scale(1.1)}}
 @keyframes gwobble{25%{transform:rotate(-14deg)}75%{transform:rotate(14deg)}}
