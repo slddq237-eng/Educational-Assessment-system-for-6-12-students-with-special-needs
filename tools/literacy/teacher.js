@@ -289,11 +289,18 @@ function trendView(rs, m){
     note = `只有輸入過教學日期的課才能這樣對齊（${withStart.length} / ${src.length} ${unitN("acc")}）。0＝教學開始那一天。`;
     chart = lineChart(groups, {metric:m, xLabel: d => d < 0 ? `${d}` : `${d}`, events:[{x:0, label:"教學開始"}], xName:"教學開始後第幾天"});
   } else if(T.view === "time"){
-    /* 測驗日期：每一次評量一個點（流暢性是每一回合） */
-    const g = groupBy(src, r => r.session);
-    groups = [...g].sort((a, b) => a[0] - b[0]).map(([s, list]) => { const d = dayOf(list[0]); return {x: parse(d).getTime() / DAY, day:d, label: d, rs:list, phase: mainPhase(list), ...fn(list)}; });
-    chart = lineChart(groups, {metric:m, xLabel: x => shortDay(iso(new Date(x * DAY))), events: planEvents(groups), xName:"測驗日期",
+    /* 測驗日期：每一次評量一個點（流暢性是每一回合）。
+       橫軸照評量先後排、每次一格（2026-10-24 維護者回報：原本照日期排，同一天玩幾次點會疊成一條直線）；
+       只在換日的那一點標日期，同一天第二次起標「第 2 次」 */
+    const g = groupBy(src, r => r.session), perDay = {};
+    groups = [...g].sort((a, b) => a[0] - b[0]).map(([s, list], i) => {
+      const d = dayOf(list[0]), nth = perDay[d] = (perDay[d] || 0) + 1;
+      return {x:i, day:d, nth, rs:list, phase: mainPhase(list), ...fn(list)};
+    });
+    groups.forEach(p => p.label = perDay[p.day] > 1 ? `${p.day} 第 ${p.nth} 次` : p.day);
+    chart = lineChart(groups, {metric:m, xLabel: i => groups[i].nth === 1 ? shortDay(groups[i].day) : "", events: planEvents(groups), xName:"測驗日期（每次評量一格）",
       aim: m === "flu" ? (rounds(src).map(x => x.aim).filter(Boolean).pop() || null) : null});
+    if(Object.values(perDay).some(n => n > 1)) note = "同一天評量好幾次時，每次各畫一個點；橫軸每格是一次評量，不代表相隔幾天。";
   } else if(T.view === "lesson"){
     const g = groupBy(src, r => key(r.book, r.lesson));
     const order = k => { const [b, n] = splitKey(k); return BOOK_ORDER.indexOf(b) * 1000 + (+n); };
@@ -317,11 +324,12 @@ function trendView(rs, m){
 /* 教學安排的開始日（原班、資源班、學習扶助），畫成直線 */
 function planEvents(groups){
   const k = kidBy(T.kid); if(!k || !groups.length) return [];
-  const lo = groups[0].x, hi = groups[groups.length - 1].x, out = [];
+  const out = [];
+  /* 橫軸是評量順序：直線畫在開始日之後第一次評量的前面（半格） */
   for(const p of Object.values(k.plans || {})) for(const v of SERVICES){
     const s = p[v.id + "Start"]; if(!s) continue;
-    const x = parse(s).getTime() / DAY;
-    if(x >= lo && x <= hi) out.push({x, label:`${v.name}開始`});
+    const i = groups.findIndex(g => g.day >= s);
+    if(i > 0) out.push({x: i - 0.5, label:`${v.name}開始`});
   }
   return out;
 }
@@ -368,7 +376,7 @@ function lineChart(pts, o){
   if(lp && (!lp0 || X(lp.x) - X(lp0.x) > 44)) g += `<text class="endlabel" x="${Math.min(X(lp.x), SVGW - R - 4)}" y="${Y(lp.v) + (below ? 26 : -12)}" text-anchor="${X(lp.x) > SVGW - 80 ? "end" : "middle"}">${fmt(o.metric, lp.v)}</text>`;
   /* 橫軸標籤：和前一個標籤至少隔 48 像素才標，日期靠很近時不會疊在一起 */
   let lastX = -1e9;
-  g += pts.map(p => { const x = X(p.x); if(x - lastX < 48) return ""; lastX = x; return `<text class="ax" x="${x}" y="${H - 14}" text-anchor="middle">${esc(o.xLabel(p.x))}</text>`; }).join("");
+  g += pts.map(p => { const x = X(p.x), t = o.xLabel(p.x); if(!t || x - lastX < 48) return ""; lastX = x; return `<text class="ax" x="${x}" y="${H - 14}" text-anchor="middle">${esc(t)}</text>`; }).join("");
   g += `<text class="ax" x="${SVGW - R}" y="${H - 1}" text-anchor="end">${esc(o.xName)}</text>`;
   return `<div class="chartbox"><svg viewBox="0 0 ${SVGW} ${H}" role="img" aria-label="折線圖，數字請看下方明細表">${g}<line class="cross" y1="${Tp}" y2="${Tp + ih}" hidden/></svg><div class="ttip" hidden></div></div>`;
 }
