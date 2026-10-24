@@ -57,3 +57,9 @@
 .stk{width:116px;text-align:center;font-size:15px;display:grid;justify-items:center;gap:2px}
 .stk svg{width:96px;height:96px}
 .stk.no{color:#8aa39a}
+/* 貼紙簿：還沒收集的一、二星灰色、三四星全黑剪影；傳說加金框（2026-10-24） */
+.stk.gray svg{filter:grayscale(1);opacity:.45}
+.stk.shadow svg{filter:brightness(0);opacity:.85}
+.stk.lgd{box-sizing:border-box;border:3px solid #e0a800;border-radius:14px;padding:4px 2px;background:linear-gradient(#fff8d6,#fff);box-shadow:0 0 0 3px #fff3b0}
+.stk .legendtag{font-weight:700;color:#b07800;letter-spacing:.2em}
+.stk .evo{font-size:12px;color:#7a5cc0}

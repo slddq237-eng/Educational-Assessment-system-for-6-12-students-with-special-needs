@@ -104,13 +104,13 @@ function importStickers(recs){
 function showReveals(list){
   if(!list.length) return;
   const {code, theme, idx} = list[0], k = kidBy(code), name = k ? kidShow(k) : code;
-  const t = Themes.THEMES[theme], stars = Themes.stars(theme, idx), g = (Themes.GACHA[theme] || [])[idx];
+  const t = Themes.THEMES[theme], stars = Themes.stars(theme, idx), label = Themes.rareLabel(theme, idx);
   const box = document.createElement("div"); box.className = "reveal";
   box.style.setProperty("--rc", stars ? Themes.RARE_GLOW[stars] : t.stickers[idx][0]);
   box.innerHTML = `<div class="rays2"></div><div class="box" role="dialog" aria-modal="true" aria-label="得到貼紙">
     <div class="who2">${Rewards.avatarHtml(code)}<b>${esc(name)}</b></div>
     ${Themes.stickerSvg(theme, idx)}${stars ? `<div class="stars">${"★".repeat(stars)}</div>` : ""}
-    <div class="rname">${esc(t.stickers[idx][1])}</div>${g ? `<div class="rare">${esc(g.label)}</div>` : ""}
+    <div class="rname">${esc(t.stickers[idx][1])}</div>${label ? `<div class="rare">${esc(label)}</div>` : ""}
     <div style="font-size:20px">${esc(name)}${VERB(theme)}${esc(t.stickers[idx][1])}！</div>
     <button class="go" data-ok>收進貼紙簿</button></div>`;
   document.body.appendChild(box);
@@ -125,6 +125,15 @@ function showReveals(list){
    14. 貼紙簿（學生自己看：選名字 → 看四個主題收集了哪些）
    ========================================================= */
 let bookKid = null;
+/* 貼紙簿的一格（2026-10-24 維護者決定）：收集到的是彩色圖和名稱；還沒收集的——
+   一、二星是灰色圖和名稱，三星是全黑剪影、名稱「???」，四星（傳說）再加金框和「傳說」字樣；只能進化的另外寫「進化才能得到」 */
+function bookCard(theme, i, name, n){
+  const st = Themes.stars(theme, i), starTxt = `<span class="rstar">${"★".repeat(st)}</span>`;
+  if(n) return `<div class="stk ${st === 4 ? "lgd" : ""}">${Themes.stickerSvg(theme, i)}<div>${esc(name)}${n > 1 ? ` ×${n}` : ""}</div>${starTxt}</div>`;
+  const evo = Themes.isEvo(theme, i) ? `<small class="evo">進化才能得到</small>` : "";
+  if(st <= 2) return `<div class="stk no gray">${Themes.stickerSvg(theme, i)}<div>${esc(name)}</div>${starTxt}${evo}</div>`;
+  return `<div class="stk no shadow ${st === 4 ? "lgd" : ""}">${Themes.stickerSvg(theme, i)}<div>???</div>${st === 4 ? `<span class="legendtag">傳說</span>` : starTxt}${evo}</div>`;
+}
 function renderBook(){
   if(!kidBy(bookKid)) bookKid = null;
   $("#bookNames").innerHTML = kids.length ? kids.map(k => `<button class="chip kidchip ${bookKid === k.code ? "on" : ""}" data-k="${esc(k.code)}" aria-pressed="${bookKid === k.code}">${Rewards.avatarHtml(k.code)}${esc(kidShow(k))}</button>`).join("")
@@ -136,10 +145,8 @@ function renderBook(){
     const t = Themes.THEMES[id], cnt = {};
     (st[id] || []).forEach(c => { const f = Themes.findCode(c); if(f && f.theme === id) cnt[f.idx] = (cnt[f.idx] || 0) + 1; });
     const have = Object.keys(cnt).length;
-    return `<section class="card booksec"><h2>${esc(t.name)}　<small>${have} / ${t.stickers.length}${Themes.GACHA[id] ? "（星星越多越稀有）" : ""}</small></h2>
-      <div class="stkrow">${t.stickers.map((s, i) => cnt[i]
-        ? `<div class="stk">${Themes.stickerSvg(id, i)}<div>${esc(s[1])}${cnt[i] > 1 ? ` ×${cnt[i]}` : ""}</div>${Themes.stars(id, i) ? `<span class="rstar">${"★".repeat(Themes.stars(id, i))}</span>` : ""}</div>`
-        : `<div class="stk no"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="none" stroke="#b9dcc2" stroke-width="4" stroke-dasharray="8 8"/><text x="50" y="62" text-anchor="middle" font-size="36" fill="#b9dcc2">?</text></svg><div>還沒收集</div></div>`).join("")}</div></section>`;
+    return `<section class="card booksec"><h2>${esc(t.name)}　<small>${have} / ${t.stickers.length}（星星越多越稀有）</small></h2>
+      <div class="stkrow">${t.stickers.map((s, i) => bookCard(id, i, s[1], cnt[i])).join("")}</div></section>`;
   }).join("");
 }
 $("#openBook").onclick = () => { renderBook(); showScreen("#book"); };
