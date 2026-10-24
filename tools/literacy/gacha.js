@@ -36,15 +36,48 @@ const gachaSfx = {
     [1568, 2093, 2637].forEach((f, i) => note(f, 2.2 + i * 0.25, 0.8, "sine", 0.06)); [523, 659, 784, 1047].forEach(f => note(f, 2.9, 1.0, "triangle", 0.06)); }
 };
 
-/* ---------- 扭蛋機的圖 ---------- */
-function gachaMachineSvg(){
+/* ---------- 扭蛋機的圖（2026-10-24 維護者決定：照主題換外觀，見 docs/game-design.md） ----------
+   四個主題各一款，位置都一樣（圓罩、曲柄、出口、拉桿），只換顏色和裝飾；時間表、動畫不變。
+   罩子裡的球一律用星等的顏色（和貼紙簿機率長條一樣），換主題也不會讓學生搞混顏色的意思。
+   找不到主題時用通用那台（紅色）；沒有主題就沒有貼紙，所以平常不會用到 */
+const GACHA_SKIN = {
+  ocean:{body:"#2f8fd8", base:"#1d5f9e", glass:"#d6f1ff",
+    inner:`<path d="M49.3 50 q12.7 -8 25.4 0 t25.4 0 t25.4 0 t25.4 0 A60 60 0 1 1 49.3 50Z" fill="#8fd3f5"/>`,   /* 罩子裡裝著水 */
+    back:`<path d="M44 196 q14 -10 28 0 t28 0 t28 0 t28 0 V228 H44Z" fill="#1d5f9e"/>`,
+    front:`<g class="gbubs" fill="none" stroke="#fff" stroke-width="2.5" opacity=".85"><circle class="gbub" cx="60" cy="120" r="5"/><circle class="gbub" cx="142" cy="116" r="4" style="animation-delay:-1.2s"/><circle class="gbub" cx="104" cy="124" r="3.5" style="animation-delay:-2.1s"/></g>
+      <path d="M58 172 l4 -9 l4 9 l9 1 l-7 6 l2 9 l-8 -5 l-8 5 l2 -9 l-7 -6Z" fill="#ffb04a" stroke="#2d2a26" stroke-width="2"/>`},
+  dino:{body:"#9b8b78", base:"#6f6152", glass:"#fdf3dc", egg:true,
+    back:``,
+    front:`<path d="M30 226 q-16 -22 -2 -42 q12 18 6 42Z M36 226 q-2 -30 22 -40 q-2 24 -18 40Z" fill="#5fae4e" stroke="#2d2a26" stroke-width="2.5" stroke-linejoin="round"/>
+      <g fill="none" stroke="#5e5040" stroke-width="2.5" stroke-linecap="round"><path d="M52 140 l10 8 l-4 10"/><path d="M148 196 l-10 6 l2 10"/></g>
+      <g fill="#b4a592"><circle cx="62" cy="200" r="5"/><circle cx="136" cy="146" r="4"/><circle cx="70" cy="214" r="3"/></g>`},
+  space:{body:"#f4f6fb", base:"#8a94a6", glass:"#1e2a52", rim:"#8a94a6",
+    back:`<path d="M100 2 Q160 36 156 128 H44 Q40 36 100 2Z" fill="#f4f6fb" stroke="#2d2a26" stroke-width="4"/>
+      <path d="M44 188 L22 236 H44Z M156 188 L178 236 H156Z" fill="#e8504a" stroke="#2d2a26" stroke-width="4" stroke-linejoin="round"/>
+      <g class="gflame"><path d="M78 238 Q86 250 100 247 Q114 250 122 238Z" fill="#ffb04a" stroke="#2d2a26" stroke-width="3"/><path d="M90 238 Q100 246 110 238Z" fill="#ffe27a"/></g>`,
+    front:`<g fill="#fff"><circle cx="60" cy="52" r="2"/><circle cx="138" cy="44" r="1.6"/><circle cx="118" cy="124" r="1.8"/><circle cx="56" cy="110" r="1.4"/></g>
+      <rect x="44" y="196" width="112" height="10" fill="#e8504a"/>`},
+  dessert:{body:"#ff9ec4", base:"#e46a9a", glass:"#fff4fa",
+    back:``,
+    front:`<rect x="70" y="14" width="60" height="14" rx="6" fill="#e46a9a" stroke="#2d2a26" stroke-width="3.5"/>
+      <path d="M100 14 q2 -8 10 -12" stroke="#2d2a26" stroke-width="2.5" fill="none"/><circle cx="100" cy="8" r="7" fill="#e8304a" stroke="#2d2a26" stroke-width="2.5"/>
+      <path d="M44 132 h112 v10 q-7 12 -14 0 t-14 0 t-14 0 t-14 0 t-14 0 t-14 0 t-14 0 t-14 0Z" fill="#fff" stroke="#2d2a26" stroke-width="2.5"/>
+      <g stroke-width="4" stroke-linecap="round"><path d="M58 176 l5 -3" stroke="#6fc3ff"/><path d="M140 168 l4 4" stroke="#7be08a"/><path d="M64 206 l4 3" stroke="#f5c02e"/><path d="M134 204 l5 -2" stroke="#a77cf0"/></g>`}
+};
+const GACHA_SKIN_DEFAULT = {body:"#e8504a", base:"#c8322a", glass:"#e8f6ff", back:"", front:""};
+const gachaSkin = theme => GACHA_SKIN[theme] || GACHA_SKIN_DEFAULT;
+function gachaMachineSvg(theme){
+  const k = gachaSkin(theme);
+  /* 罩子裡的球：恐龍是蛋形（橢圓、有斑點），其他主題是圓球 */
   const balls = [[70, 70, 1], [100, 58, 2], [128, 74, 1], [84, 98, 3], [116, 100, 1], [96, 80, 4], [62, 100, 2], [136, 102, 1]]
-    .map(([x, y, s]) => `<circle cx="${x}" cy="${y}" r="13" fill="${GACHA_COLOR[s]}" stroke="#2d2a26" stroke-width="2.5"/><path d="M${x - 13} ${y} A13 13 0 0 0 ${x + 13} ${y}Z" fill="#fff" opacity=".55"/>`).join("");
-  return `<svg class="gmac" viewBox="0 0 200 250" aria-hidden="true">
-    <rect x="44" y="128" width="112" height="100" rx="14" fill="#e8504a" stroke="#2d2a26" stroke-width="4"/>
-    <rect x="36" y="218" width="128" height="20" rx="8" fill="#c8322a" stroke="#2d2a26" stroke-width="4"/>
-    <circle cx="100" cy="82" r="62" fill="#e8f6ff" stroke="#2d2a26" stroke-width="4"/><g class="gballs">${balls}</g>
-    <path d="M58 46 Q76 30 100 28" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round" opacity=".9"/>
+    .map(([x, y, s]) => k.egg
+      ? `<ellipse cx="${x}" cy="${y}" rx="11" ry="14" fill="${GACHA_COLOR[s]}" stroke="#2d2a26" stroke-width="2.5"/><circle cx="${x - 3}" cy="${y - 4}" r="2.5" fill="#fff" opacity=".7"/><circle cx="${x + 4}" cy="${y + 4}" r="2" fill="#fff" opacity=".7"/>`
+      : `<circle cx="${x}" cy="${y}" r="13" fill="${GACHA_COLOR[s]}" stroke="#2d2a26" stroke-width="2.5"/><path d="M${x - 13} ${y} A13 13 0 0 0 ${x + 13} ${y}Z" fill="#fff" opacity=".55"/>`).join("");
+  return `<svg class="gmac" viewBox="0 0 200 250" aria-hidden="true">${k.back}
+    <rect x="44" y="128" width="112" height="100" rx="14" fill="${k.body}" stroke="#2d2a26" stroke-width="4"/>
+    <rect x="36" y="218" width="128" height="20" rx="8" fill="${k.base}" stroke="#2d2a26" stroke-width="4"/>
+    <circle cx="100" cy="82" r="62" fill="${k.glass}" stroke="${k.rim || "#2d2a26"}" stroke-width="${k.rim ? 9 : 4}"/>${k.rim ? `<circle cx="100" cy="82" r="67" fill="none" stroke="#2d2a26" stroke-width="3"/>` : ""}${k.inner || ""}<g class="gballs">${balls}</g>
+    <path d="M58 46 Q76 30 100 28" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round" opacity=".9"/>${k.front}
     <g class="gcrank"><circle cx="100" cy="156" r="17" fill="#ffd23f" stroke="#2d2a26" stroke-width="3"/><rect x="83" y="152" width="34" height="8" rx="4" fill="#fff" stroke="#2d2a26" stroke-width="2.5"/></g>
     <rect x="80" y="182" width="40" height="30" rx="10" fill="#2d2a26"/>
     </svg>`;
@@ -59,11 +92,11 @@ const capsuleSvg = st => `<svg class="gcap" viewBox="0 0 80 80" aria-hidden="tru
 function showGacha(item, done){
   const {code, theme, idx} = item, k = kidBy(code), name = k ? kidShow(k) : code, st = Themes.stars(theme, idx) || 1;
   const box = document.createElement("div"); box.className = "reveal gacha s" + st;   /* s1～s4：星等（傳說多搖幾下） */
-  box.style.setProperty("--gc", GACHA_COLOR[st]);
+  box.style.setProperty("--gc", GACHA_COLOR[st]); box.style.setProperty("--gbase", gachaSkin(theme).base);   /* 拉桿底座跟機身同色 */
   box.innerHTML = `<div class="gbox" role="dialog" aria-modal="true" aria-label="扭蛋機">
       <div class="who2">${Rewards.avatarHtml(code)}<b>${esc(name)}</b></div>
       <p class="gsay">拉一下拉桿，看看會扭出什麼！</p>
-      <div class="gstage">${gachaMachineSvg()}
+      <div class="gstage">${gachaMachineSvg(theme)}
         <button class="glever" aria-label="拉拉桿"><span class="gbase"></span><span class="grod"></span><span class="gknob"></span></button>
         <div class="gdrop">${capsuleSvg(st)}</div><div class="gfx"></div></div>
       <div class="grain" aria-hidden="true"></div>
