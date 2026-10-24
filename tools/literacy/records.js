@@ -96,7 +96,7 @@ const COLS = [
   ["答錯規則", r => r.rule === undefined ? "未記錄" : r.rule === "none" ? "答錯就記錯" : r.rule.split(",").map(x => RULE_SHORT[x] || x).join("→")],
   ["第一次作答秒數", r => r.firstSec], ["答對秒數", r => r.correctSec ?? ""],
   ["評量時機", r => r.phase], ["教學後天數", r => r.daysAfter],
-  ["主題", r => r.theme ? themeName(r.theme) : "無"], ["遊戲玩法", r => gameName(r.game)], ["選項注音", r => r.bpmf ? "有" : "無"], ["報讀（當時設定）", r => r.read ? "開" : "關"], ["按了報讀", r => r.readUsed || "無"], ["血量（開始時）", r => r.hpMax || ""], ["血量（這題後剩下）", r => r.hpMax ? r.hp : ""], ["獎勵", r => r.reward || "無"],
+  ["主題", r => r.theme ? themeName(r.theme) : "無"], ["遊戲玩法", r => gameName(r.game)], ["選項注音", r => r.bpmf ? "有" : "無"], ["報讀（當時設定）", r => r.read ? "開" : "關"], ["按了報讀", r => r.readUsed || "無"], ["血量（開始時）", r => r.hpMax || ""], ["血量（這題後剩下）", r => r.hpMax ? r.hp : ""], ["獎勵", r => r.reward || "無"], ["獎勵代號", r => r.rewardCode || ""],
   ["中途結束（不列入分析）", r => yesNo(r.quit)],
   ["作答字的大小", r => r.fontScale ? (FONT_SIZES.find(f => f[0] === r.fontScale) || [, r.fontScale])[1] : "未記錄"],
   ["唸讀速度", r => r.rate ?? "未記錄"], ["流暢目標（每分鐘）", r => r.aim || ""], ["顯示計時", r => r.clock === undefined ? "未記錄" : yesNo(r.clock)], ["音效", r => r.sfx === undefined ? "未記錄" : r.sfx ? "開" : "關"],
@@ -228,8 +228,10 @@ $("#recRestore").onchange = async e => {
     doIt = () => {
       /* 平板沒有學生名字，用這台電腦的學生名單補上 */
       add.forEach(r => { const k = kidBy(r.kid); r.kidName = k ? k.name : ""; saveRecord(r); });
+      /* 平板上抽到的貼紙，匯入時才收進貼紙簿（見 collect.js 的 importStickers） */
+      const got = importStickers(add);
       render();
-      return `已匯入 ${add.length} 筆新的作答紀錄（重複的紀錄不會再加一次）。`;
+      return `已匯入 ${add.length} 筆新的作答紀錄（重複的紀錄不會再加一次）${got ? `，${got} 張貼紙收進學生的貼紙簿` : ""}。`;
     };
   } else { $("#recMsg").textContent = "這個檔案是比較新版本的網頁存的，請重新整理網頁後再匯入一次。"; return; }
   $("#recMsg").textContent = "";

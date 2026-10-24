@@ -3,8 +3,9 @@
    每位學生（以學生代號為準）一筆資料，存在這台電腦的瀏覽器（IndexedDB 資料庫 platform-rewards）：
      {code, avatar, stickers, log}
      avatar：{type:"animal", id:0~11} 卡通動物；或 {type:"photo", data:"data:image/jpeg;base64,..."} 老師上傳的照片（選填）
-     stickers：{ocean:[貼紙編號…], space:[…], dino:[…], dessert:[…]}，同一張可以重複
-     log：每次得到貼紙的紀錄 {at, tool, session, theme, idx}
+     stickers：{ocean:[貼紙代號…], space:[…], dino:[…], dessert:[…]}，代號例如 "ocean-03"（見 themes.js 的 codeOf），同一張可以重複
+     log：每次得到貼紙的紀錄 {at, tool, session, theme, sticker}（sticker＝貼紙代號）
+   2026-10-24 以前存的是「第幾張」的編號（數字），讀進來時自動換成代號。
    同一個網站上的工具都讀得到這份資料，所以之後的數學評量等工具也可以發貼紙。
    需要先載入 shared/themes.js。對外只提供 window.Rewards（見檔案最後）。
    ========================================================= */
@@ -77,7 +78,7 @@ const ready = (async () => {
   await new Promise(res => {
     try {
       const q = db.transaction(STORE).objectStore(STORE).getAll();
-      q.onsuccess = () => { (q.result || []).forEach(x => mem[x.code] = x); res(); }; q.onerror = () => res();
+      q.onsuccess = () => { (q.result || []).forEach(x => mem[x.code] = toCodes(x)); res(); }; q.onerror = () => res();
     } catch(e){ res(); }
   });
 })();
@@ -87,6 +88,12 @@ function del(code){ delete mem[code]; if(!db) return; try { db.transaction(STORE
 const defaultAnimal = code => { let h = 0; for(const c of String(code)) h = (h * 31 + c.codePointAt(0)) % 9973; return h % ANIMALS.length; };
 const get = code => mem[code] || {code, avatar:{type:"animal", id:defaultAnimal(code)}, stickers:{}, log:[]};
 const copy = o => JSON.parse(JSON.stringify(o));
+/* 舊資料的貼紙是編號（數字）：換成代號；找不到的編號丟掉 */
+function toCodes(x){
+  for(const [t, arr] of Object.entries(x.stickers || {}))
+    x.stickers[t] = (arr || []).map(v => typeof v === "number" ? Themes.codeOf(t, v) : v).filter(Boolean);
+  return x;
+}
 
 /* ---------- 3. 頭像 ---------- */
 const PHOTO_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
@@ -110,18 +117,22 @@ async function photoFromFile(file){
 }
 
 /* ---------- 4. 貼紙 ---------- */
-/* 抽一張貼紙並存起來；回傳貼紙編號。info：{tool, session} 記在 log 裡；
-   info.idx 有給時直接用這一張（例如打怪獸開始前就決定好的大魚、恐龍，打敗怪獸得到的就是它） */
+/* 這位學生在這個主題已有的貼紙，換成「第幾張」的編號（抽貼紙、貼紙簿用） */
+const owned = (code, theme) => (get(code).stickers[theme] || []).map(c => { const f = Themes.findCode(c); return f && f.theme === theme ? f.idx : -1; }).filter(i => i >= 0);
+/* 把一張貼紙存進收藏；回傳貼紙編號。info：{tool, session} 記在 log 裡；
+   info.idx（第幾張）或 info.sticker（代號）有給時直接用這一張（例如打怪獸開始前就決定好的、平板上抽到的），沒給才在這裡抽 */
 function award(code, theme, info){
-  const x = copy(get(code));
-  const owned = (x.stickers[theme] ||= []);
-  const n = Themes.THEMES[theme].stickers.length;
-  const idx = info && Number.isInteger(info.idx) && info.idx >= 0 && info.idx < n ? info.idx : Themes.drawSticker(theme, owned);
-  owned.push(idx);
-  (x.log ||= []).push({at:new Date().toISOString(), tool:(info && info.tool) || "", session:(info && info.session) || "", theme, idx});
+  info = info || {};
+  const x = copy(get(code)), n = Themes.THEMES[theme].stickers.length, f = info.sticker ? Themes.findCode(info.sticker) : null;
+  const idx = f && f.theme === theme ? f.idx : Number.isInteger(info.idx) && info.idx >= 0 && info.idx < n ? info.idx : Themes.drawSticker(theme, owned(code, theme));
+  const sticker = Themes.codeOf(theme, idx);
+  (x.stickers[theme] ||= []).push(sticker);
+  (x.log ||= []).push({at:new Date().toISOString(), tool:info.tool || "", session:info.session || "", theme, sticker});
   put(x);
   return idx;
 }
+/* 這位學生在這次作答（session）已經拿過貼紙了嗎（匯入平板紀錄時避免重複發） */
+const hasSession = (code, session) => !!session && (get(code).log || []).some(l => l.session === session);
 
 /* ---------- 5. 備份、還原、改代號 ---------- */
 const exportAll = () => copy(Object.values(mem));
@@ -130,11 +141,13 @@ function importAll(list){
   let n = 0;
   for(const y of list || []){
     if(!y || !y.code) continue;
+    toCodes(y);
     const x = mem[y.code] ? copy(mem[y.code]) : {code:y.code, stickers:{}, log:[]};
     if(!mem[y.code] && y.avatar) x.avatar = y.avatar;
     for(const [t, arr] of Object.entries(y.stickers || {})) if((arr || []).length > (x.stickers[t] || []).length) x.stickers[t] = [...arr];
-    const seen = new Set((x.log || []).map(l => l.at + l.theme + l.idx));
-    for(const l of y.log || []) if(!seen.has(l.at + l.theme + l.idx)) (x.log ||= []).push(l);
+    const key = l => l.at + l.theme + (l.sticker ?? l.idx);
+    const seen = new Set((x.log || []).map(key));
+    for(const l of y.log || []) if(!seen.has(key(l))) (x.log ||= []).push(l);
     put(x); n++;
   }
   return n;
@@ -147,6 +160,6 @@ function rename(oldCode, newCode){
 
 window.Rewards = {
   ready, ANIMALS, animalSvg, avatarHtml, setAvatar, photoFromFile,
-  get: code => copy(get(code)), award, exportAll, importAll, rename, saved: () => !!db
+  get: code => copy(get(code)), owned, award, hasSession, exportAll, importAll, rename, saved: () => !!db
 };
 })();

@@ -57,26 +57,46 @@ function bindAvatarPanel(box, done){
 
 /* =========================================================
    13. 得到貼紙（結果畫面）
-   每位這次有做完的學生各抽一張（中途按「結束」、沒做完的不給）；抽到什麼記在這位學生這次的最後一筆作答紀錄（「獎勵」欄）。
+   每位這次有做完的學生各抽一張（中途按「結束」、沒做完的不給）；抽到什麼記在這位學生這次的最後一筆作答紀錄（「獎勵」「獎勵代號」欄）。
+   做完的那一刻就先抽好、寫進紀錄（drawStickers，平板要在送出紀錄前抽好），結果畫面的動畫播完才揭曉（giveStickers）。
    ========================================================= */
 const VERB = id => (Themes.GACHA_VERB || {})[id] || "得到了";
-function giveStickers(g){
-  if(!g.rewards || g.awarded) return;
-  g.awarded = true;
-  const got = [];
+function drawStickers(g){
+  if(!g.rewards || g.got) return;
+  g.got = [];
   for(const code of g.kids){
     if(!g.done.has(code)) continue;   /* 沒做完（中途按結束）就不給 */
     const theme = g.theme || Themes.ids[Math.floor(Math.random() * Themes.ids.length)];
     /* 打怪獸：打敗怪獸得到的東西（開始前就決定好）就是這次的貼紙，合作時大家得到一樣的 */
-    const idx = Rewards.award(code, theme, {tool:"識字評量", session:g.session, idx: g.game ? g.prize : undefined});
+    const pick = g.game ? g.prize : undefined;
+    /* 平板不存收藏（2026-10-24 決定）：只抽、寫進紀錄送給老師，老師匯入後才收進貼紙簿 */
+    const idx = TABLET ? (pick ?? Themes.drawSticker(theme, [])) : Rewards.award(code, theme, {tool:"識字評量", session:g.session, idx:pick});
     const text = Themes.stickerName(theme, idx);
     const mine = records.filter(r => r.session === g.session && r.kid === code);
-    if(mine.length){ const r = mine[mine.length - 1]; r.reward = text; updateRecord(r); }
-    got.push({code, theme, idx, text});
+    if(mine.length){ const r = mine[mine.length - 1]; r.reward = text; r.rewardCode = Themes.codeOf(theme, idx); updateRecord(r); }
+    g.got.push({code, theme, idx, text});
+  }
+}
+/* 結果畫面：每張卡片加上這次的貼紙，再一位一位播「得到貼紙」的大畫面 */
+function giveStickers(g){
+  drawStickers(g);
+  if(!g.got || g.awarded) return;
+  g.awarded = true;
+  for(const {code, theme, idx} of g.got){
     const card = $(`#rList .rcard[data-kid="${CSS.escape(code)}"]`);
     if(card) card.insertAdjacentHTML("beforeend", `<div class="sticker">${Themes.stickerSvg(theme, idx)}<div>得到新貼紙<br><b>${esc(Themes.THEMES[theme].stickers[idx][1])}</b>${Themes.stars(theme, idx) ? `<br><span class="rstar">${"★".repeat(Themes.stars(theme, idx))}</span>` : ""}</div></div>`);
   }
-  showReveals(got);
+  showReveals(g.got);
+}
+/* 匯入平板的作答紀錄後：紀錄裡的貼紙代號收進學生的貼紙簿（同一次作答只收一次）；回傳收了幾張 */
+function importStickers(recs){
+  let n = 0;
+  for(const r of recs){
+    const f = r.rewardCode && !r.quit ? Themes.findCode(r.rewardCode) : null;
+    if(!f || Rewards.hasSession(r.kid, r.session)) continue;
+    Rewards.award(r.kid, f.theme, {tool:"識字評量（平板）", session:r.session, sticker:r.rewardCode}); n++;
+  }
+  return n;
 }
 /* 一位一位顯示「得到貼紙」的大畫面，按「收進貼紙簿」換下一位 */
 function showReveals(list){
@@ -112,7 +132,7 @@ function renderBook(){
   const st = Rewards.get(bookKid).stickers || {};
   $("#bookBody").innerHTML = Themes.ids.map(id => {
     const t = Themes.THEMES[id], cnt = {};
-    (st[id] || []).forEach(i => { if(i < t.stickers.length) cnt[i] = (cnt[i] || 0) + 1; });
+    (st[id] || []).forEach(c => { const f = Themes.findCode(c); if(f && f.theme === id) cnt[f.idx] = (cnt[f.idx] || 0) + 1; });
     const have = Object.keys(cnt).length;
     return `<section class="card booksec"><h2>${esc(t.name)}　<small>${have} / ${t.stickers.length}${Themes.GACHA[id] ? "（星星越多越稀有）" : ""}</small></h2>
       <div class="stkrow">${t.stickers.map((s, i) => cnt[i]
