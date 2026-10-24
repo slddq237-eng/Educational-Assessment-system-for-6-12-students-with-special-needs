@@ -5,7 +5,7 @@
 
 - 兩位維護者都是程式新手：回覆用繁體中文，術語第一次出現附白話解釋；依問題大小回答，簡單的事簡短回答。
 - 嚴禁把學生真實姓名、照片、成績寫進任何檔案（repo 是公開的）。發現著作權、授權、個資、商標等法律疑慮，第一時間告訴維護者。
-- 開工前看還沒合併的 PR 有沒有動到同一批檔案；開工先發草稿 PR；一件事一個新分支（從最新的 main 開，合併後不再用）；不直接推 main；推之前跑 `node docs/scripts/check.js`，錯誤要修好。
+- 開工前看還沒合併的 PR 有沒有動到同一批檔案；開工先發草稿 PR；一件事一個新分支（從最新的 main 開，合併後不再用）；不要用系統自動給的隨機分支名稱，開工時另開 claude/ 加英文短名、看得出在做什麼的分支（例如 claude/docs-slim-readme）；不直接推 main；推之前跑 `node docs/scripts/check.js`，錯誤要修好。
 - 共用檔案（`shared/`、`docs/`、首頁 `index.html`、`privacy.html`、`README.md`、`CLAUDE.md`、`.github/`）和識字評量 `tools/literacy/`：提醒維護者先告知夥伴、PR 說明標出；要 repo 擁有者（slddq237-eng）同意才合併，Claude 不自己合併。
 - 會改作答紀錄格式或正式評量條件的，先討論再動手。新想法先評估可行性和急迫性、判斷屬於哪個階段（`docs/plans/roadmap.md`「新想法怎麼排」）。
 - 發 PR 前對照 `docs/rules.md`「改完要更新哪些檔案」；PR 說明標通知等級（①②③，見 `docs/rules.md`）和「文件更新：…」。
