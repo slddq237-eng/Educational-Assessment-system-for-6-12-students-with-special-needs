@@ -19,7 +19,7 @@
 | 加入新的外部資料（課本、字頻、圖片、聲音、字型、程式元件） | `data-sources.md`（同步更新「關於我們」頁 `about.html`） |
 | 有人提出新想法、要排優先順序 | `roadmap.md`、`pending.md` |
 | 要討論、還沒決定的事 | `pending.md` |
-| 查「當初為什麼這樣決定」、已完成的實作細節 | `history.md`；教材、讀音的歷史在 `history-materials.md` |
+| 查「當初為什麼這樣決定」、已完成的實作細節 | `history.md`；教材、讀音的歷史在 `history-materials.md`；路線圖已完成項目做了什麼在 `history-roadmap.md` |
 | 研究方法（單一受試、介入設計） | `research-method-spec.md` |
 
 ## 每個檔案放什麼（新決定記在對應的檔案，同一件事只記一個地方）
@@ -38,6 +38,7 @@
 | `pending.md` | 所有待決問題的總清單（每題一行，依誰決定分組，細節在各主題檔案） | 6 |
 | `history.md` | 決策歷史：整合的分階段計畫、已完成的實作細節、全面檢查 | 原開頭、3-3 主段與實作細節、5-1 |
 | `history-materials.md` | 決策歷史：各本課本的匯入紀錄、破音字讀音的比對過程 | 4 的課本匯入細節、4-1 的破音字舊段落 |
+| `history-roadmap.md` | 路線圖已完成項目做了什麼（2026-10-23 整理 `roadmap.md` 時原文搬來） | 2-1、「開放給其他老師前的準備」的已完成部分 |
 
 其他：`research-method-spec.md` 研究方法規格；`scripts/` 產生資料、自動檢查的程式；`material-review.xlsx`、`parts-table.xlsx` 給老師確認的教材清單。
 人看的文件（claude.ai 文件，需擁有者分享才能開）：識字評量規格書（2026-10-23 起只用來討論，最新決定以 `docs/` 為準）、GitHub 新手使用說明。
@@ -57,7 +58,7 @@
 | 任何改動 | PR 說明：通知等級、有沒有動到共用檔案、「文件更新」一行 |
 | 新想法、老師回饋 | `roadmap.md` 適合的階段；要討論的加進 `pending.md` |
 | 做了決定（定案、取消、改方向） | 對應的主題檔案改寫現況，舊說法移到 `history.md`；`pending.md` 拿掉或標定案；`roadmap.md` 打 ✅；在規格書討論過的，請擁有者在那一節標「已定案，見 docs/○○.md」 |
-| 新功能、改變行為 | 對應的主題檔案（識字評量 `literacy-design.md`、分析 `analysis-design.md`、紀錄 `records.md`、教材 `materials.md`）、`roadmap.md` 打 ✅；老師看得到的：首頁 `index.html`「最後更新」 |
+| 新功能、改變行為 | 對應的主題檔案（識字評量 `literacy-design.md`、分析 `analysis-design.md`、紀錄 `records.md`、教材 `materials.md`）、`roadmap.md` 那一列的狀態改成 ✅（只寫日期和「詳細在哪」，做了什麼寫在主題檔案，不寫進路線圖，2026-10-23 重整後的規則）；老師看得到的：首頁 `index.html`「最後更新」 |
 | 新增、刪除、改名程式檔，或改到檔案之間的關係、新的儲存名稱 | `architecture.md`（自動檢查會提醒） |
 | 整理程式 | `refactor.md` 進度清單 |
 | 作答紀錄格式、正式評量條件 | **先討論**；`records.md`、`data.js` 的 `RECORD_FORMAT` |
