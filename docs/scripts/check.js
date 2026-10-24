@@ -157,12 +157,12 @@ for (const f of files) {
 }
 
 /* ---------- 5. 文件長度 ---------- */
-const DOC_MAX = 10000;   /* 字數；超過就提醒拆成小檔案，並更新 docs/README.md 的索引 */
+const DOC_MAX = 10000;   /* 字數；超過就提醒拆成小檔案，並更新 docs/INDEX.md 的索引 */
 const CLAUDE_MAX = 2000;   /* CLAUDE.md 每則訊息都會載入，越短越省（2026-10-24 維護者決定） */
 for (const f of files.filter(f => /^(docs\/[^/]+|CLAUDE)\.md$/.test(f))) {
   const n = [...read(f)].length;
   if (f === 'CLAUDE.md' && n > CLAUDE_MAX) warn(f, `CLAUDE.md 有 ${n} 字，超過 ${CLAUDE_MAX} 字（每則訊息都會載入）；詳細規則請寫在 docs/，這裡只留一定要做的事`);
-  else if (n > DOC_MAX) warn(f, `文件有 ${n} 字，超過 ${DOC_MAX} 字，建議拆成小檔案（見 docs/README.md「寫文件的規則」）`);
+  else if (n > DOC_MAX) warn(f, `文件有 ${n} 字，超過 ${DOC_MAX} 字，建議拆成小檔案（見 docs/INDEX.md「寫文件的規則」）`);
 }
 
 /* ---------- 6. 程式地圖 ---------- */

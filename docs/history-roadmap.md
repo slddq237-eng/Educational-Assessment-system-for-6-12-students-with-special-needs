@@ -20,7 +20,7 @@
 ## 階段 D
 
 - D2 賓果入口改連識字評量（✅ 2026-10-21 賓果移除，舊網址轉到識字評量）
-- D3 協作看板（✅ 2026-10-22 先做了：每次 PR 自動檢查 `docs/scripts/check.js`／`.github/workflows/check.yml`；`docs/` 文件拆成小檔案，入口 `docs/README.md`；人多時再加看板與 CODEOWNERS）
+- D3 協作看板（✅ 2026-10-22 先做了：每次 PR 自動檢查 `docs/scripts/check.js`／`.github/workflows/check.yml`；`docs/` 文件拆成小檔案，入口 `docs/INDEX.md`（2026-10-24 前檔名是 README）；人多時再加看板與 CODEOWNERS）
 
 ## 開放給其他老師前的準備：2026-10-20 已完成的部分
 
