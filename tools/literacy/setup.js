@@ -575,7 +575,7 @@ function renderSummary(){
   if(qrOn()) $("#go").textContent = "產生 QR code";
 }
 /* 先選主題（見 collect.js），再開始；平板作答改成顯示 QR code（見 tablet.js） */
-$("#go").onclick = () => qrOn() ? tabletQr() : chooseTheme();
+$("#go").onclick = () => { if(qrOn()) return tabletQr(); unlockSpeech(); chooseTheme(); };
 $("#aim").addEventListener("input", renderSummary);
 
 /* 教學日期管理面板：每一課一列「全班」，下面可以加「個別學生不同」的列（A8：同一課學生進度不同） */

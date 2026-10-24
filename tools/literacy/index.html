@@ -5,15 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
 <title>識字評量</title>
+<!-- 平板掃 QR code 打開時（網址 #t），程式還沒下載完就先顯示等待畫面（2026-10-24 維護者實測：之前要等程式下載完才看得到讀取條） -->
+<script>if(/^#t/.test(location.hash)) document.documentElement.classList.add("tabpre");</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-24e">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-24f">
 <!-- 平台共用的主題外觀、頭像、貼紙樣式 -->
-<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-24e">
+<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-24f">
 <!-- 注音字型（3-4）：語詞、句子提示和練習的選項加注音；畫面用到注音時才會下載 -->
-<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-24e">
+<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-24f">
 <style>
 /* 版面：沿用生字賓果的生字簿方格紙。
    設定畫面：左邊六個步驟，右邊固定的「本次評量」摘要；評量設定、教學日期、學生名單、作答紀錄放在彈出面板。
@@ -584,6 +586,15 @@ html.tablet #setup{display:none}
 /* 讀取條（平板點名字前、電腦按開始後，見 play.js 的 prepareThen） */
 .loadbar{width:100%;height:18px;border-radius:999px;background:var(--grid);border:2px solid var(--ink);overflow:hidden}
 .loadbar i{display:block;height:100%;width:0;background:var(--green);transition:width .3s}
+/* 平板一打開（程式還在下載）：只顯示等待畫面；讀取條還沒有真的進度時，綠色小段來回跑 */
+html.tabpre #setup{display:none!important}
+html.tabpre #tabPick[hidden]{display:block!important}
+.loadbar:not([aria-valuenow]) i{width:30%}
+@media (prefers-reduced-motion:no-preference){ .loadbar:not([aria-valuenow]) i{animation:ldrun 1.2s ease-in-out infinite alternate} }
+@keyframes ldrun{from{margin-left:0}to{margin-left:70%}}
+/* 「是你嗎？」那一頁＝遊戲開始畫面（2026-10-24）：這次的主題圖和一句話 */
+.tpgame{display:grid;justify-items:center;gap:6px;font-size:clamp(18px,3vw,24px)}
+.tpgame .loadpic{width:clamp(110px,20vw,170px)}
 .loadsheet{width:min(460px,100%);margin-top:20vh;justify-items:center;text-align:center}
 .tsend{text-align:center;margin-top:16px;display:grid;gap:8px;justify-items:center}
 /* 練習的結果畫面：卡片一張一張彈出來（正式評量不用，見 docs/literacy-design.md） */
@@ -1012,12 +1023,13 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
   <p class="hint" id="tpInfo"></p>
   <p class="warnbar" id="tpVoice" role="alert" hidden></p>
   <!-- 先下載這次要用的字型（讀取條），下載完才出現名字 -->
-  <div class="tpload" id="tpLoad"><div class="loadpic" id="tpPic" aria-hidden="true"></div><div class="loadbar" id="tpBar" role="progressbar" aria-label="準備中" aria-valuemin="0" aria-valuemax="100"><i></i></div></div>
+  <div class="tpload" id="tpLoad"><div class="loadpic" id="tpPic" aria-hidden="true"><svg viewBox="0 0 100 100"><polygon points="50,6 62,36 95,38 69,58 78,92 50,73 22,92 31,58 5,38 38,36" fill="#ffd23f" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><circle cx="41" cy="50" r="4" fill="#2a1b5e"/><circle cx="59" cy="50" r="4" fill="#2a1b5e"/><path d="M42 61 Q50 67 58 61" stroke="#2a1b5e" stroke-width="3" fill="none" stroke-linecap="round"/></svg></div><div class="loadbar" id="tpBar" role="progressbar" aria-label="準備中" aria-valuemin="0" aria-valuemax="100"><i></i></div></div>
   <div class="row tpkids" id="tpList" hidden></div>
   <!-- 防點錯：點了名字要再按一次「是我，開始！」 -->
   <div class="tpconfirm" id="tpConfirm" hidden>
     <div class="tpme" id="tpMe"></div>
     <p class="tpask">是你嗎？</p>
+    <div class="tpgame" id="tpGame"></div>
     <div class="row" style="justify-content:center"><button class="go" id="tpYes">是我，開始！</button><button class="ghost" id="tpNo">不是，重選</button></div>
   </div>
   <p class="note" id="tpMsg" role="status" style="text-align:center"></p>
@@ -1032,6 +1044,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
   <p class="warnbar" id="rVoice" hidden></p>
   <div class="row rbtns">
     <button class="go" id="rAgain" style="font-size:19px">再玩一次</button>
+    <button class="ghost" id="rBook" hidden>看貼紙簿</button>
     <button class="ghost" id="rHome">回到設定</button>
     <button class="ghost" id="rExport">匯出本次紀錄</button>
   </div>
@@ -1069,31 +1082,31 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <!-- 每個檔案後面的 ?v=日期 是版本號：改了任何 .js、.css 檔，就把這頁所有的 ?v= 一起改成當天日期（用「全部取代」；同一天改第二次就在日期後面加 b、c）。
      這樣老師的瀏覽器才會下載新檔案，不會新網頁配到舊程式（例如按「下一步」沒反應）。 -->
 <!-- 生字資料：平台共用的教材資料（shared/lessons.js） -->
-<script src="../../shared/lessons.js?v=2026-10-24e"></script>
+<script src="../../shared/lessons.js?v=2026-10-24f"></script>
 <!-- 注音讀音表（shared/bpmf.js）：語詞、例句裡的破音字該念哪一個音 -->
-<script src="../../shared/bpmf.js?v=2026-10-24e"></script>
+<script src="../../shared/bpmf.js?v=2026-10-24f"></script>
 <!-- 字頻：教育部字頻總表（shared/freq.js），練習的常用字、字頻優先、老師專區高字頻生字會用到 -->
-<script src="../../shared/freq.js?v=2026-10-24e"></script>
+<script src="../../shared/freq.js?v=2026-10-24f"></script>
 <!-- 自動部件拆解（shared/parts.js）：部件提示在 lessons.js 的 PARTS 沒有這個字時才用 -->
-<script src="../../shared/parts.js?v=2026-10-24e"></script>
+<script src="../../shared/parts.js?v=2026-10-24f"></script>
 <!-- 共用小工具（課本排序與名稱、語詞、部件查詢、按匯出時才載入 Excel 元件），識字評量與備課分析共用 -->
-<script src="../../shared/common.js?v=2026-10-24e"></script>
+<script src="../../shared/common.js?v=2026-10-24f"></script>
 <!-- 平台共用：主題與貼紙、每位學生的收藏與頭像 -->
-<script src="../../shared/sticker-art.js?v=2026-10-24e"></script>
-<script src="../../shared/themes.js?v=2026-10-24e"></script>
-<script src="../../shared/rewards.js?v=2026-10-24e"></script>
+<script src="../../shared/sticker-art.js?v=2026-10-24f"></script>
+<script src="../../shared/themes.js?v=2026-10-24f"></script>
+<script src="../../shared/rewards.js?v=2026-10-24f"></script>
 <!-- 程式本體：分成八個檔案，順序不能換（說明見 app.js 開頭） -->
-<script src="data.js?v=2026-10-24e"></script>
-<script src="setup.js?v=2026-10-24e"></script>
-<script src="records.js?v=2026-10-24e"></script>
-<script src="wordsets.js?v=2026-10-24e"></script>
-<script src="play.js?v=2026-10-24e"></script>
-<script src="collect.js?v=2026-10-24e"></script>
-<script src="scenes.js?v=2026-10-24e"></script>
-<script src="teacher.js?v=2026-10-24e"></script>
-<script src="pivot.js?v=2026-10-24e"></script>
-<script src="tablet.js?v=2026-10-24e"></script>
-<script src="app.js?v=2026-10-24e"></script>
-<script src="tour.js?v=2026-10-24e"></script>
+<script src="data.js?v=2026-10-24f"></script>
+<script src="setup.js?v=2026-10-24f"></script>
+<script src="records.js?v=2026-10-24f"></script>
+<script src="wordsets.js?v=2026-10-24f"></script>
+<script src="play.js?v=2026-10-24f"></script>
+<script src="collect.js?v=2026-10-24f"></script>
+<script src="scenes.js?v=2026-10-24f"></script>
+<script src="teacher.js?v=2026-10-24f"></script>
+<script src="pivot.js?v=2026-10-24f"></script>
+<script src="tablet.js?v=2026-10-24f"></script>
+<script src="app.js?v=2026-10-24f"></script>
+<script src="tour.js?v=2026-10-24f"></script>
 </body>
 </html>

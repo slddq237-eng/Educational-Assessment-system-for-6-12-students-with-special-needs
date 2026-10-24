@@ -73,6 +73,7 @@ function drawStickers(g){
     const pick = g.game ? g.prize : undefined;
     /* 平板不存收藏（2026-10-24 決定）：只抽、寫進紀錄送給老師，老師匯入後才收進貼紙簿 */
     const idx = TABLET ? (pick ?? Themes.drawSticker(theme, [])) : Rewards.award(code, theme, {tool:"識字評量", session:g.session, idx:pick});
+    if(TABLET) (tabletGot[code] ||= []).push(Themes.codeOf(theme, idx));   /* 平板的貼紙簿看得到今天抽到的（不存起來） */
     const text = Themes.stickerName(theme, idx);
     const mine = records.filter(r => r.session === g.session && r.kid === code);
     if(mine.length){ const r = mine[mine.length - 1]; r.reward = text; r.rewardCode = Themes.codeOf(theme, idx); updateRecord(r); }
@@ -124,7 +125,17 @@ function showReveals(list){
 /* =========================================================
    14. 貼紙簿（學生自己看：選名字 → 看四個主題收集了哪些）
    ========================================================= */
-let bookKid = null;
+let bookKid = null, bookFrom = "#setup";
+/* 平板上今天抽到的貼紙（只在這個分頁，不存起來；老師匯入後才真的收進貼紙簿） */
+const tabletGot = {};
+/* 某位學生的收藏 {主題:[貼紙代號…]}。電腦：這台電腦存的（rewards.js）。
+   平板（2026-10-24 維護者決定）：產生 QR code 時帶來的「老師電腦上已收集哪幾張」（tablet.js 的 ownPack，只記有沒有、不記幾張），加上今天抽到的 */
+function bookStickers(code){
+  if(!TABLET) return Rewards.get(code).stickers || {};
+  const st = ownUnpack(((TABLET.st || {}).ow || {})[code]);
+  for(const c of tabletGot[code] || []){ const f = Themes.findCode(c); if(f) (st[f.theme] ||= []).push(c); }
+  return st;
+}
 /* 抽中機率（2026-10-24 維護者決定：寫百分比，加一條照比例分段的彩色長條；長條只是圖，文字才是內容） */
 const ODDS_COLOR = {1:"#6cc66a", 2:"#4fa8f0", 3:"#a77cf0", 4:"#f5c02e"};
 function oddsHtml(theme){
@@ -143,11 +154,13 @@ function bookCard(theme, i, name, n){
 }
 function renderBook(){
   if(!kidBy(bookKid)) bookKid = null;
-  $("#bookNames").innerHTML = kids.length ? kids.map(k => `<button class="chip kidchip ${bookKid === k.code ? "on" : ""}" data-k="${esc(k.code)}" aria-pressed="${bookKid === k.code}">${Rewards.avatarHtml(k.code)}${esc(kidShow(k))}</button>`).join("")
+  /* 平板只看得到正在作答的這位學生 */
+  const who = TABLET ? kids.filter(k => state.kids.has(k.code)) : kids;
+  $("#bookNames").innerHTML = who.length ? who.map(k => `<button class="chip kidchip ${bookKid === k.code ? "on" : ""}" data-k="${esc(k.code)}" aria-pressed="${bookKid === k.code}">${Rewards.avatarHtml(k.code)}${esc(kidShow(k))}</button>`).join("")
     : `<p class="note">還沒有學生，請老師先到「學生名單」加入。</p>`;
   $("#bookNames").querySelectorAll("[data-k]").forEach(b => b.onclick = () => { bookKid = b.dataset.k; renderBook(); });
   if(!bookKid){ $("#bookBody").innerHTML = kids.length ? `<p class="hint">點自己的名字，看看收集了哪些貼紙。</p>` : ""; return; }
-  const st = Rewards.get(bookKid).stickers || {};
+  const st = bookStickers(bookKid);
   $("#bookBody").innerHTML = Themes.ids.map(id => {
     const t = Themes.THEMES[id], cnt = {};
     (st[id] || []).forEach(c => { const f = Themes.findCode(c); if(f && f.theme === id) cnt[f.idx] = (cnt[f.idx] || 0) + 1; });
@@ -156,8 +169,15 @@ function renderBook(){
       <div class="stkrow">${t.stickers.map((s, i) => bookCard(id, i, s[1], cnt[i])).join("")}</div></section>`;
   }).join("");
 }
-$("#openBook").onclick = () => { renderBook(); showScreen("#book"); };
-$("#bookBack").onclick = () => showScreen("#setup");
+/* 打開貼紙簿：從設定畫面（選單），或從結果畫面（2026-10-24 維護者要求：玩完可以直接看貼紙簿，看完回到結果畫面） */
+function openBook(from, code){
+  bookFrom = from; if(code) bookKid = code;
+  $("#bookBack").textContent = from === "#result" ? "回到結果" : "回到設定";
+  renderBook(); showScreen("#book");
+}
+$("#openBook").onclick = () => openBook("#setup");
+$("#bookBack").onclick = () => showScreen(bookFrom);
+$("#rBook").onclick = () => { if(G) openBook("#result", G.kids[0]); };
 
 /* 備份檔裡一起放收藏與頭像（備份檔第 2 版） */
 addBackupPart("rewards", () => Rewards.exportAll(), list => Rewards.importAll(list));

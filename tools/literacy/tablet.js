@@ -94,9 +94,22 @@ function tabletPack(){
       goal:state.goal, mode:state.mode, limit:state.limit, aim:+$("#aim").value || 30, lessons:state.lessons,
       pChoices:state.pChoices, pHints:[...state.pHints], pRule:state.pRule, qCount:state.qCount, qMethod:state.qMethod,
       manual:pick(state.manual, state.lessons), themePick:state.themePick,
+      ow:Object.fromEntries(codes.map(c => [c, ownPack(c)])),   /* 每位學生已收集哪幾張（平板的貼紙簿用） */
       kidHints:isQuick() ? {} : Object.fromEntries(codes.filter(c => state.kidHints[c]).map(c => [c, {hints:[...state.kidHints[c].hints], rule:state.kidHints[c].rule}]))
     }
   };
+}
+/* 已收集哪幾張，壓成短短的字放進 QR code（2026-10-24 維護者決定，平板的貼紙簿用）：
+   每個主題一段，用二進位記「第幾張有沒有」（只記有沒有、不記幾張），轉成 36 進位，主題之間用「.」隔開，一位學生約 12 個字。
+   這是同一天的快照，用「第幾張」的順序記（不是代號），老師電腦和平板開的是同一版網頁，順序一樣 */
+function ownPack(code){
+  return Themes.ids.map(t => Rewards.owned(code, t).reduce((m, i) => m | (1 << i), 0).toString(36)).join(".");
+}
+function ownUnpack(s){
+  const out = {};
+  String(s || "").split(".").forEach((x, j) => { const t = Themes.ids[j], m = parseInt(x, 36) || 0; if(!t) return;
+    Themes.THEMES[t].stickers.forEach((st, i) => { if(m & (1 << i)) (out[t] ||= []).push(st[2]); }); });
+  return out;
 }
 let qrLoading = null;
 function loadQr(){
@@ -136,6 +149,7 @@ const TABLET_FORM = TABLET && !TABLET.bad ? {id:TABLET.f, entry:TABLET.e} : null
 addEventListener("hashchange", () => { if(/^#t=/.test(location.hash)) location.reload(); });
 function tabletStart(){
   showScreen("#tabPick");
+  document.documentElement.classList.remove("tabpre");   /* 換成程式控制的畫面（index.html 開頭的等待畫面） */
   const s = TABLET.st;
   if(TABLET.bad || TABLET.v !== 1 || !s || !TABLET_FORM){ $("#tpLoad").hidden = true; $("#tabPick").classList.remove("loading"); $("#tpMsg").textContent = "讀不到這次練習的設定，請重新掃描 QR code；還是不行，請老師重新產生一次。"; return; }
   /* 用不到的課（例如老師的網頁比較新）：請平板重新整理 */
@@ -182,6 +196,9 @@ function tabletKids(){
     const k = kidBy(b.dataset.k);
     $("#tpMe").innerHTML = `${Rewards.avatarHtml(k.code)}<span>${esc(b.lastChild.textContent)}</span>`;
     $("#tpList").hidden = true; $("#tpConfirm").hidden = false;
+    /* 這一頁也是遊戲開始畫面：這次的主題圖和一句話；按「是我，開始！」直接出第一題、馬上唸（play.js 的 sceneStart） */
+    const t = Themes.THEMES[state.themePick], card = playNow() === "game" && gameCard(state.themePick);
+    $("#tpGame").innerHTML = t ? `<div class="loadpic" aria-hidden="true">${loadPic(state.themePick)}</div><span>${esc(card ? `${t.name}・${card.act}：${t.line}` : `做完可以抽一張${t.name}的貼紙！`)}</span>` : "";
     $("#tpYes").onclick = () => { state.kids = new Set([k.code]); chooseTheme(); };
     $("#tpYes").focus();
   });

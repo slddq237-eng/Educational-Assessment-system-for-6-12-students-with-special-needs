@@ -137,6 +137,14 @@ function speak(text, onend, rate, withName){
   } catch(e){ setTimeout(done, 300); }
   return true;
 }
+/* 解鎖聲音（2026-10-24 維護者實測平板一開始沒聲音）：手機、平板（尤其 iPad）要「使用者點下去的那一刻」先發過一次聲音，
+   之後隔一段時間才唸（例如等字型下載、播開場動畫）才不會被擋掉。在「開始」按鈕的點擊裡呼叫；一次就好 */
+let speechUnlocked = false;
+function unlockSpeech(){
+  if(speechUnlocked || !("speechSynthesis" in window)) return;
+  speechUnlocked = true;
+  try { speechSynthesis.resume(); const u = new SpeechSynthesisUtterance(" "); u.volume = 0; u.lang = "zh-TW"; speechSynthesis.speak(u); } catch(e){}
+}
 /* 音效（取自生字賓果的做法，用瀏覽器直接合成，不需要音檔）：
    答對＝三個音往上的「叮叮叮」；答錯＝兩聲往下的「嗶嗶」，比較明顯；得到貼紙＝一小段歡呼音樂。
    「畫面與聲音」可以關掉音效（語音唸題不受影響）；面板裡的「試聽」按鈕不管開關都會出聲。 */
@@ -625,13 +633,15 @@ function showScene(on, cap = "", code = ""){
   $("#pBody").hidden = on; $("#pScene").hidden = !on;
   if(on) $("#sceneCap").innerHTML = `${code ? Rewards.avatarHtml(code) : ""}<span>${esc(cap)}</span>`;
 }
-/* 開始前：看看要打的怪獸，停 1.8 秒 */
+/* 開始前：看看要打的怪獸，停 1.8 秒。
+   平板（2026-10-24 維護者決定）：「是你嗎？」那一頁已經是遊戲開始畫面，按「開始」後直接出第一題、馬上唸，不再停 1.8 秒 */
 function sceneStart(then){
   const g = G, box = $("#pScene"), t = Themes.THEMES[g.theme];
   box.innerHTML = `<div class="scenecap" id="sceneCap"></div><div class="scenehold"></div>`;
   g.scene = Scenes[g.theme](box.querySelector(".scenehold"), g.queue.length, g.prize);
   g.hits = 0; g.doneN = 0; g.blockHits = 0;
   g.scene.setPlayer(g.queue[0].kid);
+  if(TABLET){ $("#pProg").textContent = `做完 ${g.queue.length} 題就成功！`; return then(); }
   showScene(true, `${g.game === "coop" ? "大家一起：" : ""}${t.line}`);
   $("#pProg").textContent = `做完 ${g.queue.length} 題就成功！`;
   setTimeout(() => { if(G === g && !g.over){ showScene(false); then(); } }, SCENE_MS);
@@ -755,6 +765,7 @@ function finish(){
     + (left.length ? "沒有做完的紀錄會保留，但標成「中途結束」，不列入分析。" : "");
   showScreen("#result");
   drawStickers(g);             /* 先抽好貼紙、寫進紀錄（見 collect.js），平板送出的紀錄才有抽到什麼 */
+  $("#rBook").hidden = !g.rewards || !g.done.size;   /* 有抽貼紙才有「看貼紙簿」 */
   if(TABLET) tabletSend(g);   /* 平板作答：把這次的紀錄送到老師的 Google 表單（見 tablet.js） */
   /* 每位有作答的學生抽一張貼紙（見 collect.js）；練習先播完獎盃、卡片彈出後再抽 */
   if(!lively) return giveStickers(g);
