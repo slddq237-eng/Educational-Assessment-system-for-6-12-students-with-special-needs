@@ -59,7 +59,7 @@ function clearRecords(){
 (async () => { recDb = TABLET ? null : await openRecDb(); records = await loadRecords(); $("#dbWarn").hidden = !!recDb || !!TABLET; checkBackup(); })();
 
 /* 備份提醒：有紀錄、而且超過 30 天沒下載備份檔（或從來沒備份過）時，設定畫面上方提醒一次 */
-const BACKUP_KEY = "literacy-lastBackup", BACKUP_DAYS = 30;
+const BACKUP_KEY = KEYS.lastBackup, BACKUP_DAYS = 30;
 function checkBackup(){
   const last = load(BACKUP_KEY, null), days = last ? Math.round((today - parse(last)) / DAY) : null;
   const show = records.length > 0 && !!recDb && (days == null || days >= BACKUP_DAYS);

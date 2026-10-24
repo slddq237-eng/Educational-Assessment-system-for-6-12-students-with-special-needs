@@ -25,20 +25,20 @@ const PRESETS = [
    why:"認得字之後，還要認得快，讀起文章才會順。每分鐘答對幾個，可以看出熟練的程度。這是練習，老師專區把「性質」切到「練習」就看得到；要列入學習分析，請到進階設定選「正式評量」和「流暢性模式」。",
    apply:() => Object.assign(state, {kind:"practice", mode:"flu", limit:"60"})}
 ];
-let ui = load("literacy-ui", "quick");      /* 這台電腦上次用的是快速開始還是進階設定 */
+let ui = load(KEYS.ui, "quick");      /* 這台電腦上次用的是快速開始還是進階設定 */
 /* 這台電腦上次用的卡片（學扶老師用過一次，下次打開就直接停在「學扶前後測」） */
-state.preset = PRESETS.some(p => p.id === load("literacy-preset", "")) ? load("literacy-preset", "") : "class";
+state.preset = PRESETS.some(p => p.id === load(KEYS.preset, "")) ? load(KEYS.preset, "") : "class";
 const isQuick = () => ui === "quick";
 function applyPreset(id){
   if(state.preset !== id) state.rti = "";
-  state.preset = id; store("literacy-preset", id);
+  state.preset = id; store(KEYS.preset, id);
   Object.assign(state, {qCount:null, qMethod:"even"});   /* 評量目標沿用第 1 步選的 */
   PRESETS.find(p => p.id === id).apply();
   /* 作答方式：快速開始只有大螢幕輪流、平板掃 QR code 兩種；平板只能練習，換到小考、學扶前後測就改回大螢幕 */
   if(state.answer !== "qr" || state.kind === "formal") state.answer = "turn";
 }
 function setUi(mode){
-  ui = mode; store("literacy-ui", ui);
+  ui = mode; store(KEYS.ui, ui);
   document.body.classList.toggle("quick", isQuick());
   $("#uiQuick").setAttribute("aria-pressed", isQuick()); $("#uiAdv").setAttribute("aria-pressed", !isQuick());
   if(isQuick()) applyPreset(state.preset);

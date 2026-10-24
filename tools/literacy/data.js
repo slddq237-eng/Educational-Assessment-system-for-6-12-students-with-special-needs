@@ -128,6 +128,16 @@ const today = new Date(); today.setHours(0,0,0,0);
 const iso = d => new Date(d.getTime() - d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
 const md = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()}`; };
+/* 儲存名稱表：識字評量存在這台電腦的資料（localStorage、sessionStorage），名稱只寫在這裡。
+   其他檔案用 KEYS.settings 這樣拿，不要自己打完整的名稱（打錯一個字，老師存的資料就讀不到）；
+   用了表裡沒有的名稱，自動檢查會報錯。新增名稱時也寫進 docs/code/architecture.md 第 6 節。
+   作答紀錄的 IndexedDB 名稱在 records.js 的 REC_DB（只有它用）。 */
+const KEYS = Object.freeze({
+  settings:"literacy-settings", kids:"literacy-kids", teach:"literacy-teach", wordsets:"literacy-wordsets",
+  ui:"literacy-ui", preset:"literacy-preset", teacher:"literacy-teacher", pivot:"literacy-pivot", pivots:"literacy-pivots",
+  tour:"literacy-tour", lastBackup:"literacy-lastBackup",
+  tablet:"literacy-tablet"   /* sessionStorage：平板作答這個分頁的練習設定 */
+});
 /* 平板作答（tablet.js）：學生掃老師電腦上的 QR code 打開網頁，網址 #t= 後面帶著這次練習的設定。
    這時設定、學生、教學日期、字組都從網址讀（TABLET.d，名稱和 localStorage 相同），也不寫回平板（平板可能也是別的老師在用的）。
    網址裡有學生名字：一打開就把設定移到這個分頁的 sessionStorage（關掉分頁就不見），網址列只留 #t，
@@ -136,8 +146,8 @@ const md = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()}`;
 const TABLET = (() => {
   const m = location.hash.match(/^#t=([\w-]+)/);
   let raw = m && m[1];
-  if(raw){ try { sessionStorage.setItem("literacy-tablet", raw); history.replaceState(null, "", location.pathname + location.search + "#t"); } catch(e){} }
-  else if(location.hash === "#t"){ try { raw = sessionStorage.getItem("literacy-tablet"); } catch(e){} if(!raw) return {bad:true}; }
+  if(raw){ try { sessionStorage.setItem(KEYS.tablet, raw); history.replaceState(null, "", location.pathname + location.search + "#t"); } catch(e){} }
+  else if(location.hash === "#t"){ try { raw = sessionStorage.getItem(KEYS.tablet); } catch(e){} if(!raw) return {bad:true}; }
   else return null;
   try { const b = atob(raw.replace(/-/g, "+").replace(/_/g, "/"));
     return JSON.parse(new TextDecoder().decode(Uint8Array.from(b, c => c.charCodeAt(0)))); } catch(e){ return {bad:true}; }
@@ -178,19 +188,19 @@ const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove
   /* 報讀提示：語詞、句子提示旁的小喇叭，按了念出完整語詞或句子。練習在第 4 步開關（預設開）；
      正式評量看「評量設定」（預設關，從基線期起維持同一個設定）；部件重組（4-1）一律沒有 */
   practiceRead:true, formalRead:false},
-  load("literacy-settings", {}));
+  load(KEYS.settings, {}));
 /* 以前存的「打怪獸要不要玩」（practiceGame）換成新的玩法設定 */
 if(!settings.practicePlay) settings.practicePlay = settings.practiceGame === false ? "color" : "game";
 if(settings.practicePlay === "monster") settings.practicePlay = "game";   /* 2026-10-24 以前叫「打怪獸」 */
 delete settings.practiceGame;
-const saveSettings = () => store("literacy-settings", settings);
+const saveSettings = () => store(KEYS.settings, settings);
 
 /* 學生名單：年級記的是設定那一年的年級，之後每學年自動升級 */
 /* 第一次打開時先放兩個範例代號，老師可以在「學生名單」修改或刪除 */
-const kids = load("literacy-kids", [
+const kids = load(KEYS.kids, [
   {code:"S01", name:"", grade:2, sy:SCHOOL_YEAR}, {code:"S02", name:"", grade:2, sy:SCHOOL_YEAR}
 ]);
-const saveKids = () => store("literacy-kids", kids);
+const saveKids = () => store(KEYS.kids, kids);
 /* 本學期教學安排（選填，每學期一筆）：level＝課程調整到幾年級，其餘為每週節數 */
 const PLAN_KEY = `${SCHOOL_YEAR}${TERM}`;
 /* 三種課程分開記錄節數，各自可填開始日期（學期中才加入的學生） */
@@ -216,8 +226,8 @@ const gradeText = k => `${GRADES[kidGrade(k)-1]}年級${adjLevel(k) ? `・課程
    同一課學生進度不同時（例如學扶、跨受試研究），個別學生可以另外設定，存在 kids：{學生代號: {type, start, end}}（2026-10-21，A8）。
    沒有個別設定的學生沿用全班預設；舊資料沒有 kids，就是全班預設，不用轉換。 */
 const key = (b,n) => b + "-" + n;
-const teach = load("literacy-teach", {});
-const saveTeach = () => store("literacy-teach", teach);
+const teach = load(KEYS.teach, {});
+const saveTeach = () => store(KEYS.teach, teach);
 /* 某位學生在某一課實際用的教學日期：有個別設定就用個別的，沒有就用全班預設 */
 const teachFor = (k, code) => { const t = teach[k] || {}; return (code && t.kids && t.kids[code]) || t; };
 /* 這次手動指定的評量時機（學扶前後測卡片、或第 2 步「這次全部改為」）；學扶的「教學後」要看每位學生自己的結束日 */

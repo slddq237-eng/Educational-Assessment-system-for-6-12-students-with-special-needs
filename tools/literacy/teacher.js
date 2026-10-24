@@ -11,7 +11,7 @@
 /* =========================================================
    15. 老師專區：選單狀態與資料篩選
    ========================================================= */
-const TEACH_UI = "literacy-teacher";
+const TEACH_UI = KEYS.teacher;
 const T = Object.assign({tab:"one", kid:"", metric:"acc", view:"time", axis:"date", range:"term", from:"", to:"",
   kind:"formal", goal:"", book:"", lesson:"", gap:"after", top:"300"}, load(TEACH_UI, {}));
 const saveT = () => store(TEACH_UI, T);

@@ -206,6 +206,21 @@ for (const f of files.filter(f => /\.(js|html)$/.test(f) && !f.startsWith('docs/
     err(f, `直接存取瀏覽器儲存空間。請改用入口（識字評量用 data.js 的 load、store；作答紀錄用 records.js；貼紙頭像用 Rewards），見 docs/code/refactor.md 規則 1`);
 }
 
+/* 識字評量的儲存名稱只寫在 data.js 的 KEYS（docs/code/refactor.md「儲存名稱集中」）：
+   用了表裡沒有的 KEYS.xxx（多半是打錯字，老師存的資料會讀不到）報錯；其他檔案自己打 "literacy-xxx" 提醒 */
+if (files.includes('tools/literacy/data.js')) {
+  const tbl = (read('tools/literacy/data.js').match(/const KEYS = Object\.freeze\(\{([\s\S]*?)\}\);/) || [])[1] || '';
+  const keyNames = new Set([...tbl.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/(\w+)\s*:/g)].map(m => m[1]));
+  for (const f of files.filter(f => /^tools\/literacy\/.*\.(js|html)$/.test(f))) {
+    const src = read(f);
+    for (const m of src.matchAll(/\bKEYS\.(\w+)/g))
+      if (!keyNames.has(m[1])) err(f, `KEYS.${m[1]} 不在 data.js 的儲存名稱表 KEYS 裡（打錯字？）`);
+    if (f !== 'tools/literacy/data.js')
+      for (const m of src.matchAll(/["'`](literacy-[A-Za-z]+)["'`]/g))
+        warn(f, `直接寫了儲存名稱「${m[1]}」，請改用 data.js 的 KEYS（見 docs/code/refactor.md 規則 1）`);
+  }
+}
+
 /* ---------- 7. 文件裡的指向 ----------
    文件寫「見 `records.md`「某一節」」「`refactor.md` 第 3 節」時，檔案和那一節都要找得到，Claude 照著找才不會撲空
    （2026-10-24 維護者要求：路線圖和文件改了很多次，確定讀的時候不會漏掉）。

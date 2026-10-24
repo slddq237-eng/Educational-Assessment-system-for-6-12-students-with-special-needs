@@ -82,13 +82,13 @@ function tabletPack(){
   return {
     v:1, f:settings.tabletForm.id, e:settings.tabletForm.entry,
     d:{
-      "literacy-ui": ui,   /* 快速開始或進階設定（快速開始不用每位學生不同的提示，見 data.js 的 kidCfg） */
+      [KEYS.ui]: ui,   /* 快速開始或進階設定（快速開始不用每位學生不同的提示，見 data.js 的 kidCfg） */
       /* 正式評量的條件、設定畫面大小、表單網址平板用不到 */
-      "literacy-settings": Object.fromEntries(Object.entries(settings).filter(([k]) => !/^(formal|clockFormal$|uiScale$|tabletForm$)/.test(k))),
-      "literacy-kids": codes.map(c => { const k = kidBy(c), p = planOf(k);
+      [KEYS.settings]: Object.fromEntries(Object.entries(settings).filter(([k]) => !/^(formal|clockFormal$|uiScale$|tabletForm$)/.test(k))),
+      [KEYS.kids]: codes.map(c => { const k = kidBy(c), p = planOf(k);
         return {code:k.code, name:k.name || "", grade:k.grade, sy:k.sy, ...(p.adjust ? {plans:{[PLAN_KEY]:{adjust:true, level:p.level}}} : {})}; }),
-      "literacy-teach": pick(teach, state.lessons),
-      "literacy-wordsets": pick(wordSets, state.lessons)
+      [KEYS.teach]: pick(teach, state.lessons),
+      [KEYS.wordsets]: pick(wordSets, state.lessons)
     },
     st:{
       goal:state.goal, mode:state.mode, limit:state.limit, aim:+$("#aim").value || 30, lessons:state.lessons,

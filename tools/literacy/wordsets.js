@@ -13,7 +13,7 @@
    存法：localStorage 的 literacy-wordsets，{ "課本-課次": {chars:"考的字", ver:第幾組, locked:是否鎖定, pchars:"鎖定後練習自己點的字"} }
    沒有這一課＝整課都考。
    ========================================================= */
-const WS_KEY = "literacy-wordsets";
+const WS_KEY = KEYS.wordsets;
 let wordSets = load(WS_KEY, {});
 const saveWordSets = () => store(WS_KEY, wordSets);
 /* 這一課課本上的全部生字（和 play.js 的 charsOf 一樣） */

@@ -42,7 +42,7 @@ function startTour(){
 function endTour(){
   if(tourAt < 0) return;
   tourAt = -1; tourBox.hidden = tourCard.hidden = true;
-  store("literacy-tour", "done");
+  store(KEYS.tour, "done");
   showStep(tourFrom);
   $("#topMenu summary").focus();
 }
@@ -92,4 +92,4 @@ document.addEventListener("keydown", e => { if(tourAt >= 0 && e.key === "Escape"
 $("#tourBtn").onclick = startTour;
 
 /* 這台電腦第一次打開：自動開始 */
-if(!TABLET && load("literacy-tour", "") !== "done") startTour();
+if(!TABLET && load(KEYS.tour, "") !== "done") startTour();
