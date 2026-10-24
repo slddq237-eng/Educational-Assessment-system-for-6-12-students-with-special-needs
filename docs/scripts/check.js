@@ -2,15 +2,21 @@
 自動檢查（GitHub Actions 每次發 PR、改 main 都會跑；本機也可以跑：在 repo 最上層執行 node docs/scripts/check.js）
 不用安裝任何套件，只要 Node.js。
 
-檢查七件事：
+檢查十一件事：
   1. 程式語法：所有 .js 檔和 HTML 裡的 <script>，有沒有打錯字、少括號（有的話網頁會整個壞掉）
   2. 教材資料（shared/lessons.js）：語詞裡有沒有這個字、干擾字有沒有包含答案本身等；
      語詞、例句裡有語音替換詞（shared/bpmf.js 的 BPMF_SAY）但還沒確認過的，提醒確認讀音
   3. 版本號：每個頁面的 ?v= 要一樣（改了 js、css 卻忘了改版本號，老師的瀏覽器會用舊檔）
   4. 學生資料：repo 是公開的，不能有照片、備份檔、作答紀錄
-  5. 文件長度：docs/ 裡的說明文件太長時提醒拆分（太長的文件 Claude 一次讀不完、容易讀到過時內容）
+  5. 文件長度：docs/ 裡的說明文件太長時提醒拆分（太長的文件 Claude 一次讀不完、容易讀到過時內容）；
+     CLAUDE.md 每則訊息都會載入，上限另外設得比較小
   6. 程式地圖：每個 .js 檔、每個儲存名稱都要寫在 docs/architecture.md（沒寫只提醒）；
   7. 文件裡的指向：docs/ 和 CLAUDE.md 寫的「`檔名`」「`檔名`「某一節」」「`檔名` 第 N 節」要找得到（只提醒）
+  8. 大檔案清單：超過 30KB 的程式檔要寫在 CLAUDE.md 的「省 token」清單（Claude 才知道先搜尋、不要整份讀）
+  9. 楷書字型缺字：畫面文字、教材裡的字要在楷書字型裡，沒有就提醒跑 make_kai.py
+  10. 網頁下載量：每個頁面一打開要下載的程式和樣式（不含字型）超過上限就提醒，避免越來越慢
+  11. 對外連線：程式裡新的外部網址要寫進 docs/architecture.md 第 7 節（也要更新 privacy.html）
+  8～11 都只提醒（2026-10-24 維護者要求加）
      只有入口檔案可以直接存取 localStorage、indexedDB（其他檔案直接用是錯誤，見 docs/refactor.md 規則 1）
 
 「錯誤」會讓檢查失敗（紅叉），要修好才合併；「提醒」只列出來，不會失敗。
@@ -152,9 +158,11 @@ for (const f of files) {
 
 /* ---------- 5. 文件長度 ---------- */
 const DOC_MAX = 10000;   /* 字數；超過就提醒拆成小檔案，並更新 docs/README.md 的索引 */
+const CLAUDE_MAX = 2000;   /* CLAUDE.md 每則訊息都會載入，越短越省（2026-10-24 維護者決定） */
 for (const f of files.filter(f => /^(docs\/[^/]+|CLAUDE)\.md$/.test(f))) {
   const n = [...read(f)].length;
-  if (n > DOC_MAX) warn(f, `文件有 ${n} 字，超過 ${DOC_MAX} 字，建議拆成小檔案（見 docs/README.md「寫文件的規則」）`);
+  if (f === 'CLAUDE.md' && n > CLAUDE_MAX) warn(f, `CLAUDE.md 有 ${n} 字，超過 ${CLAUDE_MAX} 字（每則訊息都會載入）；詳細規則請寫在 docs/，這裡只留一定要做的事`);
+  else if (n > DOC_MAX) warn(f, `文件有 ${n} 字，超過 ${DOC_MAX} 字，建議拆成小檔案（見 docs/README.md「寫文件的規則」）`);
 }
 
 /* ---------- 6. 程式地圖 ---------- */
@@ -200,6 +208,63 @@ for (const f of files.filter(f => /^(docs\/[^/]+|CLAUDE)\.md$/.test(f))) {
       if (t && !new RegExp(`^##\\s*${m[2]}[.、 ]`, 'm').test(read(t))) warn(at, `「${m[1]} 第 ${m[2]} 節」找不到`);
     }
   });
+}
+
+/* 程式碼裡的註解拿掉（畫面上不會出現；和 make_kai.py 的 strip_comments 一樣） */
+const stripComments = t => t.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/[^\n]*/g, '$1');
+const own = f => !f.startsWith('shared/vendor/') && !f.startsWith('docs/') && !f.startsWith('.github/');
+
+/* ---------- 8. 大檔案清單 ----------
+   CLAUDE.md「省 token」要列出超過約 30KB 的檔案，Claude 讀到才會先搜尋、只讀需要的那段 */
+const BIG = 30 * 1024;
+for (const f of files.filter(f => own(f) && /\.(js|html|css)$/.test(f) && !f.startsWith('shared/fonts/')))
+  if (fs.statSync(path.join(ROOT, f)).size > BIG && !read('CLAUDE.md').includes(path.posix.basename(f)))
+    warn(f, `超過 30KB（${Math.round(fs.statSync(path.join(ROOT, f)).size / 1024)}KB），請加進 CLAUDE.md「省 token」的大檔案清單`);
+
+/* ---------- 9. 楷書字型缺字 ----------
+   畫面文字（.html、tools/ 的 .js，不含註解）和教材（lessons.js、parts.js）的中文字，要在 shared/fonts/tw-kai.css 的範圍裡；
+   沒有的字會變成電腦裡的別種字型。新增頁面文字、課本、部件後跑 make_kai.py 就好 */
+const KAI_NOT_IN_FONT = '龶冫勹龰亠龴龵龸龷龹';   /* 全字庫正楷體本來就沒有的部件符號，make_kai.py 會略過（2026-10-24 確認） */
+{
+  const have = new Set();
+  for (const m of read('shared/fonts/tw-kai.css').matchAll(/U\+([0-9A-F]+)(?:-([0-9A-F]+))?/gi)) {
+    const a = parseInt(m[1], 16), b = m[2] ? parseInt(m[2], 16) : a;
+    for (let c = a; c <= b; c++) have.add(c);
+  }
+  const text = files.filter(f => own(f) && (/\.html$/.test(f) || /^tools\/.*\.js$/.test(f))).map(f => stripComments(read(f))).join('')
+    + read('shared/lessons.js') + read('shared/parts.js');
+  const miss = [...new Set([...text].filter(c => { const p = c.codePointAt(0); return (p >= 0x3400 && p <= 0x9FFF) && !have.has(p) && !KAI_NOT_IN_FONT.includes(c); }))];
+  if (miss.length) warn('shared/fonts/tw-kai.css', `有 ${miss.length} 個字不在楷書字型裡（${miss.slice(0, 20).join('')}${miss.length > 20 ? '…' : ''}），請跑 docs/scripts/make_kai.py`);
+}
+
+/* ---------- 10. 網頁下載量 ----------
+   每個頁面打開時要下載的 HTML＋程式＋樣式（不壓縮的大小，不含字型、按了才載入的 Excel／QR code 元件）。
+   2026-10-24 識字評量約 821KB，上限 1MB；超過時先想想能不能用到才載入 */
+const PAGE_MAX = 1024 * 1024;
+for (const f of files.filter(f => own(f) && f.endsWith('.html'))) {
+  const t = read(f);
+  let size = Buffer.byteLength(t);
+  for (const m of t.matchAll(/<script[^>]*src="([^"]+)"|<link[^>]*rel="stylesheet"[^>]*href="([^"]+)"/g)) {
+    const r = (m[1] || m[2]).split('?')[0];
+    if (/^https?:/.test(r)) continue;
+    const p = path.posix.normalize(path.posix.join(path.posix.dirname(f), r));
+    if (files.includes(p)) size += fs.statSync(path.join(ROOT, p)).size;
+  }
+  if (size > PAGE_MAX) warn(f, `打開時要下載 ${Math.round(size / 1024)}KB 的程式和樣式，超過 ${PAGE_MAX / 1024}KB；能不能改成用到才載入？`);
+}
+
+/* ---------- 11. 對外連線 ----------
+   程式（不含註解）和頁面的 script、stylesheet、預先連線裡的外部網址，主機名稱要寫在 docs/architecture.md（第 7 節「對外連線」），
+   並同步更新 privacy.html；一般的 <a> 連結只是讓人點的，不算。www.w3.org 是 SVG 的固定寫法，不是連線 */
+{
+  const arch = read('docs/architecture.md'), hosts = new Map();
+  for (const f of files.filter(f => own(f) && /\.(js|html|css)$/.test(f))) {
+    let t = stripComments(read(f));
+    if (f.endsWith('.html')) t = t.replace(/<a\b[^>]*>/g, '');
+    for (const m of t.matchAll(/https?:\/\/([\w.-]+)/g))
+      if (m[1] !== 'www.w3.org' && !arch.includes(m[1])) hosts.set(m[1], f);
+  }
+  for (const [h, f] of hosts) warn(f, `連到外部網站「${h}」，請寫進 docs/architecture.md 第 7 節「對外連線」，並更新 privacy.html`);
 }
 
 /* ---------- 結果 ---------- */
