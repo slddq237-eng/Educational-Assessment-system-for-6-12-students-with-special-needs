@@ -118,7 +118,7 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
 - **每週摘要**：維護者說「本週摘要」，Claude 從這週合併的 PR 整理 5～10 行白話，分兩區——「需要你的意見」（最多 3 題，附選項）、「知道就好」（可略過），每項附 PR 連結；維護者轉貼到 LINE。重要的那題在 LINE 直接點名問。
 - 第二級做錯可以用一個 PR 退回；自動檢查和 `docs/` 記下的理由，是不靠夥伴也能抓錯的保險。
 
-### 合併審核要不要用 GitHub 強制執行（待決）
+### 合併審核要不要用 GitHub 強制執行（已決定要做，等夥伴發測試 PR 確認）
 （2026-10-22 從 `docs/pending.md` 移來；pending.md 只留一行摘要）
 - **合併審核要不要用 GitHub 強制執行（CODEOWNERS）**（2026-10-22 加）：現在「動到共用檔案、識字評量要 repo 擁有者同意」只是約定。等夥伴用自己的 GitHub 帳號發 PR，就可以加 `.github/CODEOWNERS`（列出歸擁有者管的路徑）、在 Settings → Rules 設定「要 Code Owners 審核」與「自動檢查要通過」，並把擁有者加進 Bypass list（GitHub 不允許自己審核自己的 PR，不加會卡住擁有者自己的 PR），再發測試 PR 確認。步驟寫在「GitHub 新手使用說明」的「合併規則與審核設定」。
   - **進度**（2026-10-22）：維護者決定要做。已加 `.github/CODEOWNERS`（共用檔案、`tools/literacy/`、`tools/bingo/` 要擁有者 @slddq237-eng 審核）；2026-10-23 擁有者已在 GitHub 網頁 Settings → Rules 設好規則（要發 PR、要 Code Owners 審核、核准人數 0）。還差：請夥伴發測試 PR 確認（改共用檔案要擁有者審核、只改新工具資料夾不用）。測試完成後把這一項移到 `history.md`。

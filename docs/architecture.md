@@ -143,7 +143,7 @@
 
 | 程式 | 產生什麼 | 什麼時候跑 |
 |---|---|---|
-| `check.js` | 不產生檔案；檢查語法、教材、版本號、學生資料、文件長度、這份地圖與存資料的入口 | 每次推之前；GitHub 每個 PR 自動跑 |
+| `check.js` | 不產生檔案；檢查語法、教材、版本號、學生資料、文件長度、這份地圖與存資料的入口、文件裡的指向（檔案和「某一節」找不找得到） | 每次推之前；GitHub 每個 PR 自動跑 |
 | `make_parts.py` | `shared/parts.js`、`docs/parts-table.xlsx` | 新增課本後 |
 | `make_bpmf.py` | `shared/bpmf.js`、`shared/fonts/bpmf-kai*` | 新增課本、改讀音後 |
 | `make_kai.py` | `shared/fonts/tw-kai*` | 新增課本、部件，或改了頁面文字後 |

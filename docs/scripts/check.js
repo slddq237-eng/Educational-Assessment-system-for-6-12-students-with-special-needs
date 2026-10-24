@@ -2,7 +2,7 @@
 自動檢查（GitHub Actions 每次發 PR、改 main 都會跑；本機也可以跑：在 repo 最上層執行 node docs/scripts/check.js）
 不用安裝任何套件，只要 Node.js。
 
-檢查六件事：
+檢查七件事：
   1. 程式語法：所有 .js 檔和 HTML 裡的 <script>，有沒有打錯字、少括號（有的話網頁會整個壞掉）
   2. 教材資料（shared/lessons.js）：語詞裡有沒有這個字、干擾字有沒有包含答案本身等；
      語詞、例句裡有語音替換詞（shared/bpmf.js 的 BPMF_SAY）但還沒確認過的，提醒確認讀音
@@ -10,6 +10,7 @@
   4. 學生資料：repo 是公開的，不能有照片、備份檔、作答紀錄
   5. 文件長度：docs/ 裡的說明文件太長時提醒拆分（太長的文件 Claude 一次讀不完、容易讀到過時內容）
   6. 程式地圖：每個 .js 檔、每個儲存名稱都要寫在 docs/architecture.md（沒寫只提醒）；
+  7. 文件裡的指向：docs/ 和 CLAUDE.md 寫的「`檔名`」「`檔名`「某一節」」「`檔名` 第 N 節」要找得到（只提醒）
      只有入口檔案可以直接存取 localStorage、indexedDB（其他檔案直接用是錯誤，見 docs/refactor.md 規則 1）
 
 「錯誤」會讓檢查失敗（紅叉），要修好才合併；「提醒」只列出來，不會失敗。
@@ -174,6 +175,31 @@ const STORAGE_ENTRY = ['tools/literacy/data.js', 'tools/literacy/records.js', 's
 for (const f of files.filter(f => /\.(js|html)$/.test(f) && !f.startsWith('docs/') && !f.startsWith('shared/vendor/') && !STORAGE_ENTRY.includes(f))) {
   if (/\b(localStorage|sessionStorage|indexedDB)\s*\./.test(read(f)))
     err(f, `直接存取瀏覽器儲存空間。請改用入口（識字評量用 data.js 的 load、store；作答紀錄用 records.js；貼紙頭像用 Rewards），見 docs/refactor.md 規則 1`);
+}
+
+/* ---------- 7. 文件裡的指向 ----------
+   文件寫「見 `records.md`「某一節」」「`refactor.md` 第 3 節」時，檔案和那一節都要找得到，Claude 照著找才不會撲空
+   （2026-10-24 維護者要求：路線圖和文件改了很多次，確定讀的時候不會漏掉）。
+   檔名沒寫資料夾時，先找同一個資料夾，再找 docs/、repo 最上層。寫「原列」（已刪掉的舊位置）或「例如」（還沒做的計畫）的那一行不檢查。 */
+const findDoc = (from, p) => {
+  if (p.includes('/')) return [p, path.posix.join(path.posix.dirname(from), p)].find(x => files.includes(x));
+  return [path.posix.join(path.posix.dirname(from), p), 'docs/' + p, p].find(x => files.includes(x)) || files.find(x => x.endsWith('/' + p));
+};
+for (const f of files.filter(f => /^(docs\/[^/]+|CLAUDE)\.md$/.test(f))) {
+  read(f).split('\n').forEach((line, i) => {
+    if (/原列|例如/.test(line)) return;
+    const at = `${f} 第 ${i + 1} 行`;
+    for (const m of line.matchAll(/`((?:[\w.-]+\/)*[\w.-]+\.(?:md|js|html|py|xlsx|yml|css))`/g))
+      if (!/○|\*/.test(m[1]) && !findDoc(f, m[1])) warn(at, `寫到的檔案「${m[1]}」找不到（改名或刪掉了？）`);
+    for (const m of line.matchAll(/`((?:[\w.-]+\/)*[\w.-]+\.md)`\s*「([^」]{2,40})」/g)) {
+      const t = findDoc(f, m[1]);
+      if (t && !read(t).includes(m[2])) warn(at, `「${m[1]}「${m[2]}」」那一節找不到（節名改了或搬走了？）`);
+    }
+    for (const m of line.matchAll(/`((?:[\w.-]+\/)*[\w.-]+\.md)`\s*第\s*(\d+)\s*節/g)) {
+      const t = findDoc(f, m[1]);
+      if (t && !new RegExp(`^##\\s*${m[2]}[.、 ]`, 'm').test(read(t))) warn(at, `「${m[1]} 第 ${m[2]} 節」找不到`);
+    }
+  });
 }
 
 /* ---------- 結果 ---------- */
