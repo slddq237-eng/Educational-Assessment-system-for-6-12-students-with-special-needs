@@ -113,7 +113,7 @@ const unitN = m => m === "flu" ? "回合" : "題";
 /* =========================================================
    16. 老師專區：選單畫面
    ========================================================= */
-const chipRow = (list, cur, key, extra = () => "") => list.map(([v, t]) => `<button class="chip ${cur === v ? "on" : ""}" data-${key}="${v}" aria-pressed="${cur === v}" ${extra(v)}>${t}</button>`).join("");
+/* 一排可以點選的小按鈕（chipRow）在 data.js：設定畫面也會用到，平板不載入這個檔案（2026-10-24） */
 function kidsWithData(){ const have = new Set(records.filter(r => !r.quit).map(r => r.kid)); return kids.filter(k => have.has(k.code)); }
 
 function renderTeacher(){
