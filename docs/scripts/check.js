@@ -12,7 +12,7 @@
      CLAUDE.md 每則訊息都會載入，上限另外設得比較小
   6. 程式地圖：每個 .js 檔、每個儲存名稱都要寫在 docs/architecture.md（沒寫只提醒）；
   7. 文件裡的指向：docs/ 和 CLAUDE.md 寫的「`檔名`」「`檔名`「某一節」」「`檔名` 第 N 節」要找得到（只提醒）
-  8. 大檔案清單：超過 30KB 的程式檔要寫在 CLAUDE.md 的「省 token」清單（Claude 才知道先搜尋、不要整份讀）
+  8. 大檔案清單：超過 30KB 的程式檔、超過 20KB 的 docs 文件要寫在 CLAUDE.md 的「省 token」清單（Claude 才知道先搜尋、不要整份讀）
   9. 楷書字型缺字：畫面文字、教材裡的字要在楷書字型裡，沒有就提醒跑 make_kai.py
   10. 網頁下載量：每個頁面一打開要下載的程式和樣式（不含字型）超過上限就提醒，避免越來越慢
   11. 對外連線：程式裡新的外部網址要寫進 docs/architecture.md 第 7 節（也要更新 privacy.html）
@@ -220,6 +220,11 @@ const BIG = 30 * 1024;
 for (const f of files.filter(f => own(f) && /\.(js|html|css)$/.test(f) && !f.startsWith('shared/fonts/')))
   if (fs.statSync(path.join(ROOT, f)).size > BIG && !read('CLAUDE.md').includes(path.posix.basename(f)))
     warn(f, `超過 30KB（${Math.round(fs.statSync(path.join(ROOT, f)).size / 1024)}KB），請加進 CLAUDE.md「省 token」的大檔案清單`);
+/* docs/ 的文件超過約 20KB 也要列出（2026-10-24 維護者決定）；history、changelog 平常不讀，不用列 */
+const BIG_DOC = 20 * 1024;
+for (const f of files.filter(f => /^docs\/[^/]+\.md$/.test(f) && !/^docs\/(history|changelog)/.test(f)))
+  if (fs.statSync(path.join(ROOT, f)).size > BIG_DOC && !read('CLAUDE.md').includes(path.posix.basename(f)))
+    warn(f, `超過 20KB（${Math.round(fs.statSync(path.join(ROOT, f)).size / 1024)}KB），請加進 CLAUDE.md「省 token」的 docs 大檔案清單`);
 
 /* ---------- 9. 楷書字型缺字 ----------
    畫面文字（.html、tools/ 的 .js，不含註解）和教材（lessons.js、parts.js）的中文字，要在 shared/fonts/tw-kai.css 的範圍裡；

@@ -12,7 +12,7 @@
 ## 文件在哪裡
 
 - **每個檔案做什麼、檔案之間的關係**：[`docs/architecture.md`](docs/architecture.md)（程式地圖）
-- **交接文件索引、合作規則、改完要更新哪些檔案**：[`docs/README.md`](docs/README.md)
+- **交接文件索引**：[`docs/README.md`](docs/README.md)；**合作規則、改完要更新哪些檔案**：[`docs/rules.md`](docs/rules.md)
 - **某件事每次改了什麼、想法怎麼變**：[`docs/changelog.md`](docs/changelog.md)（變更紀錄）
 - 資料與隱私說明：[`privacy.html`](privacy.html)；資料來源與出處：[`about.html`](about.html)
 - 給新手的 GitHub 與 Claude Code 使用說明、怎麼讀這個 repo：claude.ai 文件「GitHub 新手使用說明」（需擁有者分享）
@@ -41,7 +41,7 @@
 
 ## 合作規則
 
-詳細規則只寫在一個地方：[`docs/README.md`](docs/README.md) 第 2 節（避免多份說法不一致）。最重要的三條：
+詳細規則只寫在一個地方：[`docs/rules.md`](docs/rules.md) 第 2 節（避免多份說法不一致）。最重要的三條：
 
 1. 新功能開分支、發 Pull Request，不直接改 main；開工就先發「草稿 PR」，開工前先看有沒有人在改同一批檔案。
 2. **不要把學生的真實姓名、照片或成績放進任何檔案**。這個 repo 是公開的。
