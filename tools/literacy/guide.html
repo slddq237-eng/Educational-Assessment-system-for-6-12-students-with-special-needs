@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-24b">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-24c">
 <style>
 /* 學扶前後測快速指南：給學習扶助、資源班老師的重點說明，可以直接列印成一張 A4。
    版面沿用識字評量的方格紙。每個步驟旁邊有「示範動畫」（demo.css、demo.js，分析教學也用）。 */
@@ -69,7 +69,7 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
   @page{size:A4;margin:12mm}
 }
 </style>
-<link rel="stylesheet" href="demo.css?v=2026-10-24b">
+<link rel="stylesheet" href="demo.css?v=2026-10-24c">
 </head>
 <body>
 <main>
@@ -86,7 +86,7 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
   <!-- 三個重點：一眼看完整個流程 -->
   <nav class="flow" aria-label="三個重點">
     <a href="#first"><small>① 只做一次，約 5 分鐘</small><b>建學生名單</b><span>選單 → 學生名單 → 填代號、名字、年級 → 本學期安排</span></a>
-    <a href="#each"><small>② 每次評量</small><b>四步就開始</b><span>評量目標 → 學扶前後測、現在是？、學生 → 課次 → 玩法 → 開始</span></a>
+    <a href="#each"><small>② 每次評量</small><b>四步就開始</b><span>評量目標、學扶前後測、現在是？ → 學生、課次 → 玩法 → 開始</span></a>
     <a href="#report"><small>③ 寫報告</small><b>看依時期比較</b><span>選單 → 老師專區 → 一位學生 → 正確率 → 依時期比較</span></a>
   </nav>
 
@@ -100,7 +100,7 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
           <li>按 <b class="k">本學期安排</b>，填學扶<b>每週幾節</b>、<b>開始日期</b>。圖表會在這一天畫一條線。</li>
           <li>按 <b class="k">完成</b>。</li>
         </ol>
-        <p class="note">字的大小、唸讀速度、打怪獸幾題跳一次動畫，在右上角「⚙ 細部設定」調整（選填）。</p>
+        <p class="note">字的大小、唸讀速度、遊戲幾題跳一次動畫，在右上角「⚙ 細部設定」調整（選填）。</p>
       </div>
       <figure class="walk" data-demo="first">
         <div class="screen" aria-hidden="true">
@@ -126,34 +126,33 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
       <div>
         <p>設定一次只出現一步，選好按 <b class="k">下一步</b>。</p>
         <ol>
-          <li><b>選評量目標</b>：例如 <b class="k">形音辨識</b>，按 <b class="k">下一步</b>。</li>
-          <li><b>選評量方式和學生</b>：點 <b class="k">學扶前後測</b>（這台電腦會記住，下次打開就停在這裡），現在是？選 <b class="k">教學前</b>、<b class="k">教學中</b> 或 <b class="k">教學後</b>；再點<b>學生</b>（最多 4 位輪流），按 <b class="k">下一步</b>。</li>
-          <li><b>選課次</b>：可以選好幾課，按 <b class="k">下一步</b>。</li>
-          <li><b>選主題和玩法</b>：學扶前後測的玩法照評量設定；請學生點一個 <b>主題</b>，按 <b class="k">開始</b> → 作答 → 抽一張貼紙。</li>
+          <li><b>選目標和評量方式</b>：例如 <b class="k">形音辨識</b>，再點 <b class="k">學扶前後測</b>（這台電腦會記住，下次打開就停在這裡），現在是？選 <b class="k">教學前</b>、<b class="k">教學中</b> 或 <b class="k">教學後</b>，按 <b class="k">下一步</b>。</li>
+          <li><b>選學生和課次</b>：點<b>學生</b>（大螢幕最多 4 位輪流），再選課次（可以選好幾課），按 <b class="k">下一步</b>。</li>
+          <li><b>選作答方式</b>：大螢幕或平板、自己玩或大家合作。學扶前後測只能大螢幕、每人各自作答，這一步會自動跳過。</li>
+          <li><b>選玩法和主題</b>：學扶前後測的玩法照評量設定；請學生點一個 <b>主題</b>，按 <b class="k">開始</b> → 作答 → 抽一張貼紙。</li>
         </ol>
         <p class="note">選項數、提示、答錯規則都已固定，不用設定。教學前不給提示。</p>
       </div>
       <figure class="walk" data-demo="each">
         <div class="screen" aria-hidden="true">
           <div class="lab">第 1 步　今天要評量哪一個目標？</div>
-          <div class="grp"><span class="m box" data-t="goal">形音辨識</span><span class="m box">部件重組</span><span class="m ghost" data-t="next1">下一步</span></div>
+          <div class="grp"><span class="m box" data-t="goal">形音辨識</span><span class="m box">部件重組</span></div>
           <div class="later" data-later="1">
-            <div class="lab">第 2 步　今天要做什麼？</div>
+            <div class="lab">今天要做什麼？</div>
             <div class="grp"><span class="m pc box on" data-on>課堂練習</span><span class="m pc box">小考檢測</span><span class="m pc box" data-t="rti">學扶前後測</span><span class="m pc box">計時挑戰</span></div>
             <div class="later" data-later="2">
               <div class="lab">現在是？</div>
-              <div class="grp"><span class="m" data-t="pre">教學前</span><span class="m">教學中</span><span class="m">教學後</span></div>
+              <div class="grp"><span class="m" data-t="pre">教學前</span><span class="m">教學中</span><span class="m">教學後</span><span class="m ghost" data-t="next1">下一步</span></div>
             </div>
-            <div class="lab">誰要做？</div>
-            <div class="grp"><span class="m" data-t="kid">小星</span><span class="m">小樹</span><span class="m ghost" data-t="next2">下一步</span></div>
           </div>
           <div class="later" data-later="3">
-            <div class="lab">第 3 步　練哪幾課？</div>
-            <div class="grp"><span class="m box" data-t="lesson">第 1 課</span><span class="m box">第 2 課</span><span class="m box">第 3 課</span><span class="m ghost" data-t="next3">下一步</span></div>
+            <div class="lab">第 2 步　誰要做？練哪幾課？</div>
+            <div class="grp"><span class="m" data-t="kid">小星</span><span class="m">小樹</span></div>
+            <div class="grp"><span class="m box" data-t="lesson">第 1 課</span><span class="m box">第 2 課</span><span class="m box">第 3 課</span><span class="m ghost" data-t="next2">下一步</span></div>
           </div>
           <div class="later" data-later="4">
-            <div class="lab">第 4 步　主題和玩法</div>
-            <div class="grp"><span class="m">一般模式</span><span class="m">打怪獸</span><span class="m">生字賓果</span><span class="m go" data-t="go" style="margin-left:auto">開始</span></div>
+            <div class="lab">第 4 步　玩法和主題（第 3 步自動跳過）</div>
+            <div class="grp"><span class="m">一般</span><span class="m">遊戲</span><span class="m">生字賓果</span><span class="m go" data-t="go" style="margin-left:auto">開始</span></div>
           </div>
           <span class="tag">示範畫面</span>
         </div>
@@ -232,14 +231,13 @@ const DEMOS = {
     {t:"done", say:"按「完成」就存好了", keep:true}
   ],
   each: [
-    {t:"goal", say:"第 1 步：選評量目標，例如「形音辨識」"},
-    {t:"next1", say:"按「下一步」", show:"1", keep:true},
-    {t:"rti", say:"第 2 步：點「學扶前後測」", show:"2"},
+    {t:"goal", say:"第 1 步：選評量目標，例如「形音辨識」", show:"1"},
+    {t:"rti", say:"再點「學扶前後測」", show:"2"},
     {t:"pre", say:"現在是？例如還沒開始教，選「教學前」"},
-    {t:"kid", say:"點要做的學生（最多 4 位）"},
-    {t:"next2", say:"按「下一步」", show:"3", keep:true},
-    {t:"lesson", say:"第 3 步：選課次（可以選好幾課）"},
-    {t:"next3", say:"按「下一步」", show:"4", keep:true},
+    {t:"next1", say:"按「下一步」", show:"3", keep:true},
+    {t:"kid", say:"第 2 步：點要做的學生（大螢幕最多 4 位）"},
+    {t:"lesson", say:"再選課次（可以選好幾課）"},
+    {t:"next2", say:"按「下一步」。學扶前後測只能大螢幕、每人各自作答，第 3 步自動跳過", show:"4", keep:true},
     {t:"go", say:"第 4 步：確認玩法，按「開始」交給學生作答", keep:true}
   ],
   report: [
@@ -252,6 +250,6 @@ const DEMOS = {
   ]
 };
 </script>
-<script src="demo.js?v=2026-10-24b"></script>
+<script src="demo.js?v=2026-10-24c"></script>
 </body>
 </html>

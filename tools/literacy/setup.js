@@ -1,6 +1,6 @@
 /* =========================================================
    識字評量：設定畫面（setup.js）
-   四個步驟（評量目標 → 評量方式和學生 → 課次 → 主題和玩法）、快速開始與進階設定、右邊的摘要，以及學生名單、教學日期、評量設定三個彈出面板。
+   四個步驟（目標和評量方式 → 學生和課次 → 作答方式 → 玩法和主題，2026-10-24 維護者改的順序）、快速開始與進階設定、右邊的摘要，以及學生名單、教學日期、評量設定三個彈出面板。
    ========================================================= */
 
 /* =========================================================
@@ -83,32 +83,34 @@ function rtiDays(k, code){
    但老師常常教完一陣子才做後測，日期會記錯，還會連帶改到一般評量的時機判斷。教學日期一律由老師在「教學日期」自己輸入。 */
 
 /* ---------- 四個步驟：一次只看一步（像生字賓果） ----------
-   1 選評量目標 → 2 選評量方式和學生 → 3 選課次 → 4 選主題和玩法（右邊的摘要和「開始」只在第 4 步出現）。
-   第 2 步要先選好學生、第 3 步要先選課次才能往下；上方的步驟標籤也可以直接點。 */
-const WSTEPS = ["選評量目標", "選評量方式和學生", "選課次", "選主題和玩法"];
+   1 選目標和評量方式（快速開始的卡片、進階的正式或練習）→ 2 選學生和課次 → 3 選作答方式（大螢幕、平板）和個人或合作 → 4 選玩法和主題
+   （2026-10-24 維護者改的順序：先決定「怎麼玩」，再決定「玩什麼」；右邊的摘要和「開始」只在第 4 步出現）。
+   每一步要先完成才能往下；第 3 步只剩一個選項時自動跳過（例如小考：只能大螢幕、固定個人）。上方的步驟標籤也可以直接點。 */
+const WSTEPS = ["選目標和評量方式", "選學生和課次", "選作答方式", "選玩法和主題"];
 let wstep = 1;
-/* 第 2 步還缺什麼（空字串＝可以往下） */
-function step2Miss(){
-  const n = selKids().length;
-  if(isQuick()){
-    if(state.preset === "rti" && !state.rti) return "請先選教學前、中、後";
-    const max = ANSWERS.find(x => x.id === state.answer).max;
-    return !n ? "請先點選要做的學生" : n > max ? `一次最多 ${max} 位學生` : "";
-  }
-  const a = ANSWERS.find(x => x.id === state.answer);
-  if(a.id === "qr" && state.kind === "formal") return "平板作答目前只能用在練習，正式評量請換別的作答模式";
-  return !n ? "請先點選要評量的學生" : n < a.min || n > a.max ? `「${a.name}」需要 ${a.min}～${a.max} 位學生，目前 ${n} 位` : "";
+/* 每一步還缺什麼（空字串＝可以往下） */
+const step1Miss = () => isQuick() && state.preset === "rti" && !state.rti ? "請先選教學前、中、後" : "";
+const step2Miss = () => !selKids().length ? (isQuick() ? "請先點選要做的學生" : "請先點選要評量的學生") : !state.lessons.length ? "請先選課次" : "";
+function step3Miss(){
+  const n = selKids().length, a = ANSWERS.find(x => x.id === state.answer);
+  if(a.id === "qr" && state.kind === "formal") return "平板作答目前只能用在練習，正式評量請換別的作答方式";
+  return n < a.min || n > a.max ? `「${a.name}」可以 ${a.min}～${a.max} 位學生，目前 ${n} 位` : "";
 }
+/* 能選的作答方式（快速開始只列大螢幕輪流、平板掃 QR code） */
+const answerList = () => ANSWERS.filter(a => !isQuick() || a.id === "turn" || a.id === "qr");
+const answerOff = a => a.off || (a.id === "qr" && state.kind === "formal" ? "目前只能練習" : "");
+/* 第 3 步可以跳過嗎：作答方式只有一個能選、而且個人或合作是固定的 */
+const skip3 = () => answerList().filter(a => !answerOff(a)).length === 1 && !!teamFixed() && !step3Miss();
 function renderWizard(){
-  const miss = step2Miss(), miss3 = state.lessons.length ? "" : "請先選課次";
+  const miss = [step1Miss(), step2Miss(), step3Miss()];
   /* 第 n 步能不能去：前面每一步都要完成 */
-  const can = n => !(n >= 3 && miss) && !(n >= 4 && miss3);
-  $("#wTabs").innerHTML = WSTEPS.map((t, i) => `<button class="wtab ${i + 1 < wstep ? "ok" : ""}" data-w="${i + 1}" ${i + 1 === wstep ? 'aria-current="step"' : ""} ${can(i + 1) ? "" : "disabled"}><span class="n">${i + 1}</span>${t}</button>`).join("");
+  const can = n => miss.slice(0, n - 1).every(m => !m);
+  $("#wTabs").innerHTML = WSTEPS.map((t, i) => `<button class="wtab ${i + 1 < wstep ? "ok" : ""}" data-w="${i + 1}" ${i + 1 === wstep ? 'aria-current="step"' : ""} ${can(i + 1) ? "" : "disabled"}><span class="n">${i + 1}</span>${t}${i === 2 && skip3() ? "<small>（不用選）</small>" : ""}</button>`).join("");
   $("#wTabs").querySelectorAll("button:not(:disabled)").forEach(b => b.onclick = () => showStep(+b.dataset.w));
   $("#wPrev").hidden = wstep === 1;
   $("#wNext").hidden = wstep === WSTEPS.length;
   $("#wNext").disabled = !can(wstep + 1);
-  $("#wNote").textContent = wstep === 2 ? miss : wstep === 3 ? miss3 : wstep === 4 ? "確認摘要後，按「開始」。" : "";
+  $("#wNote").textContent = wstep === 4 ? "確認摘要後，按「開始」。" : miss[wstep - 1];
 }
 function showStep(n){
   wstep = n;
@@ -116,8 +118,10 @@ function showStep(n){
   $("#layout").dataset.step = n;
   renderWizard();
 }
-$("#wPrev").onclick = () => { showStep(wstep - 1); $("#wTabs").scrollIntoView({block:"nearest"}); };
-$("#wNext").onclick = () => { showStep(wstep + 1); $("#wTabs").scrollIntoView({block:"nearest"}); };
+/* 上一步、下一步：第 3 步可以跳過時直接跳過 */
+const nextStep = d => { const n = wstep + d; return n === 3 && skip3() ? n + d : n; };
+$("#wPrev").onclick = () => { showStep(nextStep(-1)); $("#wTabs").scrollIntoView({block:"nearest"}); };
+$("#wNext").onclick = () => { showStep(nextStep(1)); $("#wTabs").scrollIntoView({block:"nearest"}); };
 
 /* 右上角「選單」：點了裡面的項目或點選單外面就收起來 */
 $("#topMenu .menulist").addEventListener("click", e => {
@@ -223,29 +227,29 @@ const playName = id => (PLAYS.find(p => p.id === id) || {}).name || "";
 function playText(){
   const c = current();
   if(!useRewards()) return "不用主題（評量設定）";
-  const base = willFight() ? `打怪獸（${selKids().length > 1 ? "大家合作" : "自己打"}）` : c.choices === "bingo" ? "生字賓果" : "一般模式";
+  const card = willFight() && state.themePick && gameCard(state.themePick);
+  const base = willFight() ? `遊戲${card ? `・${card.act}` : ""}（${team() === "coop" && selKids().length > 1 ? "大家合作" : "個人"}）` : c.choices === "bingo" ? "生字賓果" : "一般";
   const hp = heartsAllowed() && +settings.practiceHearts ? `・血量 ${settings.practiceHearts} 點` : "";
   return base + hp;
 }
 function renderPlay(){
   const c = current(), formal = c.formal, row = (t, body) => `<div class="playrow"><span class="tl">${ROW_ICONS[t] || ""}${t}</span><div>${body}</div></div>`;
-  $("#playHint").textContent = formal ? "正式評量的玩法照「評量設定」，從基線期起每次都一樣，這裡只顯示。" : "練習可以自由選玩法。最後請學生在下面點一個主題。";
+  $("#playHint").textContent = formal ? "正式評量的玩法照「評量設定」，從基線期起每次都一樣，這裡只顯示。" : "練習可以自由選玩法。選「遊戲」時，請學生在下面點一張遊戲卡片；其他玩法點一個主題。";
   const rows = [];
   if(formal){
-    const fid = willFight() ? "monster" : "color";
+    const fid = willFight() ? "game" : "color";
     rows.push(row("玩法", `<div class="locked"><span class="lock">固定</span>${useRewards() ? `<span class="playicon">${PLAYS.find(x => x.id === fid).icon}</span>` : ""}<span>${playText()}。<button class="linkbtn" data-open="set">到評量設定修改</button></span></div>`));
     rows.push(row("報讀", `<span class="note" style="margin:0">${state.goal === "4-1" ? "部件重組沒有報讀" : settings.formalRead ? "提示可以按喇叭念出來（評量設定）" : "不念（評量設定）"}</span>`));
   } else {
-    /* 不能用的玩法：流暢性模式只能一般模式（打怪獸要一題一題做完、賓果卡會改變選項版面） */
-    const why = id => c.flu && id !== "color" ? "流暢性模式不能用" : "";
-    const cur = c.flu ? "color" : settings.practicePlay;
+    /* 不能用的玩法寫原因（data.js 的 playWhy：流暢性只能一般、合作只能玩遊戲、多位學生各玩各的還不能玩遊戲） */
+    const why = playWhy, cur = playNow();
     /* 三張卡片：小圖示＋名稱＋一句話；不能用的卡片寫原因 */
     rows.push(row("玩法", `<div class="playcards">${PLAYS.map(x => `<button class="opt playcard ${cur === x.id ? "on" : ""}" data-play="${x.id}" aria-pressed="${cur === x.id}" ${why(x.id) ? "disabled" : ""}>
         <span class="playicon">${x.icon}</span><span><b>${x.name}</b><small>${why(x.id) || x.desc}</small></span></button>`).join("")}</div>`));
     if(heartsAllowed()){
       const hp = +settings.practiceHearts || 0;
       rows.push(row("血量", `<div class="group">${chipRow([["0", "無限"], ...HEART_CHOICES.map(n => [String(n), `${n} 點`])], String(hp), "hearts")}</div>
-        <p class="note">${hp ? `畫面上方一排紅心。答錯扣 1 點、連續答對 3 題補 1 點，用完就結束${selKids().length > 1 ? (willFight() ? "（大家共用）" : "（每人各自）") : ""}。` : "不限制答錯次數。"}</p>`));
+        <p class="note">${hp ? `畫面上方一排紅心。答錯扣 1 點、連續答對 3 題補 1 點，用完就結束${selKids().length > 1 ? (team() === "coop" ? "（大家共用）" : "（每人各自）") : ""}。` : "不限制答錯次數。"}</p>`));
     }
     rows.push(row("注音", `<div class="group">${chipRow([["0", "選項不加"], ["1", "選項加注音"]], settings.practiceBpmf ? "1" : "0", "bpmf")}</div>
       <p class="note">語詞、句子提示一律有注音。</p>`));
@@ -267,16 +271,20 @@ function hintsText(c){
   if(!own.length) return one(c.hints);
   return [`全部學生：${one(c.hints)}`, ...own.map(code => `${esc(kidLabel(kidBy(code)))}：${one(kidCfg(c, code).hints)}`)].join("<br>");
 }
-/* 主題卡片：請學生直接點（打怪獸時一定要有主題，沒有「不用主題」） */
+/* 主題卡片：請學生直接點。玩遊戲時改成遊戲卡片（主題・動作，例如「太空任務・打外星人」，data.js 的 GAME_CARDS），
+   點一張就同時選好主題和遊戲；玩遊戲一定要有主題，沒有「不用主題」 */
 function renderThemePick(){
   $("#themeSec").hidden = !useRewards();
   if(!useRewards()) return;
   const fight = willFight(), list = selKids().map(kidBy);
-  if(state.themePick === "none" && fight) state.themePick = "";
+  if(fight && !gameCard(state.themePick)) state.themePick = "";
+  $("#h8").textContent = fight ? "選一個喜歡的遊戲！" : "選一個喜歡的主題！";
+  const ids = fight ? GAME_CARDS.map(c => c.theme) : Themes.ids;
+  const NAME = id => fight ? `${Themes.THEMES[id].name}・${gameCard(id).act}` : Themes.THEMES[id].name;
   const LINE = id => fight ? Themes.THEMES[id].line : `可以得到${Themes.THEMES[id].name}的貼紙`;
   $("#pickWho").innerHTML = list.map(k => `<span class="pk">${Rewards.avatarHtml(k.code)}${esc(kidShow(k))}</span>`).join("");
-  $("#themes").innerHTML = Themes.ids.map(id => { const t = Themes.THEMES[id];
-    return `<button class="theme ${state.themePick === id ? "on" : ""}" data-skin="${id}" data-t="${id}" aria-pressed="${state.themePick === id}">${Themes.icon(id, t.stickers[0][0])}${esc(t.name)}<small>${esc(LINE(id))}</small></button>`; }).join("")
+  $("#themes").innerHTML = ids.map(id => { const t = Themes.THEMES[id];
+    return `<button class="theme ${state.themePick === id ? "on" : ""}" data-skin="${id}" data-t="${id}" aria-pressed="${state.themePick === id}">${Themes.icon(id, t.stickers[0][0])}${esc(NAME(id))}<small>${esc(LINE(id))}</small></button>`; }).join("")
     + (fight ? "" : `<button class="theme none ${state.themePick === "none" ? "on" : ""}" data-t="none" aria-pressed="${state.themePick === "none"}"><span style="font-size:72px;line-height:110px">☆</span>不用主題<small>一樣可以得到貼紙</small></button>`);
   $("#themes").querySelectorAll("button").forEach(b => b.onclick = () => { state.themePick = b.dataset.t; render(); });
 }
@@ -435,16 +443,24 @@ function renderQuiz(){
    目前只能練習（正式評量要等 A3 定案，見 docs/pending.md） */
 const qrOn = () => state.answer === "qr";
 function renderAnswers(){
-  const offOf = a => a.off || (a.id === "qr" && state.kind === "formal" ? "目前只能練習" : "");
-  /* 快速開始只列現在能用的兩種：大螢幕輪流、平板掃 QR code */
-  $("#answers").innerHTML = ANSWERS.filter(a => !isQuick() || a.id === "turn" || a.id === "qr").map(a => `<button class="opt ${state.answer===a.id?"on":""}" data-a="${a.id}" ${offOf(a)?"disabled":""} aria-pressed="${state.answer===a.id}">${a.name}<small>${offOf(a)?`${a.desc}（${offOf(a)}）`:a.desc}</small></button>`).join("");
+  const n = selKids().length;
+  $("#answerHint").textContent = `同一份題目可以用不同方式作答。這次有 ${n} 位學生。`;
+  /* 人數不合的作答方式不停用（老師可能要回第 2 步改學生），下方提醒會寫原因 */
+  $("#answers").innerHTML = answerList().map(a => `<button class="opt ${state.answer===a.id?"on":""}" data-a="${a.id}" ${answerOff(a)?"disabled":""} aria-pressed="${state.answer===a.id}">${a.name}<small>${answerOff(a) && !a.desc.includes(answerOff(a))?`${a.desc}（${answerOff(a)}）`:a.desc}</small></button>`).join("");
   $("#answers").querySelectorAll("button:not(:disabled)").forEach(b => b.onclick = () => { state.answer = b.dataset.a; render(); });
+}
+/* 個人或合作（第 3 步）：固定的情況只顯示原因（data.js 的 teamFixed） */
+const TEAMS = [["solo", "個人", "每位學生自己玩自己的"], ["coop", "合作", "大家輪流作答，一起完成同一個遊戲（合作時只能玩遊戲）"]];
+function renderTeam(){
+  const fixed = teamFixed(), cur = team();
+  $("#teams").innerHTML = fixed ? `<div class="locked"><span class="lock">固定</span><span>個人（${fixed}）</span></div>`
+    : TEAMS.map(([id, name, d]) => `<button class="opt ${cur === id ? "on" : ""}" data-team="${id}" aria-pressed="${cur === id}">${name}<small>${d}</small></button>`).join("");
+  $("#teams").querySelectorAll("[data-team]").forEach(b => b.onclick = () => { settings.practiceTeam = b.dataset.team; saveSettings(); render(); });
 }
 
 function renderKids(){
-  const a = ANSWERS.find(x => x.id === state.answer);
-  $("#kidsHintQ").textContent = a.id === "qr" ? `點選這次用平板作答的學生，最多 ${a.max} 位；每人用自己的平板或手機掃 QR code。` : `點選要做的學生，最多 ${a.max} 位輪流。`;
-  $("#answerHint").textContent = a.max < 99 ? `同一份題目可以用不同方式作答。「${a.name}」可選 ${a.min}～${a.max} 位學生。` : "同一份題目可以用不同方式作答。呈現模式可以全班一起，人數不限。";
+  const max = id => ANSWERS.find(x => x.id === id).max;
+  $("#kidsHintQ").textContent = `點選要做的學生。大螢幕輪流最多 ${max("turn")} 位；用平板作答最多 ${max("qr")} 位（第 3 步選）。`;
   $("#kids").innerHTML = kids.map(k => `<button class="chip kidchip ${state.kids.has(k.code)?"on":""}" data-k="${esc(k.code)}" aria-pressed="${state.kids.has(k.code)}">${Rewards.avatarHtml(k.code)}${esc(kidLabel(k))}<small>${gradeText(k)}</small></button>`).join("");
   $("#kids").querySelectorAll("button").forEach(b => b.onclick = () => { const k = b.dataset.k; state.kids.has(k) ? state.kids.delete(k) : state.kids.add(k); render(); });
 }
@@ -549,7 +565,7 @@ function renderSummary(){
     ...(useRewards() ? [["主題", themeText(), "請學生點一個主題"]] : []),
     ["課次", lessonText],
     ["題目", quizText],
-    ["評量時機", state.lessons.length && n && !ph.includes(null) ? ph.join("<br>") : null, n ? "請回第 3 步，在課次卡片設定教學日期" : "先選學生才能判斷"],
+    ["評量時機", state.lessons.length && n && !ph.includes(null) ? ph.join("<br>") : null, n ? "請回第 2 步，在課次卡片設定教學日期" : "先選學生才能判斷"],
     ["作答模式", a.name],
     ...(qrOn() ? [["回傳表單", settings.tabletForm ? "你自己的 Google 表單" : null, "請到「⚙ 細部設定 → 練習與遊戲」貼上 Google 表單網址"]] : []),
     ["學生", n ? (kidsOk ? `${selKids().map(c => esc(kidLabel(kidBy(c)))).join("、")}（${n} 位）` : null) : null, n ? `「${a.name}」需要 ${a.min}～${a.max} 位，目前 ${n} 位` : "還沒選"]
@@ -694,4 +710,4 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets()
 document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); if(t && t.dataset.open === "kids"){ renderKidSheet(); openSheet("#kidsSheet"); } });
 $("#openRecords").onclick = () => { renderRecSheet(); openSheet("#recSheet"); };
 
-function render(){ syncRti(); renderPresets(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }
+function render(){ syncRti(); renderPresets(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderTeam(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }

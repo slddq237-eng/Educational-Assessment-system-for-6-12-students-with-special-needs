@@ -270,7 +270,7 @@ function startSession(){
     tally: Object.fromEntries(list.map(k => [k, {n:0, first:0, passed:0, secs:[], wrong:0}])),
     quitArm: false
   };
-  G.game = gameFor(G);
+  G.game = gameFor(G); G.gameType = G.game ? (gameCard(G.theme) || {}).type || "" : "";
   setupHearts(G);
   /* 打怪獸的戰利品（大魚、恐龍等）開始前就決定好，打敗怪獸後就是這次的貼紙 */
   if(G.game) G.prize = Themes.drawSticker(G.theme, Rewards.owned(list[0], G.theme));
@@ -516,7 +516,7 @@ function endItem(passed, correctSec, revealed){
     phase: phaseFor(it.kid, b, n) || "", daysAfter: state.rtiKeys.includes(key(b,n)) ? rtiDays(key(b,n), it.kid) : state.manual[key(b,n)] ? "" : (a.days ?? ""),
     /* 當時的條件（研究用的進階分析會用到）：提示設定、答錯規則用代碼存，Excel 再翻成中文 */
     hintSet: G.per[it.kid].hints.join(","), rule: G.noHelp ? "none" : G.per[it.kid].rule.join(","), layout: G.layout,
-    theme: G.theme, game: G.game, reward: "", rewardCode: "", bpmf: !!G.bpmf,   /* 抽到的貼紙：文字和代號（做完時由 collect.js 的 drawStickers 填）*/
+    theme: G.theme, game: G.game, gameType: G.gameType, reward: "", rewardCode: "", bpmf: !!G.bpmf,   /* 抽到的貼紙：文字和代號（做完時由 collect.js 的 drawStickers 填）*/
     read: !!G.read, readUsed: [...cur.reads].map(id => ({word:"語詞", sent:"句子"})[id]).join("、"),   /* 報讀：這次有沒有開、這題按了哪幾種提示的喇叭 */
     fontScale: settings.fontScale, rate: settings.rate, sfx: settings.sfx,
     aim: G.mode === "flu" ? G.aim : "",   /* 流暢性的目標（每分鐘幾個），老師專區畫目標線用 */
@@ -598,7 +598,8 @@ function heartsOut(code){
 
 /* ---------- 3-3 打怪獸 ----------
    正確率模式、選項卡、有選主題才可以玩；練習看第 4 步的玩法（預設打怪獸），正式評量看評量設定（預設不玩）。
-   一位學生＝自己打（solo），多位學生輪流＝大家合作打同一隻（coop）。
+   一位學生＝自己打（solo）；多位學生輪流、第 3 步選合作＝大家合作打同一隻（coop）；多位學生各玩各的還不能玩。
+   遊戲分對抗類、建築類（data.js 的 GAME_CARDS），紀錄的 gameType 記是哪一類。
    場景只在「題目之間」出現：開始前一段、每做完幾題一段（固定 1.8 秒），最後一題做完是打敗怪獸。
    幾題一段看細部設定的 sceneEvery（預設 3 題，2026-10-22 維護者決定：每題都跳會打斷注意力）；合作時算全隊輪流的題數。
    以下只改練習；正式評量開了打怪獸時，維持原本的每題一次、不論對錯都前進（正式評量的條件由 A3 一起決定）。
@@ -606,13 +607,14 @@ function heartsOut(code){
    最後一律打敗怪獸、拿到貼紙（鼓勵參與），但蛋糕高度、外星人剩的血，照答對的題數呈現。
    作答時看不到場景，選項的版面和沒玩時完全一樣。 */
 const SCENE_MS = 1800;
-const GAMES = {solo:"打怪獸（個人）", coop:"打怪獸（合作）"};
-const gameName = g => GAMES[g] || "無";
+/* Excel 的「遊戲玩法」：game＝個人 solo／合作 coop，gameType＝對抗類 fight／建築類 build（2026-10-24 起才有，以前都叫打怪獸） */
+const TEAM_NAME = {solo:"個人", coop:"合作"};
+const gameName = r => !r.game ? "無" : `${r.gameType ? `遊戲・${GAME_TYPES[r.gameType] || r.gameType}` : "打怪獸"}（${TEAM_NAME[r.game] || r.game}）`;
 const gameAllowed = () => state.mode === "acc" && !bingoOK(current());
 function gameFor(g){
   if(g.mode !== "acc" || g.layout !== "cards" || !g.theme || !window.Scenes || !Scenes[g.theme]) return "";
-  if(g.kind === "formal" ? !(settings.formalTheme && settings.formalGame) : settings.practicePlay !== "monster") return "";
-  return g.kids.length > 1 ? "coop" : "solo";
+  if(g.kind === "formal" ? !(settings.formalTheme && settings.formalGame) : playNow() !== "game") return "";
+  return g.kids.length < 2 ? "solo" : team() === "coop" ? "coop" : "";   /* 多位學生各玩各的還不能玩遊戲 */
 }
 const sceneEvery = () => G.kind === "formal" ? 1 : +settings.sceneEvery || 3;   /* 正式評量維持每題一次（A3 討論前不改） */
 /* 場景上方的一行字：答對 k 題時做了什麼；都沒答對時的「再加油」 */

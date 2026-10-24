@@ -96,7 +96,7 @@ const COLS = [
   ["答錯規則", r => r.rule === undefined ? "未記錄" : r.rule === "none" ? "答錯就記錯" : r.rule.split(",").map(x => RULE_SHORT[x] || x).join("→")],
   ["第一次作答秒數", r => r.firstSec], ["答對秒數", r => r.correctSec ?? ""],
   ["評量時機", r => r.phase], ["教學後天數", r => r.daysAfter],
-  ["主題", r => r.theme ? themeName(r.theme) : "無"], ["遊戲玩法", r => gameName(r.game)], ["選項注音", r => r.bpmf ? "有" : "無"], ["報讀（當時設定）", r => r.read ? "開" : "關"], ["按了報讀", r => r.readUsed || "無"], ["血量（開始時）", r => r.hpMax || ""], ["血量（這題後剩下）", r => r.hpMax ? r.hp : ""], ["獎勵", r => r.reward || "無"], ["獎勵代號", r => r.rewardCode || ""],
+  ["主題", r => r.theme ? themeName(r.theme) : "無"], ["遊戲玩法", r => gameName(r)], ["選項注音", r => r.bpmf ? "有" : "無"], ["報讀（當時設定）", r => r.read ? "開" : "關"], ["按了報讀", r => r.readUsed || "無"], ["血量（開始時）", r => r.hpMax || ""], ["血量（這題後剩下）", r => r.hpMax ? r.hp : ""], ["獎勵", r => r.reward || "無"], ["獎勵代號", r => r.rewardCode || ""],
   ["中途結束（不列入分析）", r => yesNo(r.quit)],
   ["作答字的大小", r => r.fontScale ? (FONT_SIZES.find(f => f[0] === r.fontScale) || [, r.fontScale])[1] : "未記錄"],
   ["唸讀速度", r => r.rate ?? "未記錄"], ["流暢目標（每分鐘）", r => r.aim || ""], ["顯示計時", r => r.clock === undefined ? "未記錄" : yesNo(r.clock)], ["音效", r => r.sfx === undefined ? "未記錄" : r.sfx ? "開" : "關"],
@@ -216,9 +216,9 @@ $("#recRestore").onchange = async e => {
   } else if(kind === "wordsets"){
     const plan = wsImportPlan(data.sets);
     text = `這是 ${savedDay(data)}存的字組檔，有 ${Object.keys(data.sets || {}).length} 課：${esc(Object.values(data.sets || {}).map(v => v.name).filter(Boolean).join("、"))}。字組檔沒有學生資料。`
-      + (plan.skip.length ? `<br><span class="warn">${esc(plan.skip.join("、"))}：這台電腦的字組已經用在正式評量，不會被換掉（要換，請先在第 3 步按「重新開始一組」再匯入）。</span>` : "")
+      + (plan.skip.length ? `<br><span class="warn">${esc(plan.skip.join("、"))}：這台電腦的字組已經用在正式評量，不會被換掉（要換，請先在第 2 步按「重新開始一組」再匯入）。</span>` : "")
       + (plan.none.length ? `<br>${esc(plan.none.join("、"))}：這個版本的網頁沒有這一課的字，會略過。` : "");
-    doIt = () => { wsImport(plan); render(); return `已匯入 ${plan.ok.length} 課的字組${plan.skip.length ? `，${plan.skip.length} 課沒有換掉` : ""}。到第 3 步選課次就會看到。`; };
+    doIt = () => { wsImport(plan); render(); return `已匯入 ${plan.ok.length} 課的字組${plan.skip.length ? `，${plan.skip.length} 課沒有換掉` : ""}。到第 2 步選課次就會看到。`; };
   } else if(kind === "tablet"){
     const have = new Set(records.map(recKey)), add = data.records.filter(r => !have.has(recKey(r)));
     const unknown = [...new Set(data.records.map(r => r.kid))].filter(c => !kidBy(c));
