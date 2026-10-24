@@ -43,17 +43,46 @@ const TURN_STYLES = [["chime","畫面＋提示音（預設）"],["voice","畫面
 const LIMITS = [["30","30 秒"],["60","1 分鐘"],["120","2 分鐘"]];
 const CHOICES = [["3","3 個"],["4","4 個"],["6","6 個"]];
 const choiceText = c => c === "bingo" ? "生字賓果卡" : `${c} 個選項`;
-/* 練習的玩法（第 4 步選）：正式評量看「評量設定」（打怪獸開或關），生字賓果只在練習
+/* 練習的玩法（第 4 步選）：一般、遊戲、賓果三個按鈕（2026-10-24 維護者決定）；正式評量看「評量設定」（遊戲開或關），生字賓果只在練習
    icon：第 4 步卡片上的小圖示（自己畫的 SVG，不用圖片檔）；desc：卡片上的一句話說明 */
 const ICON_LINE = `stroke="#1f3d36" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`;
 const PLAYS = [
   {id:"color",   name:"一般模式", desc:"沒有遊戲。作答畫面換成主題的顏色，做完拿貼紙",
    icon:`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 7C18 7 7 17 7 31c0 13 10 24 22 24 4 0 6-2 6-5 0-2-1-3-1-5 0-3 2-5 5-5h6c8 0 13-6 13-13C58 16 47 7 32 7z" fill="#f6dfb4" ${ICON_LINE}/><circle cx="20" cy="27" r="5" fill="#d64534"/><circle cx="31" cy="17" r="5" fill="#2a78d6"/><circle cx="44" cy="21" r="5" fill="#2c7a69"/><circle cx="21" cy="41" r="5" fill="#e0a21b"/></svg>`},
-  {id:"monster", name:"打怪獸",   desc:"每做完一題就攻擊怪獸，全部做完打敗牠（多人時大家合作）",
+  {id:"game",    name:"遊戲",     desc:"下面選一張遊戲卡片：打外星人、釣大魚、孵恐龍蛋、做蛋糕",
    icon:`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M19 22l-5-11M45 22l5-11" ${ICON_LINE}/><ellipse cx="32" cy="38" rx="23" ry="20" fill="#8fd16a" ${ICON_LINE}/><circle cx="32" cy="32" r="8" fill="#fff" ${ICON_LINE}/><circle cx="33" cy="33" r="3.5" fill="#1f3d36"/><path d="M21 45q11 9 22 0z" fill="#fff" ${ICON_LINE}/><path d="M27 47l2 4 2-4M33 47l2 4 2-4" fill="none" stroke="#1f3d36" stroke-width="2"/></svg>`},
   {id:"bingo",   name:"生字賓果", desc:"生字排成賓果卡，聽到哪個字就點哪個，連成一線有慶祝",
    icon:`<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="7" y="7" width="50" height="50" rx="8" fill="#fff" ${ICON_LINE}/><path d="M23.7 7v50M40.3 7v50M7 23.7h50M7 40.3h50" stroke="#1f3d36" stroke-width="2"/><circle cx="15.3" cy="15.3" r="5.5" fill="#d64534"/><circle cx="32" cy="32" r="5.5" fill="#d64534"/><circle cx="48.7" cy="48.7" r="5.5" fill="#d64534"/><path d="M11 11l42 42" stroke="#e0a21b" stroke-width="3" stroke-linecap="round" opacity=".85"/></svg>`}
 ];
+/* ---------- 玩法相容表（開發路線圖 B9，2026-10-24 維護者決定） ----------
+   「遊戲」在程式裡分兩類：對抗類（答對累積進度、最後擊敗目標）、建築類（答對疊一層、最後完成作品），動畫照這兩類做。
+   學生看到的是遊戲卡片（主題・動作），點一張就同時選好主題和遊戲；前台不顯示分類名稱。
+   之後加新的遊戲或主題：在 GAME_CARDS 加一列，能不能用的規則都寫在 playWhy。
+   （現在一個主題一張卡片，卡片用主題代號辨認；之後同一個主題要有兩種遊戲時，卡片要另外給代號。） */
+const GAME_TYPES = {fight:"對抗類", build:"建築類"};
+const GAME_CARDS = [
+  {theme:"space",   type:"fight", act:"打外星人"},
+  {theme:"ocean",   type:"fight", act:"釣大魚"},
+  {theme:"dino",    type:"fight", act:"孵恐龍蛋"},
+  {theme:"dessert", type:"build", act:"做蛋糕"}
+];
+const gameCard = theme => GAME_CARDS.find(c => c.theme === theme);
+/* 個人或合作（第 3 步）：平板、正式評量（2026-10-24 決定：每位學生要獨立作答）、只有一位學生時固定個人；
+   其他（練習、大螢幕輪流、2 位以上）由老師選，存在 settings.practiceTeam */
+const teamFixed = () => state.answer === "qr" ? "平板作答每人一台，固定個人" : state.kind === "formal" ? "正式評量每位學生獨立作答，固定個人"
+  : state.mode === "flu" ? "流暢性模式每人輪流一回合，固定個人" : selKids().length < 2 ? "只有一位學生，固定個人" : "";
+const team = () => teamFixed() ? "solo" : settings.practiceTeam;
+/* 某個玩法這次能不能用；不能用時回傳原因（設定畫面把卡片變灰並寫出來），能用回傳空字串 */
+function playWhy(id){
+  const flu = state.mode === "flu", coop = team() === "coop";
+  if(id === "color") return coop ? "合作只能玩遊戲" : "";
+  if(flu) return "流暢性模式不能用";
+  if(id === "game") return !coop && selKids().length > 1 && state.answer === "turn" ? "多位學生各玩各的還不能玩遊戲（之後做），要玩請選合作" : "";
+  if(id === "bingo") return coop ? "合作賓果之後再做" : "";
+  return "";
+}
+/* 這次實際用的玩法：選的不能用時，改用第一個能用的 */
+const playNow = () => !playWhy(settings.practicePlay) ? settings.practicePlay : PLAYS.map(p => p.id).find(id => !playWhy(id)) || "color";
 /* 第 4 步其他列的小圖示：血量（紅心，和作答畫面一樣）、注音、報讀（喇叭） */
 const ROW_ICONS = {
   "血量": `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z" fill="#d64534"/></svg>`,
@@ -135,8 +164,9 @@ const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove
   /* 作答時右上角顯示計時：練習預設顯示；正式評量預設不顯示（可能讓學生緊張、影響反應時間），在評量設定打開 */
   clockPractice:true, clockFormal:false,
   /* 打怪獸（3-3）：正式評量預設不玩，在評量設定打開，從基線期起維持同一個設定。
-     練習的玩法在第 4 步選（practicePlay：一般模式 color／打怪獸 monster／生字賓果 bingo，預設打怪獸） */
-  formalGame:false,
+     練習的玩法在第 4 步選（practicePlay：一般 color／遊戲 game／生字賓果 bingo，預設遊戲）；
+     多位學生在大螢幕輪流時個人或合作（practiceTeam：solo／coop，預設合作） */
+  formalGame:false, practiceTeam:"coop",
   /* 練習打怪獸：每做完幾題跳一次動畫（細部設定 → 練習與遊戲；預設 3 題，2026-10-22 維護者決定） */
   sceneEvery:"3",
   /* 血量模式（3-3b，只在練習）：開始前選幾點血量，0＝不用 */
@@ -148,7 +178,8 @@ const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove
   practiceRead:true, formalRead:false},
   load("literacy-settings", {}));
 /* 以前存的「打怪獸要不要玩」（practiceGame）換成新的玩法設定 */
-if(!settings.practicePlay) settings.practicePlay = settings.practiceGame === false ? "color" : "monster";
+if(!settings.practicePlay) settings.practicePlay = settings.practiceGame === false ? "color" : "game";
+if(settings.practicePlay === "monster") settings.practicePlay = "game";   /* 2026-10-24 以前叫「打怪獸」 */
 delete settings.practiceGame;
 const saveSettings = () => store("literacy-settings", settings);
 
@@ -187,7 +218,7 @@ const teach = load("literacy-teach", {});
 const saveTeach = () => store("literacy-teach", teach);
 /* 某位學生在某一課實際用的教學日期：有個別設定就用個別的，沒有就用全班預設 */
 const teachFor = (k, code) => { const t = teach[k] || {}; return (code && t.kids && t.kids[code]) || t; };
-/* 這次手動指定的評量時機（學扶前後測卡片、或第 3 步「這次全部改為」）；學扶的「教學後」要看每位學生自己的結束日 */
+/* 這次手動指定的評量時機（學扶前後測卡片、或第 2 步「這次全部改為」）；學扶的「教學後」要看每位學生自己的結束日 */
 const manualFor = (code, k) => state.rtiKeys && state.rtiKeys.includes(k) ? rtiPhaseFor(k, code) : state.manual[k];
 
 const state = {
@@ -266,7 +297,7 @@ function current(){
   const noHelp = flu || base;
   return {
     formal, flu, base, noHelp,
-    choices: formal || flu ? settings.choices : settings.practicePlay === "bingo" ? "bingo" : state.pChoices,
+    choices: formal || flu ? settings.choices : playNow() === "bingo" ? "bingo" : state.pChoices,
     hints: noHelp ? [] : fitHints(state.goal, formal ? settings.hints : HINT_ORDER.filter(h => state.pHints.has(h))),
     rule: noHelp ? null : (formal ? settings.rule : state.pRule)
   };

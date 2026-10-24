@@ -13,8 +13,10 @@
 /* 這次要不要用主題和貼紙：練習一定用；正式評量看「評量設定」（預設要用） */
 const useRewards = () => state.kind !== "formal" || settings.formalTheme;
 const themeName = id => (Themes.THEMES[id] || {}).name || "無";
-/* 這次會不會打怪獸（還沒選主題前先判斷；要打怪獸就一定要有主題，場景跟著主題） */
-const willFight = () => gameAllowed() && useRewards() && (state.kind === "formal" ? !!settings.formalGame : settings.practicePlay === "monster");
+/* 這次會不會玩遊戲（還沒選主題前先判斷；玩遊戲就一定要有主題，場景跟著主題）。
+   多位學生各玩各的還不能玩遊戲（正式評量固定個人，所以正式評量只有一位學生或平板時才玩） */
+const willFight = () => gameAllowed() && useRewards() && (state.kind === "formal"
+  ? !!settings.formalGame && (state.answer === "qr" || selKids().length < 2) : playNow() === "game");
 
 function chooseTheme(){
   state.theme = useRewards() && state.themePick !== "none" ? state.themePick : "";

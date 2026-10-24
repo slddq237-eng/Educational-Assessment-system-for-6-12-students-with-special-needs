@@ -15,7 +15,7 @@
   - 第 0 課＝課前單元（例如康軒一上「真簡單」數字一到十），畫面直接顯示單元名稱；課次可有 `title`。課次設 `sayChar: true` 時，題目只唸字本身、不唸「語詞的字」（2026-10-23 康軒一上「真簡單」，維護者要求；紀錄的 `word` 欄仍記這個字的語詞，用在「詞帶字」提示）。
 - 學生名單、教學日期、評量設定：瀏覽器 localStorage（`literacy-kids`、`literacy-teach`、`literacy-settings`、`literacy-ui`）。
 - 學生的貼紙收藏與頭像：瀏覽器 IndexedDB（資料庫 `platform-rewards`、store `kids`，以學生代號為鍵），平台共用，見 `shared/rewards.js`。收藏存貼紙代號（例如 `ocean-03`，2026-10-24 起，見 `game-design.md`）。主題與貼紙圖形在 `shared/themes.js`、`shared/themes.css`（取自賓果，賓果本身未改）。
-- 作答紀錄：瀏覽器 IndexedDB（資料庫 `literacy`、store `records`），每題一筆，欄位見 `tools/literacy/records.js` 的 COLS（2026-10-24 共 52 欄，匯出 Excel 的欄位和它一致）；超過 30 天沒備份會提醒，以前學年可以封存（2026-10-20）。2026-10-20 起新增 `hintSet`（當時的提示設定）、`rule`（答錯規則，`none`＝答錯就記錯）、`layout`、`theme`、`game`、`reward`；2026-10-24 新增 `rewardCode`（抽到的貼紙代號，Excel「獎勵代號」，只加新欄位、紀錄格式仍是第 2 版）；舊紀錄沒有這些欄位，Excel 顯示「未記錄」或「無」。
+- 作答紀錄：瀏覽器 IndexedDB（資料庫 `literacy`、store `records`），每題一筆，欄位見 `tools/literacy/records.js` 的 COLS（2026-10-24 共 52 欄，匯出 Excel 的欄位和它一致）；超過 30 天沒備份會提醒，以前學年可以封存（2026-10-20）。2026-10-20 起新增 `hintSet`（當時的提示設定）、`rule`（答錯規則，`none`＝答錯就記錯）、`layout`、`theme`、`game`、`reward`；2026-10-24 新增 `rewardCode`（抽到的貼紙代號，Excel「獎勵代號」）和 `gameType`（遊戲是對抗類 fight 或建築類 build，Excel 併進「遊戲玩法」欄），都只加新欄位、紀錄格式仍是第 2 版；舊紀錄沒有這些欄位，Excel 顯示「未記錄」或「無」。
 - **紀錄格式版本**（2026-10-21 起，`tools/literacy/data.js` 的 `RECORD_FORMAT`）：每筆紀錄記 `fmt`（目前第 2 版）和作答裝置 `device`（電腦／平板／手機）；第 1 版＝2026-10-21 以前、沒有 `fmt` 的紀錄。規則：只加新欄位、不改舊欄位的意思；真的要改意思時版本加 1，並寫在這裡。第 3 版預計和 A8 定案一起做（見下方「連帶變更」）。
 - 識字評量的程式分成 `data.js`、`setup.js`、`records.js`、`play.js`、`collect.js`、`teacher.js`、`pivot.js`、`app.js`，載入順序固定（見 `app.js` 開頭）。
 - 老師專區的選單狀態存在 localStorage `literacy-teacher`、進階分析在 `literacy-pivot`、「我的比較」在 `literacy-pivots`。流暢性紀錄另記 `aim`（目標每分鐘幾個）。
