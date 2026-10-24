@@ -147,6 +147,7 @@ const TABLET_FORM = TABLET && !TABLET.bad ? {id:TABLET.f, entry:TABLET.e} : null
 /* 同一個分頁再掃一次 QR code（或打開另一個 QR 網址）：網址只有 # 後面不同，瀏覽器不會重新載入，
    要自己重新載入，才會回到讀取畫面和選名字（data.js 只在打開網頁時讀網址） */
 addEventListener("hashchange", () => { if(/^#t=/.test(location.hash)) location.reload(); });
+const TAB_MIN_LOAD = 1000;   /* 等待畫面最少顯示幾毫秒 */
 function tabletStart(){
   showScreen("#tabPick");
   document.documentElement.classList.remove("tabpre");   /* 換成程式控制的畫面（index.html 開頭的等待畫面） */
@@ -166,7 +167,10 @@ function tabletStart(){
   tabletKids();
   /* 讀取條：先下載這次要用的字型（play.js 的 sessionText、loadFonts，最多等 10 秒），下載完才出現名字 */
   const faces = fontsToLoad(sessionText(state.lessons, !!settings.practiceBpmf));
-  const ready = () => { $("#tpLoad").hidden = true; $("#tabPick").classList.remove("loading"); tpList(); };
+  /* 等待畫面至少顯示 1 秒（2026-10-24 維護者決定：字型下載過的平板會直接跳過，學生每次看到的流程不一樣）；
+     讀取條先跑滿，再出現名字。從網頁打開算起（index.html 開頭的等待畫面那時就出現了） */
+  const ready = () => { setBar("#tpBar", 1, 1);
+    setTimeout(() => { $("#tpLoad").hidden = true; $("#tabPick").classList.remove("loading"); tpList(); }, Math.max(300, TAB_MIN_LOAD - performance.now())); };
   if(!faces.length) return ready();
   $("#tpPic").innerHTML = loadPic(state.themePick);   /* 讀取中（#tabPick 一開始就有 loading）：只看得到圖片和讀取條 */
   loadFonts(faces, (n, all) => setBar("#tpBar", n, all)).then(ready);
