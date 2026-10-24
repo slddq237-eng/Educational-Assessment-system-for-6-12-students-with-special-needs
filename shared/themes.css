@@ -63,3 +63,11 @@
 .stk.lgd{box-sizing:border-box;border:3px solid #e0a800;border-radius:14px;padding:4px 2px;background:linear-gradient(#fff8d6,#fff);box-shadow:0 0 0 3px #fff3b0}
 .stk .legendtag{font-weight:700;color:#b07800;letter-spacing:.2em}
 .stk .evo{font-size:12px;color:#7a5cc0}
+/* 貼紙簿的抽中機率：彩色長條（照比例分段）＋文字 */
+.odds{margin:0 0 12px}
+.oddsbar{display:flex;height:14px;border-radius:7px;overflow:hidden;border:2px solid #2d2a26;max-width:520px}
+.oddsbar span{display:block}
+.oddstxt{margin:6px 0 0;font-size:15px;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center}
+.oddstxt i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:-1px;border:1px solid #2d2a26}
+.oddstxt span{white-space:nowrap}
+.oddstxt .evo{color:#7a5cc0}

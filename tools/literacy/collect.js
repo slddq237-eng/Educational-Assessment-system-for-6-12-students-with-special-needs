@@ -125,6 +125,13 @@ function showReveals(list){
    14. 貼紙簿（學生自己看：選名字 → 看四個主題收集了哪些）
    ========================================================= */
 let bookKid = null;
+/* 抽中機率（2026-10-24 維護者決定：寫百分比，加一條照比例分段的彩色長條；長條只是圖，文字才是內容） */
+const ODDS_COLOR = {1:"#6cc66a", 2:"#4fa8f0", 3:"#a77cf0", 4:"#f5c02e"};
+function oddsHtml(theme){
+  const odds = Themes.tierOdds(theme), evo = Themes.LISTS[theme].filter(d => d.evo).length;
+  return `<div class="odds"><div class="oddsbar" aria-hidden="true">${odds.map(o => `<span style="flex:${o.pct};background:${ODDS_COLOR[o.stars]}"></span>`).join("")}</div>
+    <p class="oddstxt">抽中機會：${odds.map(o => `<span><i style="background:${ODDS_COLOR[o.stars]}"></i>${"★".repeat(o.stars)} ${o.label} ${o.pct}%</span>`).join("")}${evo ? `<span class="evo">有 ${evo} 張要進化才拿得到，抽不到</span>` : ""}</p></div>`;
+}
 /* 貼紙簿的一格（2026-10-24 維護者決定）：收集到的是彩色圖和名稱；還沒收集的——
    一、二星是灰色圖和名稱，三星是全黑剪影、名稱「???」，四星（傳說）再加金框和「傳說」字樣；只能進化的另外寫「進化才能得到」 */
 function bookCard(theme, i, name, n){
@@ -145,7 +152,7 @@ function renderBook(){
     const t = Themes.THEMES[id], cnt = {};
     (st[id] || []).forEach(c => { const f = Themes.findCode(c); if(f && f.theme === id) cnt[f.idx] = (cnt[f.idx] || 0) + 1; });
     const have = Object.keys(cnt).length;
-    return `<section class="card booksec"><h2>${esc(t.name)}　<small>${have} / ${t.stickers.length}（星星越多越稀有）</small></h2>
+    return `<section class="card booksec"><h2>${esc(t.name)}　<small>${have} / ${t.stickers.length}（星星越多越稀有）</small></h2>${oddsHtml(id)}
       <div class="stkrow">${t.stickers.map((s, i) => bookCard(id, i, s[1], cnt[i])).join("")}</div></section>`;
   }).join("");
 }

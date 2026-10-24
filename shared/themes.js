@@ -309,6 +309,13 @@ function findCode(code){
   for(const id of Object.keys(THEMES)){ const i = THEMES[id].stickers.findIndex(s => s[2] === code); if(i >= 0) return {theme:id, idx:i}; }
   return null;
 }
+/* 這個主題實際的抽中機率（貼紙簿、扭蛋機的說明用）：只算這個主題抽得到的星等，換算成百分比；
+   和 drawSticker 用同一張 TIER_ODDS，改機率時說明會跟著變 */
+function tierOdds(theme){
+  const L = LISTS[theme] || [], tiers = Object.keys(TIER_ODDS).map(Number).filter(t => L.some(d => d.stars === t && !d.evo));
+  const tot = tiers.reduce((a, t) => a + TIER_ODDS[t], 0);
+  return tiers.map(t => ({stars:t, label:RARE_LABEL[t], pct:Math.round(TIER_ODDS[t] / tot * 1000) / 10}));
+}
 /* 星等、星等名稱、是不是只能進化 */
 const stars = (theme, i) => (LISTS[theme] && LISTS[theme][i] || {}).stars || 0;
 const rareLabel = (theme, i) => RARE_LABEL[stars(theme, i)] || "";
@@ -368,7 +375,7 @@ window.Themes = {
   THEMES, GACHA, GACHA_VERB, RARE_GLOW,
   FISH, DINOS, fishBody, dinoSvg,   /* 打怪獸場景要畫大魚和恐龍（識字評量 scenes.js） */
   ids: Object.keys(THEMES),
-  LISTS, RARE_LABEL, TIER_ODDS,
+  LISTS, RARE_LABEL, TIER_ODDS, tierOdds,
   icon, stickerSvg, drawSticker, stickerName, codeOf, findCode, backdrop, stars, rareLabel, isEvo
 };
 })();
