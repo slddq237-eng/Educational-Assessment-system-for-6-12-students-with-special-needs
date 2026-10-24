@@ -270,7 +270,7 @@ const THEMES = {
     stickers:FISH.map(d=>[d.color,d.name,d.code]) },
   space:{ name:"太空任務", line:"勇士出擊，打敗外星人！", monster:"搗蛋外星人", coopWin:"大家一起打敗外星人！", winBanner:"打敗外星人！",
     stickers:SPACE.map(d=>[d.color,d.name,d.code]) },
-  dino:{ name:"恐龍谷", line:"敲開神秘恐龍蛋，看看孵出誰！", monster:"神秘恐龍蛋", coopWin:"恐龍蛋孵出來了！", winBanner:"孵出來了！",
+  dino:{ name:"恐龍谷", line:"敲開神秘恐龍蛋，看看孵出誰！", monster:"神秘恐龍蛋", coopWin:"大家一起把恐龍蛋敲裂了！", winBanner:"把蛋敲裂了！",
     stickers:DINOS.map(d=>[d.color,d.name,d.code]) },
   dessert:{ name:"甜點店", line:"當甜點師傅，疊出超級大蛋糕！", monster:"甜點師傅", coopWin:"大家一起做出超級大蛋糕！", winBanner:"蛋糕完成！",
     stickers:DESSERT.map(d=>[d.color,d.name,d.code]) }

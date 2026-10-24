@@ -469,6 +469,8 @@ details.howto{margin:10px 0 0}
 .scn .dpop.on{animation:dpop 2.3s forwards}
 @keyframes dpop{0%{transform:scale(0)}16%{transform:translateY(-14px) scale(1.15)}24%{transform:scale(1)}36%{transform:translate(-50px,-22px)}44%{transform:translate(-80px,0)}54%{transform:translate(-40px,-24px)}62%{transform:translate(0,0)}72%{transform:translate(50px,-22px)}82%{transform:translate(80px,0)}100%{transform:translate(0,-6px) scale(1.12)}}
 .scn .qm{animation:qm 1s ease-out forwards}
+.scn .bigq{opacity:1}
+@media (prefers-reduced-motion:no-preference){ .scn .bigq{transform-box:fill-box;transform-origin:50% 100%;animation:dpop 1.2s forwards} }
 @keyframes qm{0%{opacity:0;transform:translateY(6px)}20%{opacity:1}100%{opacity:0;transform:translateY(-24px)}}
 /* 外星人被打 */
 .scn .aHurt{opacity:0}

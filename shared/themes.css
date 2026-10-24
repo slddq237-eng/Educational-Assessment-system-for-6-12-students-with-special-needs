@@ -34,11 +34,14 @@
   -webkit-mask:radial-gradient(circle,#000 8%,transparent 45%);mask:radial-gradient(circle,#000 8%,transparent 45%)}
 .reveal .box{position:relative;background:#fffaf0;border-radius:28px;border:6px solid var(--rc);padding:22px 34px 26px;display:grid;justify-items:center;
   gap:6px;text-align:center;color:#3a2f12;max-width:92vw;box-sizing:border-box}
-.reveal .box > svg{width:min(260px,56vw);height:auto}
+.reveal .box > svg{width:min(62vw,46vh);height:auto}
+/* 得到貼紙的大畫面接近滿版（2026-10-24 維護者要求） */
+.reveal .box{width:min(94vw,860px);min-height:min(88vh,920px);align-content:center}
+.reveal .box .go{font-size:24px;padding:14px 36px}
 .reveal .who2{display:flex;align-items:center;gap:10px;font-size:24px}
 .reveal .who2 .av{--s:56px}
-.reveal .stars{font-size:40px;color:#f5b400;letter-spacing:.12em;line-height:1}
-.reveal .rname{font-size:clamp(32px,4vw,52px);font-weight:700}
+.reveal .stars{font-size:clamp(40px,6vw,60px);color:#f5b400;letter-spacing:.12em;line-height:1}
+.reveal .rname{font-size:clamp(36px,6vw,68px);font-weight:700}
 .reveal .rare{font-size:20px;padding:4px 18px;border-radius:999px;background:var(--rc);color:#3a2f12;font-weight:700}
 @media (prefers-reduced-motion:no-preference){
   .reveal .rays2{animation:spin 14s linear infinite}
@@ -49,12 +52,15 @@
 
 /* ---------- 扭蛋機（識字評量 gacha.js，2026-10-24）：拉拉桿 → 搖一搖 → 轉蛋掉出來 → 依星等不同的特效打開 ----------
    動畫只在電腦沒設「減少動態效果」時播；沒有快速閃爍（光敏性癲癇），變暗、發光都是慢慢淡入 */
-.reveal.gacha::before{content:"";position:absolute;inset:0;background:#000;opacity:0;transition:opacity .8s;pointer-events:none}
-.reveal.gacha.suspense::before{opacity:.45}
-.gbox{position:relative;background:#fffaf0;border-radius:28px;border:6px solid #2d2a26;padding:18px 26px 20px;display:grid;justify-items:center;gap:8px;
-  text-align:center;color:#3a2f12;max-width:92vw;box-sizing:border-box}
+/* 極稀有、傳說的鋪陳：整個畫面慢慢變暗，扭蛋機和轉蛋留在亮處 */
+.gbox::before{content:"";position:absolute;inset:0;background:#000;opacity:0;transition:opacity .8s;pointer-events:none}
+.suspense .gbox::before{opacity:.5}
+.reveal.gacha{padding:0}
+/* 滿版（2026-10-24 維護者要求） */
+.gbox{position:relative;background:#fffaf0;width:100vw;height:100vh;height:100dvh;overflow:hidden;display:grid;justify-items:center;align-content:center;gap:10px;
+  padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));text-align:center;color:#3a2f12;box-sizing:border-box}
 .gsay{margin:0;font-size:clamp(20px,3vw,26px);font-weight:700}
-.gstage{position:relative;width:min(280px,60vw);aspect-ratio:200/330}
+.gstage{position:relative;z-index:1;height:min(60vh,140vw);aspect-ratio:200/330;max-width:86vw}
 .gmac{width:100%;height:auto;display:block}
 .glever{position:absolute;right:-12%;top:38%;width:24%;height:26%;background:none;border:0;padding:0;cursor:grab;touch-action:none}
 .glever .gstick{position:absolute;left:44%;top:22%;width:12%;height:62%;background:#9aa3ad;border:3px solid #2d2a26;border-radius:6px;transform-origin:50% 100%;transition:transform .35s}
@@ -63,9 +69,12 @@
 .gdrop{position:absolute;left:50%;top:56%;width:30%;transform:translate(-50%,0) scale(.3);opacity:0}
 .gcap{width:100%;height:auto;display:block;overflow:visible}
 .gcap .gtop{transition:transform .45s,opacity .45s;transform-origin:50% 50%}
-.gfx{position:absolute;left:50%;top:86%;width:0;height:0}
+.gfx{position:absolute;left:50%;top:83%;width:0;height:0}
 .gfx i{position:absolute;left:-5px;top:-7px;width:10px;height:14px;border-radius:3px;opacity:0}
-.godds{width:min(560px,86vw);text-align:left}
+.godds{position:absolute;left:50%;bottom:76px;transform:translateX(-50%);width:min(600px,92vw);text-align:left;z-index:2}
+.grain{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.grain i{position:absolute;top:-24px;width:8px;height:12px;border-radius:2px;opacity:0}
+.gcrank,.gballs{transform-box:fill-box;transform-origin:50% 50%}
 .godds .odds{margin:0}
 .reveal.gacha .row{gap:10px}
 @media (prefers-reduced-motion:no-preference){
@@ -75,8 +84,12 @@
   .pulled .glever .gknob{transform:translateY(130%)}
   .pulled .gmac{animation:gshake .6s ease-in-out 2}
   .dropped .gdrop{animation:gdrop .55s cubic-bezier(.3,1.4,.5,1) forwards}
-  .suspense .gdrop .gcap{animation:gwobble .3s ease-in-out 3}
-  .suspense.s4 .gdrop .gcap{animation-iteration-count:5}
+  .turning .gcrank{animation:gcrank 1s ease-in-out}
+  .turning .gballs{animation:gjiggle .25s ease-in-out 4}
+  .shaking .gdrop .gcap{animation:gwobble .667s ease-in-out 3}
+  .pre.s2 .gdrop,.pre.s3 .gdrop,.pre.s4 .gdrop{filter:drop-shadow(0 0 22px var(--gc));transition:filter .6s}
+  .pre.s4 .gdrop .gcap{animation:gglow 1.8s ease-in forwards}
+  .opened .grain i{animation:gfall 2.6s linear infinite}
   .opened .gcap .gtop{transform:translate(18%,-45%) rotate(35deg);opacity:0}
   .opened .gdrop{filter:drop-shadow(0 0 14px var(--gc))}
   .opened.t3 .gdrop::before,.opened.t4 .gdrop::before{content:"";position:absolute;left:50%;top:50%;width:420%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
@@ -88,8 +101,12 @@
 }
 @keyframes gnudge{0%,70%,100%{transform:none}80%{transform:translateY(8%)}}
 @keyframes gshake{25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
-@keyframes gdrop{0%{opacity:1;transform:translate(-50%,0) scale(.3)}100%{opacity:1;transform:translate(-50%,150%) scale(1.2)}}
+@keyframes gdrop{0%{opacity:1;transform:translate(-50%,0) scale(.3)}100%{opacity:1;transform:translate(-50%,100%) scale(1.1)}}
 @keyframes gwobble{25%{transform:rotate(-14deg)}75%{transform:rotate(14deg)}}
+@keyframes gcrank{to{transform:rotate(360deg)}}
+@keyframes gjiggle{25%{transform:translate(-3px,2px)}75%{transform:translate(3px,-2px)}}
+@keyframes gglow{to{transform:scale(1.15)}}
+@keyframes gfall{0%{opacity:0;transform:translateY(0) rotate(0)}10%{opacity:.9}100%{opacity:.9;transform:translateY(110vh) rotate(540deg)}}
 @keyframes gburst{0%{opacity:1;transform:rotate(var(--a)) translateY(0)}100%{opacity:0;transform:rotate(var(--a)) translateY(calc(-1 * var(--d))) rotate(200deg)}}
 @keyframes gpillar{from{transform:scaleY(0);opacity:0}to{transform:scaleY(1);opacity:1}}
 
