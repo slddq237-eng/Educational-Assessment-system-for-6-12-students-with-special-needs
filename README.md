@@ -13,15 +13,15 @@
 
 ## 文件在哪裡
 
-- **每個檔案做什麼、檔案之間的關係**：[`docs/architecture.md`](docs/architecture.md)（程式地圖）
+- **每個檔案做什麼、檔案之間的關係**：[`docs/code/architecture.md`](docs/code/architecture.md)（程式地圖）
 - **交接文件索引**：[`docs/INDEX.md`](docs/INDEX.md)；**合作規則、改完要更新哪些檔案**：[`docs/rules.md`](docs/rules.md)
-- **某件事每次改了什麼、想法怎麼變**：[`docs/changelog.md`](docs/changelog.md)（變更紀錄）
+- **某件事每次改了什麼、想法怎麼變**：[`docs/changelog/changelog.md`](docs/changelog/changelog.md)（變更紀錄）
 - 資料與隱私說明：[`privacy.html`](privacy.html)；資料來源與出處：[`about.html`](about.html)
 - 給新手的 GitHub 與 Claude Code 使用說明：claude.ai 文件「GitHub 與 Claude code 新手使用說明」（需擁有者分享）
 
 ## 資料夾地圖
 
-整個平台只有三種東西：**網頁和程式**（`tools/`、`shared/`、首頁）、**教材資料**（`shared/lessons.js` 等）、**說明文件**（`docs/`）。這裡只列到資料夾和主要檔案；每個檔案做什麼、誰用誰，見 [`docs/architecture.md`](docs/architecture.md)。
+整個平台只有三種東西：**網頁和程式**（`tools/`、`shared/`、首頁）、**教材資料**（`shared/lessons.js` 等）、**說明文件**（`docs/`）。這裡只列到資料夾和主要檔案；每個檔案做什麼、誰用誰，見 [`docs/code/architecture.md`](docs/code/architecture.md)。
 
 ```
 根目錄
@@ -46,13 +46,12 @@
 └─ docs/             所有決定、規則、設計（唯一正確的版本）
     ├─ INDEX.md      索引（開工先讀）
     ├─ rules.md      合作規則、改完要更新哪些檔案（發 PR 前讀）
-    ├─ architecture.md  程式地圖：每個檔案做什麼、資料存哪裡
-    ├─ roadmap.md    開發路線圖（階段 A～F）
-    ├─ pending.md    還沒決定的事（總清單）
-    ├─ 各主題檔案     literacy-design、analysis-design、records、materials、refactor…
-    ├─ history*.md   舊的說法、已完成的細節（精簡文件時不刪，搬到這裡）
-    ├─ changelog*.md 變更紀錄：每個 PR 改了什麼、想法怎麼變
-    ├─ *.xlsx        給老師校對的表格
+    ├─ code/         程式地圖 architecture.md、整理程式的規則 refactor.md
+    ├─ design/       各功能的設計：識字評量、遊戲獎勵、分析、作答紀錄 records.md、研究方法
+    ├─ materials/    教材、干擾字、讀音、資料來源，和給老師校對的 .xlsx 表格
+    ├─ plans/        開發路線圖 roadmap.md、還沒決定的事 pending.md
+    ├─ history/      舊的說法、已完成的細節（精簡文件時不刪，搬到這裡）
+    ├─ changelog/    變更紀錄：每個 PR 改了什麼（changes/ 一個 PR 一個小檔）
     └─ scripts/      自動檢查 check.js、產生部件／注音／字型的程式
 ```
 

@@ -9,7 +9,7 @@
 
 | 改了什麼 | 要更新 |
 |---|---|
-| 任何改動 | PR 說明：通知等級、有沒有動到共用檔案、「文件更新」一行；**變更紀錄**：在 `docs/changes/` 加一個小檔案（2026-10-24 起，見 `changelog.md`「怎麼寫」）；改了網頁會載入的 js、css：執行 `node docs/scripts/bump.js` 換版本號 |
+| 任何改動 | PR 說明：通知等級、有沒有動到共用檔案、「文件更新」一行；**變更紀錄**：在 `docs/changelog/changes/` 加一個小檔案（2026-10-24 起，見 `changelog.md`「怎麼寫」）；改了網頁會載入的 js、css：執行 `node docs/scripts/bump.js` 換版本號 |
 | 新想法、老師回饋 | `roadmap.md` 適合的階段；要討論的加進 `pending.md` |
 | 做了決定（定案、取消、改方向） | 對應的主題檔案改寫現況，舊說法移到最新的決策歷史檔（`history-2026-10-24.md`）；`pending.md` 拿掉或標定案；`roadmap.md` 打 ✅；在規格書討論過的，請擁有者在那一節標「已定案，見 docs/○○.md」 |
 | 新功能、改變行為 | 對應的主題檔案（識字評量 `literacy-design.md`（玩法、增強、血量 `literacy-play.md`）、分析 `analysis-design.md`、紀錄 `records.md`、教材 `materials.md`）、`roadmap.md` 那一列的狀態改成 ✅（只寫日期和「詳細在哪」，做了什麼寫在主題檔案，不寫進路線圖，2026-10-23 重整後的規則）；老師看得到的：首頁 `index.html`「最後更新」 |
@@ -46,6 +46,7 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
 - 新功能開分支、發 PR；不直接推 main。**一件事一個新分支**（2026-10-23 維護者決定）：從最新的 main 開，名字看得出在做什麼（例如 `claude/a8-leanings`）；PR 合併後這個分支就不再用，下一件事再開新的（同一個 Claude 對話換做別的事時也一樣）。合併後的分支由 GitHub 自動刪除（2026-10-23 已打開 Settings → General「Automatically delete head branches」）；要回溯用 PR 頁的「Revert」或「Restore branch」。**合併分級**（2026-10-22 維護者決定）：動到共用檔案（`shared/`、`docs/`、首頁、`privacy.html`、`CLAUDE.md`、`README.md`、`.github/`）、識字評量 `tools/literacy/`、作答紀錄格式或正式評量條件的，要 repo 擁有者（slddq237-eng）同意才合併，Claude 不自己合併；只改自己新工具資料夾 `tools/<工具名稱>/` 的，自動檢查通過後作者可以自己合併，合併後告知擁有者（首頁加入口那段仍要同意）。
 - **合併前先用 Vercel 預覽測試**（2026-10-24 維護者決定）：repo 已連上 Vercel（自動把每個 PR 做成一個可以點開試用的網站）。每次發 PR、推新的修改，`vercel` 機器人會在 PR 下面留言：Deployment 欄 **Ready** 是做好了、**Error** 是網頁建置失敗（要先修）；點 **Preview** 打開這個 PR 版本的網站，實際操作改到的頁面，確認沒問題再合併。Claude 發 PR 時在說明寫「預覽時要測哪些地方」。預覽網址的作答紀錄和正式網站分開（瀏覽器依網址各存各的），測試只用假名字（例如「測試一號」）。正式網站仍是 GitHub Pages（見第 1 節）；合併到 main 時 Vercel 也會更新一個 Vercel 正式網址，但不給老師用。夥伴打不開預覽網址時，由擁有者到 Vercel 專案 Settings → Deployment Protection 調整。
 - **文件同步分級**（2026-10-22 維護者決定）：新想法、老師回饋、做了決定都要記進 `docs/` 對應的檔案（規格書不同步，見「規格書的角色」）；新功能或改變行為的改動在同一個 PR 更新 `docs/`；修 bug、改錯字、小調整不用記。
+- **版本號（`?v=`）衝突怎麼處理**（2026-10-24 加，兩人同時改程式前先講好）：改了 js、css 都要跑 `node docs/scripts/bump.js` 換版本號，它會改所有網頁的 `?v=`，所以兩個 PR 同時改程式，後合併的那個一定會在 `?v=` 衝突。這種衝突不用比對：GitHub 或 Claude 處理衝突時 `?v=` 隨便留一邊，再跑一次 `bump.js`、推上去就好（自動檢查會擋各頁版本號不一致）。請 Claude 處理時說「把 main 合併進來，`?v=` 衝突照 rules.md 處理」。之後若衝突太頻繁，改成版本號只寫在一個檔案（記在 `refactor.md`）。
 - 純前端、無建置工具。repo 公開：嚴禁把學生姓名、照片、成績寫進任何檔案。
 - **自動檢查**（2026-10-22 加）：每次發 PR、改 main，GitHub Actions 會跑 `docs/scripts/check.js`（設定檔 `.github/workflows/check.yml`），檢查程式語法、教材資料（語詞裡有沒有這個字、干擾字有沒有包含答案等）、各頁版本號是否一致、有沒有照片或備份檔等學生資料。PR 頁面出現紅叉就先修好再合併；本機可以跑 `node docs/scripts/check.js`。已知、等決定的教材問題放在檔案裡的 `KNOWN`（只提醒不失敗）。建議 repo 擁有者在 Settings → Rules 設定「main 要檢查通過才能合併」。
 - 維護者是新手：回覆用繁體中文，術語附白話解釋；程式碼每個段落開頭加中文說明（不逐行註解）。
@@ -68,6 +69,6 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
 - 第二級做錯可以用一個 PR 退回；自動檢查和 `docs/` 記下的理由，是不靠夥伴也能抓錯的保險。
 
 ### 合併審核要不要用 GitHub 強制執行（已決定要做，等夥伴發測試 PR 確認）
-（2026-10-22 從 `docs/pending.md` 移來；pending.md 只留一行摘要）
+（2026-10-22 從 `docs/plans/pending.md` 移來；pending.md 只留一行摘要）
 - **合併審核要不要用 GitHub 強制執行（CODEOWNERS）**（2026-10-22 加）：現在「動到共用檔案、識字評量要 repo 擁有者同意」只是約定。等夥伴用自己的 GitHub 帳號發 PR，就可以加 `.github/CODEOWNERS`（列出歸擁有者管的路徑）、在 Settings → Rules 設定「要 Code Owners 審核」與「自動檢查要通過」，並把擁有者加進 Bypass list（GitHub 不允許自己審核自己的 PR，不加會卡住擁有者自己的 PR），再發測試 PR 確認。步驟寫在「GitHub 新手使用說明」的「合併規則與審核設定」。
-  - **進度**（2026-10-22）：維護者決定要做。已加 `.github/CODEOWNERS`（共用檔案、`tools/literacy/`、`tools/bingo/` 要擁有者 @slddq237-eng 審核）；2026-10-23 擁有者已在 GitHub 網頁 Settings → Rules 設好規則（要發 PR、要 Code Owners 審核、核准人數 0）。還差：請夥伴發測試 PR 確認（改共用檔案要擁有者審核、只改新工具資料夾不用）。測試完成後把這一項移到 `history.md`。
+  - **進度**（2026-10-22）：維護者決定要做。已加 `.github/CODEOWNERS`（共用檔案、`tools/literacy/`、`tools/bingo/` 要擁有者 @slddq237-eng 審核）；2026-10-23 擁有者已在 GitHub 網頁 Settings → Rules 設好規則（要發 PR、要 Code Owners 審核、核准人數 0）。還差：請夥伴發測試 PR 確認（改共用檔案要擁有者審核、只改新工具資料夾不用）。測試完成後把這一項移到 `history.md`。2026-10-24：`docs/changelog/changes/`（每個 PR 都要加的變更紀錄小檔）改成不用審核，否則只改新工具資料夾的 PR 也會被 `/docs/` 卡住。
