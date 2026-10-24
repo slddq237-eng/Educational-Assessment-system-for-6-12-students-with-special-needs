@@ -1,6 +1,7 @@
 # 自動檢查（GitHub Actions）：每次發 PR、改 main 都會跑 docs/scripts/check.js
 # 檢查程式語法、教材資料、版本號、學生資料、文件與效能等 11 項（見 check.js 開頭）；結果顯示在 PR 頁面（綠勾＝通過，紅叉＝有問題，點進去看哪一項）
 # 本機也可以跑：在 repo 最上層執行 node docs/scripts/check.js
+# 2026-10-24 加「網頁打得開測試」docs/scripts/smoke.js：用瀏覽器打開每一頁，有程式錯誤就不通過（放在同一個工作，Settings → Rules 不用另外設定）
 name: 自動檢查
 on:
   pull_request:
@@ -12,7 +13,7 @@ jobs:
   check:
     name: 自動檢查   # 名稱改了要同步 GitHub Settings → Rules 的「Require status checks to pass」（2026-10-24 從「程式、教材、版本號、學生資料」改名）
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10   # 2026-10-24 加網頁測試後從 5 分鐘放寬（裝瀏覽器約 1～2 分鐘）
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,3 +22,6 @@ jobs:
         with:
           node-version: 20
       - run: node docs/scripts/check.js
+      # 網頁打得開測試：裝 Playwright（自動操作瀏覽器的工具）和瀏覽器，再打開每一頁（2026-10-24 加）
+      - run: npm install --no-save playwright@1.63.0 && npx playwright install --with-deps chromium
+      - run: node docs/scripts/smoke.js
