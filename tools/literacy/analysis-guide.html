@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-24n">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-24p">
 <style>
 /* 分析教學：老師專區（一位學生、全班總表、進階分析）的使用說明與名詞解釋。
    版面沿用快速指南（guide.html）的方格紙；示範動畫用 demo.css、demo.js（和快速指南共用）。 */
@@ -63,6 +63,9 @@ table.demo tr.tot td,table.demo tr.tot th{border-top:2px solid var(--ink)}
 .fig .line{fill:none;stroke:var(--s1);stroke-width:2}
 .fig .dot{fill:var(--s1)}
 .fig .phase{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:5 4}
+.fig .ph0{fill:#ecebe5}.fig .ph1{fill:#dbe9fa}.fig .ph2{fill:#d9f1e5}
+.figkey{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;margin:4px 0}
+.figkey i{display:inline-block;width:12px;height:12px;border:1px solid #c3c2b7;border-radius:3px;margin-right:5px;vertical-align:-1px}
 .fig .event{stroke:var(--s2);stroke-width:2}
 .fig .lab{fill:var(--ink);font-size:13px}
 .fig .call{fill:var(--red);font-size:13px;font-weight:700}
@@ -81,7 +84,7 @@ table.demo tr.tot td,table.demo tr.tot th{border-top:2px solid var(--ink)}
   @page{size:A4;margin:12mm}
 }
 </style>
-<link rel="stylesheet" href="demo.css?v=2026-10-24n">
+<link rel="stylesheet" href="demo.css?v=2026-10-24p">
 </head>
 <body>
 <main>
@@ -173,10 +176,10 @@ table.demo tr.tot td,table.demo tr.tot th{border-top:2px solid var(--ink)}
     <h3>折線圖怎麼看（範例）</h3>
     <div class="fig">
       <svg viewBox="0 0 720 270" role="img" aria-label="範例折線圖：基線期正確率約 30% 到 40%，學扶開始後上升，教學後約 85%">
+        <rect class="ph0" x="56" y="40" width="194" height="200"/><rect class="ph1" x="250" y="40" width="290" height="200"/><rect class="ph2" x="540" y="40" width="160" height="200"/>
         <line class="grid" x1="56" x2="700" y1="40" y2="40"/><line class="grid" x1="56" x2="700" y1="90" y2="90"/><line class="grid" x1="56" x2="700" y1="140" y2="140"/><line class="grid" x1="56" x2="700" y1="190" y2="190"/><line class="grid" x1="56" x2="700" y1="240" y2="240"/>
         <text class="ax" x="48" y="44" text-anchor="end">100%</text><text class="ax" x="48" y="94" text-anchor="end">75%</text><text class="ax" x="48" y="144" text-anchor="end">50%</text><text class="ax" x="48" y="194" text-anchor="end">25%</text><text class="ax" x="48" y="244" text-anchor="end">0%</text>
         <line class="phase" x1="250" x2="250" y1="22" y2="240"/><line class="phase" x1="540" x2="540" y1="22" y2="240"/>
-        <text class="lab" x="150" y="30" text-anchor="middle">基線期</text><text class="lab" x="395" y="30" text-anchor="middle">教學中</text><text class="lab" x="620" y="30" text-anchor="middle">教學後</text>
         <line class="event" x1="268" x2="268" y1="40" y2="240"/><text class="ax" x="273" y="234">學扶開始</text>
         <path class="line" d="M90 180 L150 170 L210 176 L300 150 L360 120 L420 100 L490 84 L580 70 L650 74"/>
         <circle class="dot" cx="90" cy="180" r="5"/><circle class="dot" cx="150" cy="170" r="5"/><circle class="dot" cx="210" cy="176" r="5"/><circle class="dot" cx="300" cy="150" r="5"/><circle class="dot" cx="360" cy="120" r="5"/><circle class="dot" cx="420" cy="100" r="5"/><circle class="dot" cx="490" cy="84" r="5"/><circle class="dot" cx="580" cy="70" r="5"/><circle class="dot" cx="650" cy="74" r="5"/>
@@ -184,7 +187,8 @@ table.demo tr.tot td,table.demo tr.tot th{border-top:2px solid var(--ink)}
         <line class="callline" x1="390" y1="128" x2="420" y2="160"/><text class="call" x="420" y="176" text-anchor="middle">② 開始教學後往上走</text>
         <line class="callline" x1="615" y1="90" x2="615" y2="112"/><text class="call" x="615" y="126" text-anchor="middle">③ 停在高的地方</text>
       </svg>
-      <p class="note">範例（不是真的學生資料）。虛線＝時期改變的地方，上面標時期名稱；橘色直線＝「本學期安排」填的學扶、資源班開始日；流暢性另有一條「目標每分鐘幾個」的線。</p>
+      <div class="figkey"><span><i style="background:#ecebe5"></i>基線期</span><span><i style="background:#dbe9fa"></i>教學中</span><span><i style="background:#d9f1e5"></i>教學後</span><span><i style="background:#fbefcf"></i>維持期</span></div>
+      <p class="note">範例（不是真的學生資料，只畫一課）。背景顏色＝時期，虛線＝時期改變的地方；老師專區預設每一課一張小圖、上下對齊；橘色直線＝「本學期安排」填的學扶、資源班開始日；流暢性另有一條「目標每分鐘幾個」的線。</p>
     </div>
     <div class="tip"><b>看圖的三個重點</b>（單一受試研究的「目視分析」，寫心評報告常用）：
       <ol>
@@ -358,6 +362,6 @@ const DEMOS = {
   ]
 };
 </script>
-<script src="demo.js?v=2026-10-24n"></script>
+<script src="demo.js?v=2026-10-24p"></script>
 </body>
 </html>
