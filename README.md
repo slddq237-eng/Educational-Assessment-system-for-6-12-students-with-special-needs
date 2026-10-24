@@ -2,6 +2,8 @@
 
 給 6～12 歲特殊需求學生使用的線上教學與評量小工具平台。
 
+網站：https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-with-special-needs/
+
 ## 目前的工具
 
 | 工具 | 資料夾 | 狀態 |
@@ -15,7 +17,46 @@
 - **交接文件索引**：[`docs/INDEX.md`](docs/INDEX.md)；**合作規則、改完要更新哪些檔案**：[`docs/rules.md`](docs/rules.md)
 - **某件事每次改了什麼、想法怎麼變**：[`docs/changelog.md`](docs/changelog.md)（變更紀錄）
 - 資料與隱私說明：[`privacy.html`](privacy.html)；資料來源與出處：[`about.html`](about.html)
-- 給新手的 GitHub 與 Claude Code 使用說明、怎麼讀這個 repo：claude.ai 文件「GitHub 新手使用說明」（需擁有者分享）
+- 給新手的 GitHub 與 Claude Code 使用說明：claude.ai 文件「GitHub 與 Claude code 新手使用說明」（需擁有者分享）
+
+## 資料夾地圖
+
+整個平台只有三種東西：**網頁和程式**（`tools/`、`shared/`、首頁）、**教材資料**（`shared/lessons.js` 等）、**說明文件**（`docs/`）。這裡只列到資料夾和主要檔案；每個檔案做什麼、誰用誰，見 [`docs/architecture.md`](docs/architecture.md)。
+
+```
+根目錄
+├─ index.html        平台首頁（工具清單、最後更新）
+├─ about.html        關於我們（資料來源與出處）
+├─ privacy.html      資料與隱私說明
+├─ README.md         專案簡介（本頁，GitHub 首頁會顯示）
+├─ CLAUDE.md         給 Claude 的合作規則（每則訊息都會讀，所以很短）
+├─ .github/          自動檢查（workflows/check.yml）、CODEOWNERS（誰要審核）
+├─ shared/           所有工具共用的教材與程式
+│   ├─ lessons.js    課本、生字、語詞、例句、干擾字、人工整理的部件
+│   ├─ parts.js      部件（自動產生；要改部件請改 lessons.js，見下方）
+│   ├─ bpmf.js       注音讀音表、唸題目的替換字（自動產生）
+│   ├─ freq.js       字頻排名
+│   ├─ common.js、themes.js、themes.css、rewards.js  共用小工具、主題貼紙、學生收藏
+│   ├─ fonts/        楷書、注音字型（切成小檔，用到才下載）
+│   └─ vendor/       外部元件：Excel、QR code（按了才下載）
+├─ tools/
+│   ├─ literacy/     識字評量（設定 → 作答 → 存紀錄 → 老師專區；平板作答在 tablet.js）
+│   ├─ prep/         備課分析（部件排行、生字一覽、字頻）
+│   └─ bingo/        舊網址，自動轉到識字評量
+└─ docs/             所有決定、規則、設計（唯一正確的版本）
+    ├─ INDEX.md      索引（開工先讀）
+    ├─ rules.md      合作規則、改完要更新哪些檔案（發 PR 前讀）
+    ├─ architecture.md  程式地圖：每個檔案做什麼、資料存哪裡
+    ├─ roadmap.md    開發路線圖（階段 A～F）
+    ├─ pending.md    還沒決定的事（總清單）
+    ├─ 各主題檔案     literacy-design、analysis-design、records、materials、refactor…
+    ├─ history*.md   舊的說法、已完成的細節（精簡文件時不刪，搬到這裡）
+    ├─ changelog*.md 變更紀錄：每個 PR 改了什麼、想法怎麼變
+    ├─ *.xlsx        給老師校對的表格
+    └─ scripts/      自動檢查 check.js、產生部件／注音／字型的程式
+```
+
+新增、刪除、改名資料夾時，記得更新這張地圖（見 `docs/rules.md`「改完要更新哪些檔案」）。
 
 ## 怎麼修改或新增部件
 
