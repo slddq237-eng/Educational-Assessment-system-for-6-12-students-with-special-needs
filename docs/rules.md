@@ -12,11 +12,11 @@
 | 任何改動 | PR 說明：通知等級、有沒有動到共用檔案、「文件更新」一行；**變更紀錄**：在 `docs/changes/` 加一個小檔案（2026-10-24 起，見 `changelog.md`「怎麼寫」）；改了網頁會載入的 js、css：執行 `node docs/scripts/bump.js` 換版本號 |
 | 新想法、老師回饋 | `roadmap.md` 適合的階段；要討論的加進 `pending.md` |
 | 做了決定（定案、取消、改方向） | 對應的主題檔案改寫現況，舊說法移到最新的決策歷史檔（`history-2026-10-24.md`）；`pending.md` 拿掉或標定案；`roadmap.md` 打 ✅；在規格書討論過的，請擁有者在那一節標「已定案，見 docs/○○.md」 |
-| 新功能、改變行為 | 對應的主題檔案（識字評量 `literacy-design.md`、分析 `analysis-design.md`、紀錄 `records.md`、教材 `materials.md`）、`roadmap.md` 那一列的狀態改成 ✅（只寫日期和「詳細在哪」，做了什麼寫在主題檔案，不寫進路線圖，2026-10-23 重整後的規則）；老師看得到的：首頁 `index.html`「最後更新」 |
+| 新功能、改變行為 | 對應的主題檔案（識字評量 `literacy-design.md`（玩法、增強、血量 `literacy-play.md`）、分析 `analysis-design.md`、紀錄 `records.md`、教材 `materials.md`）、`roadmap.md` 那一列的狀態改成 ✅（只寫日期和「詳細在哪」，做了什麼寫在主題檔案，不寫進路線圖，2026-10-23 重整後的規則）；老師看得到的：首頁 `index.html`「最後更新」 |
 | 新增、刪除、改名程式檔，或改到檔案之間的關係、新的儲存名稱 | `architecture.md`（自動檢查會提醒）；新增、刪除、改名資料夾或主要檔案時，也改根目錄 `README.md` 的「資料夾地圖」（2026-10-24 維護者決定） |
 | 整理程式 | `refactor.md` 進度清單 |
 | 作答紀錄格式、正式評量條件 | **先討論**；`records.md`、`data.js` 的 `RECORD_FORMAT` |
-| 教材、讀音、部件 | `materials.md`；跑 `make_parts.py`、`make_bpmf.py`、`make_kai.py` |
+| 教材、讀音、部件 | `materials.md`（干擾字 `distractors.md`、讀音 `pronunciation.md`）；跑 `make_parts.py`、`make_bpmf.py`、`make_kai.py` |
 | 新的外部資料（課本、字頻、圖片、聲音、字型、程式元件） | `data-sources.md`、`about.html` |
 | 存學生資料的新功能、新的對外連線 | `privacy.html`、`architecture.md` 第 6、7 節 |
 | 合作規則 | 本頁第 2 節（詳細）；一定要做的事才放進 `CLAUDE.md`（只寫一句、指回本頁，不重複細節）；影響 GitHub 操作的：「GitHub 新手使用說明」 |
@@ -50,7 +50,7 @@ https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-w
 - **自動檢查**（2026-10-22 加）：每次發 PR、改 main，GitHub Actions 會跑 `docs/scripts/check.js`（設定檔 `.github/workflows/check.yml`），檢查程式語法、教材資料（語詞裡有沒有這個字、干擾字有沒有包含答案等）、各頁版本號是否一致、有沒有照片或備份檔等學生資料。PR 頁面出現紅叉就先修好再合併；本機可以跑 `node docs/scripts/check.js`。已知、等決定的教材問題放在檔案裡的 `KNOWN`（只提醒不失敗）。建議 repo 擁有者在 Settings → Rules 設定「main 要檢查通過才能合併」。
 - 維護者是新手：回覆用繁體中文，術語附白話解釋；程式碼每個段落開頭加中文說明（不逐行註解）。
 - **檔案放哪裡**：每個小工具放 `tools/<工具名稱>/`，入口是該資料夾的 `index.html`，首頁 `index.html` 列出工具。教材資料只放 `shared/lessons.js`、工具間共用的小工具只寫在 `shared/common.js`，不要在工具資料夾另外複製一份。各檔案的關係見 `architecture.md`。
-- **教材與字型**：新增課本後執行 `docs/scripts/make_parts.py`、`make_bpmf.py`、`make_kai.py`（改了頁面文字也要跑 `make_kai.py`）；讀音、注音以課本為主（見 `materials.md`）；楷書一律用 `TWKai`（全字庫正楷體），不要用霞鶩文楷或 Kaiti TC 等大陸字形的楷體。維護者上傳教材檔案時，先說哪些讀得到、哪些讀不到和解決方法（見 `data-sources.md`「上傳教材檔案、課本改版時」），原檔不放進 repo。
+- **教材與字型**：新增課本後執行 `docs/scripts/make_parts.py`、`make_bpmf.py`、`make_kai.py`（改了頁面文字也要跑 `make_kai.py`）；讀音、注音以課本為主（見 `pronunciation.md`）；楷書一律用 `TWKai`（全字庫正楷體），不要用霞鶩文楷或 Kaiti TC 等大陸字形的楷體。維護者上傳教材檔案時，先說哪些讀得到、哪些讀不到和解決方法（見 `data-sources.md`「上傳教材檔案、課本改版時」），原檔不放進 repo。
 - **省 token**（2026-10-23 維護者決定）：`CLAUDE.md` 每則訊息都會載入，只寫一定要做的事、指回這裡；詳細規則只寫在 `docs/` 一個地方（根目錄 `README.md` 只放摘要和連結；規格書只用來討論）。大檔案不整份讀，先搜尋再讀需要的段落。給人看的使用建議：claude.ai 文件「省 token 的 Claude 使用指南」（https://claude.ai/artifact/2DSYrCEwmkGVrqNpHRTTEG，需擁有者分享）。
 
 ### 三級通知與每週摘要（2026-10-22 維護者決定）
