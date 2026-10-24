@@ -18,7 +18,7 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml',
   '.woff2': 'font/woff2', '.png': 'image/png', '.json': 'application/json' };
 
-/* 要打開的頁面。加了新工具或新網頁，在這裡加一行 */
+/* 要打開的頁面。加了新工具或新網頁，在這裡加一行（漏加時 check.js 第 13 項會報錯） */
 const PAGES = [
   'index.html', 'about.html', 'privacy.html',
   'tools/literacy/index.html', 'tools/literacy/guide.html', 'tools/literacy/analysis-guide.html',

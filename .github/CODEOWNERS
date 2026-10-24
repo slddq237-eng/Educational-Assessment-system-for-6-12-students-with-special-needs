@@ -14,9 +14,8 @@
 /CLAUDE.md          @slddq237-eng
 /.github/           @slddq237-eng
 
-# 識字評量（兩位維護者一起修訂）、生字賓果轉址頁
+# 識字評量（兩位維護者一起修訂）
 /tools/literacy/    @slddq237-eng
-/tools/bingo/       @slddq237-eng
 
 # 變更紀錄小檔案不用審核（2026-10-24）：每個 PR 都要在這裡加一個小檔，
 # 不排除的話，只改新工具資料夾的 PR 也會因為動到 /docs/ 而要等擁有者審核。後面沒寫帳號＝這個路徑沒有審核人。
