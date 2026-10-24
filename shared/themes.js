@@ -1,27 +1,36 @@
 /* =========================================================
    平台共用：主題與貼紙（shared/themes.js）
    海洋、太空、恐龍、甜點四個主題的名稱、顏色、貼紙清單與貼紙圖形。
-   圖形與扭蛋機率原封不動取自原本的生字賓果（2026-10-21 已移除；當時 tools/bingo/index.html 的「扭蛋恐龍」「扭蛋大魚」「主題」三段），
+   2026-10-24 擴充成每個主題 15 張、四級星等（見 docs/game-design.md）；新畫的圖在 shared/sticker-art.js（要先載入）。
+   原本的圖形取自原本的生字賓果（2026-10-21 已移除；當時 tools/bingo/index.html 的「扭蛋恐龍」「扭蛋大魚」「主題」三段），
    賓果本身沒有修改。之後要改貼紙，改這個檔案，所有工具一起生效。
    對外只提供 window.Themes（見檔案最後），避免和各工具自己的變數撞名。
    ========================================================= */
 (function(){
 /* ===================== 扭蛋恐龍 ===================== */
 const DINOS = [
-  {code:"dino-01", name:"草草小暴龍", color:"#6cc66a", stars:1, w:34, label:"普通"},
-  {code:"dino-02", name:"橘子三角龍", color:"#ff9f43", stars:1, w:30, label:"普通"},
-  {code:"dino-03", name:"天空翼龍",   color:"#4fa8f0", stars:2, w:18, label:"稀有"},
-  {code:"dino-04", name:"彩虹劍龍",   color:"#a77cf0", stars:2, w:13, label:"稀有"},
-  {code:"dino-05", name:"黃金腕龍",   color:"#f5c02e", stars:3, w:5,  label:"極稀有"},
-  {code:"dino-06", name:"火焰迅猛龍", color:"#ff6b4a", stars:2, w:3.5, label:"稀有"},
-  {code:"dino-07", name:"冰晶雷龍",   color:"#7fdcf5", stars:2, w:3,   label:"稀有"},
-  {code:"dino-08", name:"棉花糖鴨嘴龍", color:"#ffb3d9", stars:2, w:3, label:"稀有"},
-  {code:"dino-09", name:"熔岩甲龍",   color:"#c0502e", stars:3, w:1.5, label:"極稀有"},
-  {code:"dino-10", name:"星空龍王",   color:"#3b2f8f", stars:4, w:0.7, label:"傳說"}
+  {code:"dino-01", name:"草草小暴龍", color:"#6cc66a", stars:1},
+  {code:"dino-02", name:"橘子三角龍", color:"#ff9f43", stars:1},
+  {code:"dino-03", name:"天空翼龍",   color:"#4fa8f0", stars:2},
+  {code:"dino-04", name:"彩虹劍龍",   color:"#a77cf0", stars:2},
+  {code:"dino-05", name:"黃金腕龍",   color:"#f5c02e", stars:3},
+  {code:"dino-06", name:"火焰迅猛龍", color:"#ff6b4a", stars:2},
+  {code:"dino-07", name:"冰晶雷龍",   color:"#7fdcf5", stars:2},
+  {code:"dino-08", name:"棉花糖鴨嘴龍", color:"#ffb3d9", stars:2},
+  {code:"dino-09", name:"熔岩甲龍",   color:"#c0502e", stars:3},
+  {code:"dino-10", name:"星空龍王",   color:"#3b2f8f", stars:4},
+  /* 2026-10-24 新增（圖在 sticker-art.js）；evo＝只能進化得到、抽不到 */
+  {code:"dino-11", name:"蘋果厚頭龍", color:"#e8574a", stars:1},
+  {code:"dino-12", name:"蘑菇小盔龍", color:"#8fbf5a", stars:1},
+  {code:"dino-13", name:"香蕉禽龍",   color:"#f5d33f", stars:1},
+  {code:"dino-14", name:"彩晶棘龍",   color:"#3fa7a0", stars:3, evo:true},
+  {code:"dino-15", name:"太陽神龍王", color:"#f5b52e", stars:4, evo:true}
 ];
 const RARE_GLOW = {1:"#fff3b8", 2:"#7fd6ff", 3:"#ffd23f", 4:"#ff9ad5"};
-function gacha(){ const tot=DINOS.reduce((a,d)=>a+d.w,0); let r=Math.random()*tot; for(let i=0;i<DINOS.length;i++){ r-=DINOS[i].w; if(r<0) return i; } return 0; }
+const ART = () => window.StickerArt || {};
 function dinoSvg(i){
+  const art = ART()[DINOS[i].code];
+  if(art) return `<svg viewBox="0 0 120 100" aria-hidden="true">${art.body()}</svg>`;
   const d=DINOS[i], c=d.color, k="#2d2a26", S=`stroke="${k}" stroke-width="2.5" stroke-linejoin="round"`;
   const eye=(x,y)=>`<circle cx="${x}" cy="${y}" r="5.5" fill="#fff" stroke="${k}" stroke-width="1.5"/><circle cx="${x+1.2}" cy="${y}" r="2.8" fill="${k}"/><circle cx="${x+2}" cy="${y-1.3}" r="1" fill="#fff"/>`;
   const blush=(x,y)=>`<ellipse cx="${x}" cy="${y}" rx="4" ry="2.5" fill="#ff8fa8" opacity=".75"/>`;
@@ -101,18 +110,27 @@ function dinoSvg(i){
 
 /* ===================== 扭蛋大魚 ===================== */
 const FISH = [
-  {code:"ocean-01", name:"胖胖河豚",   color:"#ffcf3f", stars:1, w:34, label:"普通",   vb:"-8 -74 148 148"},
-  {code:"ocean-02", name:"大嘴石斑魚", color:"#e98a4a", stars:1, w:30, label:"普通",   vb:"-8 -70 192 140"},
-  {code:"ocean-03", name:"閃電劍旗魚", color:"#3d8fd8", stars:2, w:18, label:"稀有",   vb:"-58 -90 254 180"},
-  {code:"ocean-04", name:"燈籠鮟鱇魚", color:"#7a4fc0", stars:2, w:13, label:"稀有",   vb:"-28 -92 192 184"},
-  {code:"ocean-05", name:"黃金大鯊魚", color:"#f5c02e", stars:3, w:5,  label:"極稀有", vb:"-8 -80 210 160"},
-  {code:"ocean-06", name:"條紋小丑魚", color:"#ff7a2e", stars:2, w:3.5, label:"稀有",   vb:"-8 -62 182 124"},
-  {code:"ocean-07", name:"彩虹神仙魚", color:"#5fd0e8", stars:2, w:3,   label:"稀有",   vb:"-10 -100 182 200"},
-  {code:"ocean-08", name:"藍斑魔鬼魟", color:"#4a5fa8", stars:2, w:3,   label:"稀有",   vb:"-30 -100 240 200"},
-  {code:"ocean-09", name:"皇冠獅子魚", color:"#d94a4a", stars:3, w:1.5, label:"極稀有", vb:"-30 -96 220 190"},
-  {code:"ocean-10", name:"月光龍王魚", color:"#7be0c8", stars:4, w:0.7, label:"傳說",   vb:"-44 -76 290 152"}
+  {code:"ocean-01", name:"胖胖河豚",   color:"#ffcf3f", stars:1,   vb:"-8 -74 148 148"},
+  {code:"ocean-02", name:"大嘴石斑魚", color:"#e98a4a", stars:1,   vb:"-8 -70 192 140"},
+  {code:"ocean-03", name:"閃電劍旗魚", color:"#3d8fd8", stars:2,   vb:"-58 -90 254 180"},
+  {code:"ocean-04", name:"燈籠鮟鱇魚", color:"#7a4fc0", stars:2,   vb:"-28 -92 192 184"},
+  {code:"ocean-05", name:"黃金大鯊魚", color:"#f5c02e", stars:3, vb:"-8 -80 210 160"},
+  {code:"ocean-06", name:"條紋小丑魚", color:"#ff7a2e", stars:2,   vb:"-8 -62 182 124"},
+  {code:"ocean-07", name:"彩虹神仙魚", color:"#5fd0e8", stars:2,   vb:"-10 -100 182 200"},
+  {code:"ocean-08", name:"藍斑魔鬼魟", color:"#4a5fa8", stars:2,   vb:"-30 -100 240 200"},
+  {code:"ocean-09", name:"皇冠獅子魚", color:"#d94a4a", stars:3, vb:"-30 -96 220 190"},
+  {code:"ocean-10", name:"月光龍王魚", color:"#7be0c8", stars:4,   vb:"-44 -76 290 152"},
+  /* 2026-10-24 新增（圖在 sticker-art.js，vb 跟著圖）；evo＝只能進化得到、抽不到 */
+  {code:"ocean-11", name:"泡泡金魚",   color:"#ff8c2e", stars:1},
+  {code:"ocean-12", name:"條紋小鯖魚", color:"#6fa8e0", stars:1},
+  {code:"ocean-13", name:"圓滾滾海星", color:"#ff7b6b", stars:1},
+  {code:"ocean-14", name:"水晶水母王", color:"#7fd6ff", stars:3, evo:true},
+  {code:"ocean-15", name:"深海巨鯨王", color:"#4f86e8", stars:4, evo:true}
 ];
+FISH.forEach(d => { const a = (window.StickerArt || {})[d.code]; if(a) d.vb = a.vb; });
 function fishBody(i, dizzy){
+  const art = ART()[FISH[i].code];
+  if(art) return art.body(dizzy);
   const c=FISH[i].color, k="#2a2140", S=`stroke="${k}" stroke-width="3.5" stroke-linejoin="round"`, S2=`stroke="${k}" stroke-width="2.5" stroke-linejoin="round"`;
   const eye=(x,y,r)=> dizzy
     ? `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" ${S2}/><path d="M${x-r*.5} ${y-r*.5} L${x+r*.5} ${y+r*.5} M${x+r*.5} ${y-r*.5} L${x-r*.5} ${y+r*.5}" stroke="${k}" stroke-width="3" stroke-linecap="round"/>`
@@ -217,20 +235,45 @@ function fishBody(i, dizzy){
 const fishSvg = (i,dizzy) => `<svg viewBox="${FISH[i].vb}" aria-hidden="true">${fishBody(i,dizzy)}</svg>`;
 const GACHA = { ocean:FISH, dino:DINOS };
 const GACHA_VERB = { ocean:"釣到了", dino:"孵出了" };
-/* 抽到還沒收集過的貼紙，機率再打 7 折（owned：該學生已有的編號） */
-function gachaPick(theme,owned){ const L=GACHA[theme]; const wt=L.map((d,i)=>d.w*((owned&&!owned.includes(i))?0.7:1)); const tot=wt.reduce((a,x)=>a+x,0); let r=Math.random()*tot; for(let i=0;i<L.length;i++){ r-=wt[i]; if(r<0) return i; } return 0; }
 function prizeSvg(theme,k){ return theme==="ocean" ? fishSvg(k) : dinoSvg(k); }
+
+/* ===================== 太空、甜點的貼紙 =====================
+   01～06 是原本的貼紙（同一個圖形換顏色，icon）；07～15 是 2026-10-24 新畫的（sticker-art.js）。evo＝只能進化得到 */
+const SPACE = [
+  {code:"space-01", name:"金色流星", color:"#ffd23f", stars:1}, {code:"space-02", name:"火紅彗星", color:"#ff8a3d", stars:1},
+  {code:"space-03", name:"冰藍星球", color:"#6fd3ff", stars:1}, {code:"space-04", name:"紫色星雲", color:"#b58cff", stars:2},
+  {code:"space-05", name:"綠色衛星", color:"#7bd389", stars:1}, {code:"space-06", name:"粉紅月亮", color:"#ff6fa8", stars:1},
+  {code:"space-07", name:"土星光環", color:"#f2a65a", stars:2}, {code:"space-08", name:"雙子星",   color:"#7fd3ff", stars:2},
+  {code:"space-09", name:"小火箭",   color:"#e8504a", stars:2}, {code:"space-10", name:"流星雨",   color:"#ffd23f", stars:2},
+  {code:"space-11", name:"銀河漩渦", color:"#b58cff", stars:3}, {code:"space-12", name:"神秘黑洞", color:"#ff9a3d", stars:3},
+  {code:"space-13", name:"超新星",   color:"#ffe45c", stars:3, evo:true},
+  {code:"space-14", name:"彩虹星系", color:"#ffd23f", stars:4}, {code:"space-15", name:"宇宙之心", color:"#ff5d9e", stars:4, evo:true}
+];
+const DESSERT = [
+  {code:"dessert-01", name:"草莓杯子蛋糕", color:"#ff8fb3", stars:1}, {code:"dessert-02", name:"巧克力杯子蛋糕", color:"#8b5a3c", stars:1},
+  {code:"dessert-03", name:"香草杯子蛋糕", color:"#ffe28a", stars:1}, {code:"dessert-04", name:"抹茶杯子蛋糕", color:"#9fe0a8", stars:1},
+  {code:"dessert-05", name:"藍莓杯子蛋糕", color:"#b9a3ff", stars:2}, {code:"dessert-06", name:"橘子杯子蛋糕", color:"#ffb36b", stars:1},
+  {code:"dessert-07", name:"馬卡龍",     color:"#ffa8c8", stars:2}, {code:"dessert-08", name:"甜甜圈",     color:"#ff8fc0", stars:2},
+  {code:"dessert-09", name:"冰淇淋",     color:"#9be0c0", stars:2}, {code:"dessert-10", name:"焦糖布丁",   color:"#ffe08a", stars:2},
+  {code:"dessert-11", name:"彩虹千層蛋糕", color:"#ffb347", stars:3}, {code:"dessert-12", name:"巧克力噴泉", color:"#8b5a3c", stars:3},
+  {code:"dessert-13", name:"城堡蛋糕",   color:"#cfe6ff", stars:3, evo:true},
+  {code:"dessert-14", name:"黃金皇冠蛋糕", color:"#ffd23f", stars:4}, {code:"dessert-15", name:"夢幻甜點城堡", color:"#ff6b9e", stars:4, evo:true}
+];
+/* 每個主題的貼紙清單（順序就是貼紙簿的順序） */
+const LISTS = {ocean:FISH, space:SPACE, dino:DINOS, dessert:DESSERT};
+/* 四級星等（2026-10-24 維護者決定） */
+const RARE_LABEL = {1:"普通", 2:"稀有", 3:"極稀有", 4:"傳說"};
 
 /* ===================== 主題 ===================== */
 const THEMES = {
   ocean:{ name:"海洋探險", line:"釣起神秘大魚，看看是哪一種！", monster:"神秘大魚", coopWin:"大家一起釣到大魚了！", winBanner:"釣到了！",
     stickers:FISH.map(d=>[d.color,d.name,d.code]) },
   space:{ name:"太空任務", line:"勇士出擊，打敗外星人！", monster:"搗蛋外星人", coopWin:"大家一起打敗外星人！", winBanner:"打敗外星人！",
-    stickers:[["#ffd23f","金色流星","space-01"],["#ff8a3d","火紅彗星","space-02"],["#6fd3ff","冰藍星球","space-03"],["#b58cff","紫色星雲","space-04"],["#7bd389","綠色衛星","space-05"],["#ff6fa8","粉紅月亮","space-06"]] },
+    stickers:SPACE.map(d=>[d.color,d.name,d.code]) },
   dino:{ name:"恐龍谷", line:"敲開神秘恐龍蛋，看看孵出誰！", monster:"神秘恐龍蛋", coopWin:"恐龍蛋孵出來了！", winBanner:"孵出來了！",
     stickers:DINOS.map(d=>[d.color,d.name,d.code]) },
   dessert:{ name:"甜點店", line:"當甜點師傅，疊出超級大蛋糕！", monster:"甜點師傅", coopWin:"大家一起做出超級大蛋糕！", winBanner:"蛋糕完成！",
-    stickers:[["#ff8fb3","草莓杯子蛋糕","dessert-01"],["#8b5a3c","巧克力杯子蛋糕","dessert-02"],["#ffe28a","香草杯子蛋糕","dessert-03"],["#9fe0a8","抹茶杯子蛋糕","dessert-04"],["#b9a3ff","藍莓杯子蛋糕","dessert-05"],["#ffb36b","橘子杯子蛋糕","dessert-06"]] }
+    stickers:DESSERT.map(d=>[d.color,d.name,d.code]) }
 };
 function icon(theme,color){
   color = color || "#ffcc4d";
@@ -239,17 +282,24 @@ function icon(theme,color){
   if(theme==="dino") return `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M30 44 Q28 16 54 14 Q80 14 78 40 L86 44 Q88 52 78 54 L70 56 Q72 64 62 64 L38 64 Z" fill="${color}"/><circle cx="60" cy="30" r="6" fill="#fff"/><circle cx="61" cy="30" r="3" fill="#222"/><path d="M68 47 Q74 49 80 47" stroke="#222" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M14 62 L24 54 L32 64 L42 54 L50 64 L58 54 L68 64 L76 54 L86 62 L86 70 Q86 94 50 94 Q14 94 14 70 Z" fill="#fff8e6" stroke="#c9b27a" stroke-width="3"/><circle cx="34" cy="78" r="4" fill="#ecdcae"/><circle cx="64" cy="84" r="5" fill="#ecdcae"/></svg>`;
   return `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M22 54 L30 92 L70 92 L78 54 Z" fill="#f6c78f"/><path d="M34 56 L38 90 M50 56 L50 90 M66 56 L62 90" stroke="#d99a5b" stroke-width="3"/><circle cx="30" cy="48" r="14" fill="${color}"/><circle cx="70" cy="48" r="14" fill="${color}"/><circle cx="50" cy="38" r="20" fill="${color}"/><circle cx="50" cy="16" r="8" fill="#e23b50"/><path d="M50 9 Q54 2 60 4" stroke="#3a7d2c" stroke-width="3" fill="none"/><circle cx="43" cy="40" r="3.5" fill="#5e2a35"/><circle cx="57" cy="40" r="3.5" fill="#5e2a35"/><path d="M44 48 Q50 53 56 48" stroke="#5e2a35" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`;
 }
-const stickerSvg = (theme,i) => GACHA[theme] ? prizeSvg(theme,i) : icon(theme, THEMES[theme].stickers[i][0]);
+function stickerSvg(theme, i){
+  if(GACHA[theme]) return prizeSvg(theme, i);
+  const d = LISTS[theme][i], art = ART()[d.code];
+  return art ? `<svg viewBox="0 0 100 100" aria-hidden="true">${art.body()}</svg>` : icon(theme, d.color);
+}
 
 /* ===================== 對外提供的功能 ===================== */
-/* 抽一張貼紙：恐龍、海洋用扭蛋機率（越稀有越難抽）；太空、甜點優先給還沒收集到的，收集完再隨機 */
-function drawSticker(theme, owned){
-  owned = owned || [];
-  if(GACHA[theme]) return gachaPick(theme, owned);
-  const all = THEMES[theme].stickers.map((_, i) => i);
-  const pool = all.filter(i => !owned.includes(i));
-  const from = pool.length ? pool : all;
-  return from[Math.floor(Math.random() * from.length)];
+/* 抽一張貼紙（2026-10-24 維護者決定，四個主題都一樣）：先依星等的固定機率抽一級（普通 55%、稀有 32%、極稀有 9%、傳說 4%），
+   再從這一級「抽得到的」貼紙平均抽一張；只能進化的（evo）抽不到。可以重複、不保底，所以不用知道學生以前有哪些。
+   （owned 參數留著相容舊的呼叫，不再使用。） */
+const TIER_ODDS = {1:55, 2:32, 3:9, 4:4};
+function drawSticker(theme){
+  const L = LISTS[theme], pool = t => L.map((d, i) => d.stars === t && !d.evo ? i : -1).filter(i => i >= 0);
+  const tiers = Object.keys(TIER_ODDS).map(Number).filter(t => pool(t).length);   /* 這個主題沒有的星等不算 */
+  let r = Math.random() * tiers.reduce((a, t) => a + TIER_ODDS[t], 0), tier = tiers[tiers.length - 1];
+  for(const t of tiers){ r -= TIER_ODDS[t]; if(r < 0){ tier = t; break; } }
+  const p = pool(tier);
+  return p[Math.floor(Math.random() * p.length)];
 }
 /* 貼紙代號（2026-10-24 維護者決定）：每張貼紙一個固定代號，例如 "dino-05"，收藏、作答紀錄、平板回傳都用它。
    代號一旦用過就不能改、也不能給別張用；新增貼紙就給新的代號（順序可以調整，不影響收藏）。 */
@@ -259,11 +309,21 @@ function findCode(code){
   for(const id of Object.keys(THEMES)){ const i = THEMES[id].stickers.findIndex(s => s[2] === code); if(i >= 0) return {theme:id, idx:i}; }
   return null;
 }
+/* 這個主題實際的抽中機率（貼紙簿、扭蛋機的說明用）：只算這個主題抽得到的星等，換算成百分比；
+   和 drawSticker 用同一張 TIER_ODDS，改機率時說明會跟著變 */
+function tierOdds(theme){
+  const L = LISTS[theme] || [], tiers = Object.keys(TIER_ODDS).map(Number).filter(t => L.some(d => d.stars === t && !d.evo));
+  const tot = tiers.reduce((a, t) => a + TIER_ODDS[t], 0);
+  return tiers.map(t => ({stars:t, label:RARE_LABEL[t], pct:Math.round(TIER_ODDS[t] / tot * 1000) / 10}));
+}
+/* 星等、星等名稱、是不是只能進化 */
+const stars = (theme, i) => (LISTS[theme] && LISTS[theme][i] || {}).stars || 0;
+const rareLabel = (theme, i) => RARE_LABEL[stars(theme, i)] || "";
+const isEvo = (theme, i) => !!(LISTS[theme] && LISTS[theme][i] || {}).evo;
 /* 貼紙的文字說明，例如「恐龍谷・黃金腕龍（極稀有）」 */
 function stickerName(theme, i){
   const t = THEMES[theme]; if(!t || !t.stickers[i]) return "";
-  const g = GACHA[theme] && GACHA[theme][i];
-  return `${t.name}・${t.stickers[i][1]}${g ? `（${g.label}）` : ""}`;
+  return `${t.name}・${t.stickers[i][1]}（${rareLabel(theme, i)}）`;
 }
 /* ===================== 主題背景插圖（練習的作答畫面） =====================
    2026-10-22 加：自己畫的卡通背景（沒有授權問題），讓練習比較有主題感。
@@ -315,7 +375,7 @@ window.Themes = {
   THEMES, GACHA, GACHA_VERB, RARE_GLOW,
   FISH, DINOS, fishBody, dinoSvg,   /* 打怪獸場景要畫大魚和恐龍（識字評量 scenes.js） */
   ids: Object.keys(THEMES),
-  icon, stickerSvg, drawSticker, stickerName, codeOf, findCode, backdrop,
-  stars: (theme, i) => GACHA[theme] && GACHA[theme][i] ? GACHA[theme][i].stars : 0
+  LISTS, RARE_LABEL, TIER_ODDS, tierOdds,
+  icon, stickerSvg, drawSticker, stickerName, codeOf, findCode, backdrop, stars, rareLabel, isEvo
 };
 })();

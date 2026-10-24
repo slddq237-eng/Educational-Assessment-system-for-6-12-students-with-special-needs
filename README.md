@@ -36,7 +36,7 @@
 │   ├─ parts.js      部件（自動產生；要改部件請改 lessons.js，見下方）
 │   ├─ bpmf.js       注音讀音表、唸題目的替換字（自動產生）
 │   ├─ freq.js       字頻排名
-│   ├─ common.js、themes.js、themes.css、rewards.js  共用小工具、主題貼紙、學生收藏
+│   ├─ common.js、themes.js、themes.css、sticker-art.js、rewards.js  共用小工具、主題貼紙、學生收藏
 │   ├─ fonts/        楷書、注音字型（切成小檔，用到才下載）
 │   └─ vendor/       外部元件：Excel、QR code（按了才下載）
 ├─ tools/
