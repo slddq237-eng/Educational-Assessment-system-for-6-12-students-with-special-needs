@@ -84,7 +84,7 @@ const PIVOT_EXAMPLES = [
   {id:"hints", name:"哪種提示方法較有幫助", cfg:{metric:"hintUse", row:"hintSet", f1:"phase", v1:"教學中"},
     read:"只能當參考：提示方法不是隨機分配的，差異也可能來自不同學生或不同課。"}
 ];
-const PIVOT_UI = "literacy-pivot", PIVOT_SAVED = "literacy-pivots";
+const PIVOT_UI = KEYS.pivot, PIVOT_SAVED = KEYS.pivots;
 const P = Object.assign({metric:"acc", row:"phase", ...PIVOT_BASE, ex:""}, load(PIVOT_UI, {}));
 const saveP = () => store(PIVOT_UI, P);
 
