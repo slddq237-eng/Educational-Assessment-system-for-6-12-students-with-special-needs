@@ -64,7 +64,8 @@
 .stk .legendtag{font-weight:700;color:#b07800;letter-spacing:.2em}
 .stk .evo{font-size:12px;color:#7a5cc0}
 /* 貼紙簿的抽中機率：彩色長條（照比例分段）＋文字 */
-.odds{margin:0 0 12px}
+.odds{margin:14px 0 0}
+.card.odds{background:var(--card,#fff);border:2px solid #2d2a26;border-radius:16px;padding:12px 18px}
 .oddsbar{display:flex;height:14px;border-radius:7px;overflow:hidden;border:2px solid #2d2a26;max-width:520px}
 .oddsbar span{display:block}
 .oddstxt{margin:6px 0 0;font-size:15px;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center}

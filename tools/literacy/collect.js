@@ -136,13 +136,18 @@ function bookStickers(code){
   for(const c of tabletGot[code] || []){ const f = Themes.findCode(c); if(f) (st[f.theme] ||= []).push(c); }
   return st;
 }
-/* 抽中機率（2026-10-24 維護者決定：寫百分比，加一條照比例分段的彩色長條；長條只是圖，文字才是內容） */
+/* 抽中機率（2026-10-24 維護者決定：寫百分比，加一條照比例分段的彩色長條；長條只是圖，文字才是內容）。
+   四個主題的機率一樣，所以貼紙簿最上面固定寫一次就好（維護者要求，不要每個主題都寫） */
 const ODDS_COLOR = {1:"#6cc66a", 2:"#4fa8f0", 3:"#a77cf0", 4:"#f5c02e"};
-function oddsHtml(theme){
-  const odds = Themes.tierOdds(theme), evo = Themes.LISTS[theme].filter(d => d.evo).length;
-  return `<div class="odds"><div class="oddsbar" aria-hidden="true">${odds.map(o => `<span style="flex:${o.pct};background:${ODDS_COLOR[o.stars]}"></span>`).join("")}</div>
-    <p class="oddstxt">抽中機會：${odds.map(o => `<span><i style="background:${ODDS_COLOR[o.stars]}"></i>${"★".repeat(o.stars)} ${o.label} ${o.pct}%</span>`).join("")}${evo ? `<span class="evo">有 ${evo} 張要進化才拿得到，抽不到</span>` : ""}</p></div>`;
+function oddsHtml(){
+  const t = Themes.ids[0], odds = Themes.tierOdds(t), evo = Themes.LISTS[t].filter(d => d.evo).length;
+  return `<div class="card odds"><div class="oddsbar" aria-hidden="true">${odds.map(o => `<span style="flex:${o.pct};background:${ODDS_COLOR[o.stars]}"></span>`).join("")}</div>
+    <p class="oddstxt">抽中機會（每個主題都一樣）：${odds.map(o => `<span><i style="background:${ODDS_COLOR[o.stars]}"></i>${"★".repeat(o.stars)} ${o.label} ${o.pct}%</span>`).join("")}${evo ? `<span class="evo">每個主題有 ${evo} 張要進化才拿得到，抽不到</span>` : ""}</p></div>`;
 }
+/* 貼紙簿的排列：照稀有度（普通 → 稀有 → 極稀有 → 傳說），同一級裡抽得到的在前、只能進化的在後（2026-10-24 維護者要求）；
+   只改畫面上的順序，貼紙代號和收藏都不變 */
+const bookOrder = theme => Themes.THEMES[theme].stickers.map((s, i) => i)
+  .sort((a, b) => Themes.stars(theme, a) - Themes.stars(theme, b) || Themes.isEvo(theme, a) - Themes.isEvo(theme, b) || a - b);
 /* 貼紙簿的一格（2026-10-24 維護者決定）：收集到的是彩色圖和名稱；還沒收集的——
    一、二星是灰色圖和名稱，三星是全黑剪影、名稱「???」，四星（傳說）再加金框和「傳說」字樣；只能進化的另外寫「進化才能得到」 */
 function bookCard(theme, i, name, n){
@@ -161,12 +166,12 @@ function renderBook(){
   $("#bookNames").querySelectorAll("[data-k]").forEach(b => b.onclick = () => { bookKid = b.dataset.k; renderBook(); });
   if(!bookKid){ $("#bookBody").innerHTML = kids.length ? `<p class="hint">點自己的名字，看看收集了哪些貼紙。</p>` : ""; return; }
   const st = bookStickers(bookKid);
-  $("#bookBody").innerHTML = Themes.ids.map(id => {
+  $("#bookBody").innerHTML = oddsHtml() + Themes.ids.map(id => {
     const t = Themes.THEMES[id], cnt = {};
     (st[id] || []).forEach(c => { const f = Themes.findCode(c); if(f && f.theme === id) cnt[f.idx] = (cnt[f.idx] || 0) + 1; });
     const have = Object.keys(cnt).length;
-    return `<section class="card booksec"><h2>${esc(t.name)}　<small>${have} / ${t.stickers.length}（星星越多越稀有）</small></h2>${oddsHtml(id)}
-      <div class="stkrow">${t.stickers.map((s, i) => bookCard(id, i, s[1], cnt[i])).join("")}</div></section>`;
+    return `<section class="card booksec"><h2>${esc(t.name)}　<small>${have} / ${t.stickers.length}（星星越多越稀有）</small></h2>
+      <div class="stkrow">${bookOrder(id).map(i => bookCard(id, i, t.stickers[i][1], cnt[i])).join("")}</div></section>`;
   }).join("");
 }
 /* 打開貼紙簿：從設定畫面（選單），或從結果畫面（2026-10-24 維護者要求：玩完可以直接看貼紙簿，看完回到結果畫面） */
