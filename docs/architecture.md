@@ -141,13 +141,7 @@
 
 ## 9. 自動產生資料的程式 `docs/scripts/`
 
-| 程式 | 產生什麼 | 什麼時候跑 |
-|---|---|---|
-| `check.js` | 不產生檔案；檢查語法、教材、版本號、學生資料、文件長度、這份地圖與存資料的入口、文件裡的指向（檔案和「某一節」找不找得到）、大檔案清單、楷書字型缺字、網頁下載量、對外連線（2026-10-24 加，都只提醒） | 每次推之前；GitHub 每個 PR 自動跑 |
-| `make_parts.py` | `shared/parts.js`、`docs/parts-table.xlsx` | 新增課本後 |
-| `make_bpmf.py` | `shared/bpmf.js`、`shared/fonts/bpmf-kai*` | 新增課本、改讀音後 |
-| `make_kai.py` | `shared/fonts/tw-kai*` | 新增課本、部件，或改了頁面文字後 |
-| `make_conf_candidates.py` | `docs/material-review.xlsx` 的「干擾字候選」頁 | 要請老師挑干擾字時 |
+`check.js`、`bump.js`、`changelog.js`、`make_parts.py`、`make_bpmf.py`、`make_kai.py`、`make_conf_candidates.py`：各產生什麼、什麼時候跑，見 `docs/scripts/README.md`（2026-10-24 搬去）。
 
 ## 10. 現在架構的特點與注意事項
 

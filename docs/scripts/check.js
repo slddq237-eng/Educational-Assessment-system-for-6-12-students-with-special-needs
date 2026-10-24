@@ -6,7 +6,8 @@
   1. 程式語法：所有 .js 檔和 HTML 裡的 <script>，有沒有打錯字、少括號（有的話網頁會整個壞掉）
   2. 教材資料（shared/lessons.js）：語詞裡有沒有這個字、干擾字有沒有包含答案本身等；
      語詞、例句裡有語音替換詞（shared/bpmf.js 的 BPMF_SAY）但還沒確認過的，提醒確認讀音
-  3. 版本號：每個頁面的 ?v= 要一樣（改了 js、css 卻忘了改版本號，老師的瀏覽器會用舊檔）
+  3. 版本號：每個頁面的 ?v= 要一樣（改了 js、css 卻忘了改版本號，老師的瀏覽器會用舊檔）；
+     和 main 比，改了網頁的 js、css 卻沒換版本號時提醒（改版本號用 node docs/scripts/bump.js）
   4. 學生資料：repo 是公開的，不能有照片、備份檔、作答紀錄
   5. 文件長度：docs/ 裡的說明文件太長時提醒拆分（太長的文件 Claude 一次讀不完、容易讀到過時內容）；
      CLAUDE.md 每則訊息都會載入，上限另外設得比較小
@@ -16,13 +17,14 @@
   9. 楷書字型缺字：畫面文字、教材裡的字要在楷書字型裡，沒有就提醒跑 make_kai.py
   10. 網頁下載量：每個頁面一打開要下載的程式和樣式（不含字型）超過上限就提醒，避免越來越慢
   11. 對外連線：程式裡新的外部網址要寫進 docs/architecture.md 第 7 節（也要更新 privacy.html）
-  8～11 都只提醒（2026-10-24 維護者要求加）
+  12. 變更紀錄：docs/changes/ 的小檔案要有「日期」「動到哪裡」「改了什麼」（只提醒）
+  8～12 都只提醒（2026-10-24 維護者要求加）
      只有入口檔案可以直接存取 localStorage、indexedDB（其他檔案直接用是錯誤，見 docs/refactor.md 規則 1）
 
 「錯誤」會讓檢查失敗（紅叉），要修好才合併；「提醒」只列出來，不會失敗。
 已知、等維護者決定的問題放在 KNOWN，寫明原因；修好後從 KNOWN 拿掉。
 */
-const fs = require('fs'), path = require('path'), vm = require('vm');
+const fs = require('fs'), path = require('path'), vm = require('vm'), { execSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..', '..');
 const errors = [], warns = [];
 const err = (where, msg) => errors.push(`${where}：${msg}`);
@@ -139,7 +141,16 @@ for (const f of files.filter(f => f.endsWith('.html'))) {
   for (const m of read(f).matchAll(/\?v=([\w.-]+)/g)) (vers[m[1]] = vers[m[1]] || new Set()).add(f);
 }
 const vs = Object.keys(vers);
-if (vs.length > 1) err('版本號', `頁面的 ?v= 不一樣：${vs.map(v => `${v}（${[...vers[v]].join('、')}）`).join('；')}。改了 js、css 時，所有頁面要改成同一個新版本號`);
+if (vs.length > 1) err('版本號', `頁面的 ?v= 不一樣：${vs.map(v => `${v}（${[...vers[v]].join('、')}）`).join('；')}。改了 js、css 時，執行 node docs/scripts/bump.js 一次改好所有頁面`);
+/* 和 main 比（2026-10-24 加）：這個分支改了網頁會載入的 js、css，網頁的 ?v= 卻沒換，就提醒。
+   要有 main 的紀錄才比得了（GitHub 的自動檢查有抓完整紀錄；本機沒有 origin/main 就跳過） */
+try {
+  const git = c => execSync(c, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  const changed = git('git diff --name-only origin/main...HEAD').split('\n').filter(Boolean);
+  const code = changed.filter(f => /\.(js|css)$/.test(f) && /^(shared|tools)\//.test(f) && !f.startsWith('shared/vendor/'));
+  if (code.length && !/^\+.*\?v=/m.test(git('git diff origin/main...HEAD -- "*.html"')))
+    warn('版本號', `改了 ${code.slice(0, 3).join('、')}${code.length > 3 ? ` 等 ${code.length} 個檔案` : ''}，網頁的 ?v= 還沒換：執行 node docs/scripts/bump.js`);
+} catch (e) { /* 沒有 git 或沒有 origin/main：不比 */ }
 
 /* ---------- 4. 學生資料 ---------- */
 const ALLOW_DATA = ['docs/material-review.xlsx', 'docs/parts-table.xlsx'];   /* 教材資料，沒有學生資料 */
@@ -270,6 +281,13 @@ for (const f of files.filter(f => own(f) && f.endsWith('.html'))) {
       if (m[1] !== 'www.w3.org' && !arch.includes(m[1])) hosts.set(m[1], f);
   }
   for (const [h, f] of hosts) warn(f, `連到外部網站「${h}」，請寫進 docs/architecture.md 第 7 節「對外連線」，並更新 privacy.html`);
+}
+
+/* ---------- 12. 變更紀錄 ----------
+   2026-10-24 起每個 PR 在 docs/changes/ 加一個小檔案（見 docs/changelog.md「怎麼寫」），這裡檢查有沒有該有的欄位 */
+for (const f of files.filter(f => /^docs\/changes\/\d{4}-\d{2}-\d{2}.*\.md$/.test(f))) {
+  const s = read(f), miss = ['日期', '動到哪裡', '改了什麼'].filter(k => !new RegExp(`^- ${k}：\\S`, 'm').test(s));
+  if (miss.length) warn(f, `變更紀錄少了「${miss.join('」「')}」：照 docs/changelog.md「怎麼寫」的格式，每一欄一行，例如「- 日期：2026-10-25」`);
 }
 
 /* ---------- 結果 ---------- */
