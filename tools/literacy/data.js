@@ -44,6 +44,7 @@ const MODES = [
 const FONT_SIZES = [["0.8","小"],["1","標準"],["1.2","大"],["1.4","特大"]];
 const UI_SIZES = [["0.85","小"],["1","標準"],["1.15","大"]];
 /* 多人輪流換人時的提醒方式（畫面一定會顯示「換 ○○」）；預設是畫面＋提示音，要唸名字再到「畫面與聲音」改 */
+const HINT_SIDES = [["right","右邊（預設）"],["left","左邊"]];
 const TURN_STYLES = [["chime","畫面＋提示音（預設）"],["voice","畫面＋唸出名字"],["both","畫面＋提示音＋唸出名字"],["silent","只有畫面"]];
 const LIMITS = [["30","30 秒"],["60","1 分鐘"],["120","2 分鐘"]];
 const CHOICES = [["3","3 個"],["4","4 個"],["6","6 個"]];
@@ -196,7 +197,9 @@ const settings = Object.assign({choices:"4", rate:0.85, formalTheme:true,
   practiceBpmf:false,
   /* 報讀提示：語詞、句子提示旁的小喇叭，按了念出完整語詞或句子。練習在第 4 步開關（預設開）；
      正式評量看「評量設定」（預設關，從基線期起維持同一個設定）；部件重組（4-1）一律沒有 */
-  practiceRead:true},
+  practiceRead:true,
+  /* 作答畫面「老師提示紀錄」欄固定在螢幕的哪一邊：right／left（細部設定 → 畫面與聲音；預設右邊，2026-10-25 維護者要求，老師比較好按） */
+  hintSide:"right"},
   load(KEYS.settings, {}));
 /* 以前存的「打怪獸要不要玩」（practiceGame）換成新的玩法設定 */
 if(!settings.practicePlay) settings.practicePlay = settings.practiceGame === false ? "color" : "game";

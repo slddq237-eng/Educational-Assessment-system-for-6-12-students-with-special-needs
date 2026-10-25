@@ -473,7 +473,7 @@ function newItem(it){
       <div class="optsbox ghostbox"><div class="opts" style="--cols:${cols};--rows:${rows}">${Array.from({length:G.choices}, () => `<span class="opt-ghost"></span>`).join("")}</div></div></div></section>`;
   };
   $("#pBody").innerHTML = `${split ? `<div class="zones" style="--n:${G.kids.length}">${G.kids.map(zoneHtml).join("")}</div>` : stageHtml}
-    ${G.mode === "flu" ? "" : `<div class="tbar"><span>老師提示紀錄：</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
+    ${G.mode === "flu" ? "" : `<div class="tbar" data-side="${settings.hintSide === "left" ? "left" : "right"}"><span>老師提示紀錄</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
   fitOpts();
   $("#pBody").querySelectorAll(".opt-big").forEach(btn => btn.onclick = () => pick(+btn.dataset.i, btn));
   if(!regroup) $("#speaker").onclick = () => speak(promptOf(it));
