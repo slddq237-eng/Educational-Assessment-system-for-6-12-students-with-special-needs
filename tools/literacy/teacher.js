@@ -247,11 +247,22 @@ function lessonPrePost(all){
   const pts = sess.filter(s => !s.prac).map(s => ({x: s.x, day: s.day, nth: s.nth, rs: s.rs, phase: s.rs[0].prepost, label: lab(s), ...accOf(s.rs)}));
   const extra = sess.filter(s => s.prac).map(s => { const a = accOf(s.rs); return {x: s.x, v: a.v, tip: `${lab(s)}｜練習｜${a.v}%（${a.n} 題）`}; });
   const at = Object.fromEntries(sess.map(s => [s.x, s.nth === 1 ? shortDay(s.day) : ""]));
+  /* 只看一課、而且這位學生這課有教學結束日時，在教學結束、1 週、2 週、1 個月後的第一次評量前面畫直立線（維護者 2026-10-25）。
+     橫軸是每次評量一格，所以線畫在兩格中間；那段時間沒有評量就不畫。只是看圖的輔助，不影響前測、後測的標記 */
+  const events = [], tEnd = sel ? teachFor(sel, T.kid) : {};
+  if(tEnd.type === "dates" && tEnd.end){
+    const byIdx = new Map();
+    [[0, "教學結束"], [7, "1 週"], [14, "2 週"], [30, "1 個月"]].forEach(([d, name]) => {
+      const i = sess.findIndex(s => daysBetween(tEnd.end, s.day) >= d);
+      if(i > 0) byIdx.set(i, [...(byIdx.get(i) || []), name]);
+    });
+    byIdx.forEach((names, i) => events.push({x: i - 0.5, label: names.join("・")}));
+  }
   const chips = chipRow([["", "全部課合計"], ...ks.map(k => [k, esc(many ? lessonLabel(k) : lessonName(...splitKey(k)))])], sel, "tlsn");
   const legend = phaseLegend(pts).replace(/<\/div>$/, `<span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="vertical-align:-3px"><path d="M8 1L15 8L8 15L1 8Z" fill="#fff" stroke="#d98a1a" stroke-width="2.5"/></svg>練習（橘色空心標記，不分前後測）</span></div>`);
   return `<div class="trow"><span class="tl">看哪一課</span>${chips}</div>
-    <div class="tchart">${legend}${lineChart(pts, {metric: "acc", extra, xLabel: x => at[x] || "", xName: "每次評量一格（前測、後測、練習）"})}</div>
-    <p class="note">正確率＝第一次就答對的比例。圓點連成的線是正式評量的前測、後測（灰色背景是前測、藍色是後測）；橘色空心標記是練習，不連線、不分前後測。點上面的課次，可以只看那一課。</p>`;
+    <div class="tchart">${legend}${lineChart(pts, {metric: "acc", extra, xLabel: x => at[x] || "", xName: "每次評量一格（前測、後測、練習）", events})}</div>
+    <p class="note">正確率＝第一次就答對的比例。圓點連成的線是正式評量的前測、後測（灰色背景是前測、藍色是後測）；橘色空心標記是練習，不連線、不分前後測。點上面的課次，可以只看那一課。${events.length ? "直立線是這課教學結束後的時間：畫在「教學結束、滿 1 週、滿 2 週、滿 1 個月」之後的第一次評量前面（那段時間沒有評量就不畫）。" : ""}</p>`;
 }
 function renderSimple(){
   const box = $("#tSimple"), withData = kidsWithData();
