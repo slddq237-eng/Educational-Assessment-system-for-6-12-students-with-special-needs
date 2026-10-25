@@ -1,6 +1,6 @@
 /* =========================================================
    識字評量：老師專區（teacher.js）
-   三個分頁：一位學生（選單逐步選，每次一張圖或一張表）、全班總表、進階分析（在 pivot.js）。
+   三個分頁：個人、多位學生（原全班總表）、進階分析（在 pivot.js）。
    每個分頁上方有「這一頁怎麼用？」，結果下方有「這張圖怎麼看？」；（分析教學頁 2026-10-25 已刪除，只留程式內的短說明。）
    原則（2026-10-20 定案）：
    - 分析一律用「前後測」（前測／後測；沒標的是未標記），用的是作答當下老師按的標記（A8，2026-10-25）。
@@ -13,7 +13,7 @@
    ========================================================= */
 const TEACH_UI = KEYS.teacher;
 const T = Object.assign({tab:"one", kid:"", metric:"acc", view:"time", axis:"date", split:"lesson", range:"term", from:"", to:"",
-  kind:"formal", goal:"", book:"", lesson:"", gap:"after", top:"300", adv:"charts", simpleLesson:""}, load(TEACH_UI, {}));
+  kind:"formal", goal:"", book:"", lesson:"", gap:"after", top:"300", adv:"charts", simpleLesson:"", classKids:[], groups:[]}, load(TEACH_UI, {}));
 const saveT = () => store(TEACH_UI, T);
 const hasFreq = () => typeof FREQ !== "undefined";
 
@@ -282,7 +282,7 @@ function renderSimple(){
 
 function renderTeacher(){
   /* 三個分頁（維護者 2026-10-25 改名）：個人、全班、進階分析。進階分析裡有兩部分：更多圖表與明細（原本「一位學生」下面的選單）、樞紐分析 */
-  $("#tTabs").innerHTML = chipRow([["one","個人"],["class","全班"],["pivot","進階分析"]], T.tab, "ttab");
+  $("#tTabs").innerHTML = chipRow([["one","個人"],["class","多位學生"],["pivot","進階分析"]], T.tab, "ttab");
   renderTabHelp();
   $("#tTabs").querySelectorAll("[data-ttab]").forEach(b => b.onclick = () => { T.tab = b.dataset.ttab; saveT(); renderTeacher(); });
   const withData = kidsWithData();
@@ -314,10 +314,10 @@ const TAB_HELP = {
     "<b>依前後測比較</b>最直接看有沒有進步：前測 → 後測。沒標前測或後測的評量放在「未標記」。",
     "結果區的「看明細」是圖上每個數字的表格；任何一個字都可以點，看那個字的每一次作答。",
     "找不到資料時，先把日期改成「全部」、性質改成「全部」。"], "one"],
-  class: ["一眼看全班：每一列是一位學生，每一欄是一個字。", [
-    "格子大字＝第一次就答對的比例，小字＝作答次數；藍色越深越好，「—」＝還沒考過。",
-    "直著看一欄：全班都淺色的字，可能字本身難或教學要調整；橫著看一列：哪位學生需要個別加強。",
-    "點格子看那位學生那個字的每一次作答。"], "class"],
+  class: ["比較幾位學生：先點上面的學生（最多 8 位，可以存成組別），每一列是一位學生。", [
+    "常錯的字、反應最慢的字、容易搞混的字：每位學生各列出前 5 個；任何一個字都可以點，看那位學生那個字的每一次作答。",
+    "最下面是「學生 × 生字」：格子大字＝第一次就答對的比例，小字＝作答次數；藍色越深越好，「—」＝還沒考過。直著看一欄，大家都淺色的字，可能字本身難或教學要調整。",
+    "組別只存在這台電腦的瀏覽器裡，不會進作答紀錄。"], "class"],
   pivot: ["自己決定怎麼分組比較，做法像 Excel 的樞紐分析表：先選要算的數字（指標），再選怎麼分組（列、欄）。", [
     "不知道怎麼選？先按上方的<b>範例</b>，每個範例都附「這在回答什麼、怎麼看」。",
     "<b>列</b>＝表格每一橫列是一組；<b>欄</b>＝每一直欄是一組（可以不選）；每一格是那一組的數字，小字是用了幾筆紀錄。",
@@ -747,10 +747,57 @@ const LIST_VIEWS = {
 /* =========================================================
    19. 全班總表（學生 × 生字，格子是第一次就答對的比例）
    ========================================================= */
+/* 多位學生（原「全班總表」，2026-10-25 維護者改）：自己點選最多 8 位；組別存在老師自己的瀏覽器（T.groups，只存學生代號），不進作答紀錄 */
+const CLASS_MAX = 8, CLASS_TOP = 5;
+const pickedKids = () => (T.classKids || []).filter(kidBy);
+function classPicker(withData){
+  const sel = new Set(pickedKids()), groups = T.groups || [];
+  const cur = groups.findIndex(g => g.kids.length === sel.size && g.kids.every(c => sel.has(c)));
+  return `<div class="trow"><span class="tl">選學生（最多 ${CLASS_MAX} 位）</span>${withData.map(k =>
+      `<button class="chip ${sel.has(k.code) ? "on" : ""}" data-ckid="${esc(k.code)}" aria-pressed="${sel.has(k.code)}">${esc(kidLabel(k))}</button>`).join("")}</div>
+    <div class="trow" style="margin-top:8px"><span class="tl">組別</span>${groups.map((g, i) =>
+      `<button class="chip ${i === cur ? "on" : ""}" data-cgrp="${i}" aria-pressed="${i === cur}">${esc(g.name)}</button>`).join("") || `<span class="note" style="margin:0">還沒有組別</span>`}
+      <button class="ghost" id="cGrpSave" ${sel.size ? "" : "disabled"}>把目前選的存成組別</button>${cur >= 0 ? `<button class="ghost" id="cGrpDel">刪除「${esc(groups[cur].name)}」</button>` : ""}</div>
+    <p class="note" id="cMsg" style="margin:6px 0 0"></p>`;
+}
+/* 每位學生一列的比較表：每格列出這位學生最前面幾個字（和「一位學生」畫面的常錯、最慢、容易搞混同一套算法） */
+function classTable(title, kidList, rs, cellFn){
+  const rows = kidList.map(k => { const html = cellFn(k, rs.filter(r => r.kid === k.code)); return `<tr><th>${esc(kidLabel(k))}</th><td>${html || `<span class="note" style="margin:0">—</span>`}</td></tr>`; }).join("");
+  return `<section class="ssec"><h3 class="ttitle">${title}</h3><div class="tablewrap"><table class="rec"><thead><tr><th>學生</th><th>前 ${CLASS_TOP} 個</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+const classWrong = (k, rs) => [...groupBy(rs, r => r.char)].map(([c, l]) => ({c, n: l.length, w: l.filter(r => !r.firstCorrect).length})).filter(x => x.w)
+  .sort((a, b) => b.w - a.w || a.n - b.n).slice(0, CLASS_TOP).map(x => `${charLink(x.c, k.code)}<small> 錯 ${x.w} 次・${pct(x.n - x.w, x.n)}%</small>`).join("　");
+const classSlow = (k, rs) => [...groupBy(rs, r => r.char)].map(([c, l]) => ({c, v: avg(l.filter(r => r.passed && typeof r.correctSec === "number").map(r => r.correctSec))})).filter(x => x.v != null)
+  .sort((a, b) => b.v - a.v).slice(0, CLASS_TOP).map(x => `${charLink(x.c, k.code)}<small> ${x.v} 秒</small>`).join("　");
+const classConfused = (k, rs) => [...groupBy(rs.filter(r => !r.firstCorrect && r.firstPick), r => `${r.char}→${r.firstPick}`)].map(([key, l]) => ({key, n: l.length}))
+  .sort((a, b) => b.n - a.n).slice(0, CLASS_TOP).map(x => { const [c, p] = x.key.split("→"); return `${charLink(c, k.code)}<small>→${esc(p)}（${x.n} 次）</small>`; }).join("　");
 function renderClass(){
-  const rs = filtered(false), kidList = kidsWithData().filter(k => rs.some(r => r.kid === k.code));
+  const withData = kidsWithData(), sel = pickedKids(), picked = withData.filter(k => sel.includes(k.code));
+  const rs = filtered(false).filter(r => sel.includes(r.kid)), kidList = picked.filter(k => rs.some(r => r.kid === k.code));
   $("#tMenu").innerHTML = "";
-  if(!rs.length){ showResult(null, "這個範圍裡沒有紀錄。可以把日期改成「全部」，或把性質改成「全部」。"); return; }
+  const head = `<h3 class="ttitle">多位學生比較</h3>${classPicker(withData)}`;
+  const bindPicker = () => {
+    const res = $("#tResult"), re = () => { const y = window.scrollY; saveT(); renderTeacher(); window.scrollTo(0, y); };
+    res.querySelectorAll("[data-ckid]").forEach(b => b.onclick = () => {
+      const c = b.dataset.ckid, cur = pickedKids();
+      if(cur.includes(c)) T.classKids = cur.filter(x => x !== c);
+      else if(cur.length >= CLASS_MAX){ $("#cMsg").textContent = `最多選 ${CLASS_MAX} 位，請先取消一位，或分組來看。`; return; }
+      else T.classKids = [...cur, c];
+      re();
+    });
+    res.querySelectorAll("[data-cgrp]").forEach(b => b.onclick = () => { T.classKids = T.groups[+b.dataset.cgrp].kids.filter(kidBy).slice(0, CLASS_MAX); re(); });
+    const save = $("#cGrpSave"), del = $("#cGrpDel");
+    if(save) save.onclick = () => {
+      const name = (prompt("這一組的名字（例如：一年級組）") || "").trim(); if(!name) return;
+      T.groups = [...(T.groups || []).filter(g => g.name !== name), {name, kids: pickedKids()}]; re();
+    };
+    if(del) del.onclick = () => { const g = T.groups.find(x => x.kids.length === sel.length && x.kids.every(c => sel.includes(c))); T.groups = T.groups.filter(x => x !== g); re(); };
+  };
+  if(!kidList.length){
+    tCurrent = null;
+    $("#tResult").innerHTML = head + `<p class="hint">${picked.length ? "這個範圍裡，選到的學生沒有紀錄。可以把日期改成「全部」，或把性質改成「全部」。" : "請先點上面的學生（最多 " + CLASS_MAX + " 位），這裡就會出現比較。"}</p>`;
+    bindPicker(); return;
+  }
   /* 字的順序：依課本、課次、課本裡的順序 */
   const order = new Map(); BOOK_ORDER.forEach((b, bi) => Object.keys(BOOKS[b].lessons).forEach(n => charsOf(key(b, n)).forEach((c, ci) => { const k = c; if(!order.has(k)) order.set(k, bi * 1e6 + (+n) * 1e3 + ci); })));
   const chars = [...new Set(rs.map(r => r.char))].sort((a, b) => (order.get(a) ?? 9e9) - (order.get(b) ?? 9e9));
@@ -764,12 +811,14 @@ function renderClass(){
   const rows = []; kidList.forEach(k => chars.forEach(c => { const list = cell.get(k.code + "|" + c); if(list) rows.push({kid:k.code, name:kidLabel(k), char:c, ...accOf(list)}); }));
   const all = accOf(rs);
   tCurrent = null;
-  $("#tResult").innerHTML = `<h3 class="ttitle">全班總表（第一次就答對的比例）</h3>
+  $("#tResult").innerHTML = head + classTable("常錯的字", kidList, rs, classWrong) + classTable("反應最慢的字", kidList, rs, classSlow) + classTable("容易搞混的字（字→常選成）", kidList, rs, classConfused)
+    + `<section class="ssec"><h3 class="ttitle">每個字的正確率（學生 × 生字）</h3>
     <div class="tstats"><div class="tstat"><span>學生</span><b>${kidList.length} 位</b><small>${esc(rangeText())}</small></div>
-      <div class="tstat"><span>考過的字</span><b>${chars.length} 個</b></div><div class="tstat"><span>全班第一次就答對</span><b>${fmt("acc", all.v)}</b><small>${all.n} 題</small></div></div>
-    <p class="note">格子裡大字是第一次就答對的比例，小字是作答次數；藍色越深越好（白色＝不到 40%，最深＝80% 以上）。點格子看那位學生那個字的每一次作答。學習成效一覽（習得／精熟／維持）等判斷標準定好後再加上。</p>
+      <div class="tstat"><span>考過的字</span><b>${chars.length} 個</b></div><div class="tstat"><span>這幾位第一次就答對</span><b>${fmt("acc", all.v)}</b><small>${all.n} 題</small></div></div>
+    <p class="note">格子裡大字是第一次就答對的比例，小字是作答次數；藍色越深越好（白色＝不到 40%，最深＝80% 以上）。點格子看那位學生那個字的每一次作答。</p>
     ${table}
-    <div class="row" style="margin-top:12px"><button class="ghost" id="tExport">匯出全班總表（Excel）</button><span class="note" id="tMsg" style="margin:0"></span></div>`;
+    <div class="row" style="margin-top:12px"><button class="ghost" id="tExport">匯出這幾位的總表（Excel）</button><span class="note" id="tMsg" style="margin:0"></span></div></section>`;
+  bindPicker();
   $("#tResult").querySelectorAll("[data-char]").forEach(el => el.onclick = () => openCharLog(el.dataset.kid, el.dataset.char));
   $("#tExport").onclick = () => {
     const wide = kidList.map(k => Object.fromEntries([["學生", kidLabel(k)], ["全部", fmt("acc", accOf(rs.filter(r => r.kid === k.code)).v)],
