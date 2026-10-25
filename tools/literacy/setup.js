@@ -444,6 +444,13 @@ function renderKids(){
   $("#kids").innerHTML = kids.map(k => `<button class="chip kidchip ${state.kids.has(k.code)?"on":""}" data-k="${esc(k.code)}" aria-pressed="${state.kids.has(k.code)}">${Rewards.avatarHtml(k.code)}${esc(k.name && kids.filter(o => o.name === k.name).length === 1 ? k.name : kidLabel(k))}</button>`).join("");
   $("#kids").querySelectorAll("button").forEach(b => b.onclick = () => { const k = b.dataset.k; state.kids.has(k) ? state.kids.delete(k) : state.kids.add(k); render(); });
 }
+/* 一次選一整組：讀老師專區「多位學生」存的組別（只有學生代號）；點組別＝選起這組現有的學生，原本選的取代掉 */
+function renderKidGroups(){
+  const grps = (load(KEYS.teacher, {}).groups || []).map(g => ({name: g.name, codes: g.kids.filter(kidBy)})).filter(g => g.codes.length);
+  const box = $("#kidGroups"); box.hidden = !grps.length;
+  box.innerHTML = grps.length ? `<span>組別</span>${grps.map((g, i) => `<button class="chip" data-g="${i}">${esc(g.name)}（${g.codes.length} 位）</button>`).join("")}` : "";
+  box.querySelectorAll("[data-g]").forEach(b => b.onclick = () => { state.kids = new Set(grps[+b.dataset.g].codes); render(); });
+}
 /* =========================================================
    5. 彈出面板（學生名單、教學日期、評量設定）
    ========================================================= */
@@ -701,4 +708,4 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets()
 document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); if(t && t.dataset.open === "kids"){ renderKidSheet(); openSheet("#kidsSheet"); } });
 $("#openRecords").onclick = () => { renderRecSheet(); openSheet("#recSheet"); };
 
-function render(){ if(state.answer === "splitturn" && selKids().length < 2) state.answer = "turn"; renderPresets(); renderPrepost(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderTeam(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }
+function render(){ if(state.answer === "splitturn" && selKids().length < 2) state.answer = "turn"; renderPresets(); renderPrepost(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderTeam(); renderKids(); renderKidGroups(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }
