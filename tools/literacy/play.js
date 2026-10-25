@@ -332,7 +332,11 @@ function nextItem(){
   if(G.pos >= G.queue.length) return G.game && !G.hpOver ? sceneWin() : finish();
   const it = G.queue[G.pos], prev = G.queue[G.pos - 1];
   /* 多人輪流時，換到另一位學生先出現換人畫面 */
-  if(G.kids.length > 1 && (!prev || prev.kid !== it.kid)) return turnCard(it.kid, !prev, () => newItem(it));
+  if(G.kids.length > 1 && (!prev || prev.kid !== it.kid)){
+    /* 分區輪流（E14）：不跳換人過場，直接亮起下一位的區；換人時只播一聲提示音（維護者 2026-10-25） */
+    if(G.answer === "splitturn"){ if(prev) sfx.turn(); return newItem(it); }
+    return turnCard(it.kid, !prev, () => newItem(it));
+  }
   newItem(it);
 }
 

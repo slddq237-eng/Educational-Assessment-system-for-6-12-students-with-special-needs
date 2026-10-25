@@ -102,7 +102,8 @@ function step3Miss(){
   return "";
 }
 /* 能選的作答方式（快速開始只列大螢幕輪流、分區輪流、平板掃 QR code） */
-const answerList = () => ANSWERS.filter(a => !isQuick() || a.id === "turn" || a.id === "splitturn" || a.id === "qr");
+/* 只選一位學生時不列分區輪流（沒有別人的區可以分，2026-10-25 維護者要求） */
+const answerList = () => ANSWERS.filter(a => (!isQuick() || a.id === "turn" || a.id === "splitturn" || a.id === "qr") && (a.id !== "splitturn" || selKids().length > 1));
 const isTurnLike = id => id === "turn" || id === "splitturn";   /* 大螢幕輪流（全螢幕或分區） */
 const answerOff = a => a.off || "";
 /* 第 3 步可以跳過嗎：作答方式只有一個能選、而且個人或合作是固定的 */
@@ -706,4 +707,4 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets()
 document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); if(t && t.dataset.open === "kids"){ renderKidSheet(); openSheet("#kidsSheet"); } });
 $("#openRecords").onclick = () => { renderRecSheet(); openSheet("#recSheet"); };
 
-function render(){ renderPresets(); renderPrepost(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderTeam(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }
+function render(){ if(state.answer === "splitturn" && selKids().length < 2) state.answer = "turn"; renderPresets(); renderPrepost(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderTeam(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }
