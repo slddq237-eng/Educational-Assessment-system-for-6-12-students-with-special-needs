@@ -20,7 +20,7 @@
 | 維護者上傳教材檔案、課本改版 | `materials/data-sources.md`「上傳教材檔案、課本改版時」、`materials/materials.md` |
 | 加入新的外部資料（課本、字頻、圖片、聲音、字型、程式元件） | `materials/data-sources.md`（同步更新「關於我們」頁 `about.html`） |
 | 有人提出新想法、要排優先順序 | `plans/roadmap.md`、`plans/pending.md`；還沒做的計畫細節在 `plans/roadmap-plans.md` |
-| 要討論、還沒決定的事 | `plans/pending.md` |
+| 要討論、還沒決定的事 | `plans/pending.md`；A3 正式評量條件讀 `plans/a3-conditions.md`；老師專區簡潔畫面讀 `design/analysis-page-draft.md` |
 | 查「當初為什麼這樣決定」、已完成的實作細節 | `history/history.md`（2026-10-24 起的新歷史在 `history/history-2026-10-24.md`；A8 原文在 `history/history-2026-10-25.md`）；教材、讀音的歷史在 `history/history-materials.md`；路線圖已完成項目做了什麼在 `history/history-roadmap.md` |
 | 研究方法（單一受試、介入設計） | `design/research-method-spec.md` |
 
@@ -41,10 +41,12 @@
 | `design/analysis-design.md` | 老師專區（分析）、研究方法分層、學扶前後測、分析教學、備課分析 | 3-2、3-4、3-3 的「學扶前後測」「分析教學」 |
 | `design/records.md` | 資料怎麼存、作答紀錄 | 4 |
 | `design/a8-terms.md` | A8 名詞與時期定義：前後測、研究時期、紀錄第 3 版欄位、實作待辦（2026-10-25 從 `design/records.md` 拆出） | 3-3 的「A8 名詞與時期定義」 |
+| `design/analysis-page-draft.md` | 老師專區「一位學生」簡潔畫面設計草稿：預設畫面、換字表、待決題號（2026-10-25 新增） | （新） |
 | `materials/data-sources.md` | 資料來源與授權清單、上傳教材檔案時讀得到哪些檔案 | 4-1、「上傳教材檔案、課本改版時」 |
 | `materials/materials.md` | 教材資料的來源與使用邏輯、待確認清單、資料掃描發現、部件資料 | 4-1 的「教材資料的來源與使用邏輯」 |
 | `materials/distractors.md` | 干擾字：跟著版本還是固定、怎麼分配、形音都像、老師選干擾字類型（2026-10-24 從 `materials/materials.md` 拆出） | 4-1 |
 | `materials/pronunciation.md` | 讀音與注音：破音字、以課本為主、老師怎麼回報讀音、人名地名的特殊讀音（2026-10-24 從 `materials/materials.md` 拆出） | 4-1 |
+| `plans/a3-conditions.md` | A3 正式評量標準條件表（草案）：已定案項目、待決項目與 Claude 的建議，回答用題號（2026-10-25 新增） | （新） |
 | `plans/pending.md` | 所有待決問題的總清單（每題一行，依誰決定分組，細節在各主題檔案） | 6 |
 | `history/history.md` | 決策歷史：整合的分階段計畫、已完成的實作細節、全面檢查 | 原開頭、3-3 主段與實作細節、5-1 |
 | `history/history-2026-10-24.md` | 2026-10-24 起的決策歷史（`history/history.md` 滿了，依時間切開；之後快到 1 萬字就再開新檔，檔名用新檔第一天的日期） | （新） |
