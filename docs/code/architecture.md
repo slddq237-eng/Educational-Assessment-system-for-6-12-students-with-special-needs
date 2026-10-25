@@ -98,7 +98,7 @@
 | IndexedDB | `literacy` / `records` | **作答紀錄**（每題一筆，欄位見 `records.js` 的 `COLS`） | `records.js`（只有它直接存取） |
 | IndexedDB | `platform-rewards` / `kids` | 貼紙收藏、頭像（可能有照片） | `shared/rewards.js` |
 | localStorage | `literacy-kids` | 學生名單 | `data.js` |
-| localStorage | `literacy-teach` | 教學日期（全班預設＋個別學生） | `data.js` |
+| localStorage | `literacy-teach` | 教學日期（全班預設＋個別學生；用「一組」加的個別設定多記組名 `grp`，一組顯示成一列、組內一起改） | `data.js` |
 | localStorage | `literacy-settings` | 細部設定 | `data.js` |
 | localStorage | `literacy-wordsets` | 字組 | `wordsets.js` |
 | localStorage | `literacy-ui`、`literacy-preset` | 設定畫面停在哪 | `setup.js` |

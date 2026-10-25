@@ -593,6 +593,8 @@ function dateCtl(t, label){
     <div class="ds">${t.type === "dates" ? `<input type="date" aria-label="${esc(label)}開始日" data-s value="${t.start||""}"><span>到</span><input type="date" aria-label="${esc(label)}結束日" data-e value="${t.end||""}">` : ""}
     <span class="ph">${esc(dateNote(t))}</span></div>`;
 }
+/* 這位學生在這一課的個別設定如果是用「一組」加的，記著組名（entry.grp）；組別已刪掉就當個別學生顯示 */
+const grpOf = (t, c) => { const g = (t.kids[c] || {}).grp; return g && getGroups().some(x => x.name === g) ? g : ""; };
 function renderDates(){
   /* 先選版本、再選年級（和第 2 步一樣）；換版本時，選同一個年級學期的那一本，沒有就選那個版本的第一本 */
   const dEd = BOOKS[dBook].edition;
@@ -607,26 +609,31 @@ function renderDates(){
     const own = Object.keys(t.kids || {}).filter(kidBy), free = kids.filter(x => !own.includes(x.code));
     const grps = getGroups().map((g, gi) => ({...g, gi})).filter(g => g.kids.some(c => kidBy(c) && !own.includes(c)));   /* gi＝在完整組別清單的位置 */   /* 學生名單的組別（只有學生代號） */
     return `<div class="drow" data-k="${k}"><b>${esc(lessonName(dBook, n))}</b>${dateCtl(t, `第 ${n} 課`)}</div>
-      ${own.map(c => `<div class="drow dkid" data-k="${k}" data-kid="${esc(c)}"><span class="dk">個別</span><div class="kc"><b>${esc(kidLabel(kidBy(c)))}</b>
+      ${own.filter(c => !grpOf(t, c)).map(c => `<div class="drow dkid" data-k="${k}" data-kid="${esc(c)}"><span class="dk">個別</span><div class="kc"><b>${esc(kidLabel(kidBy(c)))}</b>
         ${dateCtl(t.kids[c], `${kidLabel(kidBy(c))} 第 ${n} 課`)}<button class="linkbtn" data-del>改回全班</button></div></div>`).join("")}
-      ${free.length ? `<div class="dadd"><select data-add data-k="${k}" aria-label="第 ${n} 課：個別學生不同"><option value="">＋個別學生不同…</option>${free.map(x => `<option value="${esc(x.code)}">${esc(kidLabel(x))}</option>`).join("")}</select>${grps.length ? `<select data-addgrp data-k="${k}" aria-label="第 ${n} 課：一組學生不同"><option value="">＋一組學生不同…</option>${grps.map(g => `<option value="${g.gi}">${esc(g.name)}（${g.kids.filter(kidBy).length} 位）</option>`).join("")}</select>` : ""}</div>` : ""}`;
+      ${[...new Set(own.map(c => grpOf(t, c)).filter(Boolean))].map(name => { const cs = own.filter(c => grpOf(t, c) === name);
+        return `<div class="drow dkid" data-k="${k}" data-grp="${esc(name)}"><span class="dk">一組</span><div class="kc"><b>${esc(name)}（${cs.length} 位）</b>
+        ${dateCtl(t.kids[cs[0]], `${name} 第 ${n} 課`)}<button class="linkbtn" data-del>改回全班</button></div></div>`; }).join("")}
+      ${free.length ? `<div class="dadd"><select data-add data-k="${k}" aria-label="第 ${n} 課：個別學生不同"><option value="">＋個別…</option>${free.map(x => `<option value="${esc(x.code)}">${esc(kidLabel(x))}</option>`).join("")}</select>${grps.length ? `<select data-addgrp data-k="${k}" aria-label="第 ${n} 課：一組學生不同"><option value="">＋一組…</option>${grps.map(g => `<option value="${g.gi}">${esc(g.name)}（${g.kids.filter(kidBy).length} 位）</option>`).join("")}</select>` : ""}</div>` : ""}`;
   }).join("");
   const done = () => { saveTeach(); renderDates(); render(); };
   $("#dTable").querySelectorAll(".drow").forEach(r => {
-    const k = r.dataset.k, c = r.dataset.kid;
-    /* 這一列改的是全班預設，還是某位學生的個別設定 */
-    const target = () => c ? teach[k].kids[c] : teach[k];
+    const k = r.dataset.k, c = r.dataset.kid, gname = r.dataset.grp;
+    /* 這一列改的是全班預設、某位學生的個別設定，還是一組學生（組內每位一起改） */
+    const codes = () => gname ? Object.keys(teach[k].kids).filter(x => grpOf(teach[k], x) === gname) : c ? [c] : [];
+    const each = fn => codes().forEach(x => fn(teach[k].kids[x]));
+    const target = () => teach[k];
     r.querySelector("[data-type]").onchange = e => {
       const v = e.target.value;
-      if(c) teach[k].kids[c] = {...teach[k].kids[c], type:v};   /* 個別學生選「依年級」＝這位學生不用全班的日期 */
+      if(c || gname) codes().forEach(x => { teach[k].kids[x] = {...teach[k].kids[x], type:v}; });   /* 個別學生選「依年級」＝這位學生不用全班的日期 */
       else { const keep = (teach[k] || {}).kids; teach[k] = v ? {...(teach[k] || {}), type:v} : (keep ? {kids:keep} : {}); }
       done();
     };
     const s = r.querySelector("[data-s]"), en = r.querySelector("[data-e]");
-    if(s) s.onchange = () => { target().start = s.value; done(); };
-    if(en) en.onchange = () => { target().end = en.value; done(); };
+    if(s) s.onchange = () => { (c || gname ? each : f => f(target()))(t => { t.start = s.value; }); done(); };
+    if(en) en.onchange = () => { (c || gname ? each : f => f(target()))(t => { t.end = en.value; }); done(); };
     const del = r.querySelector("[data-del]");
-    if(del) del.onclick = () => { delete teach[k].kids[c]; if(!Object.keys(teach[k].kids).length) delete teach[k].kids; done(); };
+    if(del) del.onclick = () => { codes().forEach(x => delete teach[k].kids[x]); if(!Object.keys(teach[k].kids).length) delete teach[k].kids; done(); };
   });
   /* 加一位個別學生：先複製全班的日期，老師再改 */
   $("#dTable").querySelectorAll("[data-add]").forEach(sel => sel.onchange = () => {
@@ -641,7 +648,7 @@ function renderDates(){
     const k = sel.dataset.k, g = getGroups()[+sel.value]; if(!g) return;
     const t = teach[k] = teach[k] || {};
     t.kids = t.kids || {};
-    g.kids.filter(c => kidBy(c) && !t.kids[c]).forEach(c => { t.kids[c] = t.type === "dates" ? {type:"dates", start:t.start || "", end:t.end || ""} : {type:"dates", start:"", end:""}; });
+    g.kids.filter(c => kidBy(c) && !t.kids[c]).forEach(c => { t.kids[c] = {...(t.type === "dates" ? {type:"dates", start:t.start || "", end:t.end || ""} : {type:"dates", start:"", end:""}), grp:g.name}; });
     done();
   });
 }
