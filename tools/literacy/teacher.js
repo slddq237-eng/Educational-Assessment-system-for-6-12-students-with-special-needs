@@ -120,8 +120,8 @@ function kidsWithData(){ const have = new Set(records.filter(r => !r.quit).map(r
 /* =========================================================
    15b. 一位學生的簡潔畫面（2026-10-25 維護者指定，設計見 docs/design/analysis-page-draft.md）
    一般模式老師只需要選學生，其他不用點，整頁往下捲：
-   總體紀錄 → 每天的平均答對率（折線圖）→ 每天的平均反應時間（折線圖）→ 常錯的字 → 反應最慢的字 → 容易搞混的字
-   → 近期正式評量紀錄 → 練習紀錄。總體、折線圖和三個字的清單只看正式評量（條件固定，才有可比性）；練習另外列在最後。
+   總體紀錄 → 每天的平均正確率（折線圖）→ 每天的平均反應時間（折線圖）→ 各課前後測正確率（折線圖）→ 常錯的字 → 反應最慢的字
+   → 容易搞混的字 → 近期正式評量紀錄 → 近期練習紀錄。統計、折線圖、字的清單都是正式評量＋練習全部一起算；前後測只有正式評量。
    原本的選單、圖、表收進最下面的「進階」（預設收起）。
    ========================================================= */
 /* 錯誤類型在老師畫面上的名稱：同詞／同音／形近（維護者 2026-10-25 決定；只改顯示，紀錄裡存的 errorType 不變，同詞易混＝同詞） */
@@ -187,48 +187,74 @@ function confusedChars(rs){
   }
   return note + detailTable([["字", r => r.char, true], ["常選成", r => r.pick], ["次數", r => r.n], ["錯誤類型", r => r.type]], rows);
 }
-function recentTable(rs, withKind){
-  const sess = sessionsOf(rs).reverse().slice(0, SIMPLE_ROWS);
-  if(!sess.length) return `<p class="note" style="margin:0">還沒有紀錄。</p>`;
-  const rows = sess.map(s => { const a = accOf(s.rs), secs = secList(s.rs);
-    return {day: shortDay(s.day), tag: tagText(s.rs) || "—", kind: s.rs[0].mode === "flu" ? "計時挑戰" : "練習", lessons: lessonsText2(s.rs), n: s.rs.length, ok: `${s.rs.filter(r => r.firstCorrect).length} / ${s.rs.length} 題（${a.v}%）`, sec: secs.length ? `${avg(secs)} 秒` : "—"}; });
-  return detailTable([["日期", r => r.day], ...(withKind ? [["類型", r => r.kind]] : [["前後測", r => r.tag]]), ["課次", r => r.lessons], ["正確率", r => r.ok], ["平均反應", r => r.sec]], rows);
+/* 近期紀錄（正式評量、練習各一張）：一次評量、一課一列，同一課的放在一起（圖片版面，維護者 2026-10-25）；
+   只列最近 10 筆；中途結束的也列出來（灰色、註明「未做完」），但不算進平均 */
+const RECENT_ROWS = 10;
+const hintNames = r => r.hintSet === undefined ? "" : r.hintSet ? `提示：${r.hintSet.split(",").map(h => hintName(h).replace(/（.*?）/g, "")).join("、")}` : "無提示";   /* 名稱去掉括號的說明，免得表格太寬 */
+const recentPlay = r => r.kind === "formal" ? "" : r.mode === "flu" ? "計時挑戰" : r.game ? gameName(r) : r.layout === "bingo" ? "生字賓果" : "一般";
+function recentByLesson(all, formal){
+  const rows = [];
+  for(const s of sessionsOf(all.filter(r => (r.kind === "formal") === formal)))
+    for(const [k, list] of groupBy(s.rs, r => key(r.book, r.lesson))) rows.push({k, at: s.at, day: s.day, rs: list});
+  const top = rows.sort((a, b) => a.at < b.at ? 1 : -1).slice(0, RECENT_ROWS);
+  if(!top.length) return `<p class="note" style="margin:0">還沒有紀錄。</p>`;
+  const groups = [...groupBy(top, x => x.k)];   /* 同一課放一起；課次依最近一次的先後排 */
+  const cols = formal ? ["日期", "前後測", "一次看幾個字", "抽到的字", "正確率", "點錯", "平均反應", "沒有一次答對的字"] : ["日期", "玩法", "一次看幾個字", "抽到的字", "正確率", "點錯", "平均反應", "沒有一次答對的字"];
+  return groups.map(([k, list]) => {
+    const counted = list.filter(x => !x.rs.some(r => r.quit)), a = accOf(counted.flatMap(x => x.rs));
+    const head = `<h4 class="sgrp">${esc(lessonLabel(k))}<span>　${formal ? "評量" : "練習"} ${counted.length} 次${a.v == null ? "" : `，平均正確率 ${a.v}%`}</span></h4>`;
+    const body = list.map(x => {
+      const r0 = x.rs[0], quit = x.rs.some(r => r.quit), acc = accOf(x.rs), secs = secList(x.rs);
+      const chars = [...new Set(x.rs.map(r => r.char))], miss = [...new Set(x.rs.filter(r => !r.firstCorrect).map(r => r.char))];
+      const cells = [shortDay(x.day), formal ? (r0.prepost || "—") : recentPlay(r0), `${r0.choices || "?"} 個${hintNames(r0) ? `・${hintNames(r0)}` : ""}`, `<span class="schars">${esc(chars.join(""))}</span>`,
+        `${x.rs.filter(r => r.firstCorrect).length}/${x.rs.length}（${acc.v}%）${quit ? "・未做完" : ""}`, x.rs.reduce((n, r) => n + (r.wrongCount || 0), 0), secs.length ? `${avg(secs)} 秒` : "—", `<span class="schars miss">${esc(miss.join(""))}</span>`];
+      return `<tr class="${quit ? "squit" : ""}">${cells.map((c, i) => `<td>${i === 3 || i === 7 ? c : esc(c)}</td>`).join("")}</tr>`;
+    }).join("");
+    return `${head}<div class="tablewrap"><table class="rec"><thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div>`;
+  }).join("");
 }
+
 /* 各課前後測正確率（維護者 2026-10-25）：每個點是一次標了前測或後測的正式評量，灰色背景＝前測、藍色＝後測；
    點上面的課次可以只看那一課（這一欄是唯一需要手動點的地方），預設看全部課合計。依「學生 × 課次」配對（A8 第 12 點） */
 function lessonOrder(a, b){ const [ba, na] = splitKey(a), [bb, nb] = splitKey(b); return BOOK_ORDER.indexOf(ba) - BOOK_ORDER.indexOf(bb) || (+na - +nb); }
-function lessonPrePost(formal){
-  const tagged = formal.filter(r => r.prepost);
+function lessonPrePost(all){
+  const formal = all.filter(r => r.kind === "formal"), tagged = formal.filter(r => r.prepost);
   if(!tagged.length) return `<p class="note" style="margin:0">還沒有標「前測」或「後測」的正式評量。做評量時選「正式評量」，再按「前測」或「後測」，就會出現在這裡。</p>`;
   const ks = [...new Set(tagged.map(r => key(r.book, r.lesson)))].sort(lessonOrder), many = new Set(ks.map(k => splitKey(k)[0])).size > 1;
   const sel = ks.includes(T.simpleLesson) ? T.simpleLesson : "";
-  const src = sel ? tagged.filter(r => key(r.book, r.lesson) === sel) : tagged;
-  const perDay = {}, pts = sessionsOf(src).map((s, i) => { const nth = perDay[s.day] = (perDay[s.day] || 0) + 1; return {x: i, day: s.day, nth, rs: s.rs, phase: s.rs[0].prepost, ...accOf(s.rs)}; });
-  pts.forEach(p => p.label = perDay[p.day] > 1 ? `${shortDay(p.day)} 第 ${p.nth} 次` : shortDay(p.day));
+  const inLesson = r => !sel || key(r.book, r.lesson) === sel;
+  /* 這一課（或全部課）所有「標了前測、後測的正式評量」和「練習」，依時間排成一排，每次評量一格 */
+  const sess = sessionsOf([...tagged, ...all.filter(r => r.kind !== "formal")].filter(inLesson).map(r => r)).map(s => ({...s, prac: s.rs[0].kind !== "formal"}));
+  const perDay = {}; sess.forEach((s, i) => { s.x = i; s.nth = perDay[s.day] = (perDay[s.day] || 0) + 1; });
+  const lab = s => perDay[s.day] > 1 ? `${shortDay(s.day)} 第 ${s.nth} 次` : shortDay(s.day);
+  const pts = sess.filter(s => !s.prac).map(s => ({x: s.x, day: s.day, nth: s.nth, rs: s.rs, phase: s.rs[0].prepost, label: lab(s), ...accOf(s.rs)}));
+  const extra = sess.filter(s => s.prac).map(s => { const a = accOf(s.rs); return {x: s.x, v: a.v, tip: `${lab(s)}｜練習｜${a.v}%（${a.n} 題）`}; });
+  const at = Object.fromEntries(sess.map(s => [s.x, s.nth === 1 ? shortDay(s.day) : ""]));
   const chips = chipRow([["", "全部課合計"], ...ks.map(k => [k, esc(many ? lessonLabel(k) : lessonName(...splitKey(k)))])], sel, "tlsn");
+  const legend = phaseLegend(pts).replace(/<\/div>$/, `<span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="vertical-align:-3px"><path d="M8 1L15 8L8 15L1 8Z" fill="#fff" stroke="#d98a1a" stroke-width="2.5"/></svg>練習（橘色空心菱形，不分前後測）</span></div>`);
   return `<div class="trow"><span class="tl">看哪一課</span>${chips}</div>
-    <div class="tchart">${phaseLegend(pts)}${lineChart(pts, {metric: "acc", xLabel: i => pts[i] && pts[i].nth === 1 ? shortDay(pts[i].day) : "", xName: "每次前測、後測（一格一次）"})}</div>
-    <p class="note">正確率＝第一次就答對的比例。每個點是一次前測或後測；灰色背景是前測、藍色是後測，虛線是前測和後測交換的地方。點上面的課次，可以只看那一課。</p>`;
+    <div class="tchart">${legend}${lineChart(pts, {metric: "acc", extra, xLabel: x => at[x] || "", xName: "每次評量一格（前測、後測、練習）"})}</div>
+    <p class="note">正確率＝第一次就答對的比例。圓點連成的線是正式評量的前測、後測（灰色背景是前測、藍色是後測）；橘色空心菱形是練習，不連線、不分前後測。點上面的課次，可以只看那一課。</p>`;
 }
 function renderSimple(){
   const box = $("#tSimple"), withData = kidsWithData();
   box.hidden = T.tab !== "one";
   if(box.hidden) return;
   if(!withData.length){ box.innerHTML = `<p class="hint" style="margin:0">還沒有作答紀錄。學生做過評量後，這裡就會出現名字和結果。</p>`; return; }
-  const mine = records.filter(r => okRec(r) && r.kid === T.kid), formal = mine.filter(r => r.kind === "formal"), prac = mine.filter(r => r.kind !== "formal");
+  /* 統計、折線圖、字的清單：正式評量加練習全部一起算（維護者 2026-10-25）；只有前後測是正式評量才有（練習沒有前後測標記）。中途結束的不算 */
+  const everything = records.filter(r => r.kid === T.kid), all = everything.filter(okRec);
   const kid = kidBy(T.kid), sec = (title, body) => `<section class="ssec"><h3 class="ttitle">${title}</h3>${body}</section>`;
   box.innerHTML = `<div class="trow"><span class="tl">看誰</span>${chipRow(withData.map(k => [k.code, esc(kidLabel(k))]), T.kid, "tkid2")}</div>
     <h2 class="sname">${esc(kid ? kidLabel(kid) : T.kid)}</h2>
-    ${formal.length ? `${sec("總體紀錄（正式評量）", simpleSummary(formal))}
-      ${sec("每天的平均正確率", `<div class="tchart">${dailyChart(formal, "acc")}</div><p class="note">正確率＝第一次就答對的比例。每個點是那一天所有正式評量的平均；有標前測、後測的那天，日期後面會註明。</p>`)}
-      ${sec("每天的平均反應時間（越低越快）", `<div class="tchart">${dailyChart(formal, "sec")}</div><p class="note">答對的題目，從題目唸完到答對的平均秒數。</p>`)}
-      ${sec("各課前後測正確率", lessonPrePost(formal))}
-      ${sec("常錯的字", wrongChars(formal))}
-      ${sec("反應最慢的字", slowChars(formal))}
-      ${sec("容易搞混的字", confusedChars(formal))}
-      ${sec("近期正式評量紀錄", recentTable(formal, false))}`
-    : sec("總體紀錄（正式評量）", `<p class="note" style="margin:0">還沒有正式評量的紀錄。做評量時選「正式評量」，結果就會出現在這裡。</p>`)}
-    ${sec("練習紀錄", recentTable(prac, true))}`;
+    ${sec("總體紀錄（正式評量＋練習）", simpleSummary(all))}
+    ${sec("每天的平均正確率", `<div class="tchart">${dailyChart(all, "acc")}</div><p class="note">正確率＝第一次就答對的比例。每個點是那一天所有評量和練習的平均；有標前測、後測的那天，日期後面會註明。</p>`)}
+    ${sec("每天的平均反應時間（越低越快）", `<div class="tchart">${dailyChart(all, "sec")}</div><p class="note">答對的題目，從題目唸完到答對的平均秒數。</p>`)}
+    ${sec("各課前後測正確率", lessonPrePost(all))}
+    ${sec("常錯的字", wrongChars(all))}
+    ${sec("反應最慢的字", slowChars(all))}
+    ${sec("容易搞混的字", confusedChars(all))}
+    ${sec("近期正式評量紀錄", recentByLesson(everything, true))}
+    ${sec("近期練習紀錄", recentByLesson(everything, false))}`;
   const re = () => { const y = window.scrollY; saveT(); renderTeacher(); window.scrollTo(0, y); };   /* 重畫後回到原本捲到的位置 */
   box.querySelectorAll("[data-tkid2]").forEach(b => b.onclick = () => { T.kid = b.dataset.tkid2; re(); });
   box.querySelectorAll("[data-tlsn]").forEach(b => b.onclick = () => { T.simpleLesson = b.dataset.tlsn; re(); });
@@ -518,7 +544,7 @@ function lineChart(pts, o){
   const H = o.compact ? (o.xName ? 214 : 204) : 300, L = 52, R = 20, Tp = o.compact ? 28 : 22, B = o.compact ? (o.xName ? 42 : 32) : 38, iw = SVGW - L - R, ih = H - Tp - B;
   const ys = pts.map(p => p.v).filter(v => v != null);
   const ticks = o.metric === "acc" ? [0, 25, 50, 75, 100] : niceTicks((o.ymax != null ? o.ymax : Math.max(...ys, o.aim || 0)) * 1.05), max = ticks[4];
-  const xs = pts.map(p => p.x).concat((o.events || []).map(e => e.x));
+  const xs = pts.map(p => p.x).concat((o.events || []).map(e => e.x), (o.extra || []).map(p => p.x));
   const [x0, x1] = o.domain || [Math.min(...xs), Math.max(...xs)], span = x1 - x0 || 1;
   const X = x => !o.domain && pts.length === 1 && !(o.events || []).length ? L + iw / 2 : L + (x - x0) / span * iw, Y = v => Tp + ih - v / max * ih;
   const unit = o.metric === "acc" ? "%" : o.metric === "sec" ? " 秒" : "";
@@ -542,6 +568,9 @@ function lineChart(pts, o){
   const path = ok.map((p, i) => `${i ? "L" : "M"}${X(p.x).toFixed(1)} ${Y(p.v).toFixed(1)}`).join(" ");
   g += `<path class="line" d="${path}"/>`;
   g += ok.map(p => `<circle class="dot${p.n < 3 ? " few" : ""}" cx="${X(p.x)}" cy="${Y(p.v)}" r="5" tabindex="0" data-tip="${esc(`${p.label}｜${p.lesson ? p.lesson + "｜" : ""}${o.noPhase ? "" : p.phase + "｜"}${fmt(o.metric, p.v)}（${p.n} ${unitN(o.metric)}）`)}"/>`).join("");
+  /* 額外的一組點（例如前後測圖裡的練習）：橘色空心菱形、不連線，和主線的圓點分得出來；o.extra＝[{x, v, tip}] */
+  (o.extra || []).filter(p => p.v != null).forEach(p => { const cx = X(p.x), cy = Y(p.v);
+    g += `<path class="pdot" d="M${cx} ${cy - 7}L${cx + 7} ${cy}L${cx} ${cy + 7}L${cx - 7} ${cy}Z" tabindex="0" data-tip="${esc(p.tip)}"/>`; });
   /* 最後一點標數字（只標一個，其餘看表格或移上去看）；前一點太近就不標，避免疊在一起 */
   const lp = ok[ok.length - 1], lp0 = ok[ok.length - 2];
   const below = o.aim && Math.abs(Y(lp ? lp.v : 0) - Y(o.aim)) < 24 && lp.v < o.aim;   /* 靠近目標線時把數字放到點的下面 */
@@ -585,7 +614,7 @@ function bindChart(root){
       const d = dots.reduce((a, b) => Math.abs(b.cx.baseVal.value - loc.x) < Math.abs(a.cx.baseVal.value - loc.x) ? b : a);
       show(d, d.cx.baseVal.value);
     });
-    box.querySelectorAll(".barhit").forEach(b => b.addEventListener("pointerenter", () => show(b)));
+    box.querySelectorAll(".barhit, .pdot").forEach(b => b.addEventListener("pointerenter", () => show(b)));
     box.querySelectorAll("[data-tip]").forEach(el => { el.addEventListener("focus", () => show(el, el.cx ? el.cx.baseVal.value : null)); el.addEventListener("blur", hide); });
     svg.addEventListener("pointerleave", hide);
   });
