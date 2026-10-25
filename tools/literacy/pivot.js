@@ -51,7 +51,7 @@ const dimList = () => Object.entries(DIMS).filter(([k]) => k !== "freq" || hasFr
 const avgOf = (rs, f) => { const a = rs.map(f).filter(x => typeof x === "number" && !isNaN(x)); return {v: avg(a), n: a.length}; };
 const PMETRICS = {
   n:       ["筆數（題數）", rs => ({v: rs.length, n: rs.length}), ""],
-  acc:     ["第一次就答對率", accOf, "%"],
+  acc:     ["正確率", accOf, "%"],   /* 正確率＝第一次就答對的比例（2026-10-25 起畫面統一叫正確率） */
   err:     ["錯誤率（第一次就選錯）", rs => { const a = accOf(rs); return {v: a.v == null ? null : 100 - a.v, n: a.n}; }, "%"],
   sec:     ["平均答對秒數（反應時間）", secOf, " 秒"],
   first:   ["平均第一次作答秒數", rs => avgOf(rs, r => r.firstSec), " 秒"],

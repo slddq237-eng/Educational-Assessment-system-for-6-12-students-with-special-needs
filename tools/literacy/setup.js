@@ -520,7 +520,7 @@ function renderSummary(){
   const n = selKids().length, kidsOk = n >= a.min && n <= a.max;
   const rows = [
     ["評量目標", `目標 ${g.id}　${g.name}`],
-    ["評量方式", c.flu ? `流暢性・${LIMITS.find(l => l[0]===state.limit)[1]}・${$("#aim").value ? `目標每分鐘 ${esc($("#aim").value)} 個` : "不設目標"}` : "正確率模式"],
+    ["評量方式", c.flu ? `流暢性・${LIMITS.find(l => l[0]===state.limit)[1]}` : "正確率模式"],
     ["選項", choiceText(c.choices)],
     ["提示", hintsText(c)],
     ["玩法", playText()],
@@ -538,7 +538,6 @@ function renderSummary(){
 }
 /* 先選主題（見 collect.js），再開始；平板作答改成顯示 QR code（見 tablet.js） */
 $("#go").onclick = () => { if(qrOn()) return tabletQr(); unlockSpeech(); chooseTheme(); };
-$("#aim").addEventListener("input", renderSummary);
 
 /* 教學日期管理面板：每一課一列「全班」，下面可以加「個別學生不同」的列（A8：同一課學生進度不同） */
 /* 教學狀態選單＋日期欄＋目前判斷結果（全班列和個別學生列共用） */
