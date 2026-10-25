@@ -57,6 +57,24 @@ function renderPresets(){
    教學日期不會自動記，需要時請按上方的「教學日期」輸入。 */
 const PP_OPTS = [["", "不標", "和一般評量一樣，不放進前後測比較"], ["前測", "前測", "教學前，看學生原本會多少"], ["後測", "後測", "教學後，看學生學會多少"]];
 const ppOn = () => state.kind === "formal" && (!isQuick() || state.preset === "test");
+/* 前測、後測和教學日期對不上時的提醒（維護者 2026-10-25）：只提醒、不擋，不改變紀錄；教學日期只用來算「教學後第幾天」，前測、後測還是老師按的為準。
+   標「後測」但選到還沒教完的課（標「還沒教」，或結束日還沒到）、標「前測」但選到已經教完的課（結束日是今天或更早）時，把這些課合併成一句。
+   沒填日期的課（依年級自動判斷）不提醒。每位選到的學生各有各的日期，任何一位對不上就列出來；還沒選學生就看全班預設 */
+function ppWarnHtml(){
+  if(!ppOn() || !state.prepost || !state.lessons.length) return "";
+  const who = selKids().map(k => k.code); if(!who.length) who.push("");
+  const state_ = t => t.type === "notYet" ? "notYet" : t.type !== "dates" ? "" : t.end ? (parse(t.end) <= today ? "taught" : "notYet") : t.start && parse(t.start) > today ? "notYet" : "";
+  const bad = state.prepost === "後測" ? "notYet" : "taught";
+  const hit = state.lessons.filter(k => who.some(c => state_(teachFor(k, c)) === bad)).sort(lessonOrderKey);
+  if(!hit.length) return "";
+  const many = new Set(hit.map(k => splitKey(k)[0])).size > 1;
+  const names = hit.map(k => { const [b, n] = splitKey(k); return many ? `${bookName(b)} ${lessonName(b, n)}` : lessonName(b, n); }).join("、");
+  return state.prepost === "後測"
+    ? `提醒：${esc(names)}依教學日期看起來還沒教完，確定要標成「後測」嗎？（只是提醒，可以照樣開始；教學日期在上方「教學日期」修改）`
+    : `提醒：${esc(names)}依教學日期已經教完了，確定要標成「前測」嗎？（只是提醒，可以照樣開始；教學日期在上方「教學日期」修改）`;
+}
+const lessonOrderKey = (a, b) => { const [ba, na] = splitKey(a), [bb, nb] = splitKey(b); return BOOK_ORDER.indexOf(ba) - BOOK_ORDER.indexOf(bb) || (+na - +nb); };
+function renderPpWarn(){ const el = $("#ppWarn"), h = ppWarnHtml(); el.hidden = !h; el.innerHTML = h; }
 function renderPrepost(){
   const box = $("#ppBox"); box.hidden = !ppOn();
   if(box.hidden) return;
@@ -304,6 +322,7 @@ function renderLessons(){
   $("#picked").innerHTML = state.lessons.length ? `已選：${esc(lessonsText())}　<button class="linkbtn" id="clearLessons">全部清除</button>` : "還沒選課次，可以選好幾課，也可以跨版本。";
   if($("#clearLessons")) $("#clearLessons").onclick = () => { state.lessons = []; render(); };
   renderTaught();
+  renderPpWarn();
   $("#status").innerHTML = "";   /* 2026-10-25 A8：不再判斷每課的評量時機；教學日期到「選單 → 教學日期」輸入 */
 }
 
