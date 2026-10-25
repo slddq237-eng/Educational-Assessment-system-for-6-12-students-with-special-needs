@@ -15,11 +15,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-26z2">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-26z3">
 <!-- 平台共用的主題外觀、頭像、貼紙樣式 -->
-<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-26z2">
+<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-26z3">
 <!-- 注音字型（3-4）：語詞、句子提示和練習的選項加注音；畫面用到注音時才會下載 -->
-<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-26z2">
+<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-26z3">
 <style>
 /* 版面：沿用生字賓果的生字簿方格紙。
    設定畫面：左邊六個步驟，右邊固定的「本次評量」摘要；評量設定、教學日期、學生名單、作答紀錄放在彈出面板。
@@ -302,6 +302,18 @@ details.howto{margin:10px 0 0}
 .stage{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:clamp(16px,3vw,40px);align-items:stretch}
 .prompt{display:grid;justify-items:center;align-content:center;gap:14px;text-align:center;min-height:0;overflow:auto}
 @media (max-width:760px){.play{height:auto;min-height:100dvh}.stage{grid-template-columns:minmax(0,1fr)}.optsbox{height:min(100vw - 32px,62dvh)}}
+/* 大螢幕分區輪流（E14）：每位學生一區並排，大小固定；輪到的亮起，其他區變暗、選項只剩空框 */
+.zones{flex:1;min-height:0;display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:clamp(8px,1.5vw,20px)}
+.zone{min-height:0;min-width:0;display:flex;flex-direction:column;gap:8px;padding:10px;border:4px solid transparent;border-radius:24px}
+.zone.on{border-color:var(--green);background:var(--card);box-shadow:0 0 0 6px rgba(44,122,105,.25)}
+.zone.wait{opacity:.4;filter:grayscale(.7);pointer-events:none}
+.zhead{display:flex;align-items:center;gap:10px;font-size:clamp(18px,2vw,28px);flex-wrap:wrap}
+.zhead span{color:var(--muted);font-size:.7em;font-variant-numeric:tabular-nums}
+.zones .stage{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:10px}
+.zones .speaker{width:clamp(80px,min(8vw,16vh),140px);font-size:clamp(36px,4vw,56px)}
+.zwait{font-family:var(--kai);font-size:clamp(28px,3vw,44px)}
+.opt-ghost{width:var(--cell);height:var(--cell);border:4px dashed var(--ink);border-radius:24px;opacity:.5}
+@media (max-width:760px){.zones{grid-template-columns:minmax(0,1fr)}}
 .speaker{width:clamp(110px,min(14vw,22vh),200px);aspect-ratio:1;max-width:100%;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:clamp(48px,6vw,80px);box-shadow:0 8px 0 #8f2a1e}
 .speaker:active{transform:translateY(4px);box-shadow:0 4px 0 #8f2a1e}
 .speaker svg{width:1em;height:1em}   /* 用字的大小定，舊的 Safari 算不出百分比的高度，圖示會變很小 */
@@ -1115,32 +1127,32 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <!-- 每個檔案後面的 ?v=日期 是版本號：改了任何 .js、.css 檔，就把這頁所有的 ?v= 一起改成當天日期（用「全部取代」；同一天改第二次就在日期後面加 b、c）。
      這樣老師的瀏覽器才會下載新檔案，不會新網頁配到舊程式（例如按「下一步」沒反應）。 -->
 <!-- 生字資料：平台共用的教材資料（shared/lessons.js） -->
-<script src="../../shared/lessons.js?v=2026-10-26z2"></script>
+<script src="../../shared/lessons.js?v=2026-10-26z3"></script>
 <!-- 注音讀音表（shared/bpmf.js）：語詞、例句裡的破音字該念哪一個音 -->
-<script src="../../shared/bpmf.js?v=2026-10-26z2"></script>
+<script src="../../shared/bpmf.js?v=2026-10-26z3"></script>
 <!-- 字頻：教育部字頻總表（shared/freq.js），練習的常用字、字頻優先、老師專區高字頻生字會用到 -->
-<script src="../../shared/freq.js?v=2026-10-26z2"></script>
+<script src="../../shared/freq.js?v=2026-10-26z3"></script>
 <!-- 自動部件拆解（shared/parts.js）：部件提示在 lessons.js 的 PARTS 沒有這個字時才用 -->
-<script src="../../shared/parts.js?v=2026-10-26z2"></script>
+<script src="../../shared/parts.js?v=2026-10-26z3"></script>
 <!-- 共用小工具（課本排序與名稱、語詞、部件查詢、按匯出時才載入 Excel 元件），識字評量與備課分析共用 -->
-<script src="../../shared/common.js?v=2026-10-26z2"></script>
+<script src="../../shared/common.js?v=2026-10-26z3"></script>
 <!-- 平台共用：主題與貼紙、每位學生的收藏與頭像 -->
-<script src="../../shared/sticker-art.js?v=2026-10-26z2"></script>
-<script src="../../shared/themes.js?v=2026-10-26z2"></script>
-<script src="../../shared/rewards.js?v=2026-10-26z2"></script>
+<script src="../../shared/sticker-art.js?v=2026-10-26z3"></script>
+<script src="../../shared/themes.js?v=2026-10-26z3"></script>
+<script src="../../shared/rewards.js?v=2026-10-26z3"></script>
 <!-- 程式本體：分成八個檔案，順序不能換（說明見 app.js 開頭） -->
-<script src="data.js?v=2026-10-26z2"></script>
-<script src="setup.js?v=2026-10-26z2"></script>
-<script src="records.js?v=2026-10-26z2"></script>
-<script src="wordsets.js?v=2026-10-26z2"></script>
-<script src="play.js?v=2026-10-26z2"></script>
-<script src="collect.js?v=2026-10-26z2"></script>
-<script src="gacha.js?v=2026-10-26z2"></script>
-<script src="scenes.js?v=2026-10-26z2"></script>
+<script src="data.js?v=2026-10-26z3"></script>
+<script src="setup.js?v=2026-10-26z3"></script>
+<script src="records.js?v=2026-10-26z3"></script>
+<script src="wordsets.js?v=2026-10-26z3"></script>
+<script src="play.js?v=2026-10-26z3"></script>
+<script src="collect.js?v=2026-10-26z3"></script>
+<script src="gacha.js?v=2026-10-26z3"></script>
+<script src="scenes.js?v=2026-10-26z3"></script>
 <!-- 老師專區、進階分析：平板作答（網址 #t）用不到，不下載，省約 30 KB（2026-10-24 R4a）。
      用 document.write 是為了讓電腦上的載入順序和以前完全一樣 -->
-<script>if(!/^#t/.test(location.hash)) document.write('<script src="teacher.js?v=2026-10-26z2"><\/script><script src="pivot.js?v=2026-10-26z2"><\/script>');</script>
-<script src="tablet.js?v=2026-10-26z2"></script>
-<script src="app.js?v=2026-10-26z2"></script>
+<script>if(!/^#t/.test(location.hash)) document.write('<script src="teacher.js?v=2026-10-26z3"><\/script><script src="pivot.js?v=2026-10-26z3"><\/script>');</script>
+<script src="tablet.js?v=2026-10-26z3"></script>
+<script src="app.js?v=2026-10-26z3"></script>
 </body>
 </html>
