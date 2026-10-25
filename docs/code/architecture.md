@@ -80,7 +80,7 @@
 1. **設定**（`setup.js`）：老師選目標、學生、課次、玩法 → 存進 `state`、`settings`。課次要考的字由 `wordsets.js` 的 `wsPick` 決定。
 2. **選主題**（`collect.js` `chooseTheme`）→ 呼叫 `play.js` 的 `startSession()`。
 3. **出題**（`play.js` 第 8 節）：`pickItems` 抽字（「常錯優先」會讀 `records`）→ `makeOptions` 組選項（用 `common.js` 的 `confOf`、`wordOf`）→ `hintHtml` 做提示（`data.js` 的 `fitHints` 跳過不適合的提示）。
-4. **作答**（第 9 節）：每題結束呼叫 `endItem` → 組成一筆紀錄，前後測用 `play.js` 開始時記下的 `G.prepost`、`G.ppId`，教學後天數用 `data.js` 的 `daysAfterEnd`、字組資訊用 `wordsets.js` → `records.js` 的 `saveRecord` 存進 IndexedDB。
+4. **作答**（第 9 節）：每題結束呼叫 `endItem` → 組成一筆紀錄，前後測用 `play.js` 開始時記下的 `G.prepost`，教學後天數用 `data.js` 的 `daysAfterEnd`、字組資訊用 `wordsets.js` → `records.js` 的 `saveRecord` 存進 IndexedDB。
 5. **結果**（第 10 節 `finish`）：中途離開的紀錄標 `quit` → `collect.js` 的 `drawStickers` 抽好寫進紀錄 → 平板送出 → `giveStickers` → 扭蛋機 `showGacha` 揭曉。
 6. **老師專區**（`teacher.js`、`pivot.js`）：只讀 `records`，不寫回。錯誤類型的「亂猜會佔」用 `play.js` 的 `optType`（傳入紀錄的 `goal`）替舊紀錄的選項重新分類，改 `optType` 時要一起檢查；`pivot.js` 的「目標字在語詞的位置」用 `teacher.js` 的 `wposOf`。
 
@@ -128,7 +128,7 @@
 | 新增課本（加一個 `shared/lessons-代號.js`） | 跑 `make_lessons.js`（更新課本檔清單和所有課本的字）、`make_parts.py`、`make_bpmf.py`、`make_kai.py`；跑自動檢查；兩個工具的課本清單會自動更新 |
 | `shared/common.js` 的任何函數 | 識字評量**和**備課分析都要打開試一次 |
 | 作答紀錄欄位（`play.js` 的 `endItem`、`records.js` 的 `COLS`） | Excel 匯出、老師專區、進階分析（`pivot.js` 的 `DIMS`）、備份與匯入、`RECORD_FORMAT` 版本、`docs/design/records.md`；**先討論** |
-| 前後測（`data.js` 的 `state.prepost`、`state.ppId`；`setup.js` 的 `renderPrepost`；`play.js` 寫進紀錄的 `prepost`、`ppId`） | 紀錄欄位、Excel 匯出 `records.js` 的 `COLS`、老師專區 `teacher.js` 的 `phaseOf`、進階分析 `pivot.js` 的 `prepost` 分組；屬 A8（`docs/design/a8-terms.md`），**改欄位前先討論** |
+| 前後測（`data.js` 的 `state.prepost`；`setup.js` 的 `renderPrepost`；`play.js` 寫進紀錄的 `prepost`） | 紀錄欄位、Excel 匯出 `records.js` 的 `COLS`、老師專區 `teacher.js` 的 `phaseOf`、進階分析 `pivot.js` 的 `prepost` 分組；屬 A8（`docs/design/a8-terms.md`），**改欄位前先討論** |
 | 教學日期的存法（`teach`、`teachFor`） | 時期判斷、老師專區「教學開始後第幾天」（用現在的教學日期回推）、備份 |
 | 提示的種類或順序（`data.js` 的 `HINT_ORDER`、`HINT_UNFIT`） | 設定畫面、`play.js` 的 `hintHtml`、紀錄的 `hintSet`、老師專區「提示層級」 |
 | 字組（`wordsets.js`） | 設定第 3 步、出題 `testChars`、紀錄的 `ws` 欄、備份、匯入檔案 |

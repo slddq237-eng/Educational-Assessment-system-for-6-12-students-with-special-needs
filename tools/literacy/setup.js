@@ -28,7 +28,7 @@ const savedPreset = load(KEYS.preset, "") === "rti" ? "test" : load(KEYS.preset,
 state.preset = PRESETS.some(p => p.id === savedPreset) ? savedPreset : "class";
 const isQuick = () => ui === "quick";
 function applyPreset(id){
-  if(state.preset !== id) { state.prepost = ""; state.ppId = ""; }
+  if(state.preset !== id) state.prepost = "";
   state.preset = id; store(KEYS.preset, id);
   Object.assign(state, {qCount:null, qMethod:"even"});   /* 評量目標沿用第 1 步選的 */
   PRESETS.find(p => p.id === id).apply();
@@ -52,20 +52,18 @@ function renderPresets(){
 }
 /* ---------- 前測／後測（A8，2026-10-25）----------
    只有正式評量才能標（快速開始的「正式評量」卡片，和進階設定選正式評量時）；練習一律不標。
-   前測和後測的條件完全一樣。「前後測代號」標同一次施測（全班共用一個，補考的學生填同一個代號）。
+   前測和後測的條件完全一樣。沒有前後測代號、也不做補考（2026-10-25 維護者決定）：缺席的學生下次再做時，自己標前測或後測就好；
+   同一次坐下來考的紀錄本來就有 session（作答場次）。
    教學日期不會自動記，需要時請在「進階設定 → 選單 → 教學日期」輸入。 */
 const PP_OPTS = [["", "不標", "和一般評量一樣，不放進前後測比較"], ["前測", "前測", "教學前，看學生原本會多少"], ["後測", "後測", "教學後，看學生學會多少"]];
-const newPpId = () => `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,"0")}${String(today.getDate()).padStart(2,"0")}-${Math.random().toString(36).slice(2,5)}`;
 const ppOn = () => state.kind === "formal" && (!isQuick() || state.preset === "test");
 function renderPrepost(){
   const box = $("#ppBox"); box.hidden = !ppOn();
   if(box.hidden) return;
   box.innerHTML = `<b>這次是前測還是後測？</b><div class="group">${PP_OPTS.map(([v, name, d]) =>
       `<button class="opt ${state.prepost === v ? "on" : ""}" data-pp="${v}" aria-pressed="${state.prepost === v}">${name}<small>${d}</small></button>`).join("")}</div>
-    ${state.prepost ? `<label class="group" for="ppId">前後測代號 <input id="ppId" value="${esc(state.ppId)}" maxlength="30"> <small>同一次施測全班共用；補考的學生請填同一個代號。</small></label>` : ""}
     <p class="note" style="margin:0">前測和後測的條件完全一樣。</p>`;
-  box.querySelectorAll("[data-pp]").forEach(b => b.onclick = () => { state.prepost = b.dataset.pp; if(state.prepost && !state.ppId) state.ppId = newPpId(); render(); });
-  const id = box.querySelector("#ppId"); if(id) id.onchange = () => { state.ppId = id.value.trim() || newPpId(); render(); };
+  box.querySelectorAll("[data-pp]").forEach(b => b.onclick = () => { state.prepost = b.dataset.pp; render(); });
 }
 
 /* ---------- 四個步驟：一次只看一步（像生字賓果） ----------
@@ -501,7 +499,7 @@ function renderSummary(){
     $("#kindBadge").innerHTML = `<span class="badge ${p.off?"prac":""}">${p.rec}</span>`;
     const rows = [
       ["今天做什麼", `${p.name}（${g.name}）`],
-      ...(p.id === "test" ? [["前後測", state.prepost ? `${state.prepost}（代號 ${esc(state.ppId)}）` : "不標"]] : []),
+      ...(p.id === "test" ? [["前後測", state.prepost || "不標"]] : []),
       ["學生", n && n <= a.max ? selKids().map(c => esc(kidLabel(kidBy(c)))).join("、") : null, n ? `一次最多 ${a.max} 位學生` : "還沒選"],
       ...(qrOn() ? [["作答方式", "平板掃 QR code"], ["回傳表單", settings.tabletForm ? "你自己的 Google 表單" : null, "請到「⚙ 細部設定 → 練習與遊戲」貼上 Google 表單網址"]] : []),
       ["課次", state.lessons.length ? esc(lessonsText()) : null],
@@ -530,7 +528,7 @@ function renderSummary(){
     ...(useRewards() ? [["主題", themeText(), "請學生點一個主題"]] : []),
     ["課次", lessonText],
     ["題目", quizText],
-    ...(c.formal ? [["前後測", state.prepost ? `${state.prepost}（代號 ${esc(state.ppId)}）` : "不標"]] : []),
+    ...(c.formal ? [["前後測", state.prepost || "不標"]] : []),
     ["作答模式", a.name],
     ...(qrOn() ? [["回傳表單", settings.tabletForm ? "你自己的 Google 表單" : null, "請到「⚙ 細部設定 → 練習與遊戲」貼上 Google 表單網址"]] : []),
     ["學生", n ? (kidsOk ? `${selKids().map(c => esc(kidLabel(kidBy(c)))).join("、")}（${n} 位）` : null) : null, n ? `「${a.name}」需要 ${a.min}～${a.max} 位，目前 ${n} 位` : "還沒選"]

@@ -116,7 +116,7 @@ const GRADES = ["一","二","三","四","五","六"];
 /* 作答紀錄的格式版本（開發路線圖 A4）：每筆紀錄都記下 fmt，之後改紀錄格式時新舊資料分得開。
    改格式的規則：只加新欄位、不改舊欄位的意思；真的要改意思時，版本加 1，並寫在下面和 docs/design/records.md。
    1＝2026-10-21 以前的紀錄（沒有 fmt 這一欄）；2＝加上 fmt 與裝置類型 device；
-   3＝2026-10-25 A8（見 docs/design/a8-terms.md）：刪掉 phase（評量時機），加上 prepost（前後測）、ppId（前後測代號）、planId／planVer／rphase（研究計畫與研究時期，研究計畫做出來前都是空白）。
+   3＝2026-10-25 A8（見 docs/design/a8-terms.md）：刪掉 phase（評量時機），加上 prepost（前後測）、planId／planVer／rphase（研究計畫與研究時期，研究計畫做出來前都是空白）。
    第 3 版直接改格式、不處理舊紀錄的對應（維護者決定：現在幾乎無人使用） */
 const RECORD_FORMAT = 3;
 /* 作答的裝置類型：觸控而且螢幕短邊小於 600 像素＝手機；主要靠手指點（沒有滑鼠）＝平板；其他＝電腦 */
@@ -242,7 +242,7 @@ const state = {
   goal:"3", kind:"formal", mode:"acc", limit:"60",
   pChoices:"6", pHints:new Set(["word","sent","pic"]), pRule:["next","next","remove","reveal"],
   ed:"翰林", book:"h2", lessons:[], qCount:null, qMethod:"even", answer:"turn",
-  prepost:"", ppId:"",   /* 這次是前測還是後測（只有正式評量；""＝不標），ppId＝前後測代號（同一次施測全班共用，補考接回同一個） */
+  prepost:"",   /* 這次是前測還是後測（只有正式評量；""＝不標）。沒有前後測代號、不做補考（2026-10-25） */
   kids:new Set()
 };
 let dBook = "h2";
