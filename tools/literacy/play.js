@@ -264,7 +264,7 @@ function startSession(){
     goal: state.goal, kind: state.kind, mode: state.mode, answer: state.answer,
     /* 前後測（A8）：只有正式評量才標；練習一律不標 */
     prepost: state.kind === "formal" ? state.prepost : "",
-    limit: +state.limit, aim: +$("#aim").value || 30, lessons: [...state.lessons],
+    limit: +state.limit, aim: +$("#aim").value || 0, lessons: [...state.lessons],
     /* 每課考的是哪一組字（只考有教的字）；正式評量用到的字組這時鎖定 */
     ws: wsStart(state.lessons, state.kind),
     noHelp: c.noHelp, rule: c.rule || [], hints: c.hints,
@@ -277,7 +277,7 @@ function startSession(){
     /* 選項加注音（3-4）：只在練習，第 4 步決定；正式評量一律不加 */
     bpmf: state.kind !== "formal" && !!settings.practiceBpmf,
     /* 報讀提示：練習看第 4 步，正式評量看評量設定；部件重組（4-1）沒有題目讀音，報讀會念出答案，所以一律不開 */
-    read: state.goal !== "4-1" && (state.kind === "formal" ? !!settings.formalRead : settings.practiceRead !== false),
+    read: state.goal !== "4-1" && state.kind !== "formal" && settings.practiceRead !== false,   /* 正式評量不報讀（A3-10） */
     tally: Object.fromEntries(list.map(k => [k, {n:0, first:0, passed:0, secs:[], wrong:0}])),
     quitArm: false
   };
@@ -428,7 +428,7 @@ function newItem(it){
         ${G.cur.opts.map((o, i) => `<button class="opt-big${cellClass(i)}${G.bpmf ? " bpmf" : ""}" data-i="${i}" ${board && board.marks.has(i) ? "disabled" : ""}><span class="och">${esc(G.bpmf ? Bpmf.char(o.ch, b) : o.ch)}</span>${board && board.marks.has(i) ? stamp : ""}</button>`).join("")}
       </div></div>
     </div>
-    ${G.noHelp ? "" : `<div class="tbar"><span>老師提示紀錄：</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
+    ${G.mode === "flu" ? "" : `<div class="tbar"><span>老師提示紀錄：</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
   fitOpts();
   $("#pBody").querySelectorAll(".opt-big").forEach(btn => btn.onclick = () => pick(+btn.dataset.i, btn));
   if(!regroup) $("#speaker").onclick = () => speak(promptOf(it));
@@ -447,16 +447,19 @@ function pick(i, btn){
   if(!cur || cur.done || btn.disabled) return;
   const o = cur.opts[i], sec = Math.round((performance.now() - (cur.t0 || cur.tShown)) / 100) / 10;
   if(cur.firstPick === null){ cur.firstPick = o; cur.firstSec = sec; }
-  /* 練習的選項卡：答對、答錯在選項右上角跳出大大的綠勾、紅叉（正式評量和賓果卡維持原樣，見 A3） */
-  if(G.kind !== "formal" && G.layout === "cards") btn.classList.add("fx");
+  /* 練習的選項卡：答對、答錯在選項右上角跳出大大的綠勾、紅叉。
+     正式評量不回饋對錯（A3-7、A3-8，2026-10-25）：不變色、不搖動、沒有動畫、沒有對錯音效，選了的選項只是淡淡標示 */
+  const fb = G.kind !== "formal";
+  if(fb && G.layout === "cards") btn.classList.add("fx");
   if(o.type === "答案"){
-    btn.classList.add("right"); btn.insertAdjacentHTML("beforeend", BURST); sfx.right();
+    if(fb){ btn.classList.add("right"); btn.insertAdjacentHTML("beforeend", BURST); sfx.right(); } else btn.classList.add("picked");
     if(cur.wrong === 0) heartStreak(cur.it.kid);
     if(cur.board) bingoMark(i);
     return endItem(true, sec);
   }
   cur.wrong++;
-  btn.classList.add("wrong", "shake"); btn.disabled = true; sfx.wrong();
+  if(fb){ btn.classList.add("wrong", "shake"); sfx.wrong(); } else btn.classList.add("picked");
+  btn.disabled = true;
   if(cur.wrong === 1 && loseHeart(cur.it.kid)){ cur.hpOut = true; return endItem(false, null); }   /* 血量用完：這題記成沒通過，直接結束 */
   if(G.mode === "flu" || G.noHelp) return endItem(false, null);
   const act = G.per[cur.it.kid].rule[cur.wrong - 1] || "reveal";
@@ -531,7 +534,7 @@ function endItem(passed, correctSec, revealed){
     theme: G.theme, game: G.game, gameType: G.gameType, reward: "", rewardCode: "", bpmf: !!G.bpmf,   /* 抽到的貼紙：文字和代號（做完時由 collect.js 的 drawStickers 填）*/
     read: !!G.read, readUsed: [...cur.reads].map(id => ({word:"語詞", sent:"句子"})[id]).join("、"),   /* 報讀：這次有沒有開、這題按了哪幾種提示的喇叭 */
     fontScale: settings.fontScale, rate: settings.rate, sfx: settings.sfx,
-    aim: G.mode === "flu" ? G.aim : "",   /* 流暢性的目標（每分鐘幾個），老師專區畫目標線用 */
+    aim: G.mode === "flu" && G.aim ? G.aim : "",   /* 流暢性的目標（每分鐘幾個），老師專區畫目標線用 */
     clock: !!G.clock,                      /* 作答時右上角有沒有顯示計時 */
     hpMax: G.hpMax || "", hp: G.hpMax ? heartPool(it.kid).hp : "",   /* 血量模式：開始時幾點、這題做完剩幾點 */
     ...G.ws[it.k]   /* 只考有教的字：ws＝第幾組（""＝整課，"p"＝練習自己點的）、wsChars＝這課考的字、wsAll＝整課幾個字 */
@@ -743,7 +746,7 @@ function finish(){
   const left = g.kids.filter(code => !g.done.has(code));
   if(left.length) records.filter(r => r.session === g.session && left.includes(r.kid)).forEach(r => { r.quit = true; updateRecord(r); });
   $("#rTitle").textContent = left.length ? "這次先到這裡" : "完成了！";
-  /* 練習才有鼓勵的話、獎盃和卡片彈出；正式評量要不要加等 A3 討論（見 docs/plans/pending.md） */
+  /* 練習才有鼓勵的話和卡片彈出；獎盃動畫正式評量也有（A3-14，只看有沒有做完）；進步鼓勵語正式評量不加（A3-15） */
   const lively = g.kind !== "formal";
   $("#rList").classList.remove("lively", "wait");
   $("#rList").innerHTML = g.kids.map((code, i) => {
@@ -756,7 +759,7 @@ function finish(){
       const perMin = Math.round((t.roundCorrect || 0) * 60 / g.limit);
       return `${head}<span class="rlabel">每分鐘認出</span><span class="big">${perMin} 個</span>
         <div class="rstats"><span>答對 ${t.roundCorrect || 0} 個</span><span>答錯 ${t.roundWrong || 0} 個</span><span>${LIMITS.find(l => +l[0] === g.limit)[1]}</span></div>
-        <span class="sm">目標每分鐘 ${g.aim} 個${perMin >= g.aim ? "，達到目標！" : ""}</span>${cheer}</div>`;
+        ${g.aim ? `<span class="sm">目標每分鐘 ${g.aim} 個${perMin >= g.aim ? "，達到目標！" : ""}</span>` : ""}${cheer}</div>`;
     }
     const avg = t.secs.length ? (t.secs.reduce((a, b) => a + b, 0) / t.secs.length).toFixed(1) : "—";
     const hp = g.hpMax ? g.pools[code] : null;
@@ -772,7 +775,7 @@ function finish(){
   $("#rBook").hidden = !g.rewards || !g.done.size;   /* 有抽貼紙才有「看貼紙簿」 */
   if(TABLET) tabletSend(g);   /* 平板作答：把這次的紀錄送到老師的 Google 表單（見 tablet.js） */
   /* 每位有作答的學生抽一張貼紙（見 collect.js）；練習先播完獎盃、卡片彈出後再抽 */
-  if(!lively) return giveStickers(g);
+  if(!lively) return g.done.size ? showTrophy(g, () => { if(G === g) giveStickers(g); }) : giveStickers(g);
   /* 卡片先藏著，獎盃消失後才一張張彈出 */
   const list = $("#rList"), go = () => { list.classList.replace("wait", "lively"); setTimeout(() => { if(G === g) giveStickers(g); }, g.kids.length * 180 + 400); };
   list.classList.add("wait");

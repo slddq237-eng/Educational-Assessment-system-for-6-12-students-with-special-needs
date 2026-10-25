@@ -15,11 +15,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-26b">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-26c">
 <!-- 平台共用的主題外觀、頭像、貼紙樣式 -->
-<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-26b">
+<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-26c">
 <!-- 注音字型（3-4）：語詞、句子提示和練習的選項加注音；畫面用到注音時才會下載 -->
-<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-26b">
+<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-26c">
 <style>
 /* 版面：沿用生字賓果的生字簿方格紙。
    設定畫面：左邊六個步驟，右邊固定的「本次評量」摘要；評量設定、教學日期、學生名單、作答紀錄放在彈出面板。
@@ -323,6 +323,7 @@ details.howto{margin:10px 0 0}
   font-size:min(calc(var(--cell) * .42 * var(--fs,1)), calc(var(--cell) * .78));line-height:1;box-shadow:0 6px 0 var(--ink);position:relative}
 .opt-big:disabled{cursor:default}
 .opt-big .och{white-space:nowrap;flex:none}
+.opt-big.picked{opacity:.55;box-shadow:none}   /* 正式評量選了的選項：不分對錯，只淡淡標示（A3-7） */
 .opt-big.wrong{opacity:.4;box-shadow:none;border-style:dashed}
 .opt-big.wrong::after{content:"✕";position:absolute;inset:0;display:grid;place-items:center;color:var(--red);font-family:var(--ui);font-size:.9em}
 .opt-big.right{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 6px 0 #1c5246}
@@ -771,7 +772,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
         <div class="row" id="modes"></div>
         <div class="box" id="fluBox" hidden>
           <div class="group"><span>時限</span><span id="limits" class="group"></span></div>
-          <label for="aim">流暢目標：每分鐘正確 <input id="aim" type="number" min="1" max="120" value="30"> 個（圖上會畫目標線）</label>
+          <label for="aim">流暢目標：每分鐘正確 <input id="aim" type="number" min="1" max="120" placeholder="依學生設定"> 個（圖上會畫目標線；沒有預設值，請依學生填）</label>
         </div>
         <p class="sub">每題的選項</p>
         <div id="choiceArea"></div>
@@ -920,12 +921,8 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
   <p class="hint" style="margin:0">這裡是「正式評量」的標準條件。同一位學生每次正式評量都用同一套條件，前後結果才能比較。改了之後，會從下一次評量開始套用。</p>
       <h3>每題的選項數</h3>
       <div class="group" id="sChoices"></div>
-      <h3>提示（答錯時依序出現）</h3>
-      <div class="levels" id="sHints"></div>
-      <label class="group"><input type="checkbox" id="sRead" style="width:20px;height:20px;accent-color:var(--green)"> 語詞、句子提示可以按喇叭念出來（報讀，預設不要）</label>
-      <p class="note" style="margin:0">報讀算是多給一層協助，會讓正確率變高。要開的話，從基線期起都開著，前後才能比較；每題有沒有按報讀都會記下來。部件重組沒有報讀（會念出答案的讀音）。</p>
-      <h3>答錯後的處理</h3>
-      <ol class="ladder" id="sRule"></ol>
+      <h3>提示與回饋</h3>
+      <p class="note" style="margin:0">正式評量不給提示、不回饋對錯（不變色、沒有音效）、不報讀；部件重組答錯一次會顯示語詞挖空，答錯第二次顯示答案。所有學生都一樣，前後測才能比較，這裡不用設定。</p>
       <h3>主題與貼紙</h3>
       <label class="group"><input type="checkbox" id="sTheme" style="width:20px;height:20px;accent-color:var(--green)"> 正式評量也使用主題和貼紙（扭蛋，預設要用）</label>
       <p class="note" style="margin:0">要做研究、希望正式評量完全沒有獎勵的老師才關掉。同一位學生從基線期起要一直維持同一個設定，前後的成績才能比較（之後做「研究模式」時，會搬進研究者設定並自動鎖住）。</p>
@@ -1083,32 +1080,32 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <!-- 每個檔案後面的 ?v=日期 是版本號：改了任何 .js、.css 檔，就把這頁所有的 ?v= 一起改成當天日期（用「全部取代」；同一天改第二次就在日期後面加 b、c）。
      這樣老師的瀏覽器才會下載新檔案，不會新網頁配到舊程式（例如按「下一步」沒反應）。 -->
 <!-- 生字資料：平台共用的教材資料（shared/lessons.js） -->
-<script src="../../shared/lessons.js?v=2026-10-26b"></script>
+<script src="../../shared/lessons.js?v=2026-10-26c"></script>
 <!-- 注音讀音表（shared/bpmf.js）：語詞、例句裡的破音字該念哪一個音 -->
-<script src="../../shared/bpmf.js?v=2026-10-26b"></script>
+<script src="../../shared/bpmf.js?v=2026-10-26c"></script>
 <!-- 字頻：教育部字頻總表（shared/freq.js），練習的常用字、字頻優先、老師專區高字頻生字會用到 -->
-<script src="../../shared/freq.js?v=2026-10-26b"></script>
+<script src="../../shared/freq.js?v=2026-10-26c"></script>
 <!-- 自動部件拆解（shared/parts.js）：部件提示在 lessons.js 的 PARTS 沒有這個字時才用 -->
-<script src="../../shared/parts.js?v=2026-10-26b"></script>
+<script src="../../shared/parts.js?v=2026-10-26c"></script>
 <!-- 共用小工具（課本排序與名稱、語詞、部件查詢、按匯出時才載入 Excel 元件），識字評量與備課分析共用 -->
-<script src="../../shared/common.js?v=2026-10-26b"></script>
+<script src="../../shared/common.js?v=2026-10-26c"></script>
 <!-- 平台共用：主題與貼紙、每位學生的收藏與頭像 -->
-<script src="../../shared/sticker-art.js?v=2026-10-26b"></script>
-<script src="../../shared/themes.js?v=2026-10-26b"></script>
-<script src="../../shared/rewards.js?v=2026-10-26b"></script>
+<script src="../../shared/sticker-art.js?v=2026-10-26c"></script>
+<script src="../../shared/themes.js?v=2026-10-26c"></script>
+<script src="../../shared/rewards.js?v=2026-10-26c"></script>
 <!-- 程式本體：分成八個檔案，順序不能換（說明見 app.js 開頭） -->
-<script src="data.js?v=2026-10-26b"></script>
-<script src="setup.js?v=2026-10-26b"></script>
-<script src="records.js?v=2026-10-26b"></script>
-<script src="wordsets.js?v=2026-10-26b"></script>
-<script src="play.js?v=2026-10-26b"></script>
-<script src="collect.js?v=2026-10-26b"></script>
-<script src="gacha.js?v=2026-10-26b"></script>
-<script src="scenes.js?v=2026-10-26b"></script>
+<script src="data.js?v=2026-10-26c"></script>
+<script src="setup.js?v=2026-10-26c"></script>
+<script src="records.js?v=2026-10-26c"></script>
+<script src="wordsets.js?v=2026-10-26c"></script>
+<script src="play.js?v=2026-10-26c"></script>
+<script src="collect.js?v=2026-10-26c"></script>
+<script src="gacha.js?v=2026-10-26c"></script>
+<script src="scenes.js?v=2026-10-26c"></script>
 <!-- 老師專區、進階分析：平板作答（網址 #t）用不到，不下載，省約 30 KB（2026-10-24 R4a）。
      用 document.write 是為了讓電腦上的載入順序和以前完全一樣 -->
-<script>if(!/^#t/.test(location.hash)) document.write('<script src="teacher.js?v=2026-10-26b"><\/script><script src="pivot.js?v=2026-10-26b"><\/script>');</script>
-<script src="tablet.js?v=2026-10-26b"></script>
-<script src="app.js?v=2026-10-26b"></script>
+<script>if(!/^#t/.test(location.hash)) document.write('<script src="teacher.js?v=2026-10-26c"><\/script><script src="pivot.js?v=2026-10-26c"><\/script>');</script>
+<script src="tablet.js?v=2026-10-26c"></script>
+<script src="app.js?v=2026-10-26c"></script>
 </body>
 </html>
