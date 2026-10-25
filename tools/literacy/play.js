@@ -52,6 +52,36 @@ function pickItems(code, q){
   return shuffle(take).slice(0, q.count);
 }
 
+/* 多位學生輪流：每人一份題目交錯排成佇列（S01 第1題、S02 第1題、S01 第2題…）。
+   前一位剛做過的字，下一位不要馬上又出現（看到上一題答案會互相影響）：輪到某位學生時，
+   從他剩下的題目挑第一個「字和前一題不同」的；只剩相同的字時才不得已照出（例如大家只考同一個字）。
+   每位學生題目的數量和內容不變，只是順序調整；單人時等於原本順序。 */
+function interleaveLists(lists){
+  const left = lists.map(l => [...l]), out = [];
+  const total = left.reduce((s, l) => s + l.length, 0);
+  for(let i = 0; out.length < total; i++){
+    const j = i % left.length;
+    if(!left[j].length) continue;
+    const last = out[out.length - 1];
+    let at = left[j].findIndex(it => !last || last.kid === it.kid || last.c !== it.c);
+    if(at < 0) at = 0;
+    out.push(left[j].splice(at, 1)[0]);
+  }
+  /* 最後幾題可能只剩相同的字排不開：和同一位學生較前面的題目對調位置來修補（只調同一人的順序） */
+  const clash = p => p > 0 && out[p].c === out[p - 1].c && out[p].kid !== out[p - 1].kid;
+  const bad = p => clash(p) || (p + 1 < out.length && clash(p + 1));
+  for(let p = out.length - 1; p > 0; p--){
+    if(!clash(p)) continue;
+    for(let r = 0; r < out.length; r++){
+      if(r === p || out[r].kid !== out[p].kid) continue;
+      [out[p], out[r]] = [out[r], out[p]];
+      if(!bad(p) && !bad(r)) break;
+      [out[p], out[r]] = [out[r], out[p]];
+    }
+  }
+  return out;
+}
+
 /* 組選項：先放 1 個同詞易混字（例如「新聞」的「聞」），再輪流放同音字、形近字，不夠用課文字補 */
 function makeOptions(c, k, n){
   const b = splitKey(k)[0];
@@ -291,8 +321,7 @@ function startSession(){
   if(G.mode === "flu"){ G.turn = 0; showScreen("#play"); showReady(); return; }
   /* 正確率模式：每位學生各抽一份題目，再交錯排成輪流順序 */
   const lists = list.map(code => pickItems(code, q).map(it => ({...it, kid:code})));
-  G.queue = [];
-  for(let i = 0; i < Math.max(...lists.map(l => l.length)); i++) lists.forEach(l => { if(l[i]) G.queue.push(l[i]); });
+  G.queue = interleaveLists(lists);
   G.pos = 0;
   showScreen("#play");
   if(G.game) return sceneStart(nextItem);
@@ -687,7 +716,7 @@ function showReady(){
 }
 function startRound(){
   const code = G.kids[G.turn];
-  G.round = {kid: code, correct: 0, wrong: 0, over: false, end: performance.now() + G.limit * 1000, last: null};
+  G.round = {kid: code, correct: 0, wrong: 0, over: false, end: performance.now() + G.limit * 1000, last: G.lastFluChar || null};
   $("#pTimer").hidden = false;
   const bar = $("#pTimer i");
   const tick = () => {
@@ -705,7 +734,7 @@ function nextFluItem(){
   const pool = G.lessons.flatMap(k => testChars(k).map(c => ({c, k})));
   let it;
   do { it = pool[Math.floor(Math.random() * pool.length)]; } while(pool.length > 1 && G.round.last && it.c === G.round.last);
-  G.round.last = it.c;
+  G.round.last = G.lastFluChar = it.c;   /* 換人時，下一位的第一題也不重複上一位最後一題 */
   return {...it, kid: G.round.kid};
 }
 function endRound(){
