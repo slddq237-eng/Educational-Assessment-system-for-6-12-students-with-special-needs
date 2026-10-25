@@ -1,7 +1,7 @@
 # 老師專區「一位學生」畫面（維護者 2026-10-25 指定的版面，已做成程式）
 
 **原則**：一般模式老師**只需要選學生**，其他都不用點按鈕挑選，**上下滑動看就好**。給不懂統計的老師看得懂，畫面簡潔。
-程式在 `tools/literacy/teacher.js` 的「15b」，樣式在 `tools/literacy/index.html`（`#tSimple`）。第一版草稿（有「前測／後測比較」區塊、三項字清單、需要回答 P-1～P-8）的原文見 `docs/history/history-2026-10-25.md`。
+程式在 `tools/literacy/teacher.js` 的「15b」，樣式在 `tools/literacy/index.html`（`#tSimple`）。第一版草稿（有「前測／後測比較」區塊、三項字清單、需要回答 P-1～P-8）的原文見 `docs/history/history-2026-10-25-teacher-draft.md`。
 
 ## 一、版面（由上往下，整頁往下捲）
 
