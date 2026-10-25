@@ -32,8 +32,8 @@ function applyPreset(id){
   state.preset = id; store(KEYS.preset, id);
   Object.assign(state, {qCount:null, qMethod:"even"});   /* 評量目標沿用第 1 步選的 */
   PRESETS.find(p => p.id === id).apply();
-  /* 作答方式：快速開始只有大螢幕輪流、平板掃 QR code 兩種；平板只能練習，換到正式評量就改回大螢幕 */
-  if(state.answer !== "qr" || state.kind === "formal") state.answer = "turn";
+  /* 作答方式：快速開始只有大螢幕輪流、平板掃 QR code 兩種（2026-10-25 起平板也能用在正式評量，A3-18） */
+  if(state.answer !== "qr") state.answer = "turn";
 }
 function setUi(mode){
   ui = mode; store(KEYS.ui, ui);
@@ -54,7 +54,7 @@ function renderPresets(){
    只有正式評量才能標（快速開始的「正式評量」卡片，和進階設定選正式評量時）；練習一律不標。
    前測和後測的條件完全一樣。沒有前後測代號、也不做補考（2026-10-25 維護者決定）：缺席的學生下次再做時，自己標前測或後測就好；
    同一次坐下來考的紀錄本來就有 session（作答場次）。
-   教學日期不會自動記，需要時請按上方的「教學日期」輸入。 */
+   教學日期不會自動記，需要時請從右上角「選單」的「教學日期管理」輸入。 */
 const PP_OPTS = [["", "不標", "和一般評量一樣，不放進前後測比較"], ["前測", "前測", "教學前，看學生原本會多少"], ["後測", "後測", "教學後，看學生學會多少"]];
 const ppOn = () => state.kind === "formal" && (!isQuick() || state.preset === "test");
 /* 前測、後測和教學日期對不上時的提醒（維護者 2026-10-25）：只提醒、不擋，不改變紀錄；教學日期只用來算「教學後第幾天」，前測、後測還是老師按的為準。
@@ -70,8 +70,8 @@ function ppWarnHtml(){
   const many = new Set(hit.map(k => splitKey(k)[0])).size > 1;
   const names = hit.map(k => { const [b, n] = splitKey(k); return many ? `${bookName(b)} ${lessonName(b, n)}` : lessonName(b, n); }).join("、");
   return state.prepost === "後測"
-    ? `提醒：${esc(names)}依教學日期看起來還沒教完，確定要標成「後測」嗎？（只是提醒，可以照樣開始；教學日期在上方「教學日期」修改）`
-    : `提醒：${esc(names)}依教學日期已經教完了，確定要標成「前測」嗎？（只是提醒，可以照樣開始；教學日期在上方「教學日期」修改）`;
+    ? `提醒：${esc(names)}依教學日期看起來還沒教完，確定要標成「後測」嗎？（只是提醒，可以照樣開始；教學日期在「選單」的「教學日期管理」修改）`
+    : `提醒：${esc(names)}依教學日期已經教完了，確定要標成「前測」嗎？（只是提醒，可以照樣開始；教學日期在「選單」的「教學日期管理」修改）`;
 }
 const lessonOrderKey = (a, b) => { const [ba, na] = splitKey(a), [bb, nb] = splitKey(b); return BOOK_ORDER.indexOf(ba) - BOOK_ORDER.indexOf(bb) || (+na - +nb); };
 function renderPpWarn(){ const el = $("#ppWarn"), h = ppWarnHtml(); el.hidden = !h; el.innerHTML = h; }
@@ -95,12 +95,11 @@ const step1Miss = () => "";
 const step2Miss = () => !selKids().length ? (isQuick() ? "請先點選要做的學生" : "請先點選要評量的學生") : !state.lessons.length ? "請先選課次" : "";
 function step3Miss(){
   const n = selKids().length, a = ANSWERS.find(x => x.id === state.answer);
-  if(a.id === "qr" && state.kind === "formal") return "平板作答目前只能用在練習，正式評量請換別的作答方式";
   return n < a.min || n > a.max ? `「${a.name}」可以 ${a.min}～${a.max} 位學生，目前 ${n} 位` : "";
 }
 /* 能選的作答方式（快速開始只列大螢幕輪流、平板掃 QR code） */
 const answerList = () => ANSWERS.filter(a => !isQuick() || a.id === "turn" || a.id === "qr");
-const answerOff = a => a.off || (a.id === "qr" && state.kind === "formal" ? "目前只能練習" : "");
+const answerOff = a => a.off || "";
 /* 第 3 步可以跳過嗎：作答方式只有一個能選、而且個人或合作是固定的 */
 const skip3 = () => answerList().filter(a => !answerOff(a)).length === 1 && !!teamFixed() && !step3Miss();
 function renderWizard(){

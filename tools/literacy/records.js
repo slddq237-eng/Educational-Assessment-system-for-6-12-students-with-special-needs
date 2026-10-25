@@ -213,7 +213,7 @@ $("#recRestore").onchange = async e => {
     const have = new Set(records.map(recKey)), recs = data.records || [];
     const add = recs.filter(r => !have.has(recKey(r))).length, wsN = Object.keys(data.wordsets || {}).length;
     text = `這是 ${savedDay(data)}下載的${kind === "archive" ? ` ${data.archive} 學年封存檔` : "備份檔"}，有 ${recs.length} 筆作答紀錄（其中 ${add} 筆是這台電腦還沒有的）、${(data.kids || []).length} 位學生${wsN ? `、${wsN} 課的字組` : ""}。
-      匯入後，評量設定（正式評量的條件）也會換成檔案裡的。<br><span class="warn">這個檔案有學生資料，請不要寄給不相關的人。</span>`;
+      ${kind === "archive" ? "封存檔只加回作答紀錄，現在的評量設定不會動。" : "匯入後，評量設定（正式評量的條件）也會換成檔案裡的。"}<br><span class="warn">這個檔案有學生資料，請不要寄給不相關的人。</span>`;
     doIt = () => restoreBackup(data);
   } else if(kind === "wordsets"){
     const plan = wsImportPlan(data.sets);
@@ -263,11 +263,13 @@ async function restoreBackup(data){
   saveKids(); saveTeach();
   /* 評量設定（正式評量的條件）跟著還原，換電腦後前後才能比較；畫面與聲音是每台電腦自己的，不動 */
   const FORMAL_KEYS = ["choices", "formalTheme", "formalGame", "clockFormal"];   /* A3-6、A3-10（2026-10-25）：正式評量不提示、不報讀，提示與報讀不再是設定 */
-  if(data.settings) FORMAL_KEYS.forEach(k => { if(data.settings[k] !== undefined) settings[k] = data.settings[k]; });
-  saveSettings();
+  /* 封存檔是舊學年的資料，不動現在的設定（2026-10-25 維護者決定）；備份檔才還原設定 */
+  const isArchive = fileKind(data) === "archive";
+  if(!isArchive && data.settings) FORMAL_KEYS.forEach(k => { if(data.settings[k] !== undefined) settings[k] = data.settings[k]; });
+  if(!isArchive) saveSettings();
   for(const p of BACKUP_PARTS) if(data[p.key]) await p.restore(data[p.key]);
   render();
-  return `已匯入 ${add.length} 筆新的作答紀錄（重複的紀錄不會再加一次），評量設定也一起換成檔案裡的了。`;
+  return `已匯入 ${add.length} 筆新的作答紀錄（重複的紀錄不會再加一次）${isArchive ? "，現在的評量設定沒有動" : "，評量設定也一起換成檔案裡的了"}。`;
 }
 $("#recClear").onclick = e => {
   const b = e.currentTarget;

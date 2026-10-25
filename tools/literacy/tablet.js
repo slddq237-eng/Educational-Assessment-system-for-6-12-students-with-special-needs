@@ -84,14 +84,15 @@ function tabletPack(){
     d:{
       [KEYS.ui]: ui,   /* 快速開始或進階設定（快速開始不用每位學生不同的提示，見 data.js 的 kidCfg） */
       /* 正式評量的條件、設定畫面大小、表單網址平板用不到 */
-      [KEYS.settings]: Object.fromEntries(Object.entries(settings).filter(([k]) => !/^(formal|clockFormal$|uiScale$|tabletForm$)/.test(k))),
+      /* 練習：正式評量的條件用不到、不帶；正式評量：要帶選項數、主題、遊戲、計時（A3-18），平板才和老師電腦同一個條件 */
+      [KEYS.settings]: Object.fromEntries(Object.entries(settings).filter(([k]) => !/^(uiScale$|tabletForm$)/.test(k) && (state.kind === "formal" || !/^(formal|clockFormal$)/.test(k)))),
       [KEYS.kids]: codes.map(c => { const k = kidBy(c), p = planOf(k);
         return {code:k.code, name:k.name || "", grade:k.grade, sy:k.sy, ...(p.adjust ? {plans:{[PLAN_KEY]:{adjust:true, level:p.level}}} : {})}; }),
       [KEYS.teach]: pick(teach, state.lessons),
       [KEYS.wordsets]: pick(wordSets, state.lessons)
     },
     st:{
-      goal:state.goal, mode:state.mode, limit:state.limit, lessons:state.lessons,
+      kind:state.kind, prepost:state.prepost || "", goal:state.goal, mode:state.mode, limit:state.limit, lessons:state.lessons,
       pChoices:state.pChoices, pHints:[...state.pHints], pRule:state.pRule, qCount:state.qCount, qMethod:state.qMethod,
       themePick:state.themePick,
       ow:Object.fromEntries(codes.map(c => [c, ownPack(c)])),   /* 每位學生已收集哪幾張（平板的貼紙簿用） */
@@ -123,10 +124,12 @@ function loadQr(){
   });
 }
 async function tabletQr(){
+  if(state.kind === "formal") wsStart(state.lessons, "formal");   /* 正式評量用到的字組先鎖定，再打包進 QR code（和電腦上開始評量一樣） */
   const url = location.href.split("#")[0] + "#t=" + b64url(JSON.stringify(tabletPack()));
   const q = quizPlan(), g = GOALS.find(x => x.id === state.goal);
-  $("#qrInfo").innerHTML = `練習・目標 ${g.id} ${g.name}・${esc(lessonsText())}・${state.mode === "flu" ? "流暢性" : `每人 ${q.count} 題`}<br>學生：${esc(selKids().join("、"))}`;
-  $("#qrMsg").textContent = location.protocol === "file:" ? "注意：這個網頁是從電腦裡的檔案打開的，平板打不開。請用網站網址打開識字評量，再產生 QR code。" : "";
+  $("#qrInfo").innerHTML = `${state.kind === "formal" ? "正式評量" + (state.prepost ? "（" + state.prepost + "）" : "") : "練習"}・目標 ${g.id} ${g.name}・${esc(lessonsText())}・${state.mode === "flu" ? "流暢性" : `每人 ${q.count} 題`}<br>學生：${esc(selKids().join("、"))}`;
+  $("#qrMsg").textContent = location.protocol === "file:" ? "注意：這個網頁是從電腦裡的檔案打開的，平板打不開。請用網站網址打開識字評量，再產生 QR code。"
+    : state.kind === "formal" ? "提醒：同一位學生的前測和後測請用同一種裝置（都用平板，或都用大螢幕），結果才好比較。" : "";
   $("#qrBox").innerHTML = `<p class="note">產生中…</p>`;
   openSheet("#qrSheet");
   try {
@@ -155,12 +158,12 @@ function tabletStart(){
   if(TABLET.bad || TABLET.v !== 1 || !s || !TABLET_FORM){ $("#tpLoad").hidden = true; $("#tabPick").classList.remove("loading"); $("#tpMsg").textContent = "讀不到這次練習的設定，請重新掃描 QR code；還是不行，請老師重新產生一次。"; return; }
   /* 用不到的課（例如老師的網頁比較新）：請平板重新整理 */
   if(!s.lessons.length || s.lessons.some(k => !lessonChars(k).length)){ $("#tpLoad").hidden = true; $("#tabPick").classList.remove("loading"); $("#tpMsg").textContent = "這個 QR code 的課本這台平板找不到，請重新整理網頁，或請老師重新產生。"; return; }
-  Object.assign(state, {kind:"practice", answer:"qr", goal:s.goal, mode:s.mode, limit:s.limit, lessons:s.lessons,
+  Object.assign(state, {kind:s.kind === "formal" ? "formal" : "practice", prepost:s.kind === "formal" ? (s.prepost || "") : "", answer:"qr", goal:s.goal, mode:s.mode, limit:s.limit, lessons:s.lessons,
     pChoices:s.pChoices, pHints:new Set(s.pHints), pRule:s.pRule, qCount:s.qCount, qMethod:s.qMethod,
     themePick:s.themePick || "none",
     kidHints:Object.fromEntries(Object.entries(s.kidHints || {}).map(([c, v]) => [c, {hints:new Set(v.hints), rule:v.rule}]))});
   const g = GOALS.find(x => x.id === state.goal);
-  $("#tpInfo").textContent = `今天練習：${lessonsText()}（目標 ${g.id} ${g.name}）`;
+  $("#tpInfo").textContent = `今天${state.kind === "formal" ? "評量" : "練習"}：${lessonsText()}（目標 ${g.id} ${g.name}）`;
   /* 結果畫面只留「再玩一次」（2026-10-23 維護者決定，不用換人）：沒有「回到設定」，平板上也不匯出 Excel */
   $("#rHome").hidden = true; $("#rExport").hidden = true;
   tabletKids();
