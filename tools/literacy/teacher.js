@@ -14,7 +14,7 @@
 const TEACH_UI = KEYS.teacher;
 const T = Object.assign({tab:"one", kid:"", metric:"acc", view:"time", axis:"date", split:"lesson", range:"term", from:"", to:"",
   kind:"formal", goal:"", book:"", lesson:"", gap:"after", top:"300", adv:"charts", simpleLesson:"", classKids:[], groups:[], classLesson:""}, load(TEACH_UI, {}));
-const saveT = () => store(TEACH_UI, T);
+const saveT = () => store(TEACH_UI, {...T, groups: getGroups()});   /* 組別由 getGroups／saveGroups 管，這裡不蓋掉 */
 const hasFreq = () => typeof FREQ !== "undefined";
 
 /* 看什麼：trend＝可以依時間／課別／時期看變化；list＝用排序表或分布呈現 */
@@ -326,7 +326,7 @@ const TAB_HELP = {
     "<b>依前後測比較</b>最直接看有沒有進步：前測 → 後測。沒標前測或後測的評量放在「未標記」。",
     "結果區的「看明細」是圖上每個數字的表格；任何一個字都可以點，看那個字的每一次作答。",
     "找不到資料時，先把日期改成「全部」、性質改成「全部」。"], "one"],
-  class: ["比較幾位學生：先點上面的學生（最多 8 位，可以存成組別），每一列是一位學生。", [
+  class: ["比較幾位學生：先點上面的學生（最多 8 位，可以存成組別，組別也能在「學生名單」編輯），每一列是一位學生。", [
     "常錯的字、反應最慢的字、容易搞混的字：每位學生各列出前 5 個；任何一個字都可以點，看那位學生那個字的每一次作答。",
     "最下面是「學生 × 生字」：格子大字＝第一次就答對的比例，小字＝作答次數；藍色越深越好，「—」＝還沒考過。直著看一欄，大家都淺色的字，可能字本身難或教學要調整。",
     "組別只存在這台電腦的瀏覽器裡，不會進作答紀錄。"], "class"],
@@ -764,7 +764,7 @@ const LIST_VIEWS = {
 const CLASS_MAX = 8, CLASS_TOP = 5;
 const pickedKids = () => (T.classKids || []).filter(kidBy);
 function classPicker(withData){
-  const sel = new Set(pickedKids()), groups = T.groups || [];
+  const sel = new Set(pickedKids()), groups = getGroups();
   const cur = groups.findIndex(g => g.kids.length === sel.size && g.kids.every(c => sel.has(c)));
   return `<div class="trow"><span class="tl">選學生（最多 ${CLASS_MAX} 位）</span>${withData.map(k =>
       `<button class="chip ${sel.has(k.code) ? "on" : ""}" data-ckid="${esc(k.code)}" aria-pressed="${sel.has(k.code)}">${esc(kidLabel(k))}</button>`).join("")}</div>
@@ -875,13 +875,13 @@ function renderClass(){
     });
     res.querySelectorAll("[data-tcl]").forEach(b => b.onclick = () => { T.classLesson = b.dataset.tcl; re(); });
     bindChart(res);
-    res.querySelectorAll("[data-cgrp]").forEach(b => b.onclick = () => { T.classKids = T.groups[+b.dataset.cgrp].kids.filter(kidBy).slice(0, CLASS_MAX); re(); });
+    res.querySelectorAll("[data-cgrp]").forEach(b => b.onclick = () => { T.classKids = getGroups()[+b.dataset.cgrp].kids.filter(kidBy).slice(0, CLASS_MAX); re(); });
     const save = $("#cGrpSave"), del = $("#cGrpDel");
     if(save) save.onclick = () => {
       const name = (prompt("這一組的名字（例如：一年級組）") || "").trim(); if(!name) return;
-      T.groups = [...(T.groups || []).filter(g => g.name !== name), {name, kids: pickedKids()}]; re();
+      saveGroups([...getGroups().filter(g => g.name !== name), {name, kids: pickedKids()}]); re();
     };
-    if(del) del.onclick = () => { const g = T.groups.find(x => x.kids.length === sel.length && x.kids.every(c => sel.includes(c))); T.groups = T.groups.filter(x => x !== g); re(); };
+    if(del) del.onclick = () => { const gs = getGroups(), g = gs.find(x => x.kids.length === sel.length && x.kids.every(c => sel.includes(c))); saveGroups(gs.filter(x => x !== g)); re(); };
   };
   if(!kidList.length){
     tCurrent = null;

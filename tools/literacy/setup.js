@@ -444,9 +444,9 @@ function renderKids(){
   $("#kids").innerHTML = kids.map(k => `<button class="chip kidchip ${state.kids.has(k.code)?"on":""}" data-k="${esc(k.code)}" aria-pressed="${state.kids.has(k.code)}">${Rewards.avatarHtml(k.code)}${esc(k.name && kids.filter(o => o.name === k.name).length === 1 ? k.name : kidLabel(k))}</button>`).join("");
   $("#kids").querySelectorAll("button").forEach(b => b.onclick = () => { const k = b.dataset.k; state.kids.has(k) ? state.kids.delete(k) : state.kids.add(k); render(); });
 }
-/* 一次選一整組：讀老師專區「多位學生」存的組別（只有學生代號）；點組別＝選起這組現有的學生，原本選的取代掉 */
+/* 一次選一整組：讀學生名單的組別（只有學生代號）；點組別＝選起這組現有的學生，原本選的取代掉 */
 function renderKidGroups(){
-  const grps = (load(KEYS.teacher, {}).groups || []).map(g => ({name: g.name, codes: g.kids.filter(kidBy)})).filter(g => g.codes.length);
+  const grps = getGroups().map(g => ({name: g.name, codes: g.kids.filter(kidBy)})).filter(g => g.codes.length);
   const box = $("#kidGroups"); box.hidden = !grps.length;
   box.innerHTML = grps.length ? `<span>組別</span>${grps.map((g, i) => `<button class="chip" data-g="${i}">${esc(g.name)}（${g.codes.length} 位）</button>`).join("")}` : "";
   box.querySelectorAll("[data-g]").forEach(b => b.onclick = () => { state.kids = new Set(grps[+b.dataset.g].codes); render(); });
@@ -483,7 +483,7 @@ function renderKidSheet(){
       if(f.dataset.f === "grade"){ k.grade = +f.value; k.sy = SCHOOL_YEAR; }
       else if(f.dataset.f === "code"){ const v = f.value.trim(); if(!v || kids.some(x => x !== k && x.code === v)){ f.value = k.code; return; }
         if(state.kids.delete(k.code)) state.kids.add(v); if(openPlan === k.code) openPlan = v; if(openAv === k.code) openAv = v;
-        Rewards.rename(k.code, v); k.code = v; }
+        Rewards.rename(k.code, v); saveGroups(getGroups().map(g => ({...g, kids: g.kids.map(c => c === k.code ? v : c)}))); k.code = v; }
       else k.name = f.value.trim();
       saveKids(); render();
     });
@@ -492,6 +492,7 @@ function renderKidSheet(){
     r.querySelector("[data-del]").onclick = () => { state.kids.delete(k.code); kids.splice(+r.dataset.i, 1); saveKids(); renderKidSheet(); render(); };
   });
   bindAvatarPanel($("#kTable .avpick"), () => { renderKidSheet(); render(); });
+  renderKidGroupSheet();
   $("#kTable").querySelectorAll(".plan").forEach(r => {
     const k = kids[+r.dataset.i];
     const plan = () => ((k.plans ||= {})[PLAN_KEY] ||= {});
@@ -505,6 +506,27 @@ function renderKidSheet(){
     });
   });
 }
+/* 學生名單的「分組」：每組一列（組名、刪除、全部學生的加入開關） */
+function renderKidGroupSheet(){
+  const gs = getGroups(), box = $("#kGroups");
+  box.innerHTML = gs.map((g, i) => `<div class="plan" data-gi="${i}">
+    <div class="group"><input aria-label="組名" data-gname value="${esc(g.name)}" maxlength="12"><button class="chip" data-gdel>刪除這組</button></div>
+    <div class="group">${kids.map(k => `<button class="chip ${g.kids.includes(k.code) ? "on" : ""}" data-gk="${esc(k.code)}" aria-pressed="${g.kids.includes(k.code)}">${esc(kidShow(k))}</button>`).join("")}</div></div>`).join("")
+    || `<p class="note" style="margin:0">還沒有組別。</p>`;
+  const save = fn => { const all = getGroups(); fn(all); saveGroups(all); renderKidGroupSheet(); render(); };
+  box.querySelectorAll("[data-gi]").forEach(r => {
+    const i = +r.dataset.gi;
+    r.querySelector("[data-gname]").onchange = e => { const v = e.target.value.trim(); if(!v || getGroups().some((g, j) => j !== i && g.name === v)){ e.target.value = getGroups()[i].name; return; } save(all => { all[i].name = v; }); };
+    r.querySelector("[data-gdel]").onclick = () => save(all => { all.splice(i, 1); });
+    r.querySelectorAll("[data-gk]").forEach(b => b.onclick = () => save(all => { const c = b.dataset.gk, ks = all[i].kids; all[i].kids = ks.includes(c) ? ks.filter(x => x !== c) : [...ks, c]; }));
+  });
+}
+$("#addGrp").onclick = () => {
+  const v = $("#newGrp").value.trim(); $("#newGrp").value = "";
+  if(!v || getGroups().some(g => g.name === v)) return;
+  saveGroups([...getGroups(), {name: v, kids: []}]); renderKidGroupSheet(); render();
+};
+$("#newGrp").addEventListener("keydown", e => { if(e.key === "Enter") $("#addGrp").click(); });
 $("#addKid").onclick = () => {
   const v = $("#newKid").value.trim();
   if(!v || kids.some(k => k.code === v)) return;
@@ -590,7 +612,7 @@ function renderDates(){
   $("#dTable").innerHTML = Object.keys(BOOKS[dBook].lessons).map(n => {
     const k = key(dBook,n), t = teach[k] || {};
     const own = Object.keys(t.kids || {}).filter(kidBy), free = kids.filter(x => !own.includes(x.code));
-    const grps = (load(KEYS.teacher, {}).groups || []).filter(g => g.kids.some(c => kidBy(c) && !own.includes(c)));   /* 老師專區「多位學生」存的組別（只有學生代號） */
+    const grps = getGroups().filter(g => g.kids.some(c => kidBy(c) && !own.includes(c)));   /* 學生名單的組別（只有學生代號） */
     return `<div class="drow" data-k="${k}"><b>${esc(lessonName(dBook, n))}</b>${dateCtl(t, `第 ${n} 課`)}</div>
       ${own.map(c => `<div class="drow dkid" data-k="${k}" data-kid="${esc(c)}"><span class="dk">個別</span><div class="kc"><b>${esc(kidLabel(kidBy(c)))}</b>
         ${dateCtl(t.kids[c], `${kidLabel(kidBy(c))} 第 ${n} 課`)}<button class="linkbtn" data-del>改回全班</button></div></div>`).join("")}
@@ -621,9 +643,9 @@ function renderDates(){
     t.kids[code] = t.type === "dates" ? {type:"dates", start:t.start || "", end:t.end || ""} : {type:"dates", start:"", end:""};
     done();
   });
-  /* 加一組學生（老師專區「多位學生」存的組別）：每位都複製全班的日期，已經有個別設定的不動 */
+  /* 加一組學生（學生名單的組別）：每位都複製全班的日期，已經有個別設定的不動 */
   $("#dTable").querySelectorAll("[data-addgrp]").forEach(sel => sel.onchange = () => {
-    const k = sel.dataset.k, g = (load(KEYS.teacher, {}).groups || [])[+sel.value]; if(!g) return;
+    const k = sel.dataset.k, g = getGroups()[+sel.value]; if(!g) return;
     const t = teach[k] = teach[k] || {};
     t.kids = t.kids || {};
     g.kids.filter(c => kidBy(c) && !t.kids[c]).forEach(c => { t.kids[c] = t.type === "dates" ? {type:"dates", start:t.start || "", end:t.end || ""} : {type:"dates", start:"", end:""}; });
