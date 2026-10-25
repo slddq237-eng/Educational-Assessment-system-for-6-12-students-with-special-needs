@@ -30,6 +30,8 @@ const GOALS = [
   {id:"4-1",name:"部件重組",  what:"看拆開的部件，選出組成的字", img:"img/goal-4-1.jpg"},
   {id:"4-2",name:"看提示書寫", what:"寫出目標字；先用紙筆作答、老師登錄", off:"準備中"}
 ];
+/* 紀錄裡的 goal 值換成畫面和 Excel 上的目標名稱（2026-10-25 起不寫「目標 3」）；沒有這個目標就照寫原值 */
+const goalName = id => { const g = GOALS.find(x => x.id === id); return g ? g.name : `目標 ${id}`; };
 const KINDS = [
   {id:"formal",   name:"正式評量", desc:"條件固定（在「評量設定」調整），結果納入學習分析"},
   {id:"practice", name:"練習",     desc:"選項、提示、玩法都能自由調整，結果另外統計"}
