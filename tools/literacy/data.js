@@ -23,12 +23,15 @@ for(const [bk, b] of Object.entries(BOOKS)) for(const L of Object.values(b.lesso
 }
 
 const GOALS = [
-  {id:"1",  order:"建議第 1 步", name:"聽音選圖",  what:"聽語詞，點出正確的圖片（音 ↔ 義）", off:"準備中"},
-  {id:"2",  order:"建議第 2 步", name:"看字選圖",  what:"看字或語詞，點出正確的圖片（形 ↔ 義）", off:"準備中"},
-  {id:"3",  order:"建議第 3 步", name:"形音辨識",  what:"聽「努力的努」，從形近字、同音字、同詞易混字中選出目標字"},
-  {id:"4-1",order:"建議第 4 步", name:"部件重組",  what:"看拆開的部件，選出組成的字"},
-  {id:"4-2",order:"建議第 4 步", name:"看提示書寫", what:"寫出目標字；先用紙筆作答、老師登錄", off:"準備中"}
+  /* 選目標的畫面只顯示名稱、一句話描述、遊戲畫面截圖（img，在 img/ 資料夾；還沒開放的目標沒有）；建議順序和目標編號先拿掉，之後有要做再加（2026-10-25 維護者要求）；id 還是紀錄裡的 goal 值，不能改。括弧內標示的寫法統一：（音 ↔ 義）（形 ↔ 義）（形 ↔ 音） */
+  {id:"1",  name:"聽音選圖",  what:"聽語詞，點出正確的圖片（音 ↔ 義）", off:"準備中"},
+  {id:"2",  name:"看字選圖",  what:"看字或語詞，點出正確的圖片（形 ↔ 義）", off:"準備中"},
+  {id:"3",  name:"聽音選字",  what:"聽「努力的努」，從形近字、同音字、同詞字中選出目標字（形 ↔ 音）", img:"img/goal-3.jpg"},
+  {id:"4-1",name:"部件重組",  what:"看拆開的部件，選出組成的字", img:"img/goal-4-1.jpg"},
+  {id:"4-2",name:"看提示書寫", what:"寫出目標字；先用紙筆作答、老師登錄", off:"準備中"}
 ];
+/* 紀錄裡的 goal 值換成畫面和 Excel 上的目標名稱（2026-10-25 起不寫「目標 3」）；沒有這個目標就照寫原值 */
+const goalName = id => { const g = GOALS.find(x => x.id === id); return g ? g.name : `目標 ${id}`; };
 const KINDS = [
   {id:"formal",   name:"正式評量", desc:"條件固定（在「評量設定」調整），結果納入學習分析"},
   {id:"practice", name:"練習",     desc:"選項、提示、玩法都能自由調整，結果另外統計"}

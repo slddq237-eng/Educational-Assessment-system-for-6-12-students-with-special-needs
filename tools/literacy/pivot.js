@@ -20,7 +20,7 @@ const DIMS = {
   prepost:   ["前後測", r => r.prepost || "未標記", PHASE_ORDER],
   lesson:    ["課別", r => lessonLabel(key(r.book, r.lesson))],
   book:      ["課本", r => BOOKS[r.book] ? bookName(r.book) : (r.bookName || r.book)],
-  goal:      ["評量目標（題目類型）", r => `目標 ${r.goal}`],
+  goal:      ["評量目標（題目類型）", r => goalName(r.goal), GOALS.map(g => g.name)],
   mode:      ["評量方式", r => r.mode === "flu" ? "流暢性" : "正確率"],
   choices:   ["選項數", r => `${r.choices} 個選項`],
   layout:    ["版面（呈現方法）", r => r.layout === "bingo" ? "生字賓果卡" : "選項卡"],

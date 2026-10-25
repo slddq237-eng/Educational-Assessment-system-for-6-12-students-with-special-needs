@@ -83,7 +83,7 @@ const COLS = [
   ["日期時間", r => new Date(r.at).toLocaleString("zh-TW", {hour12:false})],
   ["學生代號", r => r.kid], ["名字", r => r.kidName], ["年級", r => r.grade], ["學習年級", r => r.studyGrade],
   ["正式或練習", r => r.kind === "formal" ? "正式評量" : "練習"],
-  ["評量目標", r => `目標 ${r.goal}`], ["評量方式", r => r.mode === "flu" ? "流暢性" : "正確率"],
+  ["評量目標", r => goalName(r.goal)], ["評量方式", r => r.mode === "flu" ? "流暢性" : "正確率"],
   ["時限（秒）", r => r.timeLimit], ["作答模式", r => (ANSWERS.find(a => a.id === r.answer) || {}).name || r.answer],
   ["出題方式", r => r.method === "all" ? "全部出題" : (METHODS.find(m => m.id === r.method) || {}).name || r.method],
   ["課本", r => BOOKS[r.book] ? bookName(r.book) : r.bookName], ["課次", r => BOOKS[r.book] && BOOKS[r.book].lessons[r.lesson] ? lessonName(r.book, r.lesson) : r.lesson], ["目標字", r => r.char], ["語詞", r => r.word],
