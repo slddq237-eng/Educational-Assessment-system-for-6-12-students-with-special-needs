@@ -205,10 +205,13 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
 .avbtn .av{--s:56px}
 .avbtn.on{border-color:var(--green)}
 /* 好點的大按鈕（2026-10-25 維護者：選學生、選版本、年級的按鈕太小很難點）：學生是圓頭像加大字，版本和年級是大圓角 */
-.kidchip{display:inline-flex;align-items:center;font-size:20px;min-height:68px;padding:8px 24px 8px 10px}
-.kidchip .av{--s:52px;margin-right:12px}
-.kidchip small{font-size:15px}
-#kids,#books,#dBooks{gap:12px}
+.kidchip .av{--s:28px;margin-right:6px}
+/* 第 2 步選學生：整顆按鈕是圓形，大頭像在上、名字在下（2026-10-25 維護者） */
+#kids{gap:16px}
+#kids .kidchip{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:176px;height:176px;padding:10px 14px;border-radius:50%;font-size:20px;line-height:1.15;text-align:center}
+#kids .kidchip .av{--s:88px;margin:0 0 4px}
+#kids .kidchip small{display:block;margin:0;font-size:14px}
+#books,#dBooks{gap:12px}
 #eds,#dEds{gap:12px}
 #eds .opt,#dEds .opt{font-size:22px;min-height:60px;padding:12px 32px;border-radius:999px;text-align:center}
 #books .chip,#dBooks .chip{font-size:20px;min-height:56px;padding:10px 26px}
