@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="shared/fonts/tw-kai.css?v=2026-10-24p">
+<link rel="stylesheet" href="shared/fonts/tw-kai.css?v=2026-10-26">
 <style>
 /* 平台首頁：配色沿用原本生字賓果的方格紙風格 */
 :root{
@@ -48,8 +48,10 @@ footer a{color:var(--green)}
   <h1>學習評量平台</h1>
   <p class="lead">選一個小工具開始使用。</p>
   <details class="news" id="news">
-    <summary>最後更新：<b><time datetime="2026-10-24">2026-10-24</time></b>（點開看這次更新了什麼）</summary>
+    <summary>最後更新：<b><time datetime="2026-10-25">2026-10-25</time></b>（點開看這次更新了什麼）</summary>
     <ul>
+      <li>識字評量：作答紀錄改成第 3 版。「小考檢測」和「學扶前後測」合併成「正式評量」，做的時候可以按「前測」或「後測」；老師專區的圖改看前測、後測。舊的作答紀錄請先匯出備份。</li>
+      <li>識字評量：拿掉新手導覽、前後測快速指南和分析教學（畫面一直在改，說明跟不上）；老師專區每一頁仍有「這一頁怎麼用？」的短說明。</li>
       <li>識字評量（老師專區）：一位學生的折線圖改成每一課一張小圖，上下對齊（最上面一張是全部課合起來、不分時期的總圖），看得出先教的課有沒有先進步；時期改用背景顏色表示（上方有顏色對照），不再在圖上寫「基線期」「教學中」。想看全部合在一起，可以切到「合併成一條」。</li>
       <li>識字評量：扭蛋機照主題換外觀——海洋是裝水的水族箱、泡泡往上飄；恐龍是石頭機器、裡面是恐龍蛋；太空是火箭，轉動時火焰變大；甜點是有櫻桃蓋子的糖果罐。玩法和時間都不變。</li>
       <li>識字評量：做完後變成扭蛋機！學生拉一下拉桿（或點一下），轉蛋掉出來才知道抽到哪張貼紙；普通、稀有、極稀有、傳說各有不同的特效和聲音，越稀有越熱鬧。旁邊的「？」可以看抽中機會，也可以按「跳過」。電腦設定「減少動態效果」時不播動畫。</li>
@@ -109,11 +111,6 @@ footer a{color:var(--green)}
     <a class="tool" href="tools/literacy/">
       <b>識字評量</b>
       <span>依評量目標分階段檢測識字，逐字記錄作答，可匯出 Excel。</span>
-    </a>
-    <a class="tool" href="tools/literacy/guide.html">
-      <b>學扶前後測快速指南</b>
-      <span>給學習扶助、資源班老師：4 個步驟做前測、教學中檢測和後測，資料可以用在心評報告。</span>
-      <div class="tag">說明</div>
     </a>
     <a class="tool" href="tools/prep/">
       <b>備課分析</b>

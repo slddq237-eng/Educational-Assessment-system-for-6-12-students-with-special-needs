@@ -1,9 +1,9 @@
 /* =========================================================
    識字評量：老師專區（teacher.js）
    三個分頁：一位學生（選單逐步選，每次一張圖或一張表）、全班總表、進階分析（在 pivot.js）。
-   每個分頁上方有「這一頁怎麼用？」，結果下方有「這張圖怎麼看？」；完整說明在 analysis-guide.html（分析教學）。
+   每個分頁上方有「這一頁怎麼用？」，結果下方有「這張圖怎麼看？」；（分析教學頁 2026-10-25 已刪除，只留程式內的短說明。）
    原則（2026-10-20 定案）：
-   - 分析一律用「時期」（基線期／教學中／教學後／維持期），用的是作答當下記下的時期。
+   - 分析一律用「前後測」（前測／後測；沒標的是未標記），用的是作答當下老師按的標記（A8，2026-10-25）。
    - 「中途結束」的紀錄一律不算；預設只看正式評量。
    - 每個圖都有「看明細」表格，數字也能從表格讀到（不用滑鼠移上去才看得到）。
    ========================================================= */
@@ -28,13 +28,13 @@ const METRICS = [
   {id:"etype", name:"錯誤類型", kind:"list", what:"第一次選錯時，選到的是哪一類的字"},
   {id:"hint",  name:"提示層級", kind:"list", what:"需要多少幫助才答對（0＝不用提示）"}
 ];
-const VIEWS = [["time","依時間"],["lesson","依課別"],["phase","依時期比較"]];
+const VIEWS = [["time","依時間"],["lesson","依課別"],["phase","依前後測比較"]];
 const RANGES = [["term","本學期"],["last","上學期"],["all","全部"],["custom","自訂日期"]];
 const KINDS_F = [["formal","正式評量"],["practice","練習"],["both","全部"]];
-const PHASE_ORDER = [...PHASES, "未判斷"];
+const PHASE_ORDER = [...PREPOST, "未標記"];
 const ETYPES = ["同詞易混","同音","形近","同部件","課文字","其他字"];   /* 同部件只出現在目標 4-1 部件重組 */
 const GAP_BUCKETS = {
-  after: {name:"教學後天數", what:"該課教學結束到這次評量隔幾天", list:["教學前或教學中","0～6 天","7～13 天","14～29 天","30 天以上"]},
+  after: {name:"教學後天數", what:"該課教學結束到這次評量隔幾天", list:["教學結束前或沒填日期","0～6 天","7～13 天","14～29 天","30 天以上"]},
   prev:  {name:"距上次評量天數", what:"同一個字上次考到這次隔幾天", list:["第一次考","同一天","1～6 天","7～13 天","14～29 天","30 天以上"]}
 };
 
@@ -73,7 +73,7 @@ function prevGap(r){
 function gapBucket(r, type){
   if(type === "after"){
     const d = r.daysAfter;
-    if(d === "" || d == null) return "教學前或教學中";
+    if(d === "" || d == null) return "教學結束前或沒填日期";
     return d < 7 ? "0～6 天" : d < 14 ? "7～13 天" : d < 30 ? "14～29 天" : "30 天以上";
   }
   const d = prevGap(r);
@@ -133,7 +133,7 @@ function renderTeacher(){
 const TAB_HELP = {
   one: ["看一位學生的進步。由上往下選：看誰 → 看什麼 → 怎麼看，下面再選日期和課次範圍。", [
     "<b>正確率</b>＝第一次就點對的比例（越高越好）；<b>反應時間</b>＝題目唸完到答對的秒數（越短越熟）；<b>流暢性</b>＝計時挑戰每分鐘答對幾個。",
-    "<b>依時期比較</b>最直接看介入有沒有效：基線期（還沒教）→ 教學中 → 教學後 → 維持期（教完 7 天以上）。",
+    "<b>依前後測比較</b>最直接看有沒有進步：前測 → 後測。沒標前測或後測的評量放在「未標記」。",
     "結果區的「看明細」是圖上每個數字的表格；任何一個字都可以點，看那個字的每一次作答。",
     "找不到資料時，先把日期改成「全部」、性質改成「全部」。"], "one"],
   class: ["一眼看全班：每一列是一位學生，每一欄是一個字。", [
@@ -147,9 +147,8 @@ const TAB_HELP = {
     "淡色格子筆數太少，數字容易因為多對一題就大變，僅供參考。"], "pivot"]
 };
 function renderTabHelp(){
-  const [lead, list, anchor] = TAB_HELP[T.tab], el = $("#tHelp");
-  el.innerHTML = `<summary>這一頁怎麼用？</summary><p>${lead}</p><ul>${list.map(x => `<li>${x}</li>`).join("")}</ul>
-    <p><a href="analysis-guide.html#${anchor}" target="_blank" rel="noopener">看完整的分析教學（名詞解釋、範例）</a></p>`;
+  const [lead, list] = TAB_HELP[T.tab], el = $("#tHelp");
+  el.innerHTML = `<summary>這一頁怎麼用？</summary><p>${lead}</p><ul>${list.map(x => `<li>${x}</li>`).join("")}</ul>`;
   el.open = !!T.helpOpen;
   el.ontoggle = () => { if(T.helpOpen !== el.open){ T.helpOpen = el.open; saveT(); } };
 }
@@ -224,23 +223,22 @@ function showResult(out, empty){
 /* 「這張圖怎麼看？」：依看什麼、怎麼看給不同的說明 */
 function howTo(M){
   const better = {acc:"越高越好", sec:"越低越好（越快越熟）", flu:"越高越好"}[M.id];
-  const more = a => `<p><a href="analysis-guide.html#${a}" target="_blank" rel="noopener">更多說明</a></p>`;
   if(M.kind === "trend"){
-    if(T.view === "lesson") return `<p>每一條是一課，長度是那一課全部作答合起來的${esc(M.name)}（${better}）。括號是用了幾題。比較哪一課比較難，可以優先複習。</p>${more("one")}`;
-    if(T.view === "phase") return `<p>每一條是一個時期，${esc(M.name)}${better}。理想的樣子：基線期低 → 教學中升高 → 教學後更高 → 維持期仍然高（學了有記住）。</p>
-      <p>括號是筆數；某個時期只有幾題時，數字容易大幅變動，先多評量幾次再下結論。時期是作答當下判斷的。</p>${more("one")}`;
-    return `<p>${T.split === "lesson" ? "最上面「全部課合計」是每次評量全部的課合起來一個點，不分時期，看整體的起伏；下面每一課一張小圖，橫軸對齊，可以上下比較：先教的課有沒有先進步、還沒教的課是不是維持原樣。" : "全部的課合成一條線。"}一個點＝一次評量（流暢性是一回合），${esc(M.name)}${better}。背景顏色＝時期（顏色對照在圖的上方），虛線＝時期改變的地方；直線＝本學期安排的學扶、資源班開始日${M.id === "flu" ? "；水平線＝目標每分鐘幾個" : ""}。空心點＝那一點不到 3 題，數字容易大起大落。滑鼠移到點上看數字。</p>
-      ${T.split === "all" ? "<p>時期是每一課各自算的；合成一條時，同一次評量含好幾課，背景顏色用的是那次最多題目的時期，可能前後跳來跳去。要看時期請切回「每課分開」。</p>" : ""}
-      <ul><li><b>水準</b>：每個時期大約在多高？</li><li><b>趨勢</b>：時期裡的點往上、持平還是往下？基線期已經一直往上的話，很難說進步是教學造成的。</li>
-      <li><b>穩定</b>：點有沒有忽高忽低？基線期最好至少 3 次而且穩定。</li><li><b>立即效果</b>：教學開始後頭幾個點，是不是馬上和基線期不同。</li></ul>${more("one")}`;
+    if(T.view === "lesson") return `<p>每一條是一課，長度是那一課全部作答合起來的${esc(M.name)}（${better}）。括號是用了幾題。比較哪一課比較難，可以優先複習。</p>`;
+    if(T.view === "phase") return `<p>每一條是前測或後測，${esc(M.name)}${better}。理想的樣子：前測低 → 後測升高。</p>
+      <p>括號是筆數；只有幾題時，數字容易大幅變動，先多評量幾次再下結論。前測、後測是作答前老師按的標記。</p>`;
+    return `<p>${T.split === "lesson" ? "最上面「全部課合計」是每次評量全部的課合起來一個點，不分前測後測，看整體的起伏；下面每一課一張小圖，橫軸對齊，可以上下比較：先教的課有沒有先進步、還沒教的課是不是維持原樣。" : "全部的課合成一條線。"}一個點＝一次評量（流暢性是一回合），${esc(M.name)}${better}。背景顏色＝前測、後測（顏色對照在圖的上方），虛線＝標記改變的地方；直線＝本學期安排的學扶、資源班開始日${M.id === "flu" ? "；水平線＝目標每分鐘幾個" : ""}。空心點＝那一點不到 3 題，數字容易大起大落。滑鼠移到點上看數字。</p>
+      ${T.split === "all" ? "<p>合成一條時，同一次評量含好幾課，背景顏色用的是那次最多題目的標記，可能前後跳來跳去。要看前測後測請切回「每課分開」。</p>" : ""}
+      <ul><li><b>水準</b>：前測、後測大約在多高？</li><li><b>趨勢</b>：同一種標記裡的點往上、持平還是往下？前測已經一直往上的話，很難說進步是教學造成的。</li>
+      <li><b>穩定</b>：點有沒有忽高忽低？</li><li><b>立即效果</b>：教學開始後頭幾個點，是不是馬上和前測不同。</li></ul>`;
   }
   return {
-    gap: `<p>依間隔天數分組，每一條是那一組第一次就答對的比例。間隔越長、比例掉越多，表示越需要早一點複習。「教學前或教學中」那一組可以當對照。</p>`,
+    gap: `<p>依間隔天數分組，每一條是那一組第一次就答對的比例。間隔越長、比例掉越多，表示越需要早一點複習。「教學結束前或沒填日期」那一組可以當對照。</p>`,
     miss: `<p>錯誤率最高的字排最前面（第一次就選錯的比例），一樣時作答次數多的在前。看「最常選錯成」：同音字多要加強聽音辨字，形近字多要比較字形。點字看每一次作答。</p>`,
     freq: `<p>常用字依字頻排名排序，條越長錯越多。先確保最常用的字都會。</p>`,
     etype: `<p>第一次選錯時，選到哪一類的字。同音多→多做聽音辨字、用語詞區分；形近多→比較字形、部件；同詞易混多→語詞裡每個字的位置還不穩；同部件多（部件重組）→部件的位置和組合還不熟。</p>`,
     hint: `<p>每一題用到的最高提示：0＝不用提示，1～3＝系統給，4～7＝老師按的按鈕。介入有效時，「0 不用提示」的比例應該越來越高。</p>`
-  }[M.id] + more("lists");
+  }[M.id];
 }
 /* 明細表：cols＝[[標題, 取值函式, 可以點的字？]] */
 function detailTable(cols, rows){
@@ -270,7 +268,7 @@ function writeSheet(rows, name, filename, msgSel, more){
    ========================================================= */
 const groupBy = (list, keyFn) => { const m = new Map(); for(const x of list){ const k = keyFn(x); if(k == null) continue; if(!m.has(k)) m.set(k, []); m.get(k).push(x); } return m; };
 const lessonLabel = k => { const [b, n] = splitKey(k); return BOOKS[b] ? `${bookName(b)} ${lessonName(b, n)}` : k; };
-const phaseOf = r => r.phase || "未判斷";
+const phaseOf = r => r.prepost || "未標記";
 /* 一群紀錄最常見的時期（同一次評量含多課時可能不同） */
 const mainPhase = rs => { const c = {}; rs.forEach(r => c[phaseOf(r)] = (c[phaseOf(r)] || 0) + 1); return Object.entries(c).sort((a, b) => b[1] - a[1])[0][0]; };
 
@@ -322,12 +320,12 @@ function trendView(rs, m){
     const g = groupBy(src, phaseOf);
     groups = PHASE_ORDER.filter(p => g.has(p)).map(p => ({label:p, rs:g.get(p), ...fn(g.get(p))}));
     chart = barChart(groups, {metric:m});
-    note = "時期是作答當下依教學日期或年級判斷的結果。";
+    note = "前測、後測是作答前老師按的標記。";
   }
-  const viewName = T.view === "time" ? (T.axis === "teach" ? "依教學開始後天數" : "依測驗日期") : T.view === "lesson" ? "依課別" : "依時期";
+  const viewName = T.view === "time" ? (T.axis === "teach" ? "依教學開始後天數" : "依測驗日期") : T.view === "lesson" ? "依課別" : "依前後測";
   const last = latest || groups[groups.length - 1];
   const perLesson = T.view === "time" && T.split === "lesson";
-  cols = [[T.view === "lesson" ? "課次" : T.view === "phase" ? "時期" : "日期", g => g.label], ...(perLesson ? [["課次", g => g.lesson]] : []), ...(T.view === "time" ? [["時期", g => g.phase]] : []),
+  cols = [[T.view === "lesson" ? "課次" : T.view === "phase" ? "前後測" : "日期", g => g.label], ...(perLesson ? [["課次", g => g.lesson]] : []), ...(T.view === "time" ? [["前後測", g => g.phase]] : []),
     [mName, g => fmt(m, g.v)], [m === "flu" ? "回合數" : m === "sec" ? "答對題數" : "題數", g => g.n]];
   return {title:`${who}・${mName}（${viewName}）`, chart, note, cols, rows:groups,
     tiles:[[m === "flu" ? "流暢性回合" : "作答題數", `${m === "flu" ? all.n : src.length}`, `${rangeText()}`],
@@ -369,11 +367,11 @@ function lessonPanels(src, xOf, fn, info, o, all, total){
     lineChart(l.pts, {...o, domain, ymax, axisPts: all, title:l.name, compact:true, xName: i === lessons.length - 1 ? o.xName : ""})).join("");
   return {chart, groups: lessons.flatMap(l => l.pts).sort((a, b) => a.x - b.x)};
 }
-/* 時期的背景色（淺色，靠圖例和虛線輔助，不只靠顏色分辨）；未判斷不塗色 */
-const phaseCls = p => { const i = PHASE_ORDER.indexOf(p); return `ph${i < 0 ? PHASE_ORDER.length - 1 : i}`; };
+/* 時期的背景色（淺色，靠圖例和虛線輔助，不只靠顏色分辨）；未標記不塗色 */
+const phaseCls = p => `ph${p === "前測" ? 0 : p === "後測" ? 1 : 4}`;   /* 前測灰、後測藍、未標記不塗色（CSS 的 ph0、ph1、ph4） */
 function phaseLegend(pts){
   const has = new Set(pts.map(p => p.phase));
-  return `<div class="legend phaselegend">${PHASE_ORDER.filter(p => has.has(p)).map(p => `<span><i class="${phaseCls(p)}"></i>${esc(p)}</span>`).join("")}<span><i class="dashkey"></i>時期改變</span></div>`;
+  return `<div class="legend phaselegend">${PHASE_ORDER.filter(p => has.has(p)).map(p => `<span><i class="${phaseCls(p)}"></i>${esc(p)}</span>`).join("")}<span><i class="dashkey"></i>標記改變</span></div>`;
 }
 
 /* ---------- 圖：折線圖（依時間） ----------
@@ -562,7 +560,7 @@ const LIST_VIEWS = {
     const rows = levels.map(lv => ({label:name(lv), level:lv, v:g.get(lv).length, n:g.get(lv).length, share:pct(g.get(lv).length, rs.length)}));
     const used = rs.filter(r => r.hintLevel > 0).length;
     return {title: whoTitle("提示層級"), chart: barChart(rows, {label: r => `${r.v} 題（${r.share}%）`}), rows,
-      note: "每一題記的是用到的最高提示層級：1～3 是系統給的（語詞、圖片、部件等），4～7 是老師按的按鈕。基線期固定不給提示。",
+      note: "每一題記的是用到的最高提示層級：1～3 是系統給的（語詞、圖片、部件等），4～7 是老師按的按鈕。前測和後測的條件完全一樣。",
       cols:[["提示層級", r => r.label], ["題數", r => r.v], ["比例", r => `${r.share}%`]],
       tiles:[["作答題數", `${rs.length}`, rangeText()], ["用到提示", `${pct(used, rs.length)}%`, `${used} 題`], ["平均提示層級", `${avg(rs.map(r => r.hintLevel || 0))}`, "0＝都不用提示"]]};
   }
@@ -611,7 +609,7 @@ function openCharLog(kid, c){
   const valid = list.filter(r => !r.quit), a = accOf(valid);
   const res = r => r.firstCorrect ? "✓ 第一次就對" : r.passed ? `✗ 錯 ${r.wrongCount} 次後答對` : r.revealed ? "✗ 顯示答案" : "✗ 答錯";
   const rows = list.map(r => ({...r, day:dayOf(r), gap:prevGap(r)}));
-  const cols = [["日期", r => r.day], ["性質", r => (r.kind === "formal" ? "正式" : "練習") + (r.quit ? "・中途結束（不列入）" : "")], ["時期", r => r.phase || "未判斷"],
+  const cols = [["日期", r => r.day], ["性質", r => (r.kind === "formal" ? "正式" : "練習") + (r.quit ? "・中途結束（不列入）" : "")], ["前後測", r => r.prepost || "未標記"],
     ["目標", r => `目標 ${r.goal}`], ["方式", r => r.mode === "flu" ? "流暢性" : "正確率"], ["結果", res], ["第一次選", r => r.firstPick],
     ["錯誤類型", r => r.errorType || ""], ["第一次秒數", r => r.firstSec ?? ""], ["答對秒數", r => r.correctSec ?? ""], ["提示層級", r => r.hintLevel || 0],
     ["教學後天數", r => r.daysAfter === "" || r.daysAfter == null ? "" : r.daysAfter], ["距上次（天）", r => r.quit ? "" : r.gap ?? "第一次"]];

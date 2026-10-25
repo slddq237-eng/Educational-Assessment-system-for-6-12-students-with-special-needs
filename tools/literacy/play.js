@@ -262,6 +262,8 @@ function startSession(){
   G = {
     session: Date.now(), cfg: c, q, kids: list,
     goal: state.goal, kind: state.kind, mode: state.mode, answer: state.answer,
+    /* 前後測（A8）：只有正式評量才標；練習一律不標 */
+    prepost: state.kind === "formal" ? state.prepost : "", ppId: state.kind === "formal" && state.prepost ? state.ppId : "",
     limit: +state.limit, aim: +$("#aim").value || 30, lessons: [...state.lessons],
     /* 每課考的是哪一組字（只考有教的字）；正式評量用到的字組這時鎖定 */
     ws: wsStart(state.lessons, state.kind),
@@ -506,7 +508,7 @@ function reveal(){
 function endItem(passed, correctSec, revealed){
   const cur = G.cur; cur.done = true;
   $("#pBody").querySelectorAll(".opt-big").forEach(b => b.disabled = true);
-  const it = cur.it, [b, n] = splitKey(it.k), k = kidBy(it.kid) || {}, a = autoFor(it.kid, b, n);
+  const it = cur.it, [b, n] = splitKey(it.k), k = kidBy(it.kid) || {};
   const sysLevel = Math.max(0, ...cur.shown.map(id => HINT_LEVEL[id]));
   const rec = {
     fmt: RECORD_FORMAT, device: deviceType(),   /* 紀錄格式版本、作答的裝置類型（見 data.js） */
@@ -522,7 +524,8 @@ function endItem(passed, correctSec, revealed){
     hintLevel: Math.max(sysLevel, cur.teacher), hints: cur.shown.map(hintName).join("、"),
     teacherPrompt: cur.teacher ? TEACHER_BTNS.find(t => t[0] === cur.teacher)[1] : "",
     firstSec: cur.firstSec, correctSec: passed ? correctSec : null,
-    phase: phaseFor(it.kid, b, n) || "", daysAfter: state.rtiKeys.includes(key(b,n)) ? rtiDays(key(b,n), it.kid) : state.manual[key(b,n)] ? "" : (a.days ?? ""),
+    prepost: G.prepost, ppId: G.ppId, daysAfter: daysAfterEnd(key(b,n), it.kid),   /* 前後測、前後測代號；教學後天數（教學結束當天＝0） */
+    planId: "", planVer: "", rphase: "",   /* 研究計畫代號、版本、研究時期（研究計畫做出來前都是空白，A8 第 6、17 點） */
     /* 當時的條件（研究用的進階分析會用到）：提示設定、答錯規則用代碼存，Excel 再翻成中文 */
     hintSet: G.per[it.kid].hints.join(","), rule: G.noHelp ? "none" : G.per[it.kid].rule.join(","), layout: G.layout,
     theme: G.theme, game: G.game, gameType: G.gameType, reward: "", rewardCode: "", bpmf: !!G.bpmf,   /* 抽到的貼紙：文字和代號（做完時由 collect.js 的 drawStickers 填）*/

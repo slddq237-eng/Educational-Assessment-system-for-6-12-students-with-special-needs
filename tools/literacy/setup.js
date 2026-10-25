@@ -14,11 +14,8 @@ const PRESETS = [
   {id:"class", name:"課堂練習", desc:"答錯會出現提示幫忙，適合上課時練習。", rec:"紀錄會存下來，不列入學習分析", off:true,
    why:"練習時多一點提示，學生比較有成功經驗。這些紀錄另外統計，不會影響小考的成績分析。",
    apply:() => Object.assign(state, {kind:"practice", mode:"acc", pChoices:"4", pHints:new Set(["word","sent","pic","parts"]), pRule:["next","next","remove","reveal"]})},
-  {id:"test", name:"小考檢測", desc:"條件固定、提示較少，看學生真正會多少。", rec:"紀錄會存下來，列入學習分析",
-   why:"每次小考的條件都一樣，前後成績才能比較，看得出教學有沒有效果。",
-   apply:() => Object.assign(state, {kind:"formal", mode:"acc"})},
-  {id:"rti", name:"學扶前後測", desc:"給學扶、資源班老師：選「教學前、中、後」，條件都固定好，前後成績可以比較。", rec:"紀錄會存下來，列入學習分析",
-   why:"做轉介前介入（RTI）或學習扶助時用。正式評量的條件全部固定；紀錄會照老師選的教學前、中、後記下評量時機，老師專區的圖就會分出前測、教學中、後測，方便寫報告。",
+  {id:"test", name:"正式評量", desc:"條件固定、提示較少，看學生真正會多少；可以標成前測或後測。", rec:"紀錄會存下來，列入學習分析",
+   why:"每次評量的條件都一樣，前後成績才能比較，看得出教學有沒有效果。要做前後測（例如學習扶助、資源班轉介前介入）時，按「前測」或「後測」，紀錄會標記起來，老師專區就能比較；沒有要比較就選「不標」。",
    apply:() => Object.assign(state, {kind:"formal", mode:"acc"})},
   /* 計時挑戰是練習（2026-10-21 維護者決定）：像遊戲一樣挑戰，結果另外統計；要列入學習分析，到進階設定選「正式評量＋流暢性模式」 */
   {id:"timed", name:"計時挑戰", desc:"1 分鐘內答對越多越好，看學生熟不熟練。", rec:"紀錄會存下來，不列入學習分析", off:true,
@@ -26,15 +23,16 @@ const PRESETS = [
    apply:() => Object.assign(state, {kind:"practice", mode:"flu", limit:"60"})}
 ];
 let ui = load(KEYS.ui, "quick");      /* 這台電腦上次用的是快速開始還是進階設定 */
-/* 這台電腦上次用的卡片（學扶老師用過一次，下次打開就直接停在「學扶前後測」） */
-state.preset = PRESETS.some(p => p.id === load(KEYS.preset, "")) ? load(KEYS.preset, "") : "class";
+/* 這台電腦上次用的卡片（2026-10-25 起「小考檢測」「學扶前後測」合併成「正式評量」，舊的代號 rti 換成 test） */
+const savedPreset = load(KEYS.preset, "") === "rti" ? "test" : load(KEYS.preset, "");
+state.preset = PRESETS.some(p => p.id === savedPreset) ? savedPreset : "class";
 const isQuick = () => ui === "quick";
 function applyPreset(id){
-  if(state.preset !== id) state.rti = "";
+  if(state.preset !== id) { state.prepost = ""; state.ppId = ""; }
   state.preset = id; store(KEYS.preset, id);
   Object.assign(state, {qCount:null, qMethod:"even"});   /* 評量目標沿用第 1 步選的 */
   PRESETS.find(p => p.id === id).apply();
-  /* 作答方式：快速開始只有大螢幕輪流、平板掃 QR code 兩種；平板只能練習，換到小考、學扶前後測就改回大螢幕 */
+  /* 作答方式：快速開始只有大螢幕輪流、平板掃 QR code 兩種；平板只能練習，換到正式評量就改回大螢幕 */
   if(state.answer !== "qr" || state.kind === "formal") state.answer = "turn";
 }
 function setUi(mode){
@@ -49,38 +47,26 @@ $("#uiAdv").onclick = () => setUi("adv");
 function renderPresets(){
   $("#presets").innerHTML = PRESETS.map(p => `<button class="preset ${state.preset===p.id?"on":""}" data-p="${p.id}" aria-pressed="${state.preset===p.id}">
       <b>${p.name}</b><span class="d">${p.desc}</span><span class="rec ${p.off?"off":""}">${p.rec}</span></button>`).join("")
-    + (state.preset === "rti" ? `<div class="rtibox" style="grid-column:1/-1"><b>現在是？</b><div class="group">${RTI_PHASES.map(([id, name, d]) =>
-        `<button class="opt ${state.rti === id ? "on" : ""}" data-rti="${id}" aria-pressed="${state.rti === id}">${name}<small>${d}</small></button>`).join("")}</div>
-        <p class="note" style="margin:0">教學日期不會自動記，需要時請在「進階設定 → 選單 → 教學日期」輸入。</p></div>` : "")
     + `<details class="why presetwhy" style="grid-column:1/-1"><summary>這幾種有什麼不同？</summary>${PRESETS.map(p => `<p><b>${p.name}</b>：${p.why}</p>`).join("")}</details>`;
   $("#presets").querySelectorAll("[data-p]").forEach(b => b.onclick = () => { applyPreset(b.dataset.p); render(); });
-  $("#presets").querySelectorAll("[data-rti]").forEach(b => b.onclick = () => { state.rti = b.dataset.rti; render(); });
 }
-/* ---------- 學扶前後測 ----------
-   老師選「教學前／教學中／教學後」，這幾課這次的評量時機就照選的（教學前＝基線期，不給提示）。
-   教學後的課，如果教學結束已經超過「維持期」天數，自動算維持期。 */
-const RTI_PHASES = [["pre","教學前","前測：還沒開始教，不給提示"],["mid","教學中","定期檢測：教學期間每 1～2 週一次"],["post","教學後","後測：教完以後；教完 7 天以上自動算維持期"]];
-state.rti = ""; state.rtiKeys = [];
-function rtiPhaseFor(k, code){
-  if(state.rti === "pre") return "基線期";
-  if(state.rti === "mid") return "教學中";
-  const t = teachFor(k, code);
-  return t.type === "dates" && t.end && Math.round((today - parse(t.end)) / DAY) >= settings.maintainAfter ? "維持期" : "教學後";
+/* ---------- 前測／後測（A8，2026-10-25）----------
+   只有正式評量才能標（快速開始的「正式評量」卡片，和進階設定選正式評量時）；練習一律不標。
+   前測和後測的條件完全一樣。「前後測代號」標同一次施測（全班共用一個，補考的學生填同一個代號）。
+   教學日期不會自動記，需要時請在「進階設定 → 選單 → 教學日期」輸入。 */
+const PP_OPTS = [["", "不標", "和一般評量一樣，不放進前後測比較"], ["前測", "前測", "教學前，看學生原本會多少"], ["後測", "後測", "教學後，看學生學會多少"]];
+const newPpId = () => `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,"0")}${String(today.getDate()).padStart(2,"0")}-${Math.random().toString(36).slice(2,5)}`;
+const ppOn = () => state.kind === "formal" && (!isQuick() || state.preset === "test");
+function renderPrepost(){
+  const box = $("#ppBox"); box.hidden = !ppOn();
+  if(box.hidden) return;
+  box.innerHTML = `<b>這次是前測還是後測？</b><div class="group">${PP_OPTS.map(([v, name, d]) =>
+      `<button class="opt ${state.prepost === v ? "on" : ""}" data-pp="${v}" aria-pressed="${state.prepost === v}">${name}<small>${d}</small></button>`).join("")}</div>
+    ${state.prepost ? `<label class="group" for="ppId">前後測代號 <input id="ppId" value="${esc(state.ppId)}" maxlength="30"> <small>同一次施測全班共用；補考的學生請填同一個代號。</small></label>` : ""}
+    <p class="note" style="margin:0">前測和後測的條件完全一樣。</p>`;
+  box.querySelectorAll("[data-pp]").forEach(b => b.onclick = () => { state.prepost = b.dataset.pp; if(state.prepost && !state.ppId) state.ppId = newPpId(); render(); });
+  const id = box.querySelector("#ppId"); if(id) id.onchange = () => { state.ppId = id.value.trim() || newPpId(); render(); };
 }
-/* 每次重畫前，把學扶前後測選的時期套到所選課次（換成別的卡片就清掉） */
-function syncRti(){
-  state.rtiKeys.forEach(k => delete state.manual[k]); state.rtiKeys = [];
-  if(!isQuick() || state.preset !== "rti" || !state.rti) return;
-  state.lessons.forEach(k => { state.manual[k] = rtiPhaseFor(k); }); state.rtiKeys = [...state.lessons];
-}
-/* 學扶前後測的「教學後天數」：有結束日、而且今天在結束日當天或之後，就算天數（結束當天＝第 0 天） */
-function rtiDays(k, code){
-  const t = teachFor(k, code);
-  if(t.type !== "dates" || !t.end || today < parse(t.end)) return "";
-  return Math.round((today - parse(t.end)) / DAY);
-}
-/* 教學日期不自動記（2026-10-21 拿掉）：原本按開始時把「今天」記成教學開始日或結束日，
-   但老師常常教完一陣子才做後測，日期會記錯，還會連帶改到一般評量的時機判斷。教學日期一律由老師在「教學日期」自己輸入。 */
 
 /* ---------- 四個步驟：一次只看一步（像生字賓果） ----------
    1 選目標和評量方式（快速開始的卡片、進階的正式或練習）→ 2 選學生和課次 → 3 選作答方式（大螢幕、平板）和個人或合作 → 4 選玩法和主題
@@ -89,7 +75,7 @@ function rtiDays(k, code){
 const WSTEPS = ["選目標和評量方式", "選學生和課次", "選作答方式", "選玩法和主題"];
 let wstep = 1;
 /* 每一步還缺什麼（空字串＝可以往下） */
-const step1Miss = () => isQuick() && state.preset === "rti" && !state.rti ? "請先選教學前、中、後" : "";
+const step1Miss = () => "";
 const step2Miss = () => !selKids().length ? (isQuick() ? "請先點選要做的學生" : "請先點選要評量的學生") : !state.lessons.length ? "請先選課次" : "";
 function step3Miss(){
   const n = selKids().length, a = ANSWERS.find(x => x.id === state.answer);
@@ -309,10 +295,8 @@ function renderLessons(){
   $("#books").querySelectorAll("button").forEach(btn => btn.onclick = () => { state.book = btn.dataset.b; render(); });
   const L = BOOKS[state.book].lessons;
   $("#lessons").innerHTML = Object.entries(L).map(([n,l]) => {
-    const k = key(state.book,n), on = state.lessons.includes(k), gs = groups(state.book, n);
-    const pill = !gs.length ? "" : gs.some(g => !g.label) ? `<span class="pill warn">需要日期</span>`
-      : new Set(gs.map(g => g.label.replace(/（.*/, ""))).size > 1 ? `<span class="pill">依學生不同</span>` : `<span class="pill">${gs[0].label.replace(/（.*/, "")}</span>`;
-    return `<button class="lesson ${on?"on":""}" data-n="${n}" aria-pressed="${on}"><span class="t"><b>${esc(lessonName(state.book, n))}</b>${pill}</span>${l.title && n !== "0" ? `<span class="ltitle">${esc(l.title)}</span>` : ""}
+    const k = key(state.book,n), on = state.lessons.includes(k);
+    return `<button class="lesson ${on?"on":""}" data-n="${n}" aria-pressed="${on}"><span class="t"><b>${esc(lessonName(state.book, n))}</b></span>${l.title && n !== "0" ? `<span class="ltitle">${esc(l.title)}</span>` : ""}
       <span class="chars">${esc(l.write)}${l.read?`<span style="opacity:.6">・${esc(l.read)}</span>`:""}</span>${on && wsPartial(k) ? `<span class="wsp">只考 ${lessonSize(k)}／${l.total} 字</span>` : ""}</button>`;
   }).join("");
   $("#lessons").querySelectorAll("button").forEach(b => b.onclick = () => {
@@ -323,24 +307,7 @@ function renderLessons(){
   $("#picked").innerHTML = state.lessons.length ? `已選：${esc(lessonsText())}　<button class="linkbtn" id="clearLessons">全部清除</button>` : "還沒選課次，可以選好幾課，也可以跨版本。";
   if($("#clearLessons")) $("#clearLessons").onclick = () => { state.lessons = []; render(); };
   renderTaught();
-  if(!selKids().length){ $("#status").innerHTML = `<p class="note">請先在第 2 步選學生，才能判斷評量時機。</p>`; return; }
-  $("#status").innerHTML = state.lessons.map(k => {
-    const [b,n] = splitKey(k), gs = groups(b, n), need = gs.some(g => !g.label);
-    const lines = gs.map(g => `<span>${g.kids.map(c => esc(kidLabel(kidBy(c)))).join("、")}：<b>${g.label || "未判斷"}</b> <span class="why">${esc(g.why)}</span></span>`).join("<br>");
-    return `<div class="st ${need?"need":""}" data-k="${k}"><b>${bookName(b)} ${esc(lessonName(b, n))}</b><span style="flex:1 1 260px">${lines}</span>
-      ${need ? `<span class="group"><button class="chip" data-q="notYet">還沒教</button><button class="chip" data-q="dates">輸入教學日期…</button></span>`
-      : `<select data-m aria-label="第 ${n} 課這次的評量時機"><option value="">這次照自動判斷</option>${PHASES.map(p => `<option value="${p}" ${state.manual[k]===p?"selected":""}>這次全部改為：${p}</option>`).join("")}</select>
-      <button class="linkbtn" data-edit>修改教學日期</button>`}</div>`;
-  }).join("");
-  $("#status").querySelectorAll(".st").forEach(r => {
-    const k = r.dataset.k, b = splitKey(k)[0];
-    r.querySelectorAll("[data-q]").forEach(btn => btn.onclick = () => {
-      teach[k] = {type:btn.dataset.q, kids:(teach[k] || {}).kids}; saveTeach();   /* 個別學生的設定保留 */
-      if(btn.dataset.q === "dates") openDates(b); else render();
-    });
-    const m = r.querySelector("[data-m]"); if(m) m.onchange = () => { if(m.value) state.manual[k] = m.value; else delete state.manual[k]; render(); };
-    const e = r.querySelector("[data-edit]"); if(e) e.onclick = () => openDates(b);
-  });
+  $("#status").innerHTML = "";   /* 2026-10-25 A8：不再判斷每課的評量時機；教學日期到「選單 → 教學日期」輸入 */
 }
 
 /* 出題設定：題數、出題方式、預估時間 */
@@ -534,7 +501,7 @@ function renderSummary(){
     $("#kindBadge").innerHTML = `<span class="badge ${p.off?"prac":""}">${p.rec}</span>`;
     const rows = [
       ["今天做什麼", `${p.name}（${g.name}）`],
-      ...(p.id === "rti" ? [["現在是", state.rti ? RTI_PHASES.find(x => x[0] === state.rti)[1] : null, "還沒選教學前、中、後"]] : []),
+      ...(p.id === "test" ? [["前後測", state.prepost ? `${state.prepost}（代號 ${esc(state.ppId)}）` : "不標"]] : []),
       ["學生", n && n <= a.max ? selKids().map(c => esc(kidLabel(kidBy(c)))).join("、") : null, n ? `一次最多 ${a.max} 位學生` : "還沒選"],
       ...(qrOn() ? [["作答方式", "平板掃 QR code"], ["回傳表單", settings.tabletForm ? "你自己的 Google 表單" : null, "請到「⚙ 細部設定 → 練習與遊戲」貼上 Google 表單網址"]] : []),
       ["課次", state.lessons.length ? esc(lessonsText()) : null],
@@ -553,8 +520,6 @@ function renderSummary(){
   const q = quizPlan();
   const quizText = !state.lessons.length ? null : c.flu ? `時限內隨機出題（${q.pool} 字）` : `${q.count} 題・${methodName(q.method)}・${minutes(q.sec)}`;
   const multi = selKids().length > 1;
-  const ph = state.lessons.flatMap(k => { const [b,n] = splitKey(k); return groups(b, n).map(g => g.label
-    ? `${state.lessons.length > 1 ? `${bookName(b)} ` : ""}${lessonName(b, n)}${multi ? `・${g.kids.map(c => esc(kidLabel(kidBy(c)))).join("、")}` : ""}：${g.label}` : null); });
   const n = selKids().length, kidsOk = n >= a.min && n <= a.max;
   const rows = [
     ["評量目標", `目標 ${g.id}　${g.name}`],
@@ -565,7 +530,7 @@ function renderSummary(){
     ...(useRewards() ? [["主題", themeText(), "請學生點一個主題"]] : []),
     ["課次", lessonText],
     ["題目", quizText],
-    ["評量時機", state.lessons.length && n && !ph.includes(null) ? ph.join("<br>") : null, n ? "請回第 2 步，在課次卡片設定教學日期" : "先選學生才能判斷"],
+    ...(c.formal ? [["前後測", state.prepost ? `${state.prepost}（代號 ${esc(state.ppId)}）` : "不標"]] : []),
     ["作答模式", a.name],
     ...(qrOn() ? [["回傳表單", settings.tabletForm ? "你自己的 Google 表單" : null, "請到「⚙ 細部設定 → 練習與遊戲」貼上 Google 表單網址"]] : []),
     ["學生", n ? (kidsOk ? `${selKids().map(c => esc(kidLabel(kidBy(c)))).join("、")}（${n} 位）` : null) : null, n ? `「${a.name}」需要 ${a.min}～${a.max} 位，目前 ${n} 位` : "還沒選"]
@@ -580,20 +545,29 @@ $("#aim").addEventListener("input", renderSummary);
 
 /* 教學日期管理面板：每一課一列「全班」，下面可以加「個別學生不同」的列（A8：同一課學生進度不同） */
 /* 教學狀態選單＋日期欄＋目前判斷結果（全班列和個別學生列共用） */
-function dateCtl(t, label, a){
+/* 這一列的教學日期狀態說明（不再判斷評量時機） */
+function dateNote(t){
+  if(t.type === "notYet") return "還沒教";
+  if(t.type !== "dates") return "還沒設定";
+  if(!t.start) return "日期還沒填完整";
+  if(!t.end) return `教學從 ${md(t.start)} 開始，還沒填結束日`;
+  if(parse(t.end) < parse(t.start)) return "結束日早於開始日，請檢查日期";
+  return `教學期間 ${md(t.start)}～${md(t.end)}`;
+}
+function dateCtl(t, label){
   return `<select data-type aria-label="${esc(label)}教學狀態">${TAUGHT.map(([v,x]) => `<option value="${v}" ${(t.type||"")===v?"selected":""}>${x}</option>`).join("")}</select>
     <div class="ds">${t.type === "dates" ? `<input type="date" aria-label="${esc(label)}開始日" data-s value="${t.start||""}"><span>到</span><input type="date" aria-label="${esc(label)}結束日" data-e value="${t.end||""}">` : ""}
-    <span class="ph">${a.phase ? `目前：${a.phase}・${esc(a.why)}` : esc(a.why)}</span></div>`;
+    <span class="ph">${esc(dateNote(t))}</span></div>`;
 }
 function renderDates(){
   $("#dBooks").innerHTML = BOOK_ORDER.map(b => `<button class="chip ${dBook===b?"on":""}" data-b="${b}">${bookName(b)}</button>`).join("");
   $("#dBooks").querySelectorAll("button").forEach(btn => btn.onclick = () => { dBook = btn.dataset.b; renderDates(); });
   $("#dTable").innerHTML = Object.keys(BOOKS[dBook].lessons).map(n => {
-    const k = key(dBook,n), t = teach[k] || {}, a = t.type === "dates" ? datePhase(t) : t.type === "notYet" ? {phase:"基線期", why:"還沒教"} : {phase:null, why:"依每位學生的年級判斷"};
+    const k = key(dBook,n), t = teach[k] || {};
     const own = Object.keys(t.kids || {}).filter(kidBy), free = kids.filter(x => !own.includes(x.code));
-    return `<div class="drow" data-k="${k}"><b>${esc(lessonName(dBook, n))}</b>${dateCtl(t, `第 ${n} 課`, a)}</div>
+    return `<div class="drow" data-k="${k}"><b>${esc(lessonName(dBook, n))}</b>${dateCtl(t, `第 ${n} 課`)}</div>
       ${own.map(c => `<div class="drow dkid" data-k="${k}" data-kid="${esc(c)}"><span class="dk">個別</span><div class="kc"><b>${esc(kidLabel(kidBy(c)))}</b>
-        ${dateCtl(t.kids[c], `${kidLabel(kidBy(c))} 第 ${n} 課`, autoFor(c, dBook, n))}<button class="linkbtn" data-del>改回全班</button></div></div>`).join("")}
+        ${dateCtl(t.kids[c], `${kidLabel(kidBy(c))} 第 ${n} 課`)}<button class="linkbtn" data-del>改回全班</button></div></div>`).join("")}
       ${free.length ? `<div class="dadd"><select data-add data-k="${k}" aria-label="第 ${n} 課：個別學生不同"><option value="">＋個別學生不同…</option>${free.map(x => `<option value="${esc(x.code)}">${esc(kidLabel(x))}</option>`).join("")}</select></div>` : ""}`;
   }).join("");
   const done = () => { saveTeach(); renderDates(); render(); };
@@ -635,7 +609,6 @@ function renderSettings(){
   });
   $("#sRule").innerHTML = ruleEditor(settings.rule);
   $("#sRule").querySelectorAll("select").forEach(s => s.onchange = () => { settings.rule[+s.dataset.i] = s.value; saveSettings(); render(); });
-  $("#sMaintain").value = settings.maintainAfter;
   $("#sTheme").checked = settings.formalTheme;
   $("#sClock").checked = !!settings.clockFormal;
   $("#sRead").checked = !!settings.formalRead;
@@ -684,7 +657,6 @@ $("#sTheme").onchange = e => { settings.formalTheme = e.target.checked; saveSett
 $("#sGame").onchange = e => { settings.formalGame = e.target.checked; saveSettings(); };
 $("#sClock").onchange = e => { settings.clockFormal = e.target.checked; saveSettings(); };
 $("#sRead").onchange = e => { settings.formalRead = e.target.checked; saveSettings(); };
-$("#sMaintain").onchange = e => { const v = Math.max(1, Math.min(60, +e.target.value || 7)); settings.maintainAfter = v; saveSettings(); renderSettings(); render(); };
 
 let lastFocus = null;
 function openSheet(id){ lastFocus = document.activeElement; $(id).hidden = false; $(id).querySelector("[data-close]").focus(); }
@@ -710,4 +682,4 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets()
 document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); if(t && t.dataset.open === "kids"){ renderKidSheet(); openSheet("#kidsSheet"); } });
 $("#openRecords").onclick = () => { renderRecSheet(); openSheet("#recSheet"); };
 
-function render(){ syncRti(); renderPresets(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderTeam(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }
+function render(){ renderPresets(); renderPrepost(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderTeam(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }
