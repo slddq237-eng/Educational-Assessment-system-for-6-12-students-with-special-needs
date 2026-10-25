@@ -13,7 +13,7 @@
    ========================================================= */
 const TEACH_UI = KEYS.teacher;
 const T = Object.assign({tab:"one", kid:"", metric:"acc", view:"time", axis:"date", split:"lesson", range:"term", from:"", to:"",
-  kind:"formal", goal:"", book:"", lesson:"", gap:"after", top:"300", moreOpen:false, simpleLesson:""}, load(TEACH_UI, {}));
+  kind:"formal", goal:"", book:"", lesson:"", gap:"after", top:"300", adv:"charts", simpleLesson:""}, load(TEACH_UI, {}));
 const saveT = () => store(TEACH_UI, T);
 const hasFreq = () => typeof FREQ !== "undefined";
 
@@ -274,27 +274,35 @@ function renderSimple(){
 }
 
 function renderTeacher(){
-  $("#tTabs").innerHTML = chipRow([["one","一位學生"],["class","全班總表"],["pivot","進階分析（研究用）"]], T.tab, "ttab");
+  /* 三個分頁（維護者 2026-10-25 改名）：個人、全班、進階分析。進階分析裡有兩部分：更多圖表與明細（原本「一位學生」下面的選單）、樞紐分析 */
+  $("#tTabs").innerHTML = chipRow([["one","個人"],["class","全班"],["pivot","進階分析"]], T.tab, "ttab");
   renderTabHelp();
   $("#tTabs").querySelectorAll("[data-ttab]").forEach(b => b.onclick = () => { T.tab = b.dataset.ttab; saveT(); renderTeacher(); });
   const withData = kidsWithData();
   if(!kidBy(T.kid) && withData.length) T.kid = withData[0].code;
-  $("#tRangeBox").hidden = T.tab === "pivot";
+  const isOne = T.tab === "one", isAdv = T.tab === "pivot", charts = isAdv && T.adv !== "pivot";
+  $("#tMore").hidden = isOne;   /* 個人：只有上面的簡潔畫面 */
+  $("#tAdvTabs").hidden = !isAdv;
+  if(isAdv){
+    $("#tAdvTabs").innerHTML = chipRow([["charts","更多圖表與明細"],["pivot","樞紐分析（自己決定怎麼分組比較）"]], charts ? "charts" : "pivot", "tadv");
+    $("#tAdvTabs").querySelectorAll("[data-tadv]").forEach(b => b.onclick = () => { T.adv = b.dataset.tadv; saveT(); renderTeacher(); });
+  }
+  $("#tRangeBox").hidden = isAdv && !charts;   /* 範圍選單：全班和「更多圖表與明細」用，樞紐分析有自己的篩選 */
   renderRangeMenu();
-  /* 一位學生：上面是簡潔畫面，原本的選單、圖、表收進「看更多」；其他分頁維持原樣 */
-  const more = $("#tMore"), isOne = T.tab === "one";
-  $("#tMoreSum").hidden = !isOne;
-  more.open = isOne ? !!T.moreOpen : true;
-  more.ontoggle = () => { if(T.tab === "one" && T.moreOpen !== more.open){ T.moreOpen = more.open; saveT(); } };
   renderSimple();
-  if(T.tab === "one") renderOne();
-  else if(T.tab === "class") renderClass();
+  if(isOne) return;
+  if(T.tab === "class") renderClass();
+  else if(charts) renderOne();
   else renderPivot();
 }
 
 /* 每個分頁上方的「這一頁怎麼用？」：平常收起來，打開後記住（換分頁也維持打開） */
 const TAB_HELP = {
-  one: ["只要選學生，往下捲就看得到：總體紀錄、每天的平均答對率和反應時間（折線圖）、常錯的字、反應最慢的字、容易搞混的字、近期正式評量紀錄、練習紀錄。想看別的數字或匯出 Excel，到最下面的「進階」。", [
+  one: ["只要選學生，往下捲就看得到：總體紀錄、每天的平均正確率和反應時間（折線圖）、各課前後測正確率、常錯的字、反應最慢的字、容易搞混的字、近期正式評量紀錄和近期練習紀錄。想看別的數字、匯出 Excel，到「進階分析」。", [
+    "<b>正確率</b>＝第一次就點對的比例（越高越好）；<b>反應時間</b>＝題目唸完到答對的秒數（越短越熟）。",
+    "統計、每天的折線圖和字的清單，是正式評量加練習全部一起算；只有「各課前後測正確率」是正式評量，圓點連成的線是前測、後測，橘色空心標記是練習。",
+    "「各課前後測正確率」上面的課次按鈕可以點，看每一課；任何一個字都可以點，看那個字的每一次作答。"], "one"],
+  charts: ["看一位學生的進步，自己選：由上往下選：看誰 → 看什麼 → 怎麼看，下面再選日期和課次範圍。", [
     "<b>正確率</b>＝第一次就點對的比例（越高越好）；<b>反應時間</b>＝題目唸完到答對的秒數（越短越熟）；<b>流暢性</b>＝計時挑戰每分鐘答對幾個。",
     "<b>依前後測比較</b>最直接看有沒有進步：前測 → 後測。沒標前測或後測的評量放在「未標記」。",
     "結果區的「看明細」是圖上每個數字的表格；任何一個字都可以點，看那個字的每一次作答。",
@@ -310,7 +318,7 @@ const TAB_HELP = {
     "淡色格子筆數太少，數字容易因為多對一題就大變，僅供參考。"], "pivot"]
 };
 function renderTabHelp(){
-  const [lead, list] = TAB_HELP[T.tab], el = $("#tHelp");
+  const [lead, list] = TAB_HELP[T.tab === "pivot" && T.adv !== "pivot" ? "charts" : T.tab], el = $("#tHelp");
   el.innerHTML = `<summary>這一頁怎麼用？</summary><p>${lead}</p><ul>${list.map(x => `<li>${x}</li>`).join("")}</ul>`;
   el.open = !!T.helpOpen;
   el.ontoggle = () => { if(T.helpOpen !== el.open){ T.helpOpen = el.open; saveT(); } };
@@ -669,7 +677,7 @@ function wposNote(rs){
   const g = groupBy(rs.filter(r => wposOf(r) && r.goal !== "4-1"), wposOf);
   const parts = WPOS_ORDER.filter(p => g.has(p)).map(p => {
     const list = g.get(p), a = accOf(list), mix = list.filter(r => !r.firstCorrect && r.errorType === "同詞易混").length;
-    return `${p}：第一次就答對 ${fmt("acc", a.v)}（${a.n} 題），同詞 ${mix} 次`;
+    return `${p}：正確率 ${fmt("acc", a.v)}（${a.n} 題），同詞 ${mix} 次`;
   });
   return parts.length > 1 ? `<br>目標字在語詞的位置——${esc(parts.join("；"))}。兩邊差很多（例如詞首穩、詞尾常選成同詞的另一字），代表語詞還是整塊記，字還沒從詞裡分出來。` : "";
 }
