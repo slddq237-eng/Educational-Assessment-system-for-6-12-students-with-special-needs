@@ -190,7 +190,18 @@ function confusedChars(rs){
 /* 近期紀錄（正式評量、練習各一張）：一次評量、一課一列，同一課的放在一起（圖片版面，維護者 2026-10-25）；
    只列最近 10 筆；中途結束的也列出來（灰色、註明「未做完」），但不算進平均 */
 const RECENT_ROWS = 10;
-const hintNames = r => r.hintSet === undefined ? "" : r.hintSet ? `提示：${r.hintSet.split(",").map(h => hintName(h).replace(/（.*?）/g, "")).join("、")}` : "無提示";   /* 名稱去掉括號的說明，免得表格太寬 */
+/* 和預設不同時才在「前後測／玩法」欄後面加小註記，預設的什麼都不寫（維護者 2026-10-25：選項數、提示現在都固定，整欄拿掉太可惜但不用每列重複）。
+   預設：選項 4 個；提示——練習（正確率模式）是「語詞挖空、部件」，正式評量和計時挑戰是「無提示」。舊紀錄（A3 以前的正式評量有提示）、進階設定改過的練習會顯示出來 */
+const DEFAULT_PRACTICE_HINTS = "word,parts";
+function deviation(r){
+  const out = [];
+  if(r.layout !== "bingo" && r.choices && r.choices !== 4) out.push(`${r.choices} 個選項`);
+  if(r.hintSet !== undefined){
+    const def = r.kind !== "formal" && r.mode !== "flu" ? DEFAULT_PRACTICE_HINTS : "";
+    if(r.hintSet !== def) out.push(r.hintSet ? `提示：${r.hintSet.split(",").map(h => hintName(h).replace(/（.*?）/g, "")).join("、")}` : "無提示");   /* 名稱去掉括號的說明，免得表格太寬 */
+  }
+  return out.length ? `（${out.join("；")}）` : "";
+}
 const recentPlay = r => r.kind === "formal" ? "" : r.mode === "flu" ? "計時挑戰" : r.game ? gameName(r) : r.layout === "bingo" ? "生字賓果" : "一般";
 function recentByLesson(all, formal){
   const rows = [];
@@ -199,16 +210,16 @@ function recentByLesson(all, formal){
   const top = rows.sort((a, b) => a.at < b.at ? 1 : -1).slice(0, RECENT_ROWS);
   if(!top.length) return `<p class="note" style="margin:0">還沒有紀錄。</p>`;
   const groups = [...groupBy(top, x => x.k)];   /* 同一課放一起；課次依最近一次的先後排 */
-  const cols = formal ? ["日期", "前後測", "一次看幾個字", "抽到的字", "正確率", "點錯", "平均反應", "沒有一次答對的字"] : ["日期", "玩法", "一次看幾個字", "抽到的字", "正確率", "點錯", "平均反應", "沒有一次答對的字"];
+  const cols = formal ? ["日期", "前後測", "抽到的字", "正確率", "點錯", "平均反應", "沒有一次答對的字"] : ["日期", "玩法", "抽到的字", "正確率", "點錯", "平均反應", "沒有一次答對的字"];
   return groups.map(([k, list]) => {
     const counted = list.filter(x => !x.rs.some(r => r.quit)), a = accOf(counted.flatMap(x => x.rs));
     const head = `<h4 class="sgrp">${esc(lessonLabel(k))}<span>　${formal ? "評量" : "練習"} ${counted.length} 次${a.v == null ? "" : `，平均正確率 ${a.v}%`}</span></h4>`;
     const body = list.map(x => {
       const r0 = x.rs[0], quit = x.rs.some(r => r.quit), acc = accOf(x.rs), secs = secList(x.rs);
       const chars = [...new Set(x.rs.map(r => r.char))], miss = [...new Set(x.rs.filter(r => !r.firstCorrect).map(r => r.char))];
-      const cells = [shortDay(x.day), formal ? (r0.prepost || "—") : recentPlay(r0), `${r0.choices || "?"} 個${hintNames(r0) ? `・${hintNames(r0)}` : ""}`, `<span class="schars">${esc(chars.join(""))}</span>`,
+      const cells = [shortDay(x.day), (formal ? (r0.prepost || "—") : recentPlay(r0)) + deviation(r0), `<span class="schars">${esc(chars.join(""))}</span>`,
         `${x.rs.filter(r => r.firstCorrect).length}/${x.rs.length}（${acc.v}%）${quit ? "・未做完" : ""}`, x.rs.reduce((n, r) => n + (r.wrongCount || 0), 0), secs.length ? `${avg(secs)} 秒` : "—", `<span class="schars miss">${esc(miss.join(""))}</span>`];
-      return `<tr class="${quit ? "squit" : ""}">${cells.map((c, i) => `<td>${i === 3 || i === 7 ? c : esc(c)}</td>`).join("")}</tr>`;
+      return `<tr class="${quit ? "squit" : ""}">${cells.map((c, i) => `<td>${i === 2 || i === 6 ? c : esc(c)}</td>`).join("")}</tr>`;
     }).join("");
     return `${head}<div class="tablewrap"><table class="rec"><thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div>`;
   }).join("");
