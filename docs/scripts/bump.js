@@ -2,7 +2,7 @@
    更新版本號（docs/scripts/bump.js，2026-10-24 加）
    用法：在 repo 最上層執行  node docs/scripts/bump.js
    做什麼：把所有網頁（.html）載入 .js、.css 時後面的 ?v= 一次改成同一個新版本號。
-     新版本號＝今天的日期（台灣時間），例如 2026-10-25；今天已經改過，就依序加 b、c、d……（2026-10-25b）。
+     新版本號＝今天的日期（台灣時間），例如 2026-10-25；今天已經改過，就依序加 b、c、d……（2026-10-25b），到 z 之後加數字 z2、z3……。
    為什麼：改了程式或樣式，網頁要換版本號，老師的瀏覽器才不會拿新網頁配舊程式（docs/design/literacy-design.md「檔案版本號」）。
      以前要手動改 7 個網頁，容易漏；現在跑這一行就好。自動檢查（check.js）會擋「各頁版本號不一樣」。
    ========================================================= */
@@ -23,10 +23,11 @@ const now = Object.keys(count).sort((a, b) => count[b] - count[a])[0] || '';
 const today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
 let next = today;
 if (now.startsWith(today)) {
-  const tail = now.slice(today.length);                      /* ""、"a"、"b"…… */
-  const letter = tail ? String.fromCharCode(tail.charCodeAt(0) + 1) : 'b';
-  if (letter > 'z') { console.error('今天已經改到 z 了，請手動處理'); process.exit(1); }
-  next = today + letter;
+  const tail = now.slice(today.length);                      /* ""、"b"、"c"……"z"、"z2"、"z3"…… */
+  const m = tail.match(/^z(\d*)$/);
+  /* 字母用完（z）之後改加數字：z → z2 → z3……（2026-10-25 加，原本會停下來要人手動改） */
+  const suffix = m ? 'z' + (m[1] ? +m[1] + 1 : 2) : tail ? String.fromCharCode(tail.charCodeAt(0) + 1) : 'b';
+  next = today + suffix;
 }
 
 let changed = 0;
