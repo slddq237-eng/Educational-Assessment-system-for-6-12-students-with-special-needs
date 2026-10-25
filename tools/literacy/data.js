@@ -213,7 +213,7 @@ const kids = load(KEYS.kids, [
   {code:"S01", name:"", grade:2, sy:SCHOOL_YEAR}, {code:"S02", name:"", grade:2, sy:SCHOOL_YEAR}
 ]);
 const saveKids = () => store(KEYS.kids, kids);
-/* 學生分組（組名＋學生代號）：在「學生名單」編輯，選學生、教學日期、老師專區「多位學生」共用；
+/* 學生分組（組名＋學生代號）：在「學生名單」編輯，教學日期、老師專區「多位學生」共用；
    存在老師專區的設定（KEYS.teacher 的 groups 欄，只存代號），不進作答紀錄 */
 const getGroups = () => (load(KEYS.teacher, {}).groups || []).filter(g => g && g.name && Array.isArray(g.kids));
 const saveGroups = gs => { const t = load(KEYS.teacher, {}); t.groups = gs; store(KEYS.teacher, t); };
