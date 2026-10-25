@@ -54,7 +54,7 @@ function renderPresets(){
    只有正式評量才能標（快速開始的「正式評量」卡片，和進階設定選正式評量時）；練習一律不標。
    前測和後測的條件完全一樣。沒有前後測代號、也不做補考（2026-10-25 維護者決定）：缺席的學生下次再做時，自己標前測或後測就好；
    同一次坐下來考的紀錄本來就有 session（作答場次）。
-   教學日期不會自動記，需要時請在「進階設定 → 選單 → 教學日期」輸入。 */
+   教學日期不會自動記，需要時請按上方的「教學日期」輸入。 */
 const PP_OPTS = [["", "不標", "和一般評量一樣，不放進前後測比較"], ["前測", "前測", "教學前，看學生原本會多少"], ["後測", "後測", "教學後，看學生學會多少"]];
 const ppOn = () => state.kind === "formal" && (!isQuick() || state.preset === "test");
 function renderPrepost(){
@@ -561,10 +561,11 @@ function renderDates(){
   $("#dTable").innerHTML = Object.keys(BOOKS[dBook].lessons).map(n => {
     const k = key(dBook,n), t = teach[k] || {};
     const own = Object.keys(t.kids || {}).filter(kidBy), free = kids.filter(x => !own.includes(x.code));
+    const grps = (load(KEYS.teacher, {}).groups || []).filter(g => g.kids.some(c => kidBy(c) && !own.includes(c)));   /* 老師專區「多位學生」存的組別（只有學生代號） */
     return `<div class="drow" data-k="${k}"><b>${esc(lessonName(dBook, n))}</b>${dateCtl(t, `第 ${n} 課`)}</div>
       ${own.map(c => `<div class="drow dkid" data-k="${k}" data-kid="${esc(c)}"><span class="dk">個別</span><div class="kc"><b>${esc(kidLabel(kidBy(c)))}</b>
         ${dateCtl(t.kids[c], `${kidLabel(kidBy(c))} 第 ${n} 課`)}<button class="linkbtn" data-del>改回全班</button></div></div>`).join("")}
-      ${free.length ? `<div class="dadd"><select data-add data-k="${k}" aria-label="第 ${n} 課：個別學生不同"><option value="">＋個別學生不同…</option>${free.map(x => `<option value="${esc(x.code)}">${esc(kidLabel(x))}</option>`).join("")}</select></div>` : ""}`;
+      ${free.length ? `<div class="dadd"><select data-add data-k="${k}" aria-label="第 ${n} 課：個別學生不同"><option value="">＋個別學生不同…</option>${free.map(x => `<option value="${esc(x.code)}">${esc(kidLabel(x))}</option>`).join("")}</select>${grps.length ? `<select data-addgrp data-k="${k}" aria-label="第 ${n} 課：一組學生不同"><option value="">＋一組學生不同…</option>${grps.map((g, i) => `<option value="${i}">${esc(g.name)}（${g.kids.filter(kidBy).length} 位）</option>`).join("")}</select>` : ""}</div>` : ""}`;
   }).join("");
   const done = () => { saveTeach(); renderDates(); render(); };
   $("#dTable").querySelectorAll(".drow").forEach(r => {
@@ -589,6 +590,14 @@ function renderDates(){
     const t = teach[k] = teach[k] || {};
     t.kids = t.kids || {};
     t.kids[code] = t.type === "dates" ? {type:"dates", start:t.start || "", end:t.end || ""} : {type:"dates", start:"", end:""};
+    done();
+  });
+  /* 加一組學生（老師專區「多位學生」存的組別）：每位都複製全班的日期，已經有個別設定的不動 */
+  $("#dTable").querySelectorAll("[data-addgrp]").forEach(sel => sel.onchange = () => {
+    const k = sel.dataset.k, g = (load(KEYS.teacher, {}).groups || [])[+sel.value]; if(!g) return;
+    const t = teach[k] = teach[k] || {};
+    t.kids = t.kids || {};
+    g.kids.filter(c => kidBy(c) && !t.kids[c]).forEach(c => { t.kids[c] = t.type === "dates" ? {type:"dates", start:t.start || "", end:t.end || ""} : {type:"dates", start:"", end:""}; });
     done();
   });
 }
@@ -658,7 +667,7 @@ function showDetailTab(tab){
 document.querySelectorAll("#setSheet [data-tab]").forEach(b => b.onclick = () => showDetailTab(b.dataset.tab));
 function openDetail(tab){ renderSettings(); renderPractice(); renderView(); showDetailTab(tab || detailTab); openSheet("#setSheet"); }
 function openSettings(){ openDetail("formal"); }
-$("#openDates").onclick = () => openDates(state.book);
+$("#openDatesTop").onclick = () => openDates(state.book);
 $("#openKids").onclick = () => { renderKidSheet(); openSheet("#kidsSheet"); };
 $("#openSettings").onclick = () => openDetail();
 $("#openGear").onclick = () => openDetail();
