@@ -504,7 +504,8 @@ function renderKidGroupSheet(){
   const gs = getGroups(), box = $("#kGroups");
   box.innerHTML = gs.map((g, i) => `<div class="plan" data-gi="${i}">
     <div class="group"><input aria-label="組名" data-gname value="${esc(g.name)}" maxlength="12"><button class="chip" data-gdel>刪除這組</button></div>
-    <div class="group">${kids.map(k => `<button class="chip ${g.kids.includes(k.code) ? "on" : ""}" data-gk="${esc(k.code)}" aria-pressed="${g.kids.includes(k.code)}">${esc(kidShow(k))}</button>`).join("")}</div></div>`).join("")
+    <div class="group">${kids.map(k => { const on = g.kids.includes(k.code), other = on ? null : gs.find(x => x !== g && x.kids.includes(k.code));   /* 一位學生只能在一組 */
+      return `<button class="chip ${on ? "on" : ""}" data-gk="${esc(k.code)}" aria-pressed="${on}" ${other ? `disabled title="已在「${esc(other.name)}」"` : ""}>${esc(kidShow(k))}${other ? `<small>（${esc(other.name)}）</small>` : ""}</button>`; }).join("")}</div></div>`).join("")
     || `<p class="note" style="margin:0">還沒有組別。</p>`;
   const save = fn => { const all = getGroups(); fn(all); saveGroups(all); renderKidGroupSheet(); render(); };
   box.querySelectorAll("[data-gi]").forEach(r => {

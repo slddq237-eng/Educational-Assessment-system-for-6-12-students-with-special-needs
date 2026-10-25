@@ -879,6 +879,8 @@ function renderClass(){
     const save = $("#cGrpSave"), del = $("#cGrpDel");
     if(save) save.onclick = () => {
       const name = (prompt("這一組的名字（例如：一年級組）") || "").trim(); if(!name) return;
+      const clash = getGroups().find(g => g.name !== name && g.kids.some(c => pickedKids().includes(c)));   /* 一位學生只能在一組 */
+      if(clash) return alert(`有學生已經在「${clash.name}」了。一位學生只能在一組，請先到「學生名單」的分組調整。`);
       saveGroups([...getGroups().filter(g => g.name !== name), {name, kids: pickedKids()}]); re();
     };
     if(del) del.onclick = () => { const gs = getGroups(), g = gs.find(x => x.kids.length === sel.length && x.kids.every(c => sel.includes(c))); saveGroups(gs.filter(x => x !== g)); re(); };
