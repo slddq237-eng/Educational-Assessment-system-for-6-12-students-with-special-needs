@@ -231,10 +231,10 @@ function lessonPrePost(all){
   const extra = sess.filter(s => s.prac).map(s => { const a = accOf(s.rs); return {x: s.x, v: a.v, tip: `${lab(s)}｜練習｜${a.v}%（${a.n} 題）`}; });
   const at = Object.fromEntries(sess.map(s => [s.x, s.nth === 1 ? shortDay(s.day) : ""]));
   const chips = chipRow([["", "全部課合計"], ...ks.map(k => [k, esc(many ? lessonLabel(k) : lessonName(...splitKey(k)))])], sel, "tlsn");
-  const legend = phaseLegend(pts).replace(/<\/div>$/, `<span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="vertical-align:-3px"><path d="M8 1L15 8L8 15L1 8Z" fill="#fff" stroke="#d98a1a" stroke-width="2.5"/></svg>練習（橘色空心菱形，不分前後測）</span></div>`);
+  const legend = phaseLegend(pts).replace(/<\/div>$/, `<span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="vertical-align:-3px"><path d="M8 1L15 8L8 15L1 8Z" fill="#fff" stroke="#d98a1a" stroke-width="2.5"/></svg>練習（橘色空心標記，不分前後測）</span></div>`);
   return `<div class="trow"><span class="tl">看哪一課</span>${chips}</div>
     <div class="tchart">${legend}${lineChart(pts, {metric: "acc", extra, xLabel: x => at[x] || "", xName: "每次評量一格（前測、後測、練習）"})}</div>
-    <p class="note">正確率＝第一次就答對的比例。圓點連成的線是正式評量的前測、後測（灰色背景是前測、藍色是後測）；橘色空心菱形是練習，不連線、不分前後測。點上面的課次，可以只看那一課。</p>`;
+    <p class="note">正確率＝第一次就答對的比例。圓點連成的線是正式評量的前測、後測（灰色背景是前測、藍色是後測）；橘色空心標記是練習，不連線、不分前後測。點上面的課次，可以只看那一課。</p>`;
 }
 function renderSimple(){
   const box = $("#tSimple"), withData = kidsWithData();
