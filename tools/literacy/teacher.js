@@ -13,7 +13,7 @@
    ========================================================= */
 const TEACH_UI = KEYS.teacher;
 const T = Object.assign({tab:"one", kid:"", metric:"acc", view:"time", axis:"date", split:"lesson", range:"term", from:"", to:"",
-  kind:"formal", goal:"", book:"", lesson:"", gap:"after", top:"300", adv:"charts", simpleLesson:"", classKids:[], groups:[]}, load(TEACH_UI, {}));
+  kind:"formal", goal:"", book:"", lesson:"", gap:"after", top:"300", adv:"charts", simpleLesson:"", classKids:[], groups:[], classLesson:""}, load(TEACH_UI, {}));
 const saveT = () => store(TEACH_UI, T);
 const hasFreq = () => typeof FREQ !== "undefined";
 
@@ -646,7 +646,8 @@ function bindChart(root){
     const dots = [...box.querySelectorAll(".dot")];
     if(dots.length) svg.addEventListener("pointermove", e => {
       const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; const loc = p.matrixTransform(svg.getScreenCTM().inverse());
-      const d = dots.reduce((a, b) => Math.abs(b.cx.baseVal.value - loc.x) < Math.abs(a.cx.baseVal.value - loc.x) ? b : a);
+      const dist = c => svg.dataset.multi ? Math.hypot(c.cx.baseVal.value - loc.x, c.cy.baseVal.value - loc.y) : Math.abs(c.cx.baseVal.value - loc.x);   /* 多條線的圖：找最近的點（上下也算），單條線只看左右 */
+      const d = dots.reduce((a, b) => dist(b) < dist(a) ? b : a);
       show(d, d.cx.baseVal.value);
     });
     box.querySelectorAll(".barhit, .pdot").forEach(b => b.addEventListener("pointerenter", () => show(b)));
@@ -777,6 +778,56 @@ function classTable(title, kidList, rs, cellFn){
   const rows = kidList.map(k => { const html = cellFn(k, rs.filter(r => r.kid === k.code)); return `<tr><th>${esc(kidLabel(k))}</th><td>${html || `<span class="note" style="margin:0">—</span>`}</td></tr>`; }).join("");
   return `<section class="ssec"><h3 class="ttitle">${title}</h3><div class="tablewrap"><table class="rec"><thead><tr><th>學生</th><th>前 ${CLASS_TOP} 個</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
+/* 多位學生的折線圖：每位學生一條線（只畫有資料的日期，沒資料的日子就沒有點），橫軸是日期（距離第一天幾天）。
+   顏色用色盲也分得開的 8 色；點可以空心（前測）或實心（後測、一般） */
+const SERIES_COLORS = ["#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#6a4fa3", "#555555"];
+function multiLine(series, o){
+  const H = 300, L = 52, R = 20, Tp = 22, B = 38, iw = SVGW - L - R, ih = H - Tp - B;
+  const all = series.flatMap(s => s.pts).filter(p => p.v != null);
+  const ticks = o.metric === "acc" ? [0, 25, 50, 75, 100] : niceTicks(Math.max(...all.map(p => p.v)) * 1.05), max = ticks[4];
+  const xs = all.map(p => p.x), x0 = Math.min(...xs), x1 = Math.max(...xs), span = x1 - x0 || 1;
+  const X = x => x0 === x1 ? L + iw / 2 : L + (x - x0) / span * iw, Y = v => Tp + ih - v / max * ih;
+  const unit = o.metric === "acc" ? "%" : o.metric === "sec" ? " 秒" : "";
+  let g = ticks.map(t => `<line class="grid" x1="${L}" x2="${SVGW - R}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${L - 8}" y="${Y(t) + 4}" text-anchor="end">${t}${unit}</text>`).join("");
+  series.forEach(s => {
+    const ok = s.pts.filter(p => p.v != null);
+    g += `<path class="line" style="stroke:${s.color}" d="${ok.map((p, i) => `${i ? "L" : "M"}${X(p.x).toFixed(1)} ${Y(p.v).toFixed(1)}`).join(" ")}"/>`;
+    g += ok.map(p => `<circle class="dot" style="${p.hollow ? `fill:#fff;stroke:${s.color}` : `fill:${s.color}`}" cx="${X(p.x)}" cy="${Y(p.v)}" r="5" tabindex="0" data-tip="${esc(`${p.label}｜${fmt(o.metric, p.v)}（${p.n} ${unitN(o.metric)}）`)}"/>`).join("");
+  });
+  let lastX = -1e9;   /* 橫軸標籤：和前一個標籤至少隔 48 像素 */
+  g += Object.keys(o.at).map(Number).sort((a, b) => a - b).map(x => { const px = X(x); if(px - lastX < 48) return ""; lastX = px; return `<text class="ax" x="${px}" y="${H - 14}" text-anchor="middle">${esc(o.at[x])}</text>`; }).join("");
+  const legend = `<div class="legend" style="display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 6px">${series.map(s => `<span><i style="display:inline-block;width:18px;height:4px;border-radius:2px;background:${s.color};vertical-align:middle"></i> ${esc(s.name)}</span>`).join("")}${o.legendExtra || ""}</div>`;
+  return `${legend}<div class="chartbox"><svg viewBox="0 0 ${SVGW} ${H}" data-multi="1" role="img" aria-label="折線圖，每位學生一條線，數字請看下方明細表">${g}<line class="cross" y1="${Tp}" y2="${Tp + ih}" hidden/></svg><div class="ttip" hidden></div></div>`;
+}
+const classDetail = (cols, rows) => `<details class="why"><summary>看明細表</summary>${detailTable(cols, rows)}</details>`;
+const classSec = (title, body) => `<section class="ssec"><h3 class="ttitle">${title}</h3>${body}</section>`;
+/* 每天一個點（正確率、反應時間、流暢性）：每位學生各一條線 */
+function classDaily(kidList, rs, metric, empty){
+  const src = metric === "flu" ? rs.filter(r => r.mode === "flu" && r.timeLimit) : rs;
+  if(!src.length) return `<p class="note" style="margin:0">${empty}</p>`;
+  const first = [...new Set(src.map(dayOf))].sort()[0], fn = metric === "acc" ? accOf : metric === "sec" ? secOf : fluOf, at = {}, rows = [];
+  const series = kidList.map((k, i) => ({name: kidLabel(k), color: SERIES_COLORS[i], pts: [...groupBy(src.filter(r => r.kid === k.code), dayOf)].sort((a, b) => a[0] < b[0] ? -1 : 1).map(([d, list]) => {
+    const x = daysBetween(first, d), v = fn(list); at[x] = shortDay(d); rows.push({name: kidLabel(k), day: d, v: fmt(metric, v.v), n: v.n});
+    return {x, ...v, label: `${kidLabel(k)}｜${shortDay(d)}`}; })}));
+  return `<div class="tchart">${multiLine(series, {metric, at})}</div>` + classDetail([["學生", r => r.name], ["日期", r => r.day], [metric === "acc" ? "正確率" : metric === "sec" ? "平均反應時間" : "每分鐘", r => r.v], [unitN(metric), r => r.n]], rows);
+}
+/* 各課前後測正確率：只算標了前測、後測的正式評量，空心＝前測、實心＝後測；上面的課次按鈕選看哪一課（預設全部課合計） */
+function classPrePost(kidList, rs){
+  const tagged = rs.filter(r => r.kind === "formal" && r.prepost);
+  if(!tagged.length) return `<p class="note" style="margin:0">還沒有標「前測」或「後測」的正式評量。</p>`;
+  const ks = [...new Set(tagged.map(r => key(r.book, r.lesson)))].sort(lessonOrder), many = new Set(ks.map(k => splitKey(k)[0])).size > 1;
+  const sel = ks.includes(T.classLesson) ? T.classLesson : "";
+  const src = tagged.filter(r => !sel || key(r.book, r.lesson) === sel), first = [...new Set(src.map(dayOf))].sort()[0], at = {}, rows = [];
+  const series = kidList.map((k, i) => ({name: kidLabel(k), color: SERIES_COLORS[i], pts: [...groupBy(src.filter(r => r.kid === k.code), r => dayOf(r) + "|" + r.prepost)].sort((a, b) => a[0] < b[0] ? -1 : 1).map(([dk, list]) => {
+    const [d, pp] = dk.split("|"), x = daysBetween(first, d), v = accOf(list); at[x] = shortDay(d); rows.push({name: kidLabel(k), day: d, pp, v: fmt("acc", v.v), n: v.n});
+    return {x, ...v, hollow: pp === "前測", label: `${kidLabel(k)}｜${shortDay(d)}｜${pp}`}; })}));
+  if(series.every(s => !s.pts.length)) return `<p class="note" style="margin:0">這一課，選到的學生沒有前測、後測。</p>`;
+  const chips = chipRow([["", "全部課合計"], ...ks.map(k => [k, esc(many ? lessonLabel(k) : lessonName(...splitKey(k)))])], sel, "tcl");
+  const extra = `<span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="vertical-align:-2px"><circle cx="7" cy="7" r="5" fill="#fff" stroke="#555" stroke-width="2"/></svg> 空心＝前測</span><span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="vertical-align:-2px"><circle cx="7" cy="7" r="5" fill="#555"/></svg> 實心＝後測</span>`;
+  return `<div class="trow"><span class="tl">看哪一課</span>${chips}</div><div class="tchart">${multiLine(series, {metric: "acc", at, legendExtra: extra})}</div>`
+    + classDetail([["學生", r => r.name], ["日期", r => r.day], ["前後測", r => r.pp], ["正確率", r => r.v], ["題", r => r.n]], rows)
+    + `<p class="note">每個點是那一天、那一種（前測或後測）的正式評量，正確率＝第一次就答對的比例。每位學生教學日期不同，這裡不畫教學結束後的分隔線。</p>`;
+}
 const classWrong = (k, rs) => [...groupBy(rs, r => r.char)].map(([c, l]) => ({c, n: l.length, w: l.filter(r => !r.firstCorrect).length})).filter(x => x.w)
   .sort((a, b) => b.w - a.w || a.n - b.n).slice(0, CLASS_TOP).map(x => `${charLink(x.c, k.code)}<small> 錯 ${x.w} 次・${pct(x.n - x.w, x.n)}%</small>`).join("　");
 const classSlow = (k, rs) => [...groupBy(rs, r => r.char)].map(([c, l]) => ({c, v: avg(l.filter(r => r.passed && typeof r.correctSec === "number").map(r => r.correctSec))})).filter(x => x.v != null)
@@ -798,6 +849,8 @@ function renderClass(){
       else T.classKids = [...cur, c];
       re();
     });
+    res.querySelectorAll("[data-tcl]").forEach(b => b.onclick = () => { T.classLesson = b.dataset.tcl; re(); });
+    bindChart(res);
     res.querySelectorAll("[data-cgrp]").forEach(b => b.onclick = () => { T.classKids = T.groups[+b.dataset.cgrp].kids.filter(kidBy).slice(0, CLASS_MAX); re(); });
     const save = $("#cGrpSave"), del = $("#cGrpDel");
     if(save) save.onclick = () => {
@@ -824,7 +877,10 @@ function renderClass(){
   const rows = []; kidList.forEach(k => chars.forEach(c => { const list = cell.get(k.code + "|" + c); if(list) rows.push({kid:k.code, name:kidLabel(k), char:c, ...accOf(list)}); }));
   const all = accOf(rs);
   tCurrent = null;
-  $("#tResult").innerHTML = head + classTable("常錯的字", kidList, rs, classWrong) + classTable("反應最慢的字", kidList, rs, classSlow) + classTable("容易搞混的字（字→常選成）", kidList, rs, classConfused)
+  $("#tResult").innerHTML = head
+    + classSec("每天的平均正確率", classDaily(kidList, rs, "acc", "")) + classSec("每天的平均反應時間（越低越快）", classDaily(kidList, rs, "sec", ""))
+    + classSec("每天的流暢性（每分鐘認出幾個字）", classDaily(kidList, rs, "flu", "選到的學生還沒有流暢性的紀錄（計時挑戰）。")) + classSec("各課前後測正確率", classPrePost(kidList, rs))
+    + classTable("常錯的字", kidList, rs, classWrong) + classTable("反應最慢的字", kidList, rs, classSlow) + classTable("容易搞混的字（字→常選成）", kidList, rs, classConfused)
     + `<section class="ssec"><h3 class="ttitle">每個字的正確率（學生 × 生字）</h3>
     <div class="tstats"><div class="tstat"><span>學生</span><b>${kidList.length} 位</b><small>正式評量加練習</small></div>
       <div class="tstat"><span>考過的字</span><b>${chars.length} 個</b></div><div class="tstat"><span>這幾位第一次就答對</span><b>${fmt("acc", all.v)}</b><small>${all.n} 題</small></div></div>
