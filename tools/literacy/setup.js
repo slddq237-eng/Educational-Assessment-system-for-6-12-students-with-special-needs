@@ -33,7 +33,7 @@ function applyPreset(id){
   Object.assign(state, {qCount:null, qMethod:"even"});   /* 評量目標沿用第 1 步選的 */
   PRESETS.find(p => p.id === id).apply();
   /* 作答方式：快速開始只有大螢幕輪流、平板掃 QR code 兩種（2026-10-25 起平板也能用在正式評量，A3-18） */
-  if(state.answer !== "qr") state.answer = "turn";
+  if(state.answer !== "qr" && state.answer !== "splitturn") state.answer = "turn";
 }
 function setUi(mode){
   ui = mode; store(KEYS.ui, ui);
@@ -95,10 +95,16 @@ const step1Miss = () => "";
 const step2Miss = () => !selKids().length ? (isQuick() ? "請先點選要做的學生" : "請先點選要評量的學生") : !state.lessons.length ? "請先選課次" : "";
 function step3Miss(){
   const n = selKids().length, a = ANSWERS.find(x => x.id === state.answer);
-  return n < a.min || n > a.max ? `「${a.name}」可以 ${a.min}～${a.max} 位學生，目前 ${n} 位` : "";
+  if(n < a.min || n > a.max) return `「${a.name}」可以 ${a.min}～${a.max} 位學生，目前 ${n} 位`;
+  /* 分區輪流先只開放練習的正確率模式（E14；正式評量等 A3，流暢性是一人一回合，版面不同） */
+  if(a.id === "splitturn" && state.kind === "formal") return `「${a.name}」先只能用在練習，正式評量請改選「大螢幕・輪流」`;
+  if(a.id === "splitturn" && state.mode === "flu") return `「${a.name}」還不能用在流暢性模式，請改選「大螢幕・輪流」`;
+  return "";
 }
-/* 能選的作答方式（快速開始只列大螢幕輪流、平板掃 QR code） */
-const answerList = () => ANSWERS.filter(a => !isQuick() || a.id === "turn" || a.id === "qr");
+/* 能選的作答方式（快速開始只列大螢幕輪流、分區輪流、平板掃 QR code） */
+/* 只選一位學生時不列分區輪流（沒有別人的區可以分，2026-10-25 維護者要求） */
+const answerList = () => ANSWERS.filter(a => (!isQuick() || a.id === "turn" || a.id === "splitturn" || a.id === "qr") && (a.id !== "splitturn" || selKids().length > 1));
+const isTurnLike = id => id === "turn" || id === "splitturn";   /* 大螢幕輪流（全螢幕或分區） */
 const answerOff = a => a.off || "";
 /* 第 3 步可以跳過嗎：作答方式只有一個能選、而且個人或合作是固定的 */
 const skip3 = () => answerList().filter(a => !answerOff(a)).length === 1 && !!teamFixed() && !step3Miss();
@@ -332,7 +338,7 @@ const METHODS = [
   {id:"freq",  name:"字頻優先", desc:"先出常用字", need:"需要匯入字頻資料", ok:() => typeof FREQ !== "undefined",
    okText:"所選課次中，依教育部字頻總表排名最常用的字先出，出題順序打散"}
 ];
-const SEC_PER_ITEM = {turn:8, split:8, present:15};
+const SEC_PER_ITEM = {turn:8, splitturn:8, split:8, present:15};
 const FREQ_SHARE = 0.2; /* 平均隨機中先出常用字的比例 */
 /* 練習的預設題數：一課的字數每課不同，多位學生輪流時會玩很久，所以練習預設一次 10 個字（2026-10-21 維護者決定）。
    正式評量仍是一課的量，成績才能代表整課的程度。 */
@@ -363,7 +369,7 @@ function quizPlan(){
     for(const k of order){ if(left && per.get(k) < lessonSize(k)){ per.set(k, per.get(k)+1); left--; moved = true; } }
     if(!moved) break; }
   const n = Math.max(1, selKids().length);
-  const sec = count * (SEC_PER_ITEM[state.answer] || 8) * (state.answer === "turn" ? n : 1);
+  const sec = count * (SEC_PER_ITEM[state.answer] || 8) * (isTurnLike(state.answer) ? n : 1);
   return {pool, one, def, count, isAll, isDefault, canChoose, method, freqN, per, sec, n};
 }
 const methodName = m => m === "all" ? "全部出題" : METHODS.find(x => x.id === m).name;
@@ -411,7 +417,7 @@ function renderQuiz(){
       <button class="chip ${q.count === q.one && (state.kind === "formal" || state.qCount != null) ?"on":""}" data-qc="one">一課的量（${q.one} 字）</button>
       <button class="chip ${q.isAll?"on":""}" data-qc="all">全課生字（${q.pool} 字）</button></label>
     ${how}
-    <p class="time"><b>${minutes(q.sec)}</b>　<span class="note" style="margin:0">${state.answer === "turn" && q.n > 1 ? `${q.n} 位學生輪流，每人 ${q.count} 題，` : ""}每題約 ${SEC_PER_ITEM[state.answer] || 8} 秒估算</span></p>`;
+    <p class="time"><b>${minutes(q.sec)}</b>　<span class="note" style="margin:0">${isTurnLike(state.answer) && q.n > 1 ? `${q.n} 位學生輪流，每人 ${q.count} 題，` : ""}每題約 ${SEC_PER_ITEM[state.answer] || 8} 秒估算</span></p>`;
   $("#qCount").onchange = e => { const v = Math.max(1, Math.min(q.pool, +e.target.value || 1)); state.qCount = v; render(); };
   box.querySelectorAll("[data-qc]").forEach(b => b.onclick = () => {
     const qc = b.dataset.qc;
@@ -442,7 +448,7 @@ function renderTeam(){
 
 function renderKids(){
   const max = id => ANSWERS.find(x => x.id === id).max;
-  $("#kidsHintQ").textContent = `點選要做的學生。大螢幕輪流最多 ${max("turn")} 位；用平板作答最多 ${max("qr")} 位（第 3 步選）。`;
+  $("#kidsHintQ").textContent = `點選要做的學生。大螢幕輪流最多 ${max("turn")} 位（分區輪流最多 ${max("splitturn")} 位）；用平板作答最多 ${max("qr")} 位（第 3 步選）。`;
   $("#kids").innerHTML = kids.map(k => `<button class="chip kidchip ${state.kids.has(k.code)?"on":""}" data-k="${esc(k.code)}" aria-pressed="${state.kids.has(k.code)}">${Rewards.avatarHtml(k.code)}${esc(kidLabel(k))}<small>${gradeText(k)}</small></button>`).join("");
   $("#kids").querySelectorAll("button").forEach(b => b.onclick = () => { const k = b.dataset.k; state.kids.has(k) ? state.kids.delete(k) : state.kids.add(k); render(); });
 }
@@ -701,4 +707,4 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets()
 document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); if(t && t.dataset.open === "kids"){ renderKidSheet(); openSheet("#kidsSheet"); } });
 $("#openRecords").onclick = () => { renderRecSheet(); openSheet("#recSheet"); };
 
-function render(){ renderPresets(); renderPrepost(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderTeam(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }
+function render(){ if(state.answer === "splitturn" && selKids().length < 2) state.answer = "turn"; renderPresets(); renderPrepost(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderTeam(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }

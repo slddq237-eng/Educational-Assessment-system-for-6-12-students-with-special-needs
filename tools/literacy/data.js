@@ -79,8 +79,8 @@ function playWhy(id){
   const flu = state.mode === "flu", coop = team() === "coop";
   if(id === "color") return coop ? "合作只能玩遊戲" : "";
   if(flu) return "流暢性模式不能用";
-  if(id === "game") return !coop && selKids().length > 1 && state.answer === "turn" ? "多位學生各玩各的還不能玩遊戲（之後做），要玩請選合作" : "";
-  if(id === "bingo") return coop ? "合作賓果之後再做" : "";
+  if(id === "game") return !coop && selKids().length > 1 && (state.answer === "turn" || state.answer === "splitturn") ? "多位學生各玩各的還不能玩遊戲（之後做），要玩請選合作" : "";
+  if(id === "bingo") return state.answer === "splitturn" ? "分區輪流之後再支援賓果" : coop ? "合作賓果之後再做" : "";
   return "";
 }
 /* 這次實際用的玩法：選的不能用時，改用第一個能用的 */
@@ -103,6 +103,9 @@ const hintName = id => LEVELS.flatMap(l => l.items).find(i => i[0] === id)[1];
 const REACT = {remove:"選錯的選項打叉", next:"出現下一個提示", free:"沒有提示，也不顯示答案，讓學生自己點", reveal:"顯示答案並唸一次，進入下一題"};   /* 選錯的選項每次都會停用，remove 只是舊紀錄的說法 */
 const ANSWERS = [
   {id:"turn",    name:"大螢幕・輪流",   desc:"1～4 人輪流在同一個螢幕作答", min:1, max:4},
+  /* 分區輪流（E14，2026-10-25 維護者決定）：版面同時顯示所有人，輪到的人那一區亮起；一次仍只有一人作答。
+     最多 3 位；先只開放練習、正確率模式（setup.js 的 step3Miss 寫原因）；作答模式記在紀錄的 answer 欄，不加新欄位 */
+  {id:"splitturn", name:"大螢幕・分區輪流", desc:"2～3 人輪流，每人一區同時顯示在畫面上，輪到的人那一區亮起（目前只能練習）", min:2, max:3},
   {id:"split",   name:"大螢幕・同時",   desc:"螢幕分成 2～4 區，各自作答（需支援多點觸控）", min:2, max:4, off:"準備中"},
   {id:"present", name:"呈現模式・紙筆", desc:"螢幕只出題，學生寫在紙上，老師改完再登錄", min:1, max:99, off:"準備中"},
   /* 平板作答（tablet.js）：一個 QR code 可以給幾位學生，每位在自己的平板點自己的代號；目前只能用在練習 */

@@ -332,7 +332,11 @@ function nextItem(){
   if(G.pos >= G.queue.length) return G.game && !G.hpOver ? sceneWin() : finish();
   const it = G.queue[G.pos], prev = G.queue[G.pos - 1];
   /* 多人輪流時，換到另一位學生先出現換人畫面 */
-  if(G.kids.length > 1 && (!prev || prev.kid !== it.kid)) return turnCard(it.kid, !prev, () => newItem(it));
+  if(G.kids.length > 1 && (!prev || prev.kid !== it.kid)){
+    /* 分區輪流（E14）：不跳換人過場，直接亮起下一位的區；換人時只播一聲提示音（維護者 2026-10-25） */
+    if(G.answer === "splitturn"){ if(prev) sfx.turn(); return newItem(it); }
+    return turnCard(it.kid, !prev, () => newItem(it));
+  }
   newItem(it);
 }
 
@@ -395,7 +399,7 @@ function optType(c, x, k, goal = G && G.goal){
 const NO_CQ = !(window.CSS && CSS.supports && CSS.supports("width", "1cqw"));
 const optsRO = NO_CQ && window.ResizeObserver ? new ResizeObserver(() => fitOpts()) : null;
 function fitOpts(){
-  const box = NO_CQ && $("#pBody .optsbox"), o = box && box.querySelector(".opts");
+  const box = NO_CQ && $("#pBody .optsbox:not(.ghostbox)"), o = box && box.querySelector(".opts");
   if(!o) return;
   o.style.setProperty("--bw", box.clientWidth + "px"); o.style.setProperty("--bh", box.clientHeight + "px");
   if(optsRO){ optsRO.disconnect(); optsRO.observe(box); }
@@ -413,10 +417,11 @@ function newItem(it){
   G.cur = {it, b, board, opts: board ? board.cells.map(ch => ({ch, type: optType(it.c, ch, it.k)})) : (regroup ? makePartsOptions : makeOptions)(it.c, it.k, G.choices),
            wrong:0, firstPick:null, firstSec:null, shown:[], hintPos:0, teacher:0, reads:new Set(), t0:null, tShown:performance.now(), done:false};
   drawBar(it);
-  const cols = board ? board.cols : G.choices === 4 ? 2 : 3, rows = board ? board.rows : Math.ceil(G.choices / cols);
+  const split = G.answer === "splitturn" && G.kids.length > 1;   /* 分區輪流：每區只有螢幕的 1/2～1/3 寬，選項一律 2 欄 */
+  const cols = board ? board.cols : split || G.choices === 4 ? 2 : 3, rows = board ? board.rows : Math.ceil(G.choices / cols);
   const stamp = board ? `<span class="stamp2" aria-hidden="true">${Rewards.avatarHtml(it.kid)}</span>` : "";
   const cellClass = i => !board ? "" : board.marks.has(i) ? ` marked${[...board.done].some(L => board.lines[L].includes(i)) ? " win" : ""}` : "";
-  $("#pBody").innerHTML = `<div class="stage">
+  const stageHtml = `<div class="stage">
       <div class="prompt">
         ${regroup ? `<div class="pieces big" aria-label="拆開的部件">${regroupHtml(it.c)}</div>
         <span class="note" style="margin:0">這些部件組成哪一個字？</span>`
@@ -427,7 +432,18 @@ function newItem(it){
       <div class="optsbox"><div class="opts ${board ? "bingo" : ""}" style="--cols:${cols};--rows:${rows}">
         ${G.cur.opts.map((o, i) => `<button class="opt-big${cellClass(i)}${G.bpmf ? " bpmf" : ""}" data-i="${i}" ${board && board.marks.has(i) ? "disabled" : ""}><span class="och">${esc(G.bpmf ? Bpmf.char(o.ch, b) : o.ch)}</span>${board && board.marks.has(i) ? stamp : ""}</button>`).join("")}
       </div></div>
-    </div>
+    </div>`;
+  /* 分區輪流（E14）：每位學生一區並排，輪到的那一區亮起、有題目和選項，其他區變暗、選項只剩空框。
+     每區大小固定，換人時學生不用換位置看；其他區只留名字和進度，讓等待的人知道自己還要做幾題 */
+  const zoneHtml = code => {
+    const k = kidBy(code), mine = G.queue.filter(x => x.kid === code), on = code === it.kid;
+    const idx = on ? mine.indexOf(it) + 1 : mine.filter(x => G.queue.indexOf(x) < G.pos).length;
+    const head = `<div class="zhead">${Rewards.avatarHtml(code)}<b>${esc(k ? kidShow(k) : code)}</b><span>${on ? `第 ${idx} / ${mine.length} 題` : `已做 ${idx} / ${mine.length} 題`}</span></div>`;
+    if(on) return `<section class="zone on" aria-current="true">${head}${stageHtml}</section>`;
+    return `<section class="zone wait">${head}<div class="stage"><div class="prompt"><span class="zwait">等一下</span></div>
+      <div class="optsbox ghostbox"><div class="opts" style="--cols:${cols};--rows:${rows}">${Array.from({length:G.choices}, () => `<span class="opt-ghost"></span>`).join("")}</div></div></div></section>`;
+  };
+  $("#pBody").innerHTML = `${split ? `<div class="zones" style="--n:${G.kids.length}">${G.kids.map(zoneHtml).join("")}</div>` : stageHtml}
     ${G.mode === "flu" ? "" : `<div class="tbar"><span>老師提示紀錄：</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
   fitOpts();
   $("#pBody").querySelectorAll(".opt-big").forEach(btn => btn.onclick = () => pick(+btn.dataset.i, btn));
