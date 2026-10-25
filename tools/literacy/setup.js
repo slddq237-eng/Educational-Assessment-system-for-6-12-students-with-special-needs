@@ -447,8 +447,8 @@ function renderTeam(){
 }
 
 function renderKids(){
-  const max = id => ANSWERS.find(x => x.id === id).max;
-  $("#kidsHintQ").textContent = `點選要做的學生。大螢幕輪流最多 ${max("turn")} 位（分區輪流最多 ${max("splitturn")} 位）；用平板作答最多 ${max("qr")} 位（第 3 步選）。`;
+  /* 人數上限不在這裡寫，第 3 步選作答方式時，人數不合的選項會寫原因 */
+  $("#kidsHintQ").textContent = "點選要做的學生，可以選好幾位。";
   /* 選學生的按鈕只顯示頭像和名字（2026-10-25 維護者要求）；沒填名字顯示代號、同名的才加代號分辨 */
   $("#kids").innerHTML = kids.map(k => `<button class="chip kidchip ${state.kids.has(k.code)?"on":""}" data-k="${esc(k.code)}" aria-pressed="${state.kids.has(k.code)}">${Rewards.avatarHtml(k.code)}${esc(k.name && kids.filter(o => o.name === k.name).length === 1 ? k.name : kidLabel(k))}</button>`).join("");
   $("#kids").querySelectorAll("button").forEach(b => b.onclick = () => { const k = b.dataset.k; state.kids.has(k) ? state.kids.delete(k) : state.kids.add(k); render(); });
