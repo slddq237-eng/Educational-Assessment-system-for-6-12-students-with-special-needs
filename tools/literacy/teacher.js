@@ -137,9 +137,18 @@ const lessonsText2 = list => { const ks = [...new Set(list.map(r => key(r.book, 
 /* 每天一個點：x＝距離第一天幾天（相隔越久離越遠），有標前測、後測的那天在日期後面註明 */
 function dailyChart(rs, metric){
   const g = groupBy(rs, dayOf), days = [...g.keys()].sort(), first = days[0];
-  const fn = metric === "acc" ? accOf : secOf, at = {};
+  const fn = metric === "acc" ? accOf : metric === "sec" ? secOf : fluOf, at = {};
   const pts = days.map(d => { const list = g.get(d), t = tagText(list), x = daysBetween(first, d); at[x] = shortDay(d); return {x, day: d, label: shortDay(d) + (t ? `（${t}）` : ""), rs: list, ...fn(list)}; });
-  return lineChart(pts, {metric, noPhase: true, xLabel: x => at[x] || "", xName: ""});
+  /* 流暢性：目標線用最近一次有設目標的回合（沒設就不畫）*/
+  const aim = metric === "flu" ? (rounds(rs).map(x => x.aim).filter(Boolean).pop() || null) : null;
+  return lineChart(pts, {metric, noPhase: true, aim, xLabel: x => at[x] || "", xName: ""});
+}
+/* 流暢性（計時挑戰、流暢性模式）：每一回合＝一位學生做完一次，每分鐘第一次就答對幾個；一天一個點，正式評量和練習的回合全部算 */
+function fluencySection(all){
+  const flu = all.filter(r => r.mode === "flu" && r.timeLimit);
+  if(!flu.length) return `<p class="note" style="margin:0">還沒有流暢性的紀錄。做「計時挑戰」（或進階設定的流暢性模式），這裡就會出現每天每分鐘認出幾個字。</p>`;
+  const n = rounds(flu).length;
+  return `<div class="tchart">${dailyChart(flu, "flu")}</div><p class="note">流暢性＝限時內第一次就答對的字數，換算成每分鐘幾個（越高越流暢）。每個點是那一天所有回合的平均，共 ${n} 個回合；正式評量和練習的流暢性回合全部算。</p>`;
 }
 function simpleSummary(rs){
   const sess = sessionsOf(rs), days = [...new Set(rs.map(dayOf))].sort(), a = accOf(rs), secs = secList(rs);
@@ -260,6 +269,7 @@ function renderSimple(){
     ${sec("總體紀錄（正式評量＋練習）", simpleSummary(all))}
     ${sec("每天的平均正確率", `<div class="tchart">${dailyChart(all, "acc")}</div><p class="note">正確率＝第一次就答對的比例。每個點是那一天所有評量和練習的平均；有標前測、後測的那天，日期後面會註明。</p>`)}
     ${sec("每天的平均反應時間（越低越快）", `<div class="tchart">${dailyChart(all, "sec")}</div><p class="note">答對的題目，從題目唸完到答對的平均秒數。</p>`)}
+    ${sec("每天的流暢性（每分鐘認出幾個字）", fluencySection(all))}
     ${sec("各課前後測正確率", lessonPrePost(all))}
     ${sec("常錯的字", wrongChars(all))}
     ${sec("反應最慢的字", slowChars(all))}
@@ -586,7 +596,7 @@ function lineChart(pts, o){
   const ok = pts.filter(p => p.v != null);
   const path = ok.map((p, i) => `${i ? "L" : "M"}${X(p.x).toFixed(1)} ${Y(p.v).toFixed(1)}`).join(" ");
   g += `<path class="line" d="${path}"/>`;
-  g += ok.map(p => `<circle class="dot${p.n < 3 ? " few" : ""}" cx="${X(p.x)}" cy="${Y(p.v)}" r="5" tabindex="0" data-tip="${esc(`${p.label}｜${p.lesson ? p.lesson + "｜" : ""}${o.noPhase ? "" : p.phase + "｜"}${fmt(o.metric, p.v)}（${p.n} ${unitN(o.metric)}）`)}"/>`).join("");
+  g += ok.map(p => `<circle class="dot${o.metric !== "flu" && p.n < 3 ? " few" : ""}" cx="${X(p.x)}" cy="${Y(p.v)}" r="5" tabindex="0" data-tip="${esc(`${p.label}｜${p.lesson ? p.lesson + "｜" : ""}${o.noPhase ? "" : p.phase + "｜"}${fmt(o.metric, p.v)}（${p.n} ${unitN(o.metric)}）`)}"/>`).join("");
   /* 額外的一組點（例如前後測圖裡的練習）：橘色空心菱形、不連線，和主線的圓點分得出來；o.extra＝[{x, v, tip}] */
   (o.extra || []).filter(p => p.v != null).forEach(p => { const cx = X(p.x), cy = Y(p.v);
     g += `<path class="pdot" d="M${cx} ${cy - 7}L${cx + 7} ${cy}L${cx} ${cy + 7}L${cx - 7} ${cy}Z" tabindex="0" data-tip="${esc(p.tip)}"/>`; });
