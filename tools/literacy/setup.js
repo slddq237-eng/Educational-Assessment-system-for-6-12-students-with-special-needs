@@ -140,17 +140,9 @@ document.addEventListener("click", e => { if($("#topMenu").open && !e.target.clo
 document.addEventListener("keydown", e => { if(e.key === "Escape" && $("#topMenu").open){ $("#topMenu").open = false; $("#topMenu summary").focus(); } });
 
 function renderGoals(){
-  const L = BOOKS[state.book].lessons;
-  const allConf = Object.values(L).every(l => l.conf);
-  const status = {
-    "1":["圖片：部分語詞已有","warn"], "2":["圖片：部分語詞已有","warn"],
-    "3": allConf ? ["形近同音資料：全部課次","ok"] : ["形近同音資料：部分課次","warn"],
-    "4-1":["部件資料：全部課次","ok"],   /* 拆不開的字改用切塊，每個字都能出題 */
-    "4-2":["準備中","warn"]
-  };
+  const demo = d => { const [say, opts] = d.split("｜"); return `<span class="demo"><span class="say">${say}</span><span class="arrow">→</span>${opts.split("/").map((o, n) => `<span class="o ${opts.indexOf("/") < 0 || n === 0 ? "ok" : ""}">${o}</span>`).join("")}</span>`; };
   $("#goals").innerHTML = GOALS.map(g => `<button class="goal ${state.goal===g.id?"on":""}" data-g="${g.id}" ${g.off?"disabled":""} aria-pressed="${state.goal===g.id}">
-      <span class="order">${g.order}・目標 ${g.id}</span><b>${g.name}</b><span class="what">${g.what}</span>
-      <span class="pill ${status[g.id][1]==="warn"?"warn":""}">${status[g.id][0]}</span></button>`).join("");
+      <b>${g.name}</b><span class="what">${g.what}</span>${demo(g.demo)}${g.off ? `<span class="pill warn">${g.off}</span>` : ""}</button>`).join("");
   $("#goals").querySelectorAll("button:not(:disabled)").forEach(b => b.onclick = () => { state.goal = b.dataset.g; render(); });
 }
 
@@ -543,7 +535,7 @@ function renderSummary(){
   const multi = selKids().length > 1;
   const n = selKids().length, kidsOk = n >= a.min && n <= a.max;
   const rows = [
-    ["評量目標", `目標 ${g.id}　${g.name}`],
+    ["評量目標", g.name],
     ["評量方式", c.flu ? `流暢性・${LIMITS.find(l => l[0]===state.limit)[1]}` : "正確率模式"],
     ["選項", choiceText(c.choices)],
     ["提示", hintsText(c)],
