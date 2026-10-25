@@ -109,13 +109,16 @@ const ANSWERS = [
   {id:"qr",      name:"平板掃 QR code", desc:"學生用自己的平板掃描作答，做完傳回老師的 Google 表單（目前只能練習）", min:1, max:12}
 ];
 const TAUGHT = [["","依學生年級自動判斷"],["dates","輸入教學日期"],["notYet","還沒教"]];
-const PHASES = ["基線期","教學中","教學後","維持期"];
+/* 前後測（A8，2026-10-25）：一般老師只有前測、後測；沒標的紀錄這一欄是空白。研究時期（基線期／介入期／維持期）以後由研究計畫事先設定 */
+const PREPOST = ["前測","後測"];
 const GRADES = ["一","二","三","四","五","六"];
 
 /* 作答紀錄的格式版本（開發路線圖 A4）：每筆紀錄都記下 fmt，之後改紀錄格式時新舊資料分得開。
    改格式的規則：只加新欄位、不改舊欄位的意思；真的要改意思時，版本加 1，並寫在下面和 docs/design/records.md。
-   1＝2026-10-21 以前的紀錄（沒有 fmt 這一欄）；2＝加上 fmt 與裝置類型 device */
-const RECORD_FORMAT = 2;
+   1＝2026-10-21 以前的紀錄（沒有 fmt 這一欄）；2＝加上 fmt 與裝置類型 device；
+   3＝2026-10-25 A8（見 docs/design/a8-terms.md）：刪掉 phase（評量時機），加上 prepost（前後測）、ppId（前後測代號）、planId／planVer／rphase（研究計畫與研究時期，研究計畫做出來前都是空白）。
+   第 3 版直接改格式、不處理舊紀錄的對應（維護者決定：現在幾乎無人使用） */
+const RECORD_FORMAT = 3;
 /* 作答的裝置類型：觸控而且螢幕短邊小於 600 像素＝手機；主要靠手指點（沒有滑鼠）＝平板；其他＝電腦 */
 function deviceType(){
   const touch = navigator.maxTouchPoints > 0, coarse = matchMedia("(pointer: coarse)").matches;
@@ -230,8 +233,6 @@ const teach = load(KEYS.teach, {});
 const saveTeach = () => store(KEYS.teach, teach);
 /* 某位學生在某一課實際用的教學日期：有個別設定就用個別的，沒有就用全班預設 */
 const teachFor = (k, code) => { const t = teach[k] || {}; return (code && t.kids && t.kids[code]) || t; };
-/* 這次手動指定的評量時機（學扶前後測卡片、或第 2 步「這次全部改為」）；學扶的「教學後」要看每位學生自己的結束日 */
-const manualFor = (code, k) => state.rtiKeys && state.rtiKeys.includes(k) ? rtiPhaseFor(k, code) : state.manual[k];
 
 const state = {
   theme:"",   /* 這次實際用的主題（""＝不用主題） */
@@ -240,7 +241,8 @@ const state = {
   kidHints:{}, hintFor:"",
   goal:"3", kind:"formal", mode:"acc", limit:"60",
   pChoices:"6", pHints:new Set(["word","sent","pic"]), pRule:["next","next","remove","reveal"],
-  ed:"翰林", book:"h2", lessons:[], qCount:null, qMethod:"even", manual:{}, answer:"turn",
+  ed:"翰林", book:"h2", lessons:[], qCount:null, qMethod:"even", answer:"turn",
+  prepost:"", ppId:"",   /* 這次是前測還是後測（只有正式評量；""＝不標），ppId＝前後測代號（同一次施測全班共用，補考接回同一個） */
   kids:new Set()
 };
 let dBook = "h2";
@@ -248,50 +250,18 @@ let dBook = "h2";
 const $ = s => document.querySelector(s);
 
 /* =========================================================
-   3. 評量時機判斷（基線期／教學中／教學後／維持期）
+   3. 教學日期與前後測（A8，2026-10-25）
+   不再用教學日期自動判斷「基線期／教學中／教學後／維持期」；前測、後測由老師作答前按的按鈕決定。
+   教學日期只用來算圖的橫軸和「教學後天數」。
    ========================================================= */
 
-/* 依教學日期判斷 */
-function datePhase(t){
-  if(!t.start) return {phase:null, why:"日期還沒填完整"};
-  /* 只有開始日、還沒填結束日：開始前是基線期，開始後是教學中 */
-  if(!t.end) return today < parse(t.start) ? {phase:"基線期", why:`教學從 ${md(t.start)} 開始`} : {phase:"教學中", why:`教學從 ${md(t.start)} 開始，還沒填結束日`};
-  const s = parse(t.start), e = parse(t.end);
-  if(e < s) return {phase:null, why:"結束日早於開始日，請檢查日期"};
-  if(today < s) return {phase:"基線期", why:`教學從 ${md(t.start)} 開始`};
-  if(today <= e) return {phase:"教學中", why:`教學期間 ${md(t.start)}～${md(t.end)}`};
-  const n = Math.round((today - e) / DAY);
-  return {phase: n < settings.maintainAfter ? "教學後" : "維持期", why:`教學結束後第 ${n} 天`, days:n};
+/* 教學後天數：有結束日、而且今天在結束日當天或之後才算（結束當天＝第 0 天）；其他情況是空白 */
+function daysAfterEnd(k, code){
+  const t = teachFor(k, code);
+  if(t.type !== "dates" || !t.end || today < parse(t.end)) return "";
+  return Math.round((today - parse(t.end)) / DAY);
 }
-/* 某位學生在某一課的評量時機：有教學日期就用日期，沒有就比較學生年級與課本年級 */
-function autoFor(code, b, n){
-  const t = teachFor(key(b,n), code);
-  if(t.type === "dates") return datePhase(t);
-  const k = kidBy(code); if(!k) return {phase:null, why:""};
-  const d = termIndex(studyGrade(k), TERM) - termIndex(BOOKS[b].grade, BOOKS[b].term);
-  /* 「還沒教」只套用在還沒升過這個年級的學生；高年級學生以前學過，仍依年級判斷 */
-  if(t.type === "notYet" && d <= 0) return {phase:"基線期", why:"還沒教"};
-  if(d < 0) return {phase:"基線期", why:`還沒學到（${GRADES[BOOKS[b].grade-1]}${BOOKS[b].term}的課）`};
-  if(d === 0) return {phase:null, why:"本學期的課，請輸入教學日期"};
-  if(d === 1) return {phase:"維持期", why:"上學期學過"};
-  if(d <= 3) return {phase:"維持期", why:"上學年學過"};
-  return {phase:"維持期", why:"更早以前學過"};
-}
-const phaseFor = (code, b, n) => manualFor(code, key(b,n)) || autoFor(code, b, n).phase;
 const selKids = () => [...state.kids].filter(kidBy);
-const phases = () => state.lessons.flatMap(k => { const [b,n] = k.split("-"); return selKids().map(c => phaseFor(c, b, n)); });
-/* 把同一課、同一時機的學生合在一起顯示 */
-function groups(b, n){
-  const g = new Map();
-  for(const c of selKids()){
-    const m = manualFor(c, key(b,n)), a = autoFor(c, b, n), p = m || a.phase;
-    const label = p ? `${p}${!m && a.days!=null && (p==="教學後"||p==="維持期") ? `（第 ${a.days} 天）` : ""}` : null;
-    const id = (label || "") + "|" + (m ? "手動指定" : a.why);
-    if(!g.has(id)) g.set(id, {label, why: m ? "這次手動指定" : a.why, kids:[]});
-    g.get(id).kids.push(c);
-  }
-  return [...g.values()];
-}
 
 /* 這次實際套用的條件 */
 /* 不適合某些評量目標的提示（開發路線圖 A2，規格書「提示和題目的適配性」表裡的 ✗）：會直接給出答案，程式自動跳過。
@@ -305,10 +275,9 @@ const unfitWhy = (goal, h) => (HINT_UNFIT[goal] || {})[h] || "";
 const fitHints = (goal, list) => list.filter(h => !unfitWhy(goal, h));
 function current(){
   const formal = state.kind === "formal", flu = state.mode === "flu";
-  const base = formal && phases().includes("基線期");
-  const noHelp = flu || base;
+  const noHelp = flu;   /* 前測、後測的條件完全一樣（A8 第 13 點），不再有「基線期不給提示」 */
   return {
-    formal, flu, base, noHelp,
+    formal, flu, noHelp,
     choices: formal || flu ? settings.choices : playNow() === "bingo" ? "bingo" : state.pChoices,
     hints: noHelp ? [] : fitHints(state.goal, formal ? settings.hints : HINT_ORDER.filter(h => state.pHints.has(h))),
     rule: noHelp ? null : (formal ? settings.rule : state.pRule)

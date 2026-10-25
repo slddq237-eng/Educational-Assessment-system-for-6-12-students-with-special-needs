@@ -93,7 +93,7 @@ function tabletPack(){
     st:{
       goal:state.goal, mode:state.mode, limit:state.limit, aim:+$("#aim").value || 30, lessons:state.lessons,
       pChoices:state.pChoices, pHints:[...state.pHints], pRule:state.pRule, qCount:state.qCount, qMethod:state.qMethod,
-      manual:pick(state.manual, state.lessons), themePick:state.themePick,
+      themePick:state.themePick,
       ow:Object.fromEntries(codes.map(c => [c, ownPack(c)])),   /* 每位學生已收集哪幾張（平板的貼紙簿用） */
       kidHints:isQuick() ? {} : Object.fromEntries(codes.filter(c => state.kidHints[c]).map(c => [c, {hints:[...state.kidHints[c].hints], rule:state.kidHints[c].rule}]))
     }
@@ -156,7 +156,7 @@ function tabletStart(){
   /* 用不到的課（例如老師的網頁比較新）：請平板重新整理 */
   if(!s.lessons.length || s.lessons.some(k => !lessonChars(k).length)){ $("#tpLoad").hidden = true; $("#tabPick").classList.remove("loading"); $("#tpMsg").textContent = "這個 QR code 的課本這台平板找不到，請重新整理網頁，或請老師重新產生。"; return; }
   Object.assign(state, {kind:"practice", answer:"qr", goal:s.goal, mode:s.mode, limit:s.limit, lessons:s.lessons,
-    pChoices:s.pChoices, pHints:new Set(s.pHints), pRule:s.pRule, qCount:s.qCount, qMethod:s.qMethod, manual:s.manual || {},
+    pChoices:s.pChoices, pHints:new Set(s.pHints), pRule:s.pRule, qCount:s.qCount, qMethod:s.qMethod,
     themePick:s.themePick || "none",
     kidHints:Object.fromEntries(Object.entries(s.kidHints || {}).map(([c, v]) => [c, {hints:new Set(v.hints), rule:v.rule}]))});
   $("#aim").value = s.aim;

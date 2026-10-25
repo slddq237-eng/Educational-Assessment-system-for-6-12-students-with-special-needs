@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
-<title>學扶前後測快速指南</title>
+<title>前後測快速指南</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-24p">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-25b">
 <style>
-/* 學扶前後測快速指南：給學習扶助、資源班老師的重點說明，可以直接列印成一張 A4。
+/* 前後測快速指南（2026-10-25 A8：卡片合併成「正式評量」，只有前測、後測）：給學習扶助、資源班老師的重點說明，可以直接列印成一張 A4。
    版面沿用識字評量的方格紙。每個步驟旁邊有「示範動畫」（demo.css、demo.js，分析教學也用）。 */
 :root{
   --paper:#f5faf6; --grid:#d5e8da; --ink:#1f3d36; --muted:#5b7a71;
@@ -69,13 +69,13 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
   @page{size:A4;margin:12mm}
 }
 </style>
-<link rel="stylesheet" href="demo.css?v=2026-10-24p">
+<link rel="stylesheet" href="demo.css?v=2026-10-25b">
 </head>
 <body>
 <main>
   <div class="top">
-    <div><h1>學扶前後測快速指南</h1>
-      <p class="lead">給學習扶助、資源班老師：做前測、教學中檢測、後測，圖表可以直接用在心評報告。右邊的示範畫面會自己播放，紅圈就是要點的地方。</p></div>
+    <div><h1>前後測快速指南</h1>
+      <p class="lead">給學習扶助、資源班老師：做前測、後測，圖表可以直接用在心評報告。右邊的示範畫面會自己播放，紅圈就是要點的地方。</p></div>
     <div class="nav">
       <a class="btn main" href="./">打開識字評量</a>
       <button class="btn" onclick="window.print()">列印這一頁</button>
@@ -86,8 +86,8 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
   <!-- 三個重點：一眼看完整個流程 -->
   <nav class="flow" aria-label="三個重點">
     <a href="#first"><small>① 只做一次，約 5 分鐘</small><b>建學生名單</b><span>選單 → 學生名單 → 填代號、名字、年級 → 本學期安排</span></a>
-    <a href="#each"><small>② 每次評量</small><b>四步就開始</b><span>評量目標、學扶前後測、現在是？ → 學生、課次 → 玩法 → 開始</span></a>
-    <a href="#report"><small>③ 寫報告</small><b>看依時期比較</b><span>選單 → 老師專區 → 一位學生 → 正確率 → 依時期比較</span></a>
+    <a href="#each"><small>② 每次評量</small><b>四步就開始</b><span>評量目標、正式評量、前測或後測 → 學生、課次 → 玩法 → 開始</span></a>
+    <a href="#report"><small>③ 寫報告</small><b>看依前後測比較</b><span>選單 → 老師專區 → 一位學生 → 正確率 → 依前後測比較</span></a>
   </nav>
 
   <section class="card" id="first">
@@ -126,12 +126,12 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
       <div>
         <p>設定一次只出現一步，選好按 <b class="k">下一步</b>。</p>
         <ol>
-          <li><b>選目標和評量方式</b>：例如 <b class="k">形音辨識</b>，再點 <b class="k">學扶前後測</b>（這台電腦會記住，下次打開就停在這裡），現在是？選 <b class="k">教學前</b>、<b class="k">教學中</b> 或 <b class="k">教學後</b>，按 <b class="k">下一步</b>。</li>
+          <li><b>選目標和評量方式</b>：例如 <b class="k">形音辨識</b>，再點 <b class="k">正式評量</b>（這台電腦會記住，下次打開就停在這裡），這次是前測還是後測？按 <b class="k">前測</b> 或 <b class="k">後測</b>，按 <b class="k">下一步</b>。同一次施測全班用同一個前後測代號，補考的學生填同一個代號就會接回同一次。</li>
           <li><b>選學生和課次</b>：點<b>學生</b>（大螢幕最多 4 位輪流），再選課次（可以選好幾課），按 <b class="k">下一步</b>。</li>
-          <li><b>選作答方式</b>：大螢幕或平板、自己玩或大家合作。學扶前後測只能大螢幕、每人各自作答，這一步會自動跳過。</li>
-          <li><b>選玩法和主題</b>：學扶前後測的玩法照評量設定；請學生點一個 <b>主題</b>，按 <b class="k">開始</b> → 作答 → 抽一張貼紙。</li>
+          <li><b>選作答方式</b>：大螢幕或平板、自己玩或大家合作。正式評量只能大螢幕、每人各自作答，這一步會自動跳過。</li>
+          <li><b>選玩法和主題</b>：正式評量的玩法照評量設定；請學生點一個 <b>主題</b>，按 <b class="k">開始</b> → 作答 → 抽一張貼紙。</li>
         </ol>
-        <p class="note">選項數、提示、答錯規則都已固定，不用設定。教學前不給提示。</p>
+        <p class="note">選項數、提示、答錯規則都已固定，不用設定；前測和後測的條件完全一樣。</p>
         <p class="note">貼紙：每次做完抽一張，不看答對多少。分四級，越稀有越難抽（普通 55%、稀有 32%、極稀有 9%、傳說 4%），可能抽到重複的，沒有保底；每個主題有 2 張只能「進化」才拿得到。貼紙簿每個主題上方都寫著抽中機率，讓學生知道一直努力就有機會。</p>
       </div>
       <figure class="walk" data-demo="each">
@@ -140,10 +140,10 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
           <div class="grp"><span class="m box" data-t="goal">形音辨識</span><span class="m box">部件重組</span></div>
           <div class="later" data-later="1">
             <div class="lab">今天要做什麼？</div>
-            <div class="grp"><span class="m pc box on" data-on>課堂練習</span><span class="m pc box">小考檢測</span><span class="m pc box" data-t="rti">學扶前後測</span><span class="m pc box">計時挑戰</span></div>
+            <div class="grp"><span class="m pc box on" data-on>課堂練習</span><span class="m pc box" data-t="rti">正式評量</span><span class="m pc box">計時挑戰</span></div>
             <div class="later" data-later="2">
-              <div class="lab">現在是？</div>
-              <div class="grp"><span class="m" data-t="pre">教學前</span><span class="m">教學中</span><span class="m">教學後</span><span class="m ghost" data-t="next1">下一步</span></div>
+              <div class="lab">這次是前測還是後測？</div>
+              <div class="grp"><span class="m" data-t="pre">前測</span><span class="m">後測</span><span class="m">不標</span><span class="m ghost" data-t="next1">下一步</span></div>
             </div>
           </div>
           <div class="later" data-later="3">
@@ -167,22 +167,20 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
     <h2><span class="num">3</span>什麼時候做？</h2>
     <table>
       <tr><th>選哪一個</th><th>什麼時候</th><th>做幾次</th></tr>
-      <tr><td><b>教學前</b>（前測）</td><td>開始教這幾課之前</td><td>至少 3 次、不同天</td></tr>
-      <tr><td><b>教學中</b></td><td>教學期間</td><td>每 1～2 週 1 次</td></tr>
-      <tr><td><b>教學後</b>（後測）</td><td>教完那一週</td><td>1～2 次</td></tr>
-      <tr><td><b>教學後</b>（維持）</td><td>教完 2～4 週後</td><td>1～2 次</td></tr>
+      <tr><td><b>前測</b></td><td>開始教這幾課之前</td><td>可以多做幾次，每一次都會列出來</td></tr>
+      <tr><td><b>後測</b></td><td>教完之後（教完那一週，或隔幾週追蹤）</td><td>可以多做幾次，每一次都會列出來</td></tr>
     </table>
-    <p class="note">教學日期不會自動記，需要時請先按右上角「進階設定」，再從「選單 → 教學日期管理」輸入。前測到後測請用同一台電腦、同樣的課次。</p>
+    <p class="note">教學日期不會自動記，需要時請先按右上角「進階設定」，再從「選單 → 教學日期管理」輸入。前測到後測請用同一台電腦；後測可以多選前面教過的課，每一課的前測和後測會自動配成一對。</p>
   </section>
 
   <section class="card" id="report">
-    <h2><span class="num">4</span>寫報告：看依時期比較</h2>
+    <h2><span class="num">4</span>寫報告：看依前後測比較</h2>
     <div class="two">
       <div>
         <ol>
           <li>按右上角 <b class="k">選單</b> → <b class="k">老師專區</b> → <b class="k">一位學生</b>。</li>
           <li>看誰：點學生；看什麼：<b class="k">正確率</b>。</li>
-          <li>怎麼看：<b class="k">依時期比較</b>。前測、教學中、後測的正確率並排，最直接看出介入有沒有效。</li>
+          <li>怎麼看：<b class="k">依前後測比較</b>。前測、後測的正確率並排，最直接看出有沒有進步。</li>
         </ol>
         <p class="note">「依時間」是折線圖，會標出學扶開始日。每個畫面都能匯出 Excel。名詞和其他圖的看法見<a href="analysis-guide.html">分析教學</a>。</p>
       </div>
@@ -194,10 +192,10 @@ th{color:var(--muted);font-weight:normal;font-size:14px}
             <div class="grp"><span class="m box" data-t="one">一位學生</span><span class="m box">全班總表</span></div>
             <div class="lab">看誰</div><div class="grp"><span class="m" data-t="who">小星</span><span class="m">小樹</span></div>
             <div class="lab">看什麼</div><div class="grp"><span class="m" data-t="acc">正確率</span><span class="m">反應時間</span><span class="m">常錯字</span></div>
-            <div class="lab">怎麼看</div><div class="grp"><span class="m">依時間</span><span class="m">依課別</span><span class="m" data-t="phase">依時期比較</span></div>
+            <div class="lab">怎麼看</div><div class="grp"><span class="m">依時間</span><span class="m">依課別</span><span class="m" data-t="phase">依前後測比較</span></div>
             <div class="later" data-later="2" style="margin-top:22px">
-              <div class="bars"><div style="height:30%"><span>35%</span></div><div style="height:55%"><span>60%</span></div><div style="height:80%"><span>85%</span></div><div style="height:76%"><span>80%</span></div></div>
-              <div class="grp"><span>基線期</span><span>教學中</span><span>教學後</span><span>維持期</span></div>
+              <div class="bars"><div style="height:35%"><span>35%</span></div><div style="height:85%"><span>85%</span></div></div>
+              <div class="grp"><span>前測</span><span>後測</span></div>
             </div>
           </div>
           <span class="tag">示範畫面（不是真的學生資料）</span>
@@ -233,12 +231,12 @@ const DEMOS = {
   ],
   each: [
     {t:"goal", say:"第 1 步：選評量目標，例如「形音辨識」", show:"1"},
-    {t:"rti", say:"再點「學扶前後測」", show:"2"},
-    {t:"pre", say:"現在是？例如還沒開始教，選「教學前」"},
+    {t:"rti", say:"再點「正式評量」", show:"2"},
+    {t:"pre", say:"這次是前測還是後測？例如還沒開始教，選「前測」"},
     {t:"next1", say:"按「下一步」", show:"3", keep:true},
     {t:"kid", say:"第 2 步：點要做的學生（大螢幕最多 4 位）"},
     {t:"lesson", say:"再選課次（可以選好幾課）"},
-    {t:"next2", say:"按「下一步」。學扶前後測只能大螢幕、每人各自作答，第 3 步自動跳過", show:"4", keep:true},
+    {t:"next2", say:"按「下一步」。正式評量只能大螢幕、每人各自作答，第 3 步自動跳過", show:"4", keep:true},
     {t:"go", say:"第 4 步：確認玩法，按「開始」交給學生作答", keep:true}
   ],
   report: [
@@ -247,10 +245,10 @@ const DEMOS = {
     {t:"one", say:"選「一位學生」"},
     {t:"who", say:"看誰：點學生"},
     {t:"acc", say:"看什麼：選「正確率」"},
-    {t:"phase", say:"怎麼看：選「依時期比較」，前測和後測並排", show:"2"}
+    {t:"phase", say:"怎麼看：選「依前後測比較」，前測和後測並排", show:"2"}
   ]
 };
 </script>
-<script src="demo.js?v=2026-10-24p"></script>
+<script src="demo.js?v=2026-10-25b"></script>
 </body>
 </html>

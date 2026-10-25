@@ -17,7 +17,7 @@ const hintSetText = r => r.hintSet === undefined ? "未記錄" : r.hintSet ? r.h
 const DIMS = {
   char:      ["字", r => r.char],
   kid:       ["學生", r => { const k = kidBy(r.kid); return k ? kidLabel(k) : r.kid; }],
-  phase:     ["時期", r => r.phase || "未判斷", PHASE_ORDER],
+  prepost:   ["前後測", r => r.prepost || "未標記", PHASE_ORDER],
   lesson:    ["課別", r => lessonLabel(key(r.book, r.lesson))],
   book:      ["課本", r => r.bookName || r.book],
   goal:      ["評量目標（題目類型）", r => `目標 ${r.goal}`],
@@ -65,27 +65,30 @@ const PMETRICS = {
 /* 範例：一鍵套用常見的比較，附「這在回答什麼、怎麼看」（說明也寫在 analysis-guide.html 第 6 節） */
 const PIVOT_BASE = {col:"", kind:"formal", from:"", to:"", f1:"", v1:"", f2:"", v2:"", firstOnly:false, minN:5, sort:"name", chart:"bar"};
 const PIVOT_EXAMPLES = [
-  {id:"effect", name:"介入有沒有效", cfg:{metric:"acc", row:"phase", col:"kid"},
-    read:"看每一欄（每位學生）從基線期到教學後、維持期有沒有升高。維持期還很高＝學了有記住。"},
-  {id:"speed", name:"有沒有越來越熟練", cfg:{metric:"sec", row:"phase", col:"kid"},
+  {id:"effect", name:"有沒有進步", cfg:{metric:"acc", row:"prepost", col:"kid"},
+    read:"看每一欄（每位學生）從前測到後測有沒有升高。沒標前測或後測的評量放在「未標記」。"},
+  {id:"speed", name:"有沒有越來越熟練", cfg:{metric:"sec", row:"prepost", col:"kid"},
     read:"正確率已經很高時，答對秒數變短代表更自動化。"},
   {id:"hard", name:"哪些字最難", cfg:{metric:"err", row:"char", sort:"desc", minN:3},
     read:"排在最上面、又不是淡色的字，是學生最容易錯的字。點字可以看是誰錯、選成什麼。"},
-  {id:"etype", name:"常犯哪一種錯", cfg:{metric:"n", row:"etype", col:"phase"},
-    read:"每一欄是一個時期，「第一次就對」應該越來越多；某一類錯誤一直很多，教學可以針對它。"},
+  {id:"etype", name:"常犯哪一種錯", cfg:{metric:"n", row:"etype", col:"prepost"},
+    read:"每一欄是前測或後測，「第一次就對」應該越來越多；某一類錯誤一直很多，教學可以針對它。"},
   {id:"wpos", name:"詞首詞尾哪邊不穩", cfg:{metric:"err", row:"wpos", col:"kid"},
     read:"一邊錯得明顯比較多（例如詞尾），再搭配列改成「第一次的結果／錯誤類型」看是不是同詞易混，代表語詞還是整塊記、字還沒從詞裡分出來。"},
   {id:"forget", name:"學完多久會忘", cfg:{metric:"acc", row:"gapAfter", chart:"line"},
-    read:"線往右下掉得越快，越需要早一點複習。「教學前或教學中」那一組是對照。"},
+    read:"線往右下掉得越快，越需要早一點複習。「教學結束前或沒填日期」那一組是對照。"},
   {id:"start", name:"起點能力", cfg:{metric:"acc", row:"lesson", col:"kid", firstOnly:true},
     read:"每個字只看第一次遇到時的表現，比較不受練習次數影響，適合安排教學順序。"},
-  {id:"theme", name:"主題會不會影響表現", cfg:{metric:"sec", row:"theme", f1:"phase", v1:"基線期"},
-    read:"同一時期裡，各主題的數字應該差不多；差很多時要想想主題是不是讓學生分心。"},
-  {id:"hints", name:"哪種提示方法較有幫助", cfg:{metric:"hintUse", row:"hintSet", f1:"phase", v1:"教學中"},
+  {id:"theme", name:"主題會不會影響表現", cfg:{metric:"sec", row:"theme", f1:"prepost", v1:"前測"},
+    read:"同樣是前測，各主題的數字應該差不多；差很多時要想想主題是不是讓學生分心。"},
+  {id:"hints", name:"哪種提示方法較有幫助", cfg:{metric:"hintUse", row:"hintSet", kind:"practice"},
     read:"只能當參考：提示方法不是隨機分配的，差異也可能來自不同學生或不同課。"}
 ];
 const PIVOT_UI = KEYS.pivot, PIVOT_SAVED = KEYS.pivots;
-const P = Object.assign({metric:"acc", row:"phase", ...PIVOT_BASE, ex:""}, load(PIVOT_UI, {}));
+const P = Object.assign({metric:"acc", row:"prepost", ...PIVOT_BASE, ex:""}, load(PIVOT_UI, {}));
+/* 2026-10-25 A8：舊的「時期」分組（phase）已換成「前後測」（prepost）；舊的選擇換掉，舊的篩選值（基線期、教學中…）清掉，免得打開就壞掉 */
+const fixOldPhase = c => { ["row","col","f1","f2"].forEach(k => { if(c[k] === "phase"){ c[k] = "prepost"; if(k === "f1") c.v1 = ""; if(k === "f2") c.v2 = ""; } }); return c; };
+fixOldPhase(P);
 const saveP = () => store(PIVOT_UI, P);
 
 /* =========================================================
@@ -124,7 +127,7 @@ function computePivot(){
 const opt = (list, cur, blank) => (blank ? `<option value="">${blank}</option>` : "") + list.map(([v, t]) => `<option value="${v}" ${cur === v ? "selected" : ""}>${esc(t)}</option>`).join("");
 function renderPivot(){
   const dims = dimList().map(([k, d]) => [k, d[0]]);
-  if(!DIMS[P.row] || (P.row === "freq" && !hasFreq())) P.row = "phase";
+  if(!DIMS[P.row] || (P.row === "freq" && !hasFreq())) P.row = "prepost";
   const base = records.filter(r => !r.quit);
   const valuesOf = f => f ? orderValues(f, new Set(base.map(DIMS[f][1]))).map(v => [v, v]) : [];
   const saved = load(PIVOT_SAVED, []);
@@ -154,7 +157,7 @@ function renderPivot(){
     Object.assign(P, PIVOT_BASE, e.cfg, {ex:e.id}); saveP(); renderPivot(); });
   $("#pSave").onclick = () => { const name = $("#pName").value.trim(); if(!name) return $("#pName").focus();
     const list = load(PIVOT_SAVED, []).filter(s => s.name !== name); list.push({name, cfg:{...P}}); store(PIVOT_SAVED, list); renderPivot(); };
-  $("#tMenu").querySelectorAll("[data-pload]").forEach(b => b.onclick = () => { Object.assign(P, load(PIVOT_SAVED, [])[+b.dataset.pload].cfg); saveP(); renderPivot(); });
+  $("#tMenu").querySelectorAll("[data-pload]").forEach(b => b.onclick = () => { Object.assign(P, fixOldPhase({...load(PIVOT_SAVED, [])[+b.dataset.pload].cfg})); saveP(); renderPivot(); });
   $("#tMenu").querySelectorAll("[data-pdel]").forEach(b => b.onclick = () => { const list = load(PIVOT_SAVED, []); list.splice(+b.dataset.pdel, 1); store(PIVOT_SAVED, list); renderPivot(); });
   drawPivot();
 }

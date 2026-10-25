@@ -1,7 +1,7 @@
 /* =========================================================
    識字評量：程式入口（app.js）
    程式分成十三個檔案，index.html 依下面的順序載入：
-     data.js     1. 基本設定與小工具  2. 存在這台電腦的資料  3. 評量時機判斷
+     data.js     1. 基本設定與小工具  2. 存在這台電腦的資料  3. 教學日期與前後測
      setup.js    4. 設定畫面  5. 彈出面板（學生名單、教學日期、評量設定）
      records.js  6. 作答紀錄的存取  7. Excel 匯出、作答紀錄面板與備份
      wordsets.js 只考有教的字（字組：每課要考哪些字、鎖定、分享）
@@ -24,7 +24,7 @@ if(TABLET) tabletStart(); else setUi(ui);
 /* 收藏與頭像讀完後再畫一次，學生按鈕上才有頭像 */
 Rewards.ready.then(TABLET ? tabletKids : render);
 
-/* 網頁開著過夜：評量時機是用打開網頁那天判斷的，日期換了就提醒重新整理（不自動重新整理，免得打斷正在進行的評量） */
+/* 網頁開著過夜：「教學後第幾天」是用打開網頁那天算的，日期換了就提醒重新整理（不自動重新整理，免得打斷正在進行的評量） */
 const checkDay = () => { $("#dayWarn").hidden = iso(new Date()) === iso(today); };
 document.addEventListener("visibilitychange", () => { if(!document.hidden) checkDay(); });
 setInterval(checkDay, 60 * 1000);

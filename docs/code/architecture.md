@@ -63,8 +63,8 @@
 
 | 檔案 | 節 | 做什麼 | 主要對外名稱（別的檔案會用） |
 |---|---|---|---|
-| `data.js` | 1～3 | 基本設定與選項表（目標、提示、玩法）、存讀 localStorage、學生名單、教學日期、**評量時機判斷**、紀錄格式版本 | `state`、`settings`、`kids`、`teach`、`teachFor`、`phaseFor`、`key`、`iso`、`today`、`RECORD_FORMAT`、`HINT_UNFIT`、`fitHints`、`partsOf` |
-| `setup.js` | 4～5 | 設定畫面（快速開始、四個步驟、學扶前後測）、學生名單／教學日期／細部設定面板 | `render()`（任何設定改變都呼叫）、`setUi`、`splitKey`、`rtiDays`、`openSheet` |
+| `data.js` | 1～3 | 基本設定與選項表（目標、提示、玩法）、存讀 localStorage、學生名單、教學日期與前後測（`daysAfterEnd`、`PREPOST`）、紀錄格式版本 | `state`、`settings`、`kids`、`teach`、`teachFor`、`daysAfterEnd`、`PREPOST`、`key`、`iso`、`today`、`RECORD_FORMAT`、`HINT_UNFIT`、`fitHints`、`partsOf` |
+| `setup.js` | 4～5 | 設定畫面（快速開始、四個步驟、正式評量的前測／後測按鈕 `renderPrepost`）、學生名單／教學日期／細部設定面板 | `render()`（任何設定改變都呼叫）、`setUi`、`splitKey`、`rtiDays`、`openSheet` |
 | `records.js` | 6～7 | 作答紀錄存取（IndexedDB）、`COLS` 紀錄欄位、Excel 匯出、紀錄面板、備份還原、匯入檔案 | `records`（全部紀錄）、`saveRecord`、`updateRecord`、`exportXlsx`、`addBackupPart` |
 | `wordsets.js` | — | 只考有教的字（字組、鎖定、分享） | `wsPick`（這課要考哪些字）、`wsStart`、`wsImport` |
 | `play.js` | 8～10 | 出題、組選項、提示、語音、開始前先下載字型（讀取條）、作答畫面、賓果卡、血量、打怪獸過場、流暢性、結果畫面 | `startSession`、`prepareThen`（`collect.js` 的 `chooseTheme` 呼叫）、`sessionText`、`loadFonts`（`tablet.js` 也用）、`endItem`、`finish`、`G`（這次作答的狀態） |
@@ -83,7 +83,7 @@
 1. **設定**（`setup.js`）：老師選目標、學生、課次、玩法 → 存進 `state`、`settings`。課次要考的字由 `wordsets.js` 的 `wsPick` 決定。
 2. **選主題**（`collect.js` `chooseTheme`）→ 呼叫 `play.js` 的 `startSession()`。
 3. **出題**（`play.js` 第 8 節）：`pickItems` 抽字（「常錯優先」會讀 `records`）→ `makeOptions` 組選項（用 `common.js` 的 `confOf`、`wordOf`）→ `hintHtml` 做提示（`data.js` 的 `fitHints` 跳過不適合的提示）。
-4. **作答**（第 9 節）：每題結束呼叫 `endItem` → 組成一筆紀錄，時期用 `data.js` 的 `phaseFor` 判斷、字組資訊用 `wordsets.js` → `records.js` 的 `saveRecord` 存進 IndexedDB。
+4. **作答**（第 9 節）：每題結束呼叫 `endItem` → 組成一筆紀錄，前後測用 `play.js` 開始時記下的 `G.prepost`、`G.ppId`，教學後天數用 `data.js` 的 `daysAfterEnd`、字組資訊用 `wordsets.js` → `records.js` 的 `saveRecord` 存進 IndexedDB。
 5. **結果**（第 10 節 `finish`）：中途離開的紀錄標 `quit` → `collect.js` 的 `drawStickers` 抽好寫進紀錄 → 平板送出 → `giveStickers` → 扭蛋機 `showGacha` 揭曉。
 6. **老師專區**（`teacher.js`、`pivot.js`）：只讀 `records`，不寫回。錯誤類型的「亂猜會佔」用 `play.js` 的 `optType`（傳入紀錄的 `goal`）替舊紀錄的選項重新分類，改 `optType` 時要一起檢查；`pivot.js` 的「目標字在語詞的位置」用 `teacher.js` 的 `wposOf`。
 
@@ -132,7 +132,7 @@
 | 新增課本（加一個 `shared/lessons-代號.js`） | 跑 `make_lessons.js`（更新課本檔清單和所有課本的字）、`make_parts.py`、`make_bpmf.py`、`make_kai.py`；跑自動檢查；兩個工具的課本清單會自動更新 |
 | `shared/common.js` 的任何函數 | 識字評量**和**備課分析都要打開試一次 |
 | 作答紀錄欄位（`play.js` 的 `endItem`、`records.js` 的 `COLS`） | Excel 匯出、老師專區、進階分析（`pivot.js` 的 `DIMS`）、備份與匯入、`RECORD_FORMAT` 版本、`docs/design/records.md`；**先討論** |
-| 時期判斷（`data.js` 第 3 節 `phaseFor`） | 寫進每筆紀錄的 `phase`、老師專區依時期的圖、學扶前後測；屬 A8，**先討論** |
+| 前後測（`data.js` 的 `state.prepost`、`state.ppId`；`setup.js` 的 `renderPrepost`；`play.js` 寫進紀錄的 `prepost`、`ppId`） | 紀錄欄位、Excel 匯出 `records.js` 的 `COLS`、老師專區 `teacher.js` 的 `phaseOf`、進階分析 `pivot.js` 的 `prepost` 分組；屬 A8（`docs/design/a8-terms.md`），**改欄位前先討論** |
 | 教學日期的存法（`teach`、`teachFor`） | 時期判斷、老師專區「教學開始後第幾天」（用現在的教學日期回推）、備份 |
 | 提示的種類或順序（`data.js` 的 `HINT_ORDER`、`HINT_UNFIT`） | 設定畫面、`play.js` 的 `hintHtml`、紀錄的 `hintSet`、老師專區「提示層級」 |
 | 字組（`wordsets.js`） | 設定第 3 步、出題 `testChars`、紀錄的 `ws` 欄、備份、匯入檔案 |
