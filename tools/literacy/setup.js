@@ -612,11 +612,11 @@ function renderDates(){
   $("#dTable").innerHTML = Object.keys(BOOKS[dBook].lessons).map(n => {
     const k = key(dBook,n), t = teach[k] || {};
     const own = Object.keys(t.kids || {}).filter(kidBy), free = kids.filter(x => !own.includes(x.code));
-    const grps = getGroups().filter(g => g.kids.some(c => kidBy(c) && !own.includes(c)));   /* 學生名單的組別（只有學生代號） */
+    const grps = getGroups().map((g, gi) => ({...g, gi})).filter(g => g.kids.some(c => kidBy(c) && !own.includes(c)));   /* gi＝在完整組別清單的位置 */   /* 學生名單的組別（只有學生代號） */
     return `<div class="drow" data-k="${k}"><b>${esc(lessonName(dBook, n))}</b>${dateCtl(t, `第 ${n} 課`)}</div>
       ${own.map(c => `<div class="drow dkid" data-k="${k}" data-kid="${esc(c)}"><span class="dk">個別</span><div class="kc"><b>${esc(kidLabel(kidBy(c)))}</b>
         ${dateCtl(t.kids[c], `${kidLabel(kidBy(c))} 第 ${n} 課`)}<button class="linkbtn" data-del>改回全班</button></div></div>`).join("")}
-      ${free.length ? `<div class="dadd"><select data-add data-k="${k}" aria-label="第 ${n} 課：個別學生不同"><option value="">＋個別學生不同…</option>${free.map(x => `<option value="${esc(x.code)}">${esc(kidLabel(x))}</option>`).join("")}</select>${grps.length ? `<select data-addgrp data-k="${k}" aria-label="第 ${n} 課：一組學生不同"><option value="">＋一組學生不同…</option>${grps.map((g, i) => `<option value="${i}">${esc(g.name)}（${g.kids.filter(kidBy).length} 位）</option>`).join("")}</select>` : ""}</div>` : ""}`;
+      ${free.length ? `<div class="dadd"><select data-add data-k="${k}" aria-label="第 ${n} 課：個別學生不同"><option value="">＋個別學生不同…</option>${free.map(x => `<option value="${esc(x.code)}">${esc(kidLabel(x))}</option>`).join("")}</select>${grps.length ? `<select data-addgrp data-k="${k}" aria-label="第 ${n} 課：一組學生不同"><option value="">＋一組學生不同…</option>${grps.map(g => `<option value="${g.gi}">${esc(g.name)}（${g.kids.filter(kidBy).length} 位）</option>`).join("")}</select>` : ""}</div>` : ""}`;
   }).join("");
   const done = () => { saveTeach(); renderDates(); render(); };
   $("#dTable").querySelectorAll(".drow").forEach(r => {
