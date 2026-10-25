@@ -102,8 +102,7 @@ const secOf = rs => { const s = rs.filter(r => r.passed && typeof r.correctSec =
 function rounds(rs){
   const by = new Map();
   for(const r of rs) if(r.mode === "flu" && r.timeLimit){ const k = r.session + "|" + r.kid; if(!by.has(k)) by.set(k, []); by.get(k).push(r); }
-  return [...by.values()].map(list => ({rs:list, at:list[0].at, perMin: Math.round(list.filter(r => r.firstCorrect).length * 60 / +list[0].timeLimit),
-    aim: list[0].aim || null}));
+  return [...by.values()].map(list => ({rs:list, at:list[0].at, perMin: Math.round(list.filter(r => r.firstCorrect).length * 60 / +list[0].timeLimit)}));
 }
 const fluOf = rs => { const rd = rounds(rs); return {v: avg(rd.map(x => x.perMin)), n: rd.length}; };
 const METRIC_FN = {acc: accOf, sec: secOf, flu: fluOf};
@@ -139,7 +138,7 @@ function dailyChart(rs, metric){
   const g = groupBy(rs, dayOf), days = [...g.keys()].sort(), first = days[0];
   const fn = metric === "acc" ? accOf : metric === "sec" ? secOf : fluOf, at = {};
   const pts = days.map(d => { const list = g.get(d), t = tagText(list), x = daysBetween(first, d); at[x] = shortDay(d); return {x, day: d, label: shortDay(d) + (t ? `（${t}）` : ""), rs: list, ...fn(list)}; });
-  return lineChart(pts, {metric, noPhase: true, xLabel: x => at[x] || "", xName: ""});   /* 流暢性圖不畫目標線（維護者 2026-10-25） */
+  return lineChart(pts, {metric, noPhase: true, xLabel: x => at[x] || "", xName: ""});
 }
 /* 流暢性（計時挑戰、流暢性模式）：每一回合＝一位學生做完一次，每分鐘第一次就答對幾個；一天一個點，正式評量和練習的回合全部算 */
 function fluencySection(all){
@@ -406,7 +405,7 @@ function howTo(M){
     if(T.view === "lesson") return `<p>每一條是一課，長度是那一課全部作答合起來的${esc(M.name)}（${better}）。括號是用了幾題。比較哪一課比較難，可以優先複習。</p>`;
     if(T.view === "phase") return `<p>每一條是前測或後測，${esc(M.name)}${better}。理想的樣子：前測低 → 後測升高。</p>
       <p>括號是筆數；只有幾題時，數字容易大幅變動，先多評量幾次再下結論。前測、後測是作答前老師按的標記。</p>`;
-    return `<p>${T.split === "lesson" ? "最上面「全部課合計」是每次評量全部的課合起來一個點，不分前測後測，看整體的起伏；下面每一課一張小圖，橫軸對齊，可以上下比較：先教的課有沒有先進步、還沒教的課是不是維持原樣。" : "全部的課合成一條線。"}一個點＝一次評量（流暢性是一回合），${esc(M.name)}${better}。背景顏色＝前測、後測（顏色對照在圖的上方），虛線＝標記改變的地方；直線＝本學期安排的學扶、資源班開始日${M.id === "flu" ? "；水平線＝目標每分鐘幾個" : ""}。空心點＝那一點不到 3 題，數字容易大起大落。滑鼠移到點上看數字。</p>
+    return `<p>${T.split === "lesson" ? "最上面「全部課合計」是每次評量全部的課合起來一個點，不分前測後測，看整體的起伏；下面每一課一張小圖，橫軸對齊，可以上下比較：先教的課有沒有先進步、還沒教的課是不是維持原樣。" : "全部的課合成一條線。"}一個點＝一次評量（流暢性是一回合），${esc(M.name)}${better}。背景顏色＝前測、後測（顏色對照在圖的上方），虛線＝標記改變的地方；直線＝本學期安排的學扶、資源班開始日。空心點＝那一點不到 3 題，數字容易大起大落。滑鼠移到點上看數字。</p>
       ${T.split === "all" ? "<p>合成一條時，同一次評量含好幾課，背景顏色用的是那次最多題目的標記，可能前後跳來跳去。要看前測後測請切回「每課分開」。</p>" : ""}
       <ul><li><b>水準</b>：前測、後測大約在多高？</li><li><b>趨勢</b>：同一種標記裡的點往上、持平還是往下？前測已經一直往上的話，很難說進步是教學造成的。</li>
       <li><b>穩定</b>：點有沒有忽高忽低？</li><li><b>立即效果</b>：教學開始後頭幾個點，是不是馬上和前測不同。</li></ul>`;
@@ -482,8 +481,7 @@ function trendView(rs, m){
     });
     groups.forEach(p => p.label = perDay[p.day] > 1 ? `${p.day} 第 ${p.nth} 次` : p.day);
     const sess = groups;   /* 每課分開時也用同一個橫軸：第幾次評量 */
-    const o = {metric:m, xLabel: i => sess[i] && sess[i].nth === 1 ? shortDay(sess[i].day) : "", events: planEvents(sess), xName:"測驗日期（每次評量一格）",
-      aim: m === "flu" ? (rounds(src).map(x => x.aim).filter(Boolean).pop() || null) : null};
+    const o = {metric:m, xLabel: i => sess[i] && sess[i].nth === 1 ? shortDay(sess[i].day) : "", events: planEvents(sess), xName:"測驗日期（每次評量一格）"};
     if(T.split === "lesson"){
       const at = new Map(sess.map(p => [p.rs[0].session, p]));
       ({chart, groups} = lessonPanels(src, r => at.get(r.session).x, fn, x => ({label: sess[x].label, day: sess[x].day}), o, sess, sess));
@@ -541,7 +539,7 @@ function lessonPanels(src, xOf, fn, info, o, all, total){
   const xs = (all || lessons.flatMap(l => l.pts)).map(p => p.x).concat((o.events || []).map(e => e.x));
   const domain = xs.length ? [Math.min(...xs), Math.max(...xs)] : [0, 1];
   /* 縱軸也統一，各課才比得出高低（正確率本來就固定 0～100%） */
-  const ymax = Math.max(...lessons.flatMap(l => l.pts.map(p => p.v || 0)), ...(total || []).map(p => p.v || 0), o.aim || 0);
+  const ymax = Math.max(...lessons.flatMap(l => l.pts.map(p => p.v || 0)), ...(total || []).map(p => p.v || 0));
   const chart = (total && total.length ? lineChart(total, {...o, domain, ymax, axisPts: all, title:"全部課合計（每次評量一個點，不分時期）", compact:true, noPhase:true, xName:""}) : "") + phaseLegend(lessons.flatMap(l => l.pts)) + lessons.map((l, i) =>
     lineChart(l.pts, {...o, domain, ymax, axisPts: all, title:l.name, compact:true, xName: i === lessons.length - 1 ? o.xName : ""})).join("");
   return {chart, groups: lessons.flatMap(l => l.pts).sort((a, b) => a.x - b.x)};
@@ -555,7 +553,7 @@ function phaseLegend(pts){
 
 /* ---------- 圖：折線圖（依時間） ----------
    一條線（單一學生、單一指標），2px 線、8px 點；背景顏色＝時期，時期改變的地方畫虛線（2026-10-24 起不在圖上寫時期名稱，看上方圖例）；
-   直線＝教學安排開始日；流暢性有目標線。滑鼠或鍵盤移到點上會顯示數字；不到 3 題的點畫空心。
+   直線＝教學安排開始日。滑鼠或鍵盤移到點上會顯示數字；不到 3 題的點畫空心。
    o.domain＝共用的橫軸範圍、o.ymax＝共用的縱軸最大值、o.title＝小圖標題、o.compact＝矮一點（每課分開時用）、o.noPhase＝不畫時期（全部課合計） */
 const SVGW = 760;
 function niceMax(v){ if(v <= 5) return 5; const p = Math.pow(10, Math.floor(Math.log10(v))); for(const m of [1, 2, 2.5, 5, 10]) if(m * p >= v) return m * p; return 10 * p; }
@@ -570,7 +568,7 @@ const shortAxis = s => { s = String(s); let m = s.match(/^\d{4}-(\d{2})-(\d{2})/
 function lineChart(pts, o){
   const H = o.compact ? (o.xName ? 214 : 204) : 300, L = 52, R = 20, Tp = o.compact ? 28 : 22, B = o.compact ? (o.xName ? 42 : 32) : 38, iw = SVGW - L - R, ih = H - Tp - B;
   const ys = pts.map(p => p.v).filter(v => v != null);
-  const ticks = o.metric === "acc" ? [0, 25, 50, 75, 100] : niceTicks((o.ymax != null ? o.ymax : Math.max(...ys, o.aim || 0)) * 1.05), max = ticks[4];
+  const ticks = o.metric === "acc" ? [0, 25, 50, 75, 100] : niceTicks((o.ymax != null ? o.ymax : Math.max(...ys)) * 1.05), max = ticks[4];
   const xs = pts.map(p => p.x).concat((o.events || []).map(e => e.x), (o.extra || []).map(p => p.x));
   const [x0, x1] = o.domain || [Math.min(...xs), Math.max(...xs)], span = x1 - x0 || 1;
   const X = x => !o.domain && pts.length === 1 && !(o.events || []).length ? L + iw / 2 : L + (x - x0) / span * iw, Y = v => Tp + ih - v / max * ih;
@@ -589,7 +587,6 @@ function lineChart(pts, o){
   g += ticks.map(t => `<line class="grid" x1="${L}" x2="${SVGW - R}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${L - 8}" y="${Y(t) + 4}" text-anchor="end">${t}${unit}</text>`).join("") + lines;
   if(o.title) g += `<text class="paneltitle" x="${L}" y="${Tp - 9}">${esc(o.title)}</text>`;
   (o.events || []).forEach(e => { const x = X(e.x); g += `<line class="event" x1="${x}" x2="${x}" y1="${Tp}" y2="${Tp + ih}"/><text class="eventname" x="${x + 4}" y="${Tp + ih - 6}">${esc(e.label)}</text>`; });
-  if(o.aim) g += `<line class="aim" x1="${L}" x2="${SVGW - R}" y1="${Y(o.aim)}" y2="${Y(o.aim)}"/><text class="eventname" x="${SVGW - R}" y="${Y(o.aim) - 6}" text-anchor="end">目標每分鐘 ${o.aim} 個</text>`;
   /* 線與點（數值是空的點不畫） */
   const ok = pts.filter(p => p.v != null);
   const path = ok.map((p, i) => `${i ? "L" : "M"}${X(p.x).toFixed(1)} ${Y(p.v).toFixed(1)}`).join(" ");
@@ -600,8 +597,7 @@ function lineChart(pts, o){
     g += `<path class="pdot" d="M${cx} ${cy - 7}L${cx + 7} ${cy}L${cx} ${cy + 7}L${cx - 7} ${cy}Z" tabindex="0" data-tip="${esc(p.tip)}"/>`; });
   /* 最後一點標數字（只標一個，其餘看表格或移上去看）；前一點太近就不標，避免疊在一起 */
   const lp = ok[ok.length - 1], lp0 = ok[ok.length - 2];
-  const below = o.aim && Math.abs(Y(lp ? lp.v : 0) - Y(o.aim)) < 24 && lp.v < o.aim;   /* 靠近目標線時把數字放到點的下面 */
-  if(lp && (!lp0 || X(lp.x) - X(lp0.x) > 44)) g += `<text class="endlabel" x="${Math.min(X(lp.x), SVGW - R - 4)}" y="${Y(lp.v) + (below ? 26 : -12)}" text-anchor="${X(lp.x) > SVGW - 80 ? "end" : "middle"}">${fmt(o.metric, lp.v)}</text>`;
+  if(lp && (!lp0 || X(lp.x) - X(lp0.x) > 44)) g += `<text class="endlabel" x="${Math.min(X(lp.x), SVGW - R - 4)}" y="${Y(lp.v) - 12}" text-anchor="${X(lp.x) > SVGW - 80 ? "end" : "middle"}">${fmt(o.metric, lp.v)}</text>`;
   /* 橫軸標籤：和前一個標籤至少隔 48 像素才標，日期靠很近時不會疊在一起 */
   let lastX = -1e9;
   g += (o.axisPts || pts).map(p => { const x = X(p.x), t = o.xLabel(p.x); if(!t || x - lastX < 48) return ""; lastX = x; return `<text class="ax" x="${x}" y="${H - 14}" text-anchor="middle">${esc(t)}</text>`; }).join("");

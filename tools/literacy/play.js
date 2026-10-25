@@ -264,7 +264,7 @@ function startSession(){
     goal: state.goal, kind: state.kind, mode: state.mode, answer: state.answer,
     /* 前後測（A8）：只有正式評量才標；練習一律不標 */
     prepost: state.kind === "formal" ? state.prepost : "",
-    limit: +state.limit, aim: +$("#aim").value || 0, lessons: [...state.lessons],
+    limit: +state.limit, lessons: [...state.lessons],
     /* 每課考的是哪一組字（只考有教的字）；正式評量用到的字組這時鎖定 */
     ws: wsStart(state.lessons, state.kind),
     noHelp: c.noHelp, rule: c.rule || [], hints: c.hints,
@@ -536,7 +536,6 @@ function endItem(passed, correctSec, revealed){
     theme: G.theme, game: G.game, gameType: G.gameType, reward: "", rewardCode: "", bpmf: !!G.bpmf,   /* 抽到的貼紙：文字和代號（做完時由 collect.js 的 drawStickers 填）*/
     read: !!G.read, readUsed: [...cur.reads].map(id => ({word:"語詞", sent:"句子"})[id]).join("、"),   /* 報讀：這次有沒有開、這題按了哪幾種提示的喇叭 */
     fontScale: settings.fontScale, rate: settings.rate, sfx: settings.sfx,
-    aim: G.mode === "flu" && G.aim ? G.aim : "",   /* 流暢性的目標（每分鐘幾個），老師專區畫目標線用 */
     clock: !!G.clock,                      /* 作答時右上角有沒有顯示計時 */
     hpMax: G.hpMax || "", hp: G.hpMax ? heartPool(it.kid).hp : "",   /* 血量模式：開始時幾點、這題做完剩幾點 */
     ...G.ws[it.k]   /* 只考有教的字：ws＝第幾組（""＝整課，"p"＝練習自己點的）、wsChars＝這課考的字、wsAll＝整課幾個字 */
@@ -761,7 +760,7 @@ function finish(){
       const perMin = Math.round((t.roundCorrect || 0) * 60 / g.limit);
       return `${head}<span class="rlabel">每分鐘認出</span><span class="big">${perMin} 個</span>
         <div class="rstats"><span>答對 ${t.roundCorrect || 0} 個</span><span>答錯 ${t.roundWrong || 0} 個</span><span>${LIMITS.find(l => +l[0] === g.limit)[1]}</span></div>
-        ${g.aim ? `<span class="sm">目標每分鐘 ${g.aim} 個${perMin >= g.aim ? "，達到目標！" : ""}</span>` : ""}${cheer}</div>`;
+        ${cheer}</div>`;
     }
     const avg = t.secs.length ? (t.secs.reduce((a, b) => a + b, 0) / t.secs.length).toFixed(1) : "—";
     const hp = g.hpMax ? g.pools[code] : null;
