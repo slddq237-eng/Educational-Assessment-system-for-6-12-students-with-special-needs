@@ -140,9 +140,8 @@ document.addEventListener("click", e => { if($("#topMenu").open && !e.target.clo
 document.addEventListener("keydown", e => { if(e.key === "Escape" && $("#topMenu").open){ $("#topMenu").open = false; $("#topMenu summary").focus(); } });
 
 function renderGoals(){
-  const demo = d => { const [say, opts] = d.split("｜"); return `<span class="demo"><span class="say">${say}</span><span class="arrow">→</span>${opts.split("/").map((o, n) => `<span class="o ${opts.indexOf("/") < 0 || n === 0 ? "ok" : ""}">${o}</span>`).join("")}</span>`; };
   $("#goals").innerHTML = GOALS.map(g => `<button class="goal ${state.goal===g.id?"on":""}" data-g="${g.id}" ${g.off?"disabled":""} aria-pressed="${state.goal===g.id}">
-      <b>${g.name}</b><span class="what">${g.what}</span>${demo(g.demo)}${g.off ? `<span class="pill warn">${g.off}</span>` : ""}</button>`).join("");
+      <b>${g.name}</b><span class="what">${g.what}</span>${g.img ? `<img class="shot" src="${g.img}" alt="${g.name}的作答畫面" loading="lazy">` : ""}${g.off ? `<span class="pill warn">${g.off}</span>` : ""}</button>`).join("");
   $("#goals").querySelectorAll("button:not(:disabled)").forEach(b => b.onclick = () => { state.goal = b.dataset.g; render(); });
 }
 

@@ -164,8 +164,10 @@ try {
 
 /* ---------- 4. 學生資料 ---------- */
 const ALLOW_DATA = ['docs/materials/material-review.xlsx', 'docs/materials/parts-table.xlsx'];   /* 教材資料，沒有學生資料 */
+const ALLOW_IMAGES = ['tools/literacy/img/goal-3.jpg', 'tools/literacy/img/goal-4-1.jpg'];   /* 選評量目標畫面的遊戲截圖（2026-10-25 維護者要求）；用假資料截的，已裁掉學生代號和頭像 */
 for (const f of files) {
   const ext = path.extname(f).toLowerCase();
+  if (ALLOW_IMAGES.includes(f)) continue;
   if (['.jpg', '.jpeg', '.png', '.gif', '.heic', '.webp', '.bmp', '.mp4', '.mov', '.m4a', '.mp3', '.wav'].includes(ext))
     err(f, '照片、影片、錄音不能放進 repo（可能是學生的）。網站要用的圖片請畫成 SVG，或先告訴維護者');
   else if (['.xlsx', '.xls', '.csv', '.json'].includes(ext) && !ALLOW_DATA.includes(f))

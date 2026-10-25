@@ -24,6 +24,7 @@
 | 新酷音詞庫 | 只在產生 `shared/bpmf.js` 時使用，不放進 repo | chewing/libchewing-data | libchewing-data commit c44e81a（2026-03-22；詞庫標示 2025.11.17） | LGPL-2.1 | 2026-10-20；已列入關於我們 |
 | 教育部《國語一字多音審訂表》88 年版 PDF | 只在執行 `make_bpmf.py` 比對讀音時自動下載到電腦的暫存資料夾，不放進 repo | language.moe.gov.tw/001/Upload/Files/wxiao89/a.pdf | 88 年版（PDF 檔案日期 2025-09-18，2026-10-21 下載） | 教育部公告的標準，只拿來比對 | 2026-10-21；已列入關於我們 |
 | 圖片提示（表情符號） | 識字評量的圖片提示 | 使用者裝置內建的表情符號 | — | 系統字型提供 | 不用標示 |
+| 遊戲畫面截圖 | 識字評量選目標畫面（`tools/literacy/img/`） | 本專案自己的程式畫面，用假資料截圖 | — | 畫面裡的字型見本表其他列 | 不用標示 |
 | 自製圖形（卡通頭像、主題插圖、作答背景插圖、貼紙、怪獸場景） | `shared/rewards.js`、`shared/themes.js`、`shared/sticker-art.js`、`tools/literacy/scenes.js` | 本專案用程式自行繪製（SVG） | — | 自製 | 不用標示 |
 | 本專案自己寫的程式 | 整個 repo（上面各列的外部資料除外） | 兩位維護者＋Claude | 見 git 版本紀錄 | 待決定（暫定 MIT），還沒有 `LICENSE` 檔 | 見本檔「LICENSE 討論內容」 |
 
