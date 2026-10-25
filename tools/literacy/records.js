@@ -78,7 +78,7 @@ $("#menuRestore").onclick = () => { renderRecSheet(); openSheet("#recSheet"); $(
 /* Excel 欄位：標題 → 怎麼從紀錄取值 */
 const yesNo = v => v ? "是" : "否";
 /* 答錯規則的簡稱（Excel 用）；舊紀錄沒有這些欄位，顯示「未記錄」或「無」 */
-const RULE_SHORT = {remove:"打叉", next:"提示", reveal:"顯示答案"};
+const RULE_SHORT = {remove:"打叉", next:"提示", free:"自己點", reveal:"顯示答案"};
 const COLS = [
   ["日期時間", r => new Date(r.at).toLocaleString("zh-TW", {hour12:false})],
   ["學生代號", r => r.kid], ["名字", r => r.kidName], ["年級", r => r.grade], ["學習年級", r => r.studyGrade],
@@ -262,7 +262,7 @@ async function restoreBackup(data){
   }
   saveKids(); saveTeach();
   /* 評量設定（正式評量的條件）跟著還原，換電腦後前後才能比較；畫面與聲音是每台電腦自己的，不動 */
-  const FORMAL_KEYS = ["choices", "hints", "rule", "maintainAfter", "formalTheme", "formalGame", "clockFormal", "formalRead"];
+  const FORMAL_KEYS = ["choices", "formalTheme", "formalGame", "clockFormal"];   /* A3-6、A3-10（2026-10-25）：正式評量不提示、不報讀，提示與報讀不再是設定 */
   if(data.settings) FORMAL_KEYS.forEach(k => { if(data.settings[k] !== undefined) settings[k] = data.settings[k]; });
   saveSettings();
   for(const p of BACKUP_PARTS) if(data[p.key]) await p.restore(data[p.key]);

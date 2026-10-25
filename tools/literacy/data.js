@@ -100,7 +100,7 @@ const LEVELS = [
 const TEACHER = "口語提示、示範、肢體提示、完全提示";
 const HINT_ORDER = LEVELS.flatMap(l => l.items.map(i => i[0]));
 const hintName = id => LEVELS.flatMap(l => l.items).find(i => i[0] === id)[1];
-const REACT = {remove:"選錯的選項打叉", next:"出現下一個提示", reveal:"顯示答案並唸一次，進入下一題"};
+const REACT = {remove:"選錯的選項打叉", next:"出現下一個提示", free:"沒有提示，也不顯示答案，讓學生自己點", reveal:"顯示答案並唸一次，進入下一題"};   /* 選錯的選項每次都會停用，remove 只是舊紀錄的說法 */
 const ANSWERS = [
   {id:"turn",    name:"大螢幕・輪流",   desc:"1～4 人輪流在同一個螢幕作答", min:1, max:4},
   {id:"split",   name:"大螢幕・同時",   desc:"螢幕分成 2～4 區，各自作答（需支援多點觸控）", min:2, max:4, off:"準備中"},
@@ -174,7 +174,7 @@ const termIndex = (grade, term) => (grade - 1) * 2 + (term === "上" ? 0 : 1);
 /* 正式評量的標準條件（存在這台電腦） */
 /* formalTheme：正式評量也用主題和貼紙（預設要用；從基線期起每次都一樣，前後才能比較）
    畫面與聲音（每台電腦自己的設定）：fontScale 作答畫面字的大小、uiScale 設定畫面大小、rate 唸讀速度、sfx 音效開關 */
-const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove","next","next","reveal"], maintainAfter:7, rate:0.85, formalTheme:true,
+const settings = Object.assign({choices:"4", rate:0.85, formalTheme:true,
   fontScale:"1", uiScale:"1", sfx:true, turnStyle:"chime",
   /* 作答時右上角顯示計時：練習預設顯示；正式評量預設不顯示（可能讓學生緊張、影響反應時間），在評量設定打開 */
   clockPractice:true, clockFormal:false,
@@ -190,7 +190,7 @@ const settings = Object.assign({choices:"4", hints:["word","pic"], rule:["remove
   practiceBpmf:false,
   /* 報讀提示：語詞、句子提示旁的小喇叭，按了念出完整語詞或句子。練習在第 4 步開關（預設開）；
      正式評量看「評量設定」（預設關，從基線期起維持同一個設定）；部件重組（4-1）一律沒有 */
-  practiceRead:true, formalRead:false},
+  practiceRead:true},
   load(KEYS.settings, {}));
 /* 以前存的「打怪獸要不要玩」（practiceGame）換成新的玩法設定 */
 if(!settings.practicePlay) settings.practicePlay = settings.practiceGame === false ? "color" : "game";
@@ -240,7 +240,7 @@ const state = {
   /* 每位學生不同的提示（只在進階設定的練習）：學生代號 → {hints:Set, rule:[]}；沒有的學生用大家共用的 pHints、pRule */
   kidHints:{}, hintFor:"",
   goal:"3", kind:"formal", mode:"acc", limit:"60",
-  pChoices:"6", pHints:new Set(["word","sent","pic"]), pRule:["next","next","remove","reveal"],
+  pChoices:"6", pHints:new Set(["word","parts"]), pRule:["next","next","free"],   /* 練習提示預設（A3-6，2026-10-25 改）：錯 1 次語詞挖空、錯 2 次部件拆解、錯 3 次沒有提示也不顯示答案，讓學生自己點 */
   ed:"翰林", book:"h2", lessons:[], qCount:null, qMethod:"even", answer:"turn",
   prepost:"",   /* 這次是前測還是後測（只有正式評量；""＝不標）。沒有前後測代號、不做補考（2026-10-25） */
   kids:new Set()
@@ -275,12 +275,14 @@ const unfitWhy = (goal, h) => (HINT_UNFIT[goal] || {})[h] || "";
 const fitHints = (goal, list) => list.filter(h => !unfitWhy(goal, h));
 function current(){
   const formal = state.kind === "formal", flu = state.mode === "flu";
-  const noHelp = flu;   /* 前測、後測的條件完全一樣（A8 第 13 點），不再有「基線期不給提示」 */
+  /* 前測、後測的條件完全一樣（A8 第 13 點）。A3-6（2026-10-25）：正式評量的所有模式、所有目標都完全不提示、不回饋對錯，
+     答錯就記錯、進下一題（部件重組也一樣，沒有例外） */
+  const noHelp = flu || formal;
   return {
     formal, flu, noHelp,
     choices: formal || flu ? settings.choices : playNow() === "bingo" ? "bingo" : state.pChoices,
-    hints: noHelp ? [] : fitHints(state.goal, formal ? settings.hints : HINT_ORDER.filter(h => state.pHints.has(h))),
-    rule: noHelp ? null : (formal ? settings.rule : state.pRule)
+    hints: noHelp ? [] : fitHints(state.goal, HINT_ORDER.filter(h => state.pHints.has(h))),
+    rule: noHelp ? null : state.pRule
   };
 }
 /* 某位學生這次的提示與答錯規則：進階設定的練習可以每人不同，其他情況大家都一樣 */

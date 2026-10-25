@@ -13,7 +13,7 @@
 const PRESETS = [
   {id:"class", name:"課堂練習", desc:"答錯會出現提示幫忙，適合上課時練習。", rec:"紀錄會存下來，不列入學習分析", off:true,
    why:"練習時多一點提示，學生比較有成功經驗。這些紀錄另外統計，不會影響小考的成績分析。",
-   apply:() => Object.assign(state, {kind:"practice", mode:"acc", pChoices:"4", pHints:new Set(["word","sent","pic","parts"]), pRule:["next","next","remove","reveal"]})},
+   apply:() => Object.assign(state, {kind:"practice", mode:"acc", pChoices:"4", pHints:new Set(["word","parts"]), pRule:["next","next","free"]})},
   {id:"test", name:"正式評量", desc:"條件固定、提示較少，看學生真正會多少；可以標成前測或後測。", rec:"紀錄會存下來，列入學習分析",
    why:"每次評量的條件都一樣，前後成績才能比較，看得出教學有沒有效果。要做前後測（例如學習扶助、資源班轉介前介入）時，按「前測」或「後測」，紀錄會標記起來，老師專區就能比較；沒有要比較就選「不標」。",
    apply:() => Object.assign(state, {kind:"formal", mode:"acc"})},
@@ -162,16 +162,15 @@ function hintChips(set, onToggle, disabled, goal = state.goal){
 }
 
 function ruleEditor(rule, onChange){
-  return rule.map((r,i) => i === rule.length - 1
-    ? `<li><span class="k">錯 ${i+1} 次</span><span class="fixed">${REACT.reveal}</span></li>`
-    : `<li><span class="k">錯 ${i+1} 次</span><select data-i="${i}" aria-label="答錯第 ${i+1} 次">${["remove","next"].map(v => `<option value="${v}" ${r===v?"selected":""}>${REACT[v]}</option>`).join("")}</select></li>`).join("");
+  /* 每一步都可以選：出現下一個提示／沒有提示也不顯示答案（讓學生自己點）／顯示答案；選錯的選項每次都會停用 */
+  return rule.map((r,i) => `<li><span class="k">錯 ${i+1} 次</span><select data-i="${i}" aria-label="答錯第 ${i+1} 次">${["next","free","reveal"].map(v => `<option value="${v}" ${(r === "remove" ? "free" : r)===v?"selected":""}>${REACT[v]}</option>`).join("")}</select></li>`).join("");
 }
 
 /* 第 4 步的提示：快速開始只顯示（所有學生一樣）；進階設定的練習可以改，也可以每位學生不同 */
 function renderHints(){
   const c = current(), area = $("#hintArea");
   if(c.noHelp){
-    $("#h3hint").textContent = c.flu ? "流暢性模式不給提示，答錯不重答。" : "這次包含基線期的課次，正式評量固定為無提示。";
+    $("#h3hint").textContent = c.flu ? "流暢性模式不給提示，答錯不重答。" : "正式評量不給提示、不回饋對錯，所有學生都一樣，這裡只顯示。";
     area.innerHTML = `<div class="locked"><span class="lock">固定</span><span>無提示・答錯就記錯，進入下一題</span></div>`;
     return;
   }
@@ -179,9 +178,9 @@ function renderHints(){
   const skipped = LEVELS.flatMap(l => l.items).filter(([id]) => unfitWhy(state.goal, id));
   const skipNote = skipped.length ? `<p class="note" style="margin:8px 0 0">這個評量目標不用：${skipped.map(([id, t]) => `${t}（${unfitWhy(state.goal, id)}）`).join("、")}，系統會自動跳過。</p>` : "";
   if(c.formal || isQuick()){
-    $("#h3hint").textContent = c.formal ? "正式評量使用「評量設定」裡的標準條件，所有學生都一樣，這裡只顯示。" : "所有學生都用同一組提示。要調整，或讓每位學生不同，請切換到「進階設定」。";
-    area.innerHTML = `<div class="locked"><span class="lock">${c.formal ? "固定" : "全部學生"}</span><div style="display:grid;gap:8px">${ruleFlow(c.rule, c.hints)}
-      <span class="note" style="margin:0">老師提示（${TEACHER}）可隨時按按鈕記錄。${c.formal ? `<button class="linkbtn" data-open="set">到評量設定修改</button>` : ""}</span></div></div>${skipNote}`;
+    $("#h3hint").textContent = "所有學生都用同一組提示。要調整，或讓每位學生不同，請切換到「進階設定」。";
+    area.innerHTML = `<div class="locked"><span class="lock">全部學生</span><div style="display:grid;gap:8px">${ruleFlow(c.rule, c.hints)}
+      <span class="note" style="margin:0">老師提示（${TEACHER}）可隨時按按鈕記錄。</span></div></div>${skipNote}`;
     return;
   }
   /* 進階設定的練習：上方選「設定給誰」，全部學生＝共用的一組；點某位學生可以幫他個別設定 */
@@ -223,7 +222,7 @@ function renderPlay(){
   if(formal){
     const fid = willFight() ? "game" : "color";
     rows.push(row("玩法", `<div class="locked"><span class="lock">固定</span>${useRewards() ? `<span class="playicon">${PLAYS.find(x => x.id === fid).icon}</span>` : ""}<span>${playText()}。<button class="linkbtn" data-open="set">到評量設定修改</button></span></div>`));
-    rows.push(row("報讀", `<span class="note" style="margin:0">${state.goal === "4-1" ? "部件重組沒有報讀" : settings.formalRead ? "提示可以按喇叭念出來（評量設定）" : "不念（評量設定）"}</span>`));
+    rows.push(row("報讀", `<span class="note" style="margin:0">${state.goal === "4-1" ? "部件重組沒有報讀" : "不念（正式評量不提示）"}</span>`));
   } else {
     /* 不能用的玩法寫原因（data.js 的 playWhy：流暢性只能一般、合作只能玩遊戲、多位學生各玩各的還不能玩遊戲） */
     const why = playWhy, cur = playNow();
@@ -521,7 +520,7 @@ function renderSummary(){
   const n = selKids().length, kidsOk = n >= a.min && n <= a.max;
   const rows = [
     ["評量目標", `目標 ${g.id}　${g.name}`],
-    ["評量方式", c.flu ? `流暢性・${LIMITS.find(l => l[0]===state.limit)[1]}・目標每分鐘 ${esc($("#aim").value)} 個` : "正確率模式"],
+    ["評量方式", c.flu ? `流暢性・${LIMITS.find(l => l[0]===state.limit)[1]}・${$("#aim").value ? `目標每分鐘 ${esc($("#aim").value)} 個` : "不設目標"}` : "正確率模式"],
     ["選項", choiceText(c.choices)],
     ["提示", hintsText(c)],
     ["玩法", playText()],
@@ -599,17 +598,8 @@ function renderDates(){
 function renderSettings(){
   $("#sChoices").innerHTML = CHOICES.filter(c => c[0] !== "bingo").map(([v,t]) => `<button class="chip ${settings.choices===v?"on":""}" data-c="${v}">${t}</button>`).join("");
   $("#sChoices").querySelectorAll("button").forEach(b => b.onclick = () => { settings.choices = b.dataset.c; saveSettings(); renderSettings(); render(); });
-  const set = new Set(settings.hints);
-  $("#sHints").innerHTML = hintChips(set, null, false, "");
-  $("#sHints").querySelectorAll("[data-h]").forEach(b => b.onclick = () => {
-    const id = b.dataset.h; set.has(id) ? set.delete(id) : set.add(id);
-    settings.hints = HINT_ORDER.filter(h => set.has(h)); saveSettings(); renderSettings(); render();
-  });
-  $("#sRule").innerHTML = ruleEditor(settings.rule);
-  $("#sRule").querySelectorAll("select").forEach(s => s.onchange = () => { settings.rule[+s.dataset.i] = s.value; saveSettings(); render(); });
   $("#sTheme").checked = settings.formalTheme;
   $("#sClock").checked = !!settings.clockFormal;
-  $("#sRead").checked = !!settings.formalRead;
   $("#sGame").checked = !!settings.formalGame; $("#sGame").disabled = !settings.formalTheme;
 }
 /* 畫面與聲音面板 */
@@ -654,7 +644,6 @@ $("#sTest").onclick = () => speak("努力的努");
 $("#sTheme").onchange = e => { settings.formalTheme = e.target.checked; saveSettings(); $("#sGame").disabled = !settings.formalTheme; };
 $("#sGame").onchange = e => { settings.formalGame = e.target.checked; saveSettings(); };
 $("#sClock").onchange = e => { settings.clockFormal = e.target.checked; saveSettings(); };
-$("#sRead").onchange = e => { settings.formalRead = e.target.checked; saveSettings(); };
 
 let lastFocus = null;
 function openSheet(id){ lastFocus = document.activeElement; $(id).hidden = false; $(id).querySelector("[data-close]").focus(); }

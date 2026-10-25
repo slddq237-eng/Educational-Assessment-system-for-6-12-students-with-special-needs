@@ -91,7 +91,7 @@ function tabletPack(){
       [KEYS.wordsets]: pick(wordSets, state.lessons)
     },
     st:{
-      goal:state.goal, mode:state.mode, limit:state.limit, aim:+$("#aim").value || 30, lessons:state.lessons,
+      goal:state.goal, mode:state.mode, limit:state.limit, aim:+$("#aim").value || 0, lessons:state.lessons,
       pChoices:state.pChoices, pHints:[...state.pHints], pRule:state.pRule, qCount:state.qCount, qMethod:state.qMethod,
       themePick:state.themePick,
       ow:Object.fromEntries(codes.map(c => [c, ownPack(c)])),   /* 每位學生已收集哪幾張（平板的貼紙簿用） */
@@ -159,7 +159,7 @@ function tabletStart(){
     pChoices:s.pChoices, pHints:new Set(s.pHints), pRule:s.pRule, qCount:s.qCount, qMethod:s.qMethod,
     themePick:s.themePick || "none",
     kidHints:Object.fromEntries(Object.entries(s.kidHints || {}).map(([c, v]) => [c, {hints:new Set(v.hints), rule:v.rule}]))});
-  $("#aim").value = s.aim;
+  $("#aim").value = s.aim || "";
   const g = GOALS.find(x => x.id === state.goal);
   $("#tpInfo").textContent = `今天練習：${lessonsText()}（目標 ${g.id} ${g.name}）`;
   /* 結果畫面只留「再玩一次」（2026-10-23 維護者決定，不用換人）：沒有「回到設定」，平板上也不匯出 Excel */
