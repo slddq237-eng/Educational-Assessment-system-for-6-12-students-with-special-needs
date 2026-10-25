@@ -445,6 +445,8 @@ function newItem(it){
 function pick(i, btn){
   const cur = G.cur;
   if(!cur || cur.done || btn.disabled) return;
+  /* 正式評量（正確率模式）：新的一題出現後 0.7 秒內不收點選，免得學生連點太快，把下一題的答案也點到（維護者 2026-10-25） */
+  if(G.kind === "formal" && G.mode !== "flu" && performance.now() - cur.tShown < 700) return;   /* 流暢性要連續快點，不鎖 */
   const o = cur.opts[i], sec = Math.round((performance.now() - (cur.t0 || cur.tShown)) / 100) / 10;
   if(cur.firstPick === null){ cur.firstPick = o; cur.firstSec = sec; }
   /* 練習的選項卡：答對、答錯在選項右上角跳出大大的綠勾、紅叉。
@@ -462,7 +464,7 @@ function pick(i, btn){
   btn.disabled = true;
   if(cur.wrong === 1 && loseHeart(cur.it.kid)){ cur.hpOut = true; return endItem(false, null); }   /* 血量用完：這題記成沒通過，直接結束 */
   if(G.mode === "flu" || G.noHelp) return endItem(false, null);
-  const act = G.per[cur.it.kid].rule[cur.wrong - 1] || "reveal";
+  const act = G.per[cur.it.kid].rule[cur.wrong - 1] || "free";   /* 規則沒寫到的次數：不處理，讓學生自己點（答案選項一直都在） */
   if(act === "next") showNextHint();
   if(act === "reveal") reveal();
 }

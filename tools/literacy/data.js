@@ -100,7 +100,7 @@ const LEVELS = [
 const TEACHER = "口語提示、示範、肢體提示、完全提示";
 const HINT_ORDER = LEVELS.flatMap(l => l.items.map(i => i[0]));
 const hintName = id => LEVELS.flatMap(l => l.items).find(i => i[0] === id)[1];
-const REACT = {remove:"選錯的選項打叉", next:"出現下一個提示", reveal:"顯示答案並唸一次，進入下一題"};
+const REACT = {remove:"選錯的選項打叉", next:"出現下一個提示", free:"沒有提示，也不顯示答案，讓學生自己點", reveal:"顯示答案並唸一次，進入下一題"};   /* 選錯的選項每次都會停用，remove 只是舊紀錄的說法 */
 const ANSWERS = [
   {id:"turn",    name:"大螢幕・輪流",   desc:"1～4 人輪流在同一個螢幕作答", min:1, max:4},
   {id:"split",   name:"大螢幕・同時",   desc:"螢幕分成 2～4 區，各自作答（需支援多點觸控）", min:2, max:4, off:"準備中"},
@@ -240,7 +240,7 @@ const state = {
   /* 每位學生不同的提示（只在進階設定的練習）：學生代號 → {hints:Set, rule:[]}；沒有的學生用大家共用的 pHints、pRule */
   kidHints:{}, hintFor:"",
   goal:"3", kind:"formal", mode:"acc", limit:"60",
-  pChoices:"6", pHints:new Set(["word","parts"]), pRule:["next","next","reveal"],   /* 練習提示預設（A3-6）：錯 1 次語詞挖空、錯 2 次部件拆解、錯 3 次顯示答案 */
+  pChoices:"6", pHints:new Set(["word","parts"]), pRule:["next","next","free"],   /* 練習提示預設（A3-6，2026-10-25 改）：錯 1 次語詞挖空、錯 2 次部件拆解、錯 3 次沒有提示也不顯示答案，讓學生自己點 */
   ed:"翰林", book:"h2", lessons:[], qCount:null, qMethod:"even", answer:"turn",
   prepost:"",   /* 這次是前測還是後測（只有正式評量；""＝不標）。沒有前後測代號、不做補考（2026-10-25） */
   kids:new Set()
@@ -275,15 +275,14 @@ const unfitWhy = (goal, h) => (HINT_UNFIT[goal] || {})[h] || "";
 const fitHints = (goal, list) => list.filter(h => !unfitWhy(goal, h));
 function current(){
   const formal = state.kind === "formal", flu = state.mode === "flu";
-  /* 前測、後測的條件完全一樣（A8 第 13 點）。A3-6（2026-10-25）：正式評量完全不提示，答錯就記錯、進下一題；
-     例外：部件重組（4-1）答錯一次顯示「語詞挖空」，答錯第二次顯示答案（記成沒通過） */
-  const word41 = formal && !flu && state.goal === "4-1";
-  const noHelp = flu || (formal && !word41);
+  /* 前測、後測的條件完全一樣（A8 第 13 點）。A3-6（2026-10-25）：正式評量的所有模式、所有目標都完全不提示、不回饋對錯，
+     答錯就記錯、進下一題（部件重組也一樣，沒有例外） */
+  const noHelp = flu || formal;
   return {
     formal, flu, noHelp,
     choices: formal || flu ? settings.choices : playNow() === "bingo" ? "bingo" : state.pChoices,
-    hints: word41 ? ["word"] : noHelp ? [] : fitHints(state.goal, HINT_ORDER.filter(h => state.pHints.has(h))),
-    rule: word41 ? ["next","reveal"] : noHelp ? null : state.pRule
+    hints: noHelp ? [] : fitHints(state.goal, HINT_ORDER.filter(h => state.pHints.has(h))),
+    rule: noHelp ? null : state.pRule
   };
 }
 /* 某位學生這次的提示與答錯規則：進階設定的練習可以每人不同，其他情況大家都一樣 */

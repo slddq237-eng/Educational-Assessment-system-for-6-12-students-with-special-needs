@@ -13,7 +13,7 @@
 const PRESETS = [
   {id:"class", name:"課堂練習", desc:"答錯會出現提示幫忙，適合上課時練習。", rec:"紀錄會存下來，不列入學習分析", off:true,
    why:"練習時多一點提示，學生比較有成功經驗。這些紀錄另外統計，不會影響小考的成績分析。",
-   apply:() => Object.assign(state, {kind:"practice", mode:"acc", pChoices:"4", pHints:new Set(["word","parts"]), pRule:["next","next","reveal"]})},
+   apply:() => Object.assign(state, {kind:"practice", mode:"acc", pChoices:"4", pHints:new Set(["word","parts"]), pRule:["next","next","free"]})},
   {id:"test", name:"正式評量", desc:"條件固定、提示較少，看學生真正會多少；可以標成前測或後測。", rec:"紀錄會存下來，列入學習分析",
    why:"每次評量的條件都一樣，前後成績才能比較，看得出教學有沒有效果。要做前後測（例如學習扶助、資源班轉介前介入）時，按「前測」或「後測」，紀錄會標記起來，老師專區就能比較；沒有要比較就選「不標」。",
    apply:() => Object.assign(state, {kind:"formal", mode:"acc"})},
@@ -162,16 +162,15 @@ function hintChips(set, onToggle, disabled, goal = state.goal){
 }
 
 function ruleEditor(rule, onChange){
-  return rule.map((r,i) => i === rule.length - 1
-    ? `<li><span class="k">錯 ${i+1} 次</span><span class="fixed">${REACT.reveal}</span></li>`
-    : `<li><span class="k">錯 ${i+1} 次</span><select data-i="${i}" aria-label="答錯第 ${i+1} 次">${["remove","next"].map(v => `<option value="${v}" ${r===v?"selected":""}>${REACT[v]}</option>`).join("")}</select></li>`).join("");
+  /* 每一步都可以選：出現下一個提示／沒有提示也不顯示答案（讓學生自己點）／顯示答案；選錯的選項每次都會停用 */
+  return rule.map((r,i) => `<li><span class="k">錯 ${i+1} 次</span><select data-i="${i}" aria-label="答錯第 ${i+1} 次">${["next","free","reveal"].map(v => `<option value="${v}" ${(r === "remove" ? "free" : r)===v?"selected":""}>${REACT[v]}</option>`).join("")}</select></li>`).join("");
 }
 
 /* 第 4 步的提示：快速開始只顯示（所有學生一樣）；進階設定的練習可以改，也可以每位學生不同 */
 function renderHints(){
   const c = current(), area = $("#hintArea");
   if(c.noHelp){
-    $("#h3hint").textContent = c.flu ? "流暢性模式不給提示，答錯不重答。" : "這次包含基線期的課次，正式評量固定為無提示。";
+    $("#h3hint").textContent = c.flu ? "流暢性模式不給提示，答錯不重答。" : "正式評量不給提示、不回饋對錯，所有學生都一樣，這裡只顯示。";
     area.innerHTML = `<div class="locked"><span class="lock">固定</span><span>無提示・答錯就記錯，進入下一題</span></div>`;
     return;
   }
@@ -179,8 +178,8 @@ function renderHints(){
   const skipped = LEVELS.flatMap(l => l.items).filter(([id]) => unfitWhy(state.goal, id));
   const skipNote = skipped.length ? `<p class="note" style="margin:8px 0 0">這個評量目標不用：${skipped.map(([id, t]) => `${t}（${unfitWhy(state.goal, id)}）`).join("、")}，系統會自動跳過。</p>` : "";
   if(c.formal || isQuick()){
-    $("#h3hint").textContent = c.formal ? (c.noHelp ? "正式評量不給提示、不回饋對錯，所有學生都一樣，這裡只顯示。" : "正式評量不給提示，只有部件重組答錯一次會顯示語詞挖空，所有學生都一樣，這裡只顯示。") : "所有學生都用同一組提示。要調整，或讓每位學生不同，請切換到「進階設定」。";
-    area.innerHTML = `<div class="locked"><span class="lock">${c.formal ? "固定" : "全部學生"}</span><div style="display:grid;gap:8px">${ruleFlow(c.rule, c.hints)}
+    $("#h3hint").textContent = "所有學生都用同一組提示。要調整，或讓每位學生不同，請切換到「進階設定」。";
+    area.innerHTML = `<div class="locked"><span class="lock">全部學生</span><div style="display:grid;gap:8px">${ruleFlow(c.rule, c.hints)}
       <span class="note" style="margin:0">老師提示（${TEACHER}）可隨時按按鈕記錄。</span></div></div>${skipNote}`;
     return;
   }
