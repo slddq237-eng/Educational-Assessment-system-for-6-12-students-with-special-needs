@@ -62,7 +62,7 @@ const PMETRICS = {
   after:   ["平均教學後天數（間隔）", rs => avgOf(rs, r => r.daysAfter === "" ? NaN : +r.daysAfter), " 天"],
   prev:    ["平均距上次評量天數（間隔）", rs => avgOf(rs, r => prevGap(r) ?? NaN), " 天"]
 };
-/* 範例：一鍵套用常見的比較，附「這在回答什麼、怎麼看」（說明也寫在 analysis-guide.html 第 6 節） */
+/* 範例：一鍵套用常見的比較，附「這在回答什麼、怎麼看」 */
 const PIVOT_BASE = {col:"", kind:"formal", from:"", to:"", f1:"", v1:"", f2:"", v2:"", firstOnly:false, minN:5, sort:"name", chart:"bar"};
 const PIVOT_EXAMPLES = [
   {id:"effect", name:"有沒有進步", cfg:{metric:"acc", row:"prepost", col:"kid"},

@@ -15,11 +15,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-25b">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-26">
 <!-- 平台共用的主題外觀、頭像、貼紙樣式 -->
-<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-25b">
+<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-26">
 <!-- 注音字型（3-4）：語詞、句子提示和練習的選項加注音；畫面用到注音時才會下載 -->
-<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-25b">
+<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-26">
 <style>
 /* 版面：沿用生字賓果的生字簿方格紙。
    設定畫面：左邊六個步驟，右邊固定的「本次評量」摘要；評量設定、教學日期、學生名單、作答紀錄放在彈出面板。
@@ -704,16 +704,6 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 .banner{background:var(--amber-bg);border:2px solid var(--amber);border-radius:12px;padding:10px 14px;color:#5c400a}
 
 @media (prefers-reduced-motion:no-preference){.goal,.opt,.lesson{transition:transform .12s}.goal:not(:disabled):hover,.opt:not(:disabled):hover,.lesson:hover{transform:translateY(-2px)}}
-/* 新手導覽（tour.js）：畫面變暗，只亮出要看的地方，紅框標位置，旁邊一張說明小卡 */
-.tourbox{position:fixed;z-index:40;border:3px solid var(--red);border-radius:14px;box-shadow:0 0 0 9999px rgba(20,40,35,.55);pointer-events:none;transition:left .25s,top .25s,width .25s,height .25s}
-.tourbox.none{border:none}
-.tourcard{position:fixed;z-index:41;background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:14px 18px;box-shadow:0 8px 24px rgba(0,0,0,.2);font-size:17px}
-.tourcard p{margin:0 0 10px}
-.tourcard .tstep{color:var(--red);font-size:14px;font-weight:700;margin:0 0 4px}
-.tourcard .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-.tourcard .ghost{padding:6px 14px}
-.tourbox[hidden],.tourcard[hidden]{display:none}
-@media (prefers-reduced-motion:reduce){.tourbox{transition:none}}
 </style>
 </head>
 <body class="quick">
@@ -742,8 +732,6 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
           <button class="adv-only" id="openDates">教學日期管理</button>
           <button id="openSettings">⚙ 細部設定</button>
           <hr>
-          <a id="guideLink" href="guide.html" target="_blank" rel="noopener">使用說明</a>
-          <button id="tourBtn">新手導覽</button>
         </div>
       </details>
       <a class="ghost" href="../../">回平台首頁</a>
@@ -992,7 +980,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <!-- =================== 老師專區 =================== -->
 <div class="wrap" id="teacher" hidden>
   <header class="top"><div class="brand"><div class="stamp">師</div><div><small>識字評量</small><h1>老師專區</h1></div></div>
-    <div class="row"><a class="ghost" href="analysis-guide.html" target="_blank" rel="noopener">分析教學</a><button class="ghost" id="teacherBack">回到設定</button></div></header>
+    <div class="row"><button class="ghost" id="teacherBack">回到設定</button></div></header>
   <div class="row" id="tTabs" role="group" aria-label="老師專區分頁"></div>
   <details class="why thelp" id="tHelp"></details>
   <section class="card tpanel">
@@ -1095,33 +1083,32 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <!-- 每個檔案後面的 ?v=日期 是版本號：改了任何 .js、.css 檔，就把這頁所有的 ?v= 一起改成當天日期（用「全部取代」；同一天改第二次就在日期後面加 b、c）。
      這樣老師的瀏覽器才會下載新檔案，不會新網頁配到舊程式（例如按「下一步」沒反應）。 -->
 <!-- 生字資料：平台共用的教材資料（shared/lessons.js） -->
-<script src="../../shared/lessons.js?v=2026-10-25b"></script>
+<script src="../../shared/lessons.js?v=2026-10-26"></script>
 <!-- 注音讀音表（shared/bpmf.js）：語詞、例句裡的破音字該念哪一個音 -->
-<script src="../../shared/bpmf.js?v=2026-10-25b"></script>
+<script src="../../shared/bpmf.js?v=2026-10-26"></script>
 <!-- 字頻：教育部字頻總表（shared/freq.js），練習的常用字、字頻優先、老師專區高字頻生字會用到 -->
-<script src="../../shared/freq.js?v=2026-10-25b"></script>
+<script src="../../shared/freq.js?v=2026-10-26"></script>
 <!-- 自動部件拆解（shared/parts.js）：部件提示在 lessons.js 的 PARTS 沒有這個字時才用 -->
-<script src="../../shared/parts.js?v=2026-10-25b"></script>
+<script src="../../shared/parts.js?v=2026-10-26"></script>
 <!-- 共用小工具（課本排序與名稱、語詞、部件查詢、按匯出時才載入 Excel 元件），識字評量與備課分析共用 -->
-<script src="../../shared/common.js?v=2026-10-25b"></script>
+<script src="../../shared/common.js?v=2026-10-26"></script>
 <!-- 平台共用：主題與貼紙、每位學生的收藏與頭像 -->
-<script src="../../shared/sticker-art.js?v=2026-10-25b"></script>
-<script src="../../shared/themes.js?v=2026-10-25b"></script>
-<script src="../../shared/rewards.js?v=2026-10-25b"></script>
+<script src="../../shared/sticker-art.js?v=2026-10-26"></script>
+<script src="../../shared/themes.js?v=2026-10-26"></script>
+<script src="../../shared/rewards.js?v=2026-10-26"></script>
 <!-- 程式本體：分成八個檔案，順序不能換（說明見 app.js 開頭） -->
-<script src="data.js?v=2026-10-25b"></script>
-<script src="setup.js?v=2026-10-25b"></script>
-<script src="records.js?v=2026-10-25b"></script>
-<script src="wordsets.js?v=2026-10-25b"></script>
-<script src="play.js?v=2026-10-25b"></script>
-<script src="collect.js?v=2026-10-25b"></script>
-<script src="gacha.js?v=2026-10-25b"></script>
-<script src="scenes.js?v=2026-10-25b"></script>
-<!-- 老師專區、進階分析、新手導覽：平板作答（網址 #t）用不到，不下載，省約 30 KB（2026-10-24 R4a）。
+<script src="data.js?v=2026-10-26"></script>
+<script src="setup.js?v=2026-10-26"></script>
+<script src="records.js?v=2026-10-26"></script>
+<script src="wordsets.js?v=2026-10-26"></script>
+<script src="play.js?v=2026-10-26"></script>
+<script src="collect.js?v=2026-10-26"></script>
+<script src="gacha.js?v=2026-10-26"></script>
+<script src="scenes.js?v=2026-10-26"></script>
+<!-- 老師專區、進階分析：平板作答（網址 #t）用不到，不下載，省約 30 KB（2026-10-24 R4a）。
      用 document.write 是為了讓電腦上的載入順序和以前完全一樣 -->
-<script>if(!/^#t/.test(location.hash)) document.write('<script src="teacher.js?v=2026-10-25b"><\/script><script src="pivot.js?v=2026-10-25b"><\/script>');</script>
-<script src="tablet.js?v=2026-10-25b"></script>
-<script src="app.js?v=2026-10-25b"></script>
-<script>if(!/^#t/.test(location.hash)) document.write('<script src="tour.js?v=2026-10-25b"><\/script>');</script>
+<script>if(!/^#t/.test(location.hash)) document.write('<script src="teacher.js?v=2026-10-26"><\/script><script src="pivot.js?v=2026-10-26"><\/script>');</script>
+<script src="tablet.js?v=2026-10-26"></script>
+<script src="app.js?v=2026-10-26"></script>
 </body>
 </html>

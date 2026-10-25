@@ -13,7 +13,6 @@
      pivot.js    21～23. 進階分析（樞紐分析表）
      app.js      全部載入後開始畫畫面（這個檔案）
      tablet.js   平板作答（QR code、送到 Google 表單、匯入 Google 試算表）
-     tour.js     新手導覽（第一次打開時自動出現，右上角「選單」可重看）
    平台共用的檔案：shared/lessons.js（生字資料）、shared/common.js（課本排序與名稱、語詞、部件查詢、Excel 元件）、
    shared/themes.js（主題與貼紙）、shared/rewards.js（收藏與頭像）。
    ========================================================= */

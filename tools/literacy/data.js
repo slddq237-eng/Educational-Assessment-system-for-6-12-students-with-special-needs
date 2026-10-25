@@ -138,7 +138,7 @@ const md = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()}`;
 const KEYS = Object.freeze({
   settings:"literacy-settings", kids:"literacy-kids", teach:"literacy-teach", wordsets:"literacy-wordsets",
   ui:"literacy-ui", preset:"literacy-preset", teacher:"literacy-teacher", pivot:"literacy-pivot", pivots:"literacy-pivots",
-  tour:"literacy-tour", lastBackup:"literacy-lastBackup",
+  lastBackup:"literacy-lastBackup",
   tablet:"literacy-tablet"   /* sessionStorage：平板作答這個分頁的練習設定 */
 });
 /* 平板作答（tablet.js）：學生掃老師電腦上的 QR code 打開網頁，網址 #t= 後面帶著這次練習的設定。

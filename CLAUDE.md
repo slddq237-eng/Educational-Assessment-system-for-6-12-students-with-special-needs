@@ -11,4 +11,4 @@
 - 發 PR 前對照 `docs/rules.md`「改完要更新哪些檔案」；PR 說明標通知等級（①②③，見 `docs/rules.md`）和「文件更新：…」。
 - **`docs/` 是唯一正確的版本**（2026-10-23 維護者決定）：決定、規則、設計都記在 `docs/`，不同步回規格書。規格書（claude.ai 文件）只用來討論要全體決定的事（例如 A3、A8）；定案後把結果記進 `docs/`，並請擁有者在規格書那一節標「已定案，見 GitHub `docs/○○.md`」。
 - **精簡文件不直接刪**（2026-10-24 維護者決定）：拿掉的內容原文搬到 history 檔案，原處留「見 ○○」（見 `docs/INDEX.md`「寫文件的規則」）。
-- **省 token**（2026-10-23 維護者決定）：不要整份讀大檔案（`shared/lessons.js`、`parts.js`、`bpmf.js`、`freq.js`、`themes.js`、`tools/literacy/` 的 `index.html`、`setup.js`、`play.js`、`teacher.js`、`scenes.js`、`analysis-guide.html` 等超過約 30KB 的檔案；清單由 `check.js` 自動檢查），先用搜尋找到位置、只讀需要的那一段；改程式前先看 `docs/code/architecture.md` 找相關檔案，不要整個資料夾讀過；`docs/` 超過約 20KB 的檔案（2026-10-24 拆小後目前沒有）也先搜尋節名、只讀那一節，但改作答紀錄格式或正式評量條件時相關檔案整份讀；資料用程式統計，不要讀進對話裡數。
+- **省 token**（2026-10-23 維護者決定）：不要整份讀大檔案（`shared/lessons.js`、`parts.js`、`bpmf.js`、`freq.js`、`themes.js`、`tools/literacy/` 的 `index.html`、`setup.js`、`play.js`、`teacher.js`、`scenes.js` 等超過約 30KB 的檔案；清單由 `check.js` 自動檢查），先用搜尋找到位置、只讀需要的那一段；改程式前先看 `docs/code/architecture.md` 找相關檔案，不要整個資料夾讀過；`docs/` 超過約 20KB 的檔案（2026-10-24 拆小後目前沒有）也先搜尋節名、只讀那一節，但改作答紀錄格式或正式評量條件時相關檔案整份讀；資料用程式統計，不要讀進對話裡數。

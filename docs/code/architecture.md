@@ -40,7 +40,6 @@
 |---|---|
 | `tools/literacy/index.html` | lessons → bpmf → freq → parts → common → sticker-art → themes → rewards → data → setup → records → wordsets → play → collect → gacha → scenes → teacher → pivot → tablet → app → tour（平板作答不載入 teacher、pivot、tour，見下方） |
 | `tools/prep/index.html` | lessons → parts → freq → common → prep |
-| `tools/literacy/guide.html`、`analysis-guide.html`（使用說明、分析教學） | 頁面裡的 `DEMOS` → demo.js（示範動畫）；樣式 demo.css |
 
 - 每個 `<script src>`、`<link>` 後面都有 `?v=日期`，**所有頁面要一樣**；改了任何 js、css 就全部換成新的版本號，老師的瀏覽器才會抓新檔（自動檢查第 3 項）。
 - Excel 元件 `shared/vendor/xlsx-0.18.5.full.min.js` 不在上表：要匯出、匯入 Excel 時才由 `common.js` 的 `loadXlsx()` 載入。QR code 元件 `shared/vendor/qrcode-generator-1.4.4.js` 也一樣，按「產生 QR code」時才由 `tablet.js` 的 `loadQr()` 載入。
@@ -75,8 +74,6 @@
 | `pivot.js` | 21～23 | 進階分析（樞紐分析表） | `renderPivot` |
 | `tablet.js` | — | 平板作答（F2）：表單網址設定、產生 QR code、平板點代號與送出、匯入 Google 試算表的 Excel | `tabletQr`、`tabletStart`、`tabletSend`（`finish` 呼叫）、`tabletSheet`（`records.js` 的匯入檔案呼叫） |
 | `app.js` | — | 全部載入後畫出第一個畫面（平板作答時改成點代號的畫面）、過夜換日提醒 | — |
-| `tour.js` | — | 新手導覽 | — |
-| `demo.js`、`demo.css` | — | 使用說明、分析教學頁的示範動畫 | 只給 guide.html、analysis-guide.html 用 |
 
 ### 一次評量的流程（從設定到存紀錄）
 
@@ -106,7 +103,6 @@
 | localStorage | `literacy-wordsets` | 字組 | `wordsets.js` |
 | localStorage | `literacy-ui`、`literacy-preset` | 設定畫面停在哪 | `setup.js` |
 | localStorage | `literacy-teacher`、`literacy-pivot`、`literacy-pivots` | 老師專區、進階分析的選單 | `teacher.js`、`pivot.js` |
-| localStorage | `literacy-tour` | 看過新手導覽沒 | `tour.js` |
 | localStorage | `literacy-lastBackup` | 上次下載備份檔的日期（超過 30 天提醒） | `records.js` |
 | localStorage | `prep-ui`、`prep-ranges` | 備課分析的選擇 | `prep.js` |
 | sessionStorage | `literacy-tablet` | 平板作答：這個分頁的練習設定（含學生名字），關掉分頁就不見；不放進備份 | `data.js` |
