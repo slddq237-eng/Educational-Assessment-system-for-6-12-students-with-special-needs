@@ -139,9 +139,7 @@ function dailyChart(rs, metric){
   const g = groupBy(rs, dayOf), days = [...g.keys()].sort(), first = days[0];
   const fn = metric === "acc" ? accOf : metric === "sec" ? secOf : fluOf, at = {};
   const pts = days.map(d => { const list = g.get(d), t = tagText(list), x = daysBetween(first, d); at[x] = shortDay(d); return {x, day: d, label: shortDay(d) + (t ? `（${t}）` : ""), rs: list, ...fn(list)}; });
-  /* 流暢性：目標線用最近一次有設目標的回合（沒設就不畫）*/
-  const aim = metric === "flu" ? (rounds(rs).map(x => x.aim).filter(Boolean).pop() || null) : null;
-  return lineChart(pts, {metric, noPhase: true, aim, xLabel: x => at[x] || "", xName: ""});
+  return lineChart(pts, {metric, noPhase: true, xLabel: x => at[x] || "", xName: ""});   /* 流暢性圖不畫目標線（維護者 2026-10-25） */
 }
 /* 流暢性（計時挑戰、流暢性模式）：每一回合＝一位學生做完一次，每分鐘第一次就答對幾個；一天一個點，正式評量和練習的回合全部算 */
 function fluencySection(all){
