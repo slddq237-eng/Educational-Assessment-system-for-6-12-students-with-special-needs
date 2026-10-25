@@ -14,7 +14,9 @@ const termRank = b => b.grade * 2 + (b.term === "下" ? 1 : 0);
 const BOOK_ORDER = Object.keys(BOOKS).sort((a, b) => edRank(BOOKS[a].edition) - edRank(BOOKS[b].edition) || termRank(BOOKS[a]) - termRank(BOOKS[b]));
 
 /* 課本與課次的名稱：第 0 課是課前單元（例如康軒一上的「真簡單」），直接顯示單元名稱 */
-const bookName = b => `${BOOKS[b].edition} ${BOOKS[b].grade}${BOOKS[b].term}`;
+/* 年級＋上下學期一律寫成「二上」「六下」這種（2026-10-25 維護者決定）；課本的 grade 是數字，這裡換成國字 */
+const gradeTerm = b => "一二三四五六"[BOOKS[b].grade - 1] + BOOKS[b].term;
+const bookName = b => `${BOOKS[b].edition} ${gradeTerm(b)}`;
 const lessonName = (b, n) => n === "0" ? (BOOKS[b].lessons[n].title || "課前單元") : `第 ${n} 課`;
 const lessonKeys = b => Object.keys(BOOKS[b].lessons).sort((x, y) => x - y);
 

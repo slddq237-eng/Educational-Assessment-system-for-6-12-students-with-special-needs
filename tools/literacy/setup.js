@@ -306,7 +306,7 @@ function renderLessons(){
   $("#eds").innerHTML = EDITIONS.map(e => `<button class="opt ${state.ed===e?"on":""}" data-e="${e}" aria-pressed="${state.ed===e}">${e}</button>`).join("");
   $("#eds").querySelectorAll("button").forEach(btn => btn.onclick = () => { state.ed = btn.dataset.e; state.book = BOOK_ORDER.find(b => BOOKS[b].edition === state.ed); render(); });
   const books = BOOK_ORDER.filter(b => BOOKS[b].edition === state.ed);
-  $("#books").innerHTML = books.map(b => `<button class="chip ${state.book===b?"on":""}" data-b="${b}" aria-pressed="${state.book===b}">${GRADES[BOOKS[b].grade-1]}年級${BOOKS[b].term}學期</button>`).join("");
+  $("#books").innerHTML = books.map(b => `<button class="chip ${state.book===b?"on":""}" data-b="${b}" aria-pressed="${state.book===b}">${gradeTerm(b)}</button>`).join("");
   $("#books").querySelectorAll("button").forEach(btn => btn.onclick = () => { state.book = btn.dataset.b; render(); });
   const L = BOOKS[state.book].lessons;
   $("#lessons").innerHTML = Object.entries(L).map(([n,l]) => {
@@ -575,7 +575,13 @@ function dateCtl(t, label){
     <span class="ph">${esc(dateNote(t))}</span></div>`;
 }
 function renderDates(){
-  $("#dBooks").innerHTML = BOOK_ORDER.map(b => `<button class="chip ${dBook===b?"on":""}" data-b="${b}">${bookName(b)}</button>`).join("");
+  /* 先選版本、再選年級（和第 2 步一樣）；換版本時，選同一個年級學期的那一本，沒有就選那個版本的第一本 */
+  const dEd = BOOKS[dBook].edition;
+  $("#dEds").innerHTML = EDITIONS.map(e => `<button class="opt ${dEd===e?"on":""}" data-e="${e}" aria-pressed="${dEd===e}">${e}</button>`).join("");
+  $("#dEds").querySelectorAll("button").forEach(btn => btn.onclick = () => {
+    const inEd = BOOK_ORDER.filter(b => BOOKS[b].edition === btn.dataset.e), cur = BOOKS[dBook];
+    dBook = inEd.find(b => BOOKS[b].grade === cur.grade && BOOKS[b].term === cur.term) || inEd[0]; renderDates(); });
+  $("#dBooks").innerHTML = BOOK_ORDER.filter(b => BOOKS[b].edition === dEd).map(b => `<button class="chip ${dBook===b?"on":""}" data-b="${b}" aria-pressed="${dBook===b}">${gradeTerm(b)}</button>`).join("");
   $("#dBooks").querySelectorAll("button").forEach(btn => btn.onclick = () => { dBook = btn.dataset.b; renderDates(); });
   $("#dTable").innerHTML = Object.keys(BOOKS[dBook].lessons).map(n => {
     const k = key(dBook,n), t = teach[k] || {};
