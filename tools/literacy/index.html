@@ -204,7 +204,17 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
 .avbtn{border:3px solid transparent;background:var(--card);border-radius:14px;padding:6px 4px;display:grid;justify-items:center;gap:2px;font-size:14px}
 .avbtn .av{--s:56px}
 .avbtn.on{border-color:var(--green)}
+/* 好點的大按鈕（2026-10-25 維護者：選學生、選版本、年級的按鈕太小很難點）：學生是圓頭像加大字，版本和年級是大圓角 */
 .kidchip .av{--s:28px;margin-right:6px}
+/* 第 2 步選學生：整顆按鈕是圓形，大頭像在上、名字在下（2026-10-25 維護者） */
+#kids{gap:16px}
+#kids .kidchip{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:176px;height:176px;padding:10px 14px;border-radius:50%;font-size:20px;line-height:1.15;text-align:center}
+#kids .kidchip .av{--s:88px;margin:0 0 4px}
+#kids .kidchip small{display:block;margin:0;font-size:14px}
+#books,#dBooks{gap:12px}
+#eds,#dEds{gap:12px}
+#eds .opt,#dEds .opt{font-size:22px;min-height:60px;padding:12px 32px;border-radius:999px;text-align:center}
+#books .chip,#dBooks .chip{font-size:20px;min-height:56px;padding:10px 26px}
 .plan{display:grid;gap:10px;background:var(--mint);border-radius:12px;padding:12px 14px}
 .plan label{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .plan select{border:2px solid var(--ink);border-radius:10px;padding:4px 8px}
@@ -886,8 +896,11 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <div class="overlay" id="datesSheet" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dTitle">
     <header><h2 id="dTitle">教學日期管理</h2><button class="ghost" data-close>關閉</button></header>
-    <p class="hint" style="margin:0">本學期教的課輸入教學日期就好，上面選課本、下面每一課一列。日期只用來算「教學後第幾天」和圖上的教學結束時間線，不影響前測、後測的標記；沒輸入日期的課，這些就不會出現。預設是全班一組；同一課學生進度不同（例如學扶、分組教學），可以用「＋個別學生不同」替那位學生另外設定，或用「＋一組學生不同」一次替「多位學生」存好的整組設定；沒設定的學生照全班的。「依學生年級自動判斷」只是沒填日期的標記，日期要自己填。</p>
-    <div class="row" id="dBooks"></div>
+    <p class="hint" style="margin:0">本學期教的課輸入教學日期就好，上面先選版本、再選年級，下面每一課一列。日期只用來算「教學後第幾天」和圖上的教學結束時間線，不影響前測、後測的標記；沒輸入日期的課，這些就不會出現。預設是全班一組；同一課學生進度不同（例如學扶、分組教學），可以用「＋個別學生不同」替那位學生另外設定，或用「＋一組學生不同」一次替「多位學生」存好的整組設定；沒設定的學生照全班的。「依學生年級自動判斷」只是沒填日期的標記，日期要自己填。</p>
+    <p class="sub">版本</p>
+    <div class="row" id="dEds"></div>
+    <p class="sub">年級</p>
+    <div class="group" id="dBooks"></div>
     <div class="dtable" id="dTable"></div>
     <footer><button class="save" data-close>完成</button></footer>
   </div>
