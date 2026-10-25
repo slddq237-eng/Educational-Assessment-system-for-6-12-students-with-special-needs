@@ -294,6 +294,7 @@ function renderTeacher(){
     $("#tAdvTabs").innerHTML = chipRow([["charts","更多圖表與明細"],["pivot","樞紐分析（自己決定怎麼分組比較）"]], charts ? "charts" : "pivot", "tadv");
     $("#tAdvTabs").querySelectorAll("[data-tadv]").forEach(b => b.onclick = () => { T.adv = b.dataset.tadv; saveT(); renderTeacher(); });
   }
+  $("#tMenu").parentElement.hidden = T.tab === "class";   /* 多位學生：和個人畫面一樣，不用範圍選單 */
   $("#tRangeBox").hidden = isAdv && !charts;   /* 範圍選單：全班和「更多圖表與明細」用，樞紐分析有自己的篩選 */
   renderRangeMenu();
   renderSimple();
@@ -773,7 +774,8 @@ const classConfused = (k, rs) => [...groupBy(rs.filter(r => !r.firstCorrect && r
   .sort((a, b) => b.n - a.n).slice(0, CLASS_TOP).map(x => { const [c, p] = x.key.split("→"); return `${charLink(c, k.code)}<small>→${esc(p)}（${x.n} 次）</small>`; }).join("　");
 function renderClass(){
   const withData = kidsWithData(), sel = pickedKids(), picked = withData.filter(k => sel.includes(k.code));
-  const rs = filtered(false).filter(r => sel.includes(r.kid)), kidList = picked.filter(k => rs.some(r => r.kid === k.code));
+  /* 和「個人」畫面統一：正式評量加練習、全部日期，中途結束的不算（維護者 2026-10-25），所以這一頁不用範圍選單 */
+  const rs = records.filter(r => okRec(r) && sel.includes(r.kid)), kidList = picked.filter(k => rs.some(r => r.kid === k.code));
   $("#tMenu").innerHTML = "";
   const head = `<h3 class="ttitle">多位學生比較</h3>${classPicker(withData)}`;
   const bindPicker = () => {
@@ -795,7 +797,7 @@ function renderClass(){
   };
   if(!kidList.length){
     tCurrent = null;
-    $("#tResult").innerHTML = head + `<p class="hint">${picked.length ? "這個範圍裡，選到的學生沒有紀錄。可以把日期改成「全部」，或把性質改成「全部」。" : "請先點上面的學生（最多 " + CLASS_MAX + " 位），這裡就會出現比較。"}</p>`;
+    $("#tResult").innerHTML = head + `<p class="hint">${picked.length ? "選到的學生還沒有作答紀錄。" : "請先點上面的學生（最多 " + CLASS_MAX + " 位），這裡就會出現比較。"}</p>`;
     bindPicker(); return;
   }
   /* 字的順序：依課本、課次、課本裡的順序 */
@@ -813,7 +815,7 @@ function renderClass(){
   tCurrent = null;
   $("#tResult").innerHTML = head + classTable("常錯的字", kidList, rs, classWrong) + classTable("反應最慢的字", kidList, rs, classSlow) + classTable("容易搞混的字（字→常選成）", kidList, rs, classConfused)
     + `<section class="ssec"><h3 class="ttitle">每個字的正確率（學生 × 生字）</h3>
-    <div class="tstats"><div class="tstat"><span>學生</span><b>${kidList.length} 位</b><small>${esc(rangeText())}</small></div>
+    <div class="tstats"><div class="tstat"><span>學生</span><b>${kidList.length} 位</b><small>正式評量加練習</small></div>
       <div class="tstat"><span>考過的字</span><b>${chars.length} 個</b></div><div class="tstat"><span>這幾位第一次就答對</span><b>${fmt("acc", all.v)}</b><small>${all.n} 題</small></div></div>
     <p class="note">格子裡大字是第一次就答對的比例，小字是作答次數；藍色越深越好（白色＝不到 40%，最深＝80% 以上）。點格子看那位學生那個字的每一次作答。</p>
     ${table}
