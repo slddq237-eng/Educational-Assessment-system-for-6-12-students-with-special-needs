@@ -13,7 +13,7 @@
    ========================================================= */
 const TEACH_UI = KEYS.teacher;
 const T = Object.assign({tab:"one", kid:"", metric:"acc", view:"time", axis:"date", split:"lesson", range:"term", from:"", to:"",
-  kind:"formal", goal:"", book:"", lesson:"", gap:"after", top:"300", simple:"round", moreOpen:false}, load(TEACH_UI, {}));
+  kind:"formal", goal:"", book:"", lesson:"", gap:"after", top:"300", moreOpen:false}, load(TEACH_UI, {}));
 const saveT = () => store(TEACH_UI, T);
 const hasFreq = () => typeof FREQ !== "undefined";
 
@@ -118,99 +118,102 @@ function kidsWithData(){ const have = new Set(records.filter(r => !r.quit).map(r
 
 
 /* =========================================================
-   15b. 一位學生的簡潔畫面（2026-10-25，設計見 docs/design/analysis-page-draft.md）
-   一打開就回答：有沒有進步？哪些字還要加強？反應最慢的字？容易和什麼字搞混？
-   原本的選單、圖、表收進下方「看更多」。只看正式評量、不看中途結束的紀錄。
-   P-1～P-8 的預設值是 Claude 的建議，維護者還沒回覆，要改只要改這一節。
+   15b. 一位學生的簡潔畫面（2026-10-25 維護者指定，設計見 docs/design/analysis-page-draft.md）
+   一般模式老師只需要選學生，其他不用點，整頁往下捲：
+   總體紀錄 → 每天的平均答對率（折線圖）→ 每天的平均反應時間（折線圖）→ 常錯的字 → 反應最慢的字 → 容易搞混的字
+   → 近期正式評量紀錄 → 練習紀錄。總體、折線圖和三個字的清單只看正式評量（條件固定，才有可比性）；練習另外列在最後。
+   原本的選單、圖、表收進最下面的「進階」（預設收起）。
    ========================================================= */
-const SIMPLE_TOP = 5;   /* P-3：常錯字、反應最慢的字各列幾個 */
 const SIMPLE_TYPE = {同詞易混:"同一個詞裡的另一個字", 同音:"唸起來一樣的字", 形近:"長得像的字", 同部件:"有相同部件的字", 課文字:"課文裡的其他字", 其他字:"其他字"};
-const okRec = r => !r.quit && r.kind === "formal";
-/* 最近一輪前後測：以最後一次標了前測或後測的評量為準，取它考的那些課；
-   這幾課所有標了前測、後測的評量，每次評量算一個點（A8 第 8、12 點：不取平均、依「學生 × 課次」配對） */
-function simpleRound(mine){
-  const tagged = mine.filter(r => r.prepost);
-  if(!tagged.length) return null;
-  const sess = [...groupBy(tagged, r => r.session)].map(([id, rs]) => ({id, rs, at: rs[0].at, kind: rs[0].prepost})).sort((a, b) => a.at < b.at ? -1 : 1);
-  const last = sess[sess.length - 1], lessons = new Set(last.rs.map(r => key(r.book, r.lesson)));
-  const points = sess.map(s => {
-    const rs = s.rs.filter(r => lessons.has(key(r.book, r.lesson)));
-    return rs.length ? {kind: s.kind, at: s.at, day: dayOf(rs[0]), rs, n: rs.length, k: rs.filter(r => r.firstCorrect).length} : null;
-  }).filter(Boolean);
-  const hasPre = new Set(points.filter(p => p.kind === "前測").flatMap(p => p.rs.map(r => key(r.book, r.lesson))));
-  const noPre = [...lessons].filter(k => !hasPre.has(k) && points.some(p => p.kind === "後測" && p.rs.some(r => key(r.book, r.lesson) === k)));
-  return {points, lessons, noPre, recs: points.flatMap(p => p.rs)};
+const okRec = r => !r.quit;
+const r1 = x => Math.round(x * 10) / 10;   /* 四捨五入到小數 1 位，避免出現 3.9000000000000004 */
+const median = a => { if(!a.length) return null; const b = a.slice().sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : Math.round((b[m - 1] + b[m]) / 2 * 10) / 10; };
+const secList = rs => rs.filter(r => r.passed && typeof r.correctSec === "number").map(r => r.correctSec);
+const sessionsOf = rs => [...groupBy(rs, r => r.session)].map(([id, list]) => ({id, rs: list, at: list[0].at, day: dayOf(list[0])})).sort((a, b) => a.at < b.at ? -1 : 1);
+const tagText = list => { const t = [...new Set(list.map(r => r.prepost).filter(Boolean))]; return t.length ? t.join("、") : ""; };
+const lessonsText2 = list => { const ks = [...new Set(list.map(r => key(r.book, r.lesson)))]; return ks.length > 3 ? `${lessonLabel(ks[0])} 等 ${ks.length} 課` : ks.map(lessonLabel).join("、"); };
+
+/* 每天一個點：x＝距離第一天幾天（相隔越久離越遠），有標前測、後測的那天在日期後面註明 */
+function dailyChart(rs, metric){
+  const g = groupBy(rs, dayOf), days = [...g.keys()].sort(), first = days[0];
+  const fn = metric === "acc" ? accOf : secOf, at = {};
+  const pts = days.map(d => { const list = g.get(d), t = tagText(list), x = daysBetween(first, d); at[x] = shortDay(d); return {x, day: d, label: shortDay(d) + (t ? `（${t}）` : ""), rs: list, ...fn(list)}; });
+  return lineChart(pts, {metric, noPhase: true, xLabel: x => at[x] || "", xName: ""});
 }
-const pointText = p => `${p.k} / ${p.n} 題`;
-function progressHtml(round){
-  const pre = round.points.filter(p => p.kind === "前測"), post = round.points.filter(p => p.kind === "後測");
-  const row = (name, list) => {
-    const last = list[list.length - 1];
-    if(!last) return `<div class="srow"><b class="skind">${name}</b><span class="note" style="margin:0">還沒有${name}</span></div>`;
-    return `<div class="srow"><b class="skind">${name}</b>
-      <span class="sbig">${pointText(last)}</span><span class="spct">（${pct(last.k, last.n)}%）</span>
-      <span class="sdots" aria-label="每一次${name}">${list.map((p, i) => `<span class="sdot ${i === list.length - 1 ? "last" : ""} ${p.n < 3 ? "few" : ""} ${name === "前測" ? "pre" : "post"}" title="${shortDay(p.day)}　${pointText(p)}">${shortDay(p.day)}　${pointText(p)}</span>`).join("")}</span></div>`;
-  };
-  let msg = "";
-  const lastPost = post[post.length - 1];
-  if(lastPost && pre.length){
-    const before = pre.filter(p => p.at < lastPost.at), base = before.length ? before[before.length - 1] : pre[0];
-    const d = pct(lastPost.k, lastPost.n) - pct(base.k, base.n);
-    msg = d > 0 ? `<b class="sup">▲ 比前測高 ${d} 個百分點</b>` : d < 0 ? `<b class="sdown">▼ 比前測低 ${-d} 個百分點，可能需要複習</b>` : `<b>和前測一樣</b>`;
-  } else if(lastPost) msg = `<span class="note" style="margin:0">這幾課還沒有前測，無法比較。</span>`;
-  else msg = `<span class="note" style="margin:0">還沒有後測，等教完再做後測就能比較。</span>`;
-  const few = round.points.some(p => p.n < 3) ? `<p class="note" style="margin:6px 0 0">有的評量題目少，數字容易大起大落，參考就好。</p>` : "";
-  const nopre = round.noPre.length ? `<p class="note" style="margin:6px 0 0">${round.noPre.map(k => esc(lessonLabel(k))).join("、")}沒有前測，無法比較。</p>` : "";
-  return `${row("前測", pre)}${row("後測", post)}<p class="smsg">${msg}</p>${few}${nopre}
-    <p class="note" style="margin:6px 0 0">每個小標籤是一次評量（日期　第一次就答對幾題／共幾題）；最右邊最大的是最近一次。</p>`;
-}
-function simpleLists(rs){
-  const by = groupBy(rs, r => r.char);
-  const wrongList = [...by].map(([c, list]) => ({c, n: list.length, w: list.filter(r => !r.firstCorrect).length})).filter(x => x.w >= 2)
-    .sort((a, b) => b.w - a.w || b.w / b.n - a.w / a.n).slice(0, SIMPLE_TOP);
-  /* 反應最慢：每個字至少答對 2 次，而且平均比這位學生平常（全部答對題的平均秒數）慢 1.5 倍以上才列出，免得把一樣快的字也列出來 */
-  const mean = secOf(rs).v;
-  const slowList = [...by].map(([c, list]) => { const s = list.filter(r => r.passed && typeof r.correctSec === "number").map(r => r.correctSec); return {c, n: s.length, v: avg(s)}; })
-    .filter(x => x.n >= 2 && mean && x.v >= mean * 1.5).sort((a, b) => b.v - a.v).slice(0, SIMPLE_TOP);
-  const li = (items, f) => items.length ? `<ul class="slist">${items.map(f).join("")}</ul>` : "";
-  /* 容易搞混：沿用「錯誤類型」的判斷——實際比例是亂猜的 1.5 倍以上、至少錯 3 次才列出；再列最常見的「選成」配對 */
-  const wrong = rs.filter(r => !r.firstCorrect && r.errorType);
-  let conf;
-  if(wrong.length < 5) conf = `<p class="note" style="margin:0">錯的題目還太少（${wrong.length} 題），看不出來。</p>`;
-  else {
-    const g = groupBy(wrong, r => r.errorType), exp = chanceOf(wrong);
-    const over = ETYPES.filter(t => g.has(t) && exp[t]).map(t => ({t, v: g.get(t).length, ratio: g.get(t).length / exp[t]})).filter(x => x.v >= 3 && x.ratio >= 1.5).sort((a, b) => b.ratio - a.ratio);
-    const pc = {}; wrong.forEach(r => { if(r.firstPick){ const k = `${r.char}→${r.firstPick}`; pc[k] = (pc[k] || 0) + 1; } });
-    const pairs = Object.entries(pc).filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1]).slice(0, 3);
-    conf = (over.length || pairs.length) ? `<ul class="slist">${over.map(x => `<li>常選成<b>${esc(SIMPLE_TYPE[x.t] || x.t)}</b>（選錯 ${x.v} 次，比亂猜多）</li>`).join("")}
-      ${pairs.map(([k, n]) => { const [a, b] = k.split("→"); return `<li>「${charLink(a, T.kid)}」常選成「${esc(b)}」（${n} 次）</li>`; }).join("")}</ul>` : `<p class="note" style="margin:0">看不出特別容易搞混的字，接近亂猜。</p>`;
+function simpleSummary(rs){
+  const sess = sessionsOf(rs), days = [...new Set(rs.map(dayOf))].sort(), a = accOf(rs), secs = secList(rs);
+  const lastDay = days[days.length - 1], lastAcc = accOf(rs.filter(r => dayOf(r) === lastDay));
+  let speed = ["—", "資料還不到一週"];
+  if(daysBetween(days[0], lastDay) >= 7){
+    const w1 = avg(secList(rs.filter(r => daysBetween(days[0], dayOf(r)) < 7))), w2 = avg(secList(rs.filter(r => daysBetween(dayOf(r), lastDay) < 7)));
+    if(w1 != null && w2 != null){ const d = Math.round((w2 - w1) * 10) / 10; speed = [d < 0 ? `快 ${-d} 秒` : d > 0 ? `慢 ${d} 秒` : "一樣快", `第一週 ${w1} → 最近一週 ${w2}`]; }
   }
-  return `<div class="sgrid">
-    <div class="sbox"><h4>還需要加強的字</h4>${li(wrongList, x => `<li>${charLink(x.c, T.kid)} 錯 ${x.w} 次<small>（共考 ${x.n} 次）</small></li>`) || `<p class="note" style="margin:0">沒有特別常錯的字（至少錯 2 次才列出）。</p>`}</div>
-    <div class="sbox"><h4>反應最慢的字</h4>${li(slowList, x => `<li>${charLink(x.c, T.kid)} 平均 ${x.v} 秒<small>（答對 ${x.n} 次）</small></li>`) || `<p class="note" style="margin:0">沒有特別慢的字（要答對至少 2 次、而且比平常慢 1.5 倍以上才列出）。</p>`}</div>
-    <div class="sbox swide"><h4>容易搞混</h4>${conf}</div></div>`;
+  const tile = (label, value, sub) => `<div class="tstat"><span>${label}</span><b>${esc(value)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</div>`;
+  return `<div class="tstats">${tile("做過", `${sess.length} 次`, `${days.length} 天・${rs.length} 題`)}${tile("整體一次答對率", a.v == null ? "—" : `${a.v}%`, `最近一天 ${lastAcc.v == null ? "—" : lastAcc.v + "%"}`)}
+    ${tile("平均反應時間", secs.length ? `${avg(secs)} 秒` : "—", secs.length ? `中位數 ${median(secs)} 秒` : "")}${tile("反應速度變化", speed[0], speed[1])}</div>`;
+}
+const SIMPLE_CHIPS = 24, SIMPLE_ROWS = 10;
+function wrongChars(rs){
+  const by = groupBy(rs, r => r.char);
+  const list = [...by].map(([c, l]) => ({c, n: l.length, w: l.filter(r => !r.firstCorrect).length})).filter(x => x.w >= 1)
+    .sort((a, b) => b.w - a.w || a.n - b.n).slice(0, SIMPLE_CHIPS);
+  if(!list.length) return `<p class="note" style="margin:0">還沒有選錯的字。</p>`;
+  return `<div class="schips">${list.map(x => `<div class="schip">${charLink(x.c, T.kid)}<span>錯 ${x.w} 次<br>一次答對 ${pct(x.n - x.w, x.n)}%</span></div>`).join("")}</div>`;
+}
+function slowChars(rs){
+  const by = groupBy(rs, r => r.char);
+  const rows = [...by].map(([c, l]) => {
+    const passed = l.filter(r => r.passed && typeof r.correctSec === "number"), s = passed.map(r => r.correctSec), r0 = l[0];
+    return {char: c, kid: T.kid, word: r0.word || "", lesson: lessonName(r0.book, r0.lesson), n: l.length, acc: pct(l.filter(r => r.firstCorrect).length, l.length), v: avg(s),
+      span: s.length ? `${r1(s[0])} → ${r1(s[s.length - 1])} 秒` : "—", hasSec: s.length > 0};
+  }).filter(x => x.hasSec).sort((a, b) => b.v - a.v).slice(0, SIMPLE_ROWS);
+  if(!rows.length) return `<p class="note" style="margin:0">還沒有答對的紀錄。</p>`;
+  return detailTable([["字", r => r.char, true], ["詞語", r => r.word], ["課次", r => r.lesson], ["出現", r => r.n], ["一次答對率", r => `${r.acc}%`], ["平均反應", r => `${r.v} 秒`], ["第一次 → 最近一次", r => r.span]], rows);
+}
+function confusedChars(rs){
+  const wrong = rs.filter(r => !r.firstCorrect && r.firstPick);
+  if(!wrong.length) return `<p class="note" style="margin:0">還沒有選錯的紀錄。</p>`;
+  const g = groupBy(wrong, r => `${r.char}→${r.firstPick}`);
+  const rows = [...g].map(([k, l]) => { const [c, p] = k.split("→"), ty = groupBy(l.filter(r => r.errorType), r => r.errorType), top = [...ty].sort((a, b) => b[1].length - a[1].length)[0];
+    return {char: c, kid: T.kid, pick: p, n: l.length, type: top ? (SIMPLE_TYPE[top[0]] || top[0]) : ""}; }).sort((a, b) => b.n - a.n).slice(0, SIMPLE_ROWS);
+  /* 和亂猜比較（沿用「錯誤類型」的判斷）：實際比例是亂猜的 1.5 倍以上、至少錯 3 次，才說「特別容易」 */
+  let note = "";
+  if(wrong.length >= 5){
+    const t = groupBy(wrong.filter(r => r.errorType), r => r.errorType), exp = chanceOf(wrong.filter(r => r.errorType));
+    const over = ETYPES.filter(x => t.has(x) && exp[x] && t.get(x).length >= 3 && t.get(x).length / exp[x] >= 1.5).sort((a, b) => t.get(b).length / exp[b] - t.get(a).length / exp[a]);
+    note = over.length ? `<p class="note" style="margin:0 0 8px">特別容易選成：<b>${over.map(x => esc(SIMPLE_TYPE[x] || x)).join("、")}</b>（比亂猜多）。</p>` : `<p class="note" style="margin:0 0 8px">看不出特別容易搞混哪一類，接近亂猜。</p>`;
+  }
+  return note + detailTable([["字", r => r.char, true], ["常選成", r => r.pick], ["次數", r => r.n], ["哪一類", r => r.type]], rows);
+}
+function recentTable(rs, withKind){
+  const sess = sessionsOf(rs).reverse().slice(0, SIMPLE_ROWS);
+  if(!sess.length) return `<p class="note" style="margin:0">還沒有紀錄。</p>`;
+  const rows = sess.map(s => { const a = accOf(s.rs), secs = secList(s.rs);
+    return {day: shortDay(s.day), tag: tagText(s.rs) || "—", kind: s.rs[0].mode === "flu" ? "計時挑戰" : "練習", lessons: lessonsText2(s.rs), n: s.rs.length, ok: `${s.rs.filter(r => r.firstCorrect).length} / ${s.rs.length} 題（${a.v}%）`, sec: secs.length ? `${avg(secs)} 秒` : "—"}; });
+  return detailTable([["日期", r => r.day], ...(withKind ? [["類型", r => r.kind]] : [["前後測", r => r.tag]]), ["課次", r => r.lessons], ["一次答對", r => r.ok], ["平均反應", r => r.sec]], rows);
 }
 function renderSimple(){
   const box = $("#tSimple"), withData = kidsWithData();
   box.hidden = T.tab !== "one";
   if(box.hidden) return;
   if(!withData.length){ box.innerHTML = `<p class="hint" style="margin:0">還沒有作答紀錄。學生做過評量後，這裡就會出現名字和結果。</p>`; return; }
-  const [ta, tb] = termRange(0);
-  const mine = records.filter(r => okRec(r) && r.kid === T.kid);
-  const round = simpleRound(mine), term = mine.filter(r => dayOf(r) >= ta && dayOf(r) <= tb);
-  const scope = round && T.simple === "round" ? "round" : "term";
-  const rs = scope === "round" ? round.recs : term;
-  const kid = kidBy(T.kid);
+  const mine = records.filter(r => okRec(r) && r.kid === T.kid), formal = mine.filter(r => r.kind === "formal"), prac = mine.filter(r => r.kind !== "formal");
+  const kid = kidBy(T.kid), sec = (title, body) => `<section class="ssec"><h3 class="ttitle">${title}</h3>${body}</section>`;
   box.innerHTML = `<div class="trow"><span class="tl">看誰</span>${chipRow(withData.map(k => [k.code, esc(kidLabel(k))]), T.kid, "tkid2")}</div>
-    <h3 class="ttitle">${esc(kid ? kidLabel(kid) : T.kid)}：有沒有進步？</h3>
-    ${round ? progressHtml(round) : `<p class="note" style="margin:0">還沒有標「前測」或「後測」的正式評量，所以無法比較。做評量時選「正式評量」，再按「前測」或「後測」就會出現在這裡。</p>
-      <p class="smsg">本學期正式評量：第一次就答對 ${term.filter(r => r.firstCorrect).length} / ${term.length} 題${term.length ? `（${pct(term.filter(r => r.firstCorrect).length, term.length)}%）` : ""}</p>`}
-    <div class="trow" style="margin-top:14px"><span class="tl">下面三項看</span>${round ? chipRow([["round","這一輪前後測"],["term","本學期全部正式評量"]], scope, "tsimple") : `<span class="note" style="margin:0">本學期全部正式評量</span>`}</div>
-    ${rs.length ? simpleLists(rs) : `<p class="note">這個範圍裡沒有紀錄。</p>`}`;
+    <h2 class="sname">${esc(kid ? kidLabel(kid) : T.kid)}</h2>
+    ${formal.length ? `${sec("總體紀錄（正式評量）", simpleSummary(formal))}
+      ${sec("每天的平均答對率", `<div class="tchart">${dailyChart(formal, "acc")}</div><p class="note">每個點是那一天所有正式評量「第一次就答對」的比例；有標前測、後測的那天，日期後面會註明。</p>`)}
+      ${sec("每天的平均反應時間（越低越快）", `<div class="tchart">${dailyChart(formal, "sec")}</div><p class="note">答對的題目，從題目唸完到答對的平均秒數。</p>`)}
+      ${sec("常錯的字", wrongChars(formal))}
+      ${sec("反應最慢的字", slowChars(formal))}
+      ${sec("容易搞混的字", confusedChars(formal))}
+      ${sec("近期正式評量紀錄", recentTable(formal, false))}`
+    : sec("總體紀錄（正式評量）", `<p class="note" style="margin:0">還沒有正式評量的紀錄。做評量時選「正式評量」，結果就會出現在這裡。</p>`)}
+    ${sec("練習紀錄", recentTable(prac, true))}`;
   const re = () => { saveT(); renderTeacher(); };
   box.querySelectorAll("[data-tkid2]").forEach(b => b.onclick = () => { T.kid = b.dataset.tkid2; re(); });
-  box.querySelectorAll("[data-tsimple]").forEach(b => b.onclick = () => { T.simple = b.dataset.tsimple; re(); });
   box.querySelectorAll("[data-char]").forEach(el => el.onclick = () => openCharLog(el.dataset.kid || T.kid, el.dataset.char));
+  bindChart(box);
 }
 
 function renderTeacher(){
@@ -234,7 +237,7 @@ function renderTeacher(){
 
 /* 每個分頁上方的「這一頁怎麼用？」：平常收起來，打開後記住（換分頁也維持打開） */
 const TAB_HELP = {
-  one: ["最上面直接回答：有沒有進步、哪些字還要加強、哪些字反應最慢、容易和什麼字搞混。想看圖、表、不同的數字，再按下面的「看更多」。", [
+  one: ["只要選學生，往下捲就看得到：總體紀錄、每天的平均答對率和反應時間（折線圖）、常錯的字、反應最慢的字、容易搞混的字、近期正式評量紀錄、練習紀錄。想看別的數字或匯出 Excel，到最下面的「進階」。", [
     "<b>正確率</b>＝第一次就點對的比例（越高越好）；<b>反應時間</b>＝題目唸完到答對的秒數（越短越熟）；<b>流暢性</b>＝計時挑戰每分鐘答對幾個。",
     "<b>依前後測比較</b>最直接看有沒有進步：前測 → 後測。沒標前測或後測的評量放在「未標記」。",
     "結果區的「看明細」是圖上每個數字的表格；任何一個字都可以點，看那個字的每一次作答。",
