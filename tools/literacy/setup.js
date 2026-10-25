@@ -14,7 +14,7 @@ const PRESETS = [
   {id:"class", name:"課堂練習", desc:"答錯會出現提示幫忙，適合上課時練習。", rec:"紀錄會存下來，不列入學習分析", off:true,
    why:"練習時多一點提示，學生比較有成功經驗。這些紀錄另外統計，不會影響小考的成績分析。",
    apply:() => Object.assign(state, {kind:"practice", mode:"acc", pChoices:"4", pHints:new Set(["word","parts"]), pRule:["next","next","free"]})},
-  {id:"test", name:"正式評量", desc:"條件固定、提示較少，看學生真正會多少；可以標成前測或後測。", rec:"紀錄會存下來，列入學習分析",
+  {id:"test", name:"正式評量", desc:"條件固定、無提示，看學生真正會多少，可標示前後測", rec:"紀錄會存下來，列入學習分析",
    why:"每次評量的條件都一樣，前後成績才能比較，看得出教學有沒有效果。要做前後測（例如學習扶助、資源班轉介前介入）時，按「前測」或「後測」，紀錄會標記起來，老師專區就能比較；沒有要比較就選「不標」。",
    apply:() => Object.assign(state, {kind:"formal", mode:"acc"})},
   /* 計時挑戰是練習（2026-10-21 維護者決定）：像遊戲一樣挑戰，結果另外統計；要列入學習分析，到進階設定選「正式評量＋流暢性模式」 */
@@ -476,7 +476,7 @@ function renderKidSheet(){
       if(f.dataset.f === "grade"){ k.grade = +f.value; k.sy = SCHOOL_YEAR; }
       else if(f.dataset.f === "code"){ const v = f.value.trim(); if(!v || kids.some(x => x !== k && x.code === v)){ f.value = k.code; return; }
         if(state.kids.delete(k.code)) state.kids.add(v); if(openPlan === k.code) openPlan = v; if(openAv === k.code) openAv = v;
-        Rewards.rename(k.code, v); k.code = v; }
+        Rewards.rename(k.code, v); saveGroups(getGroups().map(g => ({...g, kids: g.kids.map(c => c === k.code ? v : c)}))); k.code = v; }
       else k.name = f.value.trim();
       saveKids(); render();
     });
@@ -485,6 +485,7 @@ function renderKidSheet(){
     r.querySelector("[data-del]").onclick = () => { state.kids.delete(k.code); kids.splice(+r.dataset.i, 1); saveKids(); renderKidSheet(); render(); };
   });
   bindAvatarPanel($("#kTable .avpick"), () => { renderKidSheet(); render(); });
+  renderKidGroupSheet();
   $("#kTable").querySelectorAll(".plan").forEach(r => {
     const k = kids[+r.dataset.i];
     const plan = () => ((k.plans ||= {})[PLAN_KEY] ||= {});
@@ -498,6 +499,28 @@ function renderKidSheet(){
     });
   });
 }
+/* 學生名單的「分組」：每組一列（組名、刪除、全部學生的加入開關） */
+function renderKidGroupSheet(){
+  const gs = getGroups(), box = $("#kGroups");
+  box.innerHTML = gs.map((g, i) => `<div class="plan" data-gi="${i}">
+    <div class="group"><input aria-label="組名" data-gname value="${esc(g.name)}" maxlength="12"><button class="chip" data-gdel>刪除這組</button></div>
+    <div class="group">${kids.map(k => { const on = g.kids.includes(k.code), other = on ? null : gs.find(x => x !== g && x.kids.includes(k.code));   /* 一位學生只能在一組 */
+      return `<button class="chip ${on ? "on" : ""}" data-gk="${esc(k.code)}" aria-pressed="${on}" ${other ? `disabled title="已在「${esc(other.name)}」"` : ""}>${esc(kidShow(k))}${other ? `<small>（${esc(other.name)}）</small>` : ""}</button>`; }).join("")}</div></div>`).join("")
+    || `<p class="note" style="margin:0">還沒有組別。</p>`;
+  const save = fn => { const all = getGroups(); fn(all); saveGroups(all); renderKidGroupSheet(); render(); };
+  box.querySelectorAll("[data-gi]").forEach(r => {
+    const i = +r.dataset.gi;
+    r.querySelector("[data-gname]").onchange = e => { const v = e.target.value.trim(); if(!v || getGroups().some((g, j) => j !== i && g.name === v)){ e.target.value = getGroups()[i].name; return; } save(all => { all[i].name = v; }); };
+    r.querySelector("[data-gdel]").onclick = () => save(all => { all.splice(i, 1); });
+    r.querySelectorAll("[data-gk]").forEach(b => b.onclick = () => save(all => { const c = b.dataset.gk, ks = all[i].kids; all[i].kids = ks.includes(c) ? ks.filter(x => x !== c) : [...ks, c]; }));
+  });
+}
+$("#addGrp").onclick = () => {
+  const v = $("#newGrp").value.trim(); $("#newGrp").value = "";
+  if(!v || getGroups().some(g => g.name === v)) return;
+  saveGroups([...getGroups(), {name: v, kids: []}]); renderKidGroupSheet(); render();
+};
+$("#newGrp").addEventListener("keydown", e => { if(e.key === "Enter") $("#addGrp").click(); });
 $("#addKid").onclick = () => {
   const v = $("#newKid").value.trim();
   if(!v || kids.some(k => k.code === v)) return;
@@ -571,6 +594,8 @@ function dateCtl(t, label){
     <div class="ds">${t.type === "dates" ? `<input type="date" aria-label="${esc(label)}開始日" data-s value="${t.start||""}"><span>到</span><input type="date" aria-label="${esc(label)}結束日" data-e value="${t.end||""}">` : ""}
     <span class="ph">${esc(dateNote(t))}</span></div>`;
 }
+/* 這位學生在這一課的個別設定如果是用「一組」加的，記著組名（entry.grp）；組別已刪掉就當個別學生顯示 */
+const grpOf = (t, c) => { const g = (t.kids[c] || {}).grp; return g && getGroups().some(x => x.name === g) ? g : ""; };
 function renderDates(){
   /* 先選版本、再選年級（和第 2 步一樣）；換版本時，選同一個年級學期的那一本，沒有就選那個版本的第一本 */
   const dEd = BOOKS[dBook].edition;
@@ -583,28 +608,33 @@ function renderDates(){
   $("#dTable").innerHTML = Object.keys(BOOKS[dBook].lessons).map(n => {
     const k = key(dBook,n), t = teach[k] || {};
     const own = Object.keys(t.kids || {}).filter(kidBy), free = kids.filter(x => !own.includes(x.code));
-    const grps = (load(KEYS.teacher, {}).groups || []).filter(g => g.kids.some(c => kidBy(c) && !own.includes(c)));   /* 老師專區「多位學生」存的組別（只有學生代號） */
+    const grps = getGroups().map((g, gi) => ({...g, gi})).filter(g => g.kids.some(c => kidBy(c) && !own.includes(c)));   /* gi＝在完整組別清單的位置 */   /* 學生名單的組別（只有學生代號） */
     return `<div class="drow" data-k="${k}"><b>${esc(lessonName(dBook, n))}</b>${dateCtl(t, `第 ${n} 課`)}</div>
-      ${own.map(c => `<div class="drow dkid" data-k="${k}" data-kid="${esc(c)}"><span class="dk">個別</span><div class="kc"><b>${esc(kidLabel(kidBy(c)))}</b>
+      ${own.filter(c => !grpOf(t, c)).map(c => `<div class="drow dkid" data-k="${k}" data-kid="${esc(c)}"><span class="dk">個別</span><div class="kc"><b>${esc(kidLabel(kidBy(c)))}</b>
         ${dateCtl(t.kids[c], `${kidLabel(kidBy(c))} 第 ${n} 課`)}<button class="linkbtn" data-del>改回全班</button></div></div>`).join("")}
-      ${free.length ? `<div class="dadd"><select data-add data-k="${k}" aria-label="第 ${n} 課：個別學生不同"><option value="">＋個別學生不同…</option>${free.map(x => `<option value="${esc(x.code)}">${esc(kidLabel(x))}</option>`).join("")}</select>${grps.length ? `<select data-addgrp data-k="${k}" aria-label="第 ${n} 課：一組學生不同"><option value="">＋一組學生不同…</option>${grps.map((g, i) => `<option value="${i}">${esc(g.name)}（${g.kids.filter(kidBy).length} 位）</option>`).join("")}</select>` : ""}</div>` : ""}`;
+      ${[...new Set(own.map(c => grpOf(t, c)).filter(Boolean))].map(name => { const cs = own.filter(c => grpOf(t, c) === name);
+        return `<div class="drow dkid" data-k="${k}" data-grp="${esc(name)}"><span class="dk">一組</span><div class="kc"><b>${esc(name)}（${cs.length} 位）</b>
+        ${dateCtl(t.kids[cs[0]], `${name} 第 ${n} 課`)}<button class="linkbtn" data-del>改回全班</button></div></div>`; }).join("")}
+      ${free.length ? `<div class="dadd"><select data-add data-k="${k}" aria-label="第 ${n} 課：個別學生不同"><option value="">＋個別…</option>${free.map(x => `<option value="${esc(x.code)}">${esc(kidLabel(x))}</option>`).join("")}</select>${grps.length ? `<select data-addgrp data-k="${k}" aria-label="第 ${n} 課：一組學生不同"><option value="">＋一組…</option>${grps.map(g => `<option value="${g.gi}">${esc(g.name)}（${g.kids.filter(kidBy).length} 位）</option>`).join("")}</select>` : ""}</div>` : ""}`;
   }).join("");
   const done = () => { saveTeach(); renderDates(); render(); };
   $("#dTable").querySelectorAll(".drow").forEach(r => {
-    const k = r.dataset.k, c = r.dataset.kid;
-    /* 這一列改的是全班預設，還是某位學生的個別設定 */
-    const target = () => c ? teach[k].kids[c] : teach[k];
+    const k = r.dataset.k, c = r.dataset.kid, gname = r.dataset.grp;
+    /* 這一列改的是全班預設、某位學生的個別設定，還是一組學生（組內每位一起改） */
+    const codes = () => gname ? Object.keys(teach[k].kids).filter(x => grpOf(teach[k], x) === gname) : c ? [c] : [];
+    const each = fn => codes().forEach(x => fn(teach[k].kids[x]));
+    const target = () => teach[k];
     r.querySelector("[data-type]").onchange = e => {
       const v = e.target.value;
-      if(c) teach[k].kids[c] = {...teach[k].kids[c], type:v};   /* 個別學生選「依年級」＝這位學生不用全班的日期 */
+      if(c || gname) codes().forEach(x => { teach[k].kids[x] = {...teach[k].kids[x], type:v}; });   /* 個別學生選「依年級」＝這位學生不用全班的日期 */
       else { const keep = (teach[k] || {}).kids; teach[k] = v ? {...(teach[k] || {}), type:v} : (keep ? {kids:keep} : {}); }
       done();
     };
     const s = r.querySelector("[data-s]"), en = r.querySelector("[data-e]");
-    if(s) s.onchange = () => { target().start = s.value; done(); };
-    if(en) en.onchange = () => { target().end = en.value; done(); };
+    if(s) s.onchange = () => { (c || gname ? each : f => f(target()))(t => { t.start = s.value; }); done(); };
+    if(en) en.onchange = () => { (c || gname ? each : f => f(target()))(t => { t.end = en.value; }); done(); };
     const del = r.querySelector("[data-del]");
-    if(del) del.onclick = () => { delete teach[k].kids[c]; if(!Object.keys(teach[k].kids).length) delete teach[k].kids; done(); };
+    if(del) del.onclick = () => { codes().forEach(x => delete teach[k].kids[x]); if(!Object.keys(teach[k].kids).length) delete teach[k].kids; done(); };
   });
   /* 加一位個別學生：先複製全班的日期，老師再改 */
   $("#dTable").querySelectorAll("[data-add]").forEach(sel => sel.onchange = () => {
@@ -614,12 +644,12 @@ function renderDates(){
     t.kids[code] = t.type === "dates" ? {type:"dates", start:t.start || "", end:t.end || ""} : {type:"dates", start:"", end:""};
     done();
   });
-  /* 加一組學生（老師專區「多位學生」存的組別）：每位都複製全班的日期，已經有個別設定的不動 */
+  /* 加一組學生（學生名單的組別）：每位都複製全班的日期，已經有個別設定的不動 */
   $("#dTable").querySelectorAll("[data-addgrp]").forEach(sel => sel.onchange = () => {
-    const k = sel.dataset.k, g = (load(KEYS.teacher, {}).groups || [])[+sel.value]; if(!g) return;
+    const k = sel.dataset.k, g = getGroups()[+sel.value]; if(!g) return;
     const t = teach[k] = teach[k] || {};
     t.kids = t.kids || {};
-    g.kids.filter(c => kidBy(c) && !t.kids[c]).forEach(c => { t.kids[c] = t.type === "dates" ? {type:"dates", start:t.start || "", end:t.end || ""} : {type:"dates", start:"", end:""}; });
+    g.kids.filter(c => kidBy(c) && !t.kids[c]).forEach(c => { t.kids[c] = {...(t.type === "dates" ? {type:"dates", start:t.start || "", end:t.end || ""} : {type:"dates", start:"", end:""}), grp:g.name}; });
     done();
   });
 }

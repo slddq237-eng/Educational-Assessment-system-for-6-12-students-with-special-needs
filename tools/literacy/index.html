@@ -919,7 +919,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <div class="overlay" id="datesSheet" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dTitle">
     <header><h2 id="dTitle">教學日期管理</h2><button class="ghost" data-close>關閉</button></header>
-    <p class="hint" style="margin:0">本學期教的課輸入教學日期就好，上面先選版本、再選年級，下面每一課一列。日期只用來算「教學後第幾天」和圖上的教學結束時間線，不影響前測、後測的標記；沒輸入日期的課，這些就不會出現。預設是全班一組；同一課學生進度不同（例如學扶、分組教學），可以用「＋個別學生不同」替那位學生另外設定，或用「＋一組學生不同」一次替「多位學生」存好的整組設定；沒設定的學生照全班的。「依學生年級自動判斷」只是沒填日期的標記，日期要自己填。</p>
+    <p class="hint" style="margin:0">選版本和年級，填這學期教的課的教學日期。進度不同的學生，用「＋個別…」或「＋一組…」另外設定，沒設定的照全班。</p>
     <p class="sub">版本</p>
     <div class="row" id="dEds"></div>
     <p class="sub">年級</p>
@@ -937,6 +937,10 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
     <div class="krow head"><span>頭像</span><span>代號</span><span>名字（建議填）</span><span>年級</span><span></span><span></span></div>
     <div id="kTable" style="display:grid;gap:8px"></div>
     <div class="add"><input id="newKid" maxlength="8" placeholder="新增代號，例如 S07"><button class="chip" id="addKid">加入</button></div>
+    <h3 style="margin:14px 0 4px">分組</h3>
+    <p class="hint" style="margin:0">先建組別，再點學生加入。教學日期（一組學生不同）、老師專區「多位學生」都用同一份組別；一位學生只能在一組。組別只存在這台電腦。</p>
+    <div id="kGroups" style="display:grid;gap:10px;margin-top:8px"></div>
+    <div class="add"><input id="newGrp" maxlength="12" placeholder="新增組別，例如 A 組"><button class="chip" id="addGrp">新增組別</button></div>
     <footer><button class="save" data-close>完成</button></footer>
   </div>
 </div>
