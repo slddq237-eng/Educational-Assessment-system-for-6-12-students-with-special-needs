@@ -428,7 +428,7 @@ function renderQuiz(){
 }
 
 /* 平板作答（tablet.js）：快速開始和進階設定都有（2026-10-23 維護者要求放進快速開始）；
-   目前只能練習（正式評量要等 A3 定案，見 docs/plans/pending.md） */
+   練習和正式評量都能用（2026-10-25 起，A3-18） */
 const qrOn = () => state.answer === "qr";
 function renderAnswers(){
   const n = selKids().length;
