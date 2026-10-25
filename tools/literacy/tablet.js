@@ -127,7 +127,7 @@ async function tabletQr(){
   if(state.kind === "formal") wsStart(state.lessons, "formal");   /* 正式評量用到的字組先鎖定，再打包進 QR code（和電腦上開始評量一樣） */
   const url = location.href.split("#")[0] + "#t=" + b64url(JSON.stringify(tabletPack()));
   const q = quizPlan(), g = GOALS.find(x => x.id === state.goal);
-  $("#qrInfo").innerHTML = `${state.kind === "formal" ? "正式評量" + (state.prepost ? "（" + state.prepost + "）" : "") : "練習"}・目標 ${g.id} ${g.name}・${esc(lessonsText())}・${state.mode === "flu" ? "流暢性" : `每人 ${q.count} 題`}<br>學生：${esc(selKids().join("、"))}`;
+  $("#qrInfo").innerHTML = `${state.kind === "formal" ? "正式評量" + (state.prepost ? "（" + state.prepost + "）" : "") : "練習"}・${g.name}・${esc(lessonsText())}・${state.mode === "flu" ? "流暢性" : `每人 ${q.count} 題`}<br>學生：${esc(selKids().join("、"))}`;
   $("#qrMsg").textContent = location.protocol === "file:" ? "注意：這個網頁是從電腦裡的檔案打開的，平板打不開。請用網站網址打開識字評量，再產生 QR code。"
     : state.kind === "formal" ? "提醒：同一位學生的前測和後測請用同一種裝置（都用平板，或都用大螢幕），結果才好比較。" : "";
   $("#qrBox").innerHTML = `<p class="note">產生中…</p>`;
@@ -163,7 +163,7 @@ function tabletStart(){
     themePick:s.themePick || "none",
     kidHints:Object.fromEntries(Object.entries(s.kidHints || {}).map(([c, v]) => [c, {hints:new Set(v.hints), rule:v.rule}]))});
   const g = GOALS.find(x => x.id === state.goal);
-  $("#tpInfo").textContent = `今天${state.kind === "formal" ? "評量" : "練習"}：${lessonsText()}（目標 ${g.id} ${g.name}）`;
+  $("#tpInfo").textContent = `今天${state.kind === "formal" ? "評量" : "練習"}：${lessonsText()}（${g.name}）`;
   /* 結果畫面只留「再玩一次」（2026-10-23 維護者決定，不用換人）：沒有「回到設定」，平板上也不匯出 Excel */
   $("#rHome").hidden = true; $("#rExport").hidden = true;
   tabletKids();
