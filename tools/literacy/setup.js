@@ -646,6 +646,8 @@ function renderView(){
   const chips = (list, cur, key) => list.map(([v, t]) => `<button class="chip ${cur === v ? "on" : ""}" data-${key}="${v}" aria-pressed="${cur === v}">${t}</button>`).join("");
   $("#vFont").innerHTML = chips(FONT_SIZES, settings.fontScale, "fs");
   $("#vUi").innerHTML = chips(UI_SIZES, settings.uiScale, "ui");
+  $("#vHint").innerHTML = chips(HINT_SIDES, settings.hintSide || "right", "hs");
+  $("#vHint").querySelectorAll("[data-hs]").forEach(b => b.onclick = () => { settings.hintSide = b.dataset.hs; saveSettings(); renderView(); });
   $("#vFont").querySelectorAll("[data-fs]").forEach(b => b.onclick = () => { settings.fontScale = b.dataset.fs; saveSettings(); applyDisplay(); renderView(); });
   $("#vUi").querySelectorAll("[data-ui]").forEach(b => b.onclick = () => { settings.uiScale = b.dataset.ui; saveSettings(); applyDisplay(); renderView(); });
   $("#sRate").value = settings.rate; $("#sRateV").textContent = `${settings.rate} 倍`;
