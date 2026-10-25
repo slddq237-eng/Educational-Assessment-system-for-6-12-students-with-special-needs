@@ -207,8 +207,7 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
 /* 好點的大按鈕（2026-10-25 維護者：選學生、選版本、年級的按鈕太小很難點）：學生是圓頭像加大字，版本和年級是大圓角 */
 .kidchip .av{--s:28px;margin-right:6px}
 /* 第 2 步選學生：小藥丸形，名字在左、圓頭像在右（2026-10-25 維護者：原本整顆圓形 176px 太大） */
-#kids,#kidGroups{gap:10px}
-#kidGroups{margin-bottom:10px;align-items:center}
+#kids{gap:10px}
 #kids .kidchip{display:inline-flex;flex-direction:row-reverse;align-items:center;gap:8px;min-height:76px;padding:6px 10px 6px 26px;font-size:25px;line-height:1.15}
 #kids .kidchip .av{--s:64px;margin:0}
 #kids .kidchip small{margin:0 0 0 4px;font-size:16px}
@@ -836,7 +835,6 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
         <h2 id="h4"><span class="adv-only">哪些學生要評量？</span><span class="quick-only">誰要做？</span></h2>
         <p class="hint adv-only">學生的年級在「學生名單」設定，系統會用年級判斷每一課對這位學生是哪個時期。</p>
         <p class="hint quick-only" id="kidsHintQ">點選要做的學生，最多 4 位輪流。</p>
-        <div class="row" id="kidGroups" hidden></div>
         <div class="row" id="kids"></div>
         <p class="note"><button class="linkbtn" data-open="kids">新增學生或修改年級</button></p>
       </section>
@@ -940,7 +938,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
     <div id="kTable" style="display:grid;gap:8px"></div>
     <div class="add"><input id="newKid" maxlength="8" placeholder="新增代號，例如 S07"><button class="chip" id="addKid">加入</button></div>
     <h3 style="margin:14px 0 4px">分組</h3>
-    <p class="hint" style="margin:0">先建組別，再點學生加入。選學生、教學日期（一組學生不同）、老師專區「多位學生」都用同一份組別；一位學生可以在好幾組。組別只存在這台電腦。</p>
+    <p class="hint" style="margin:0">先建組別，再點學生加入。教學日期（一組學生不同）、老師專區「多位學生」都用同一份組別；一位學生可以在好幾組。組別只存在這台電腦。</p>
     <div id="kGroups" style="display:grid;gap:10px;margin-top:8px"></div>
     <div class="add"><input id="newGrp" maxlength="12" placeholder="新增組別，例如 A 組"><button class="chip" id="addGrp">新增組別</button></div>
     <footer><button class="save" data-close>完成</button></footer>
