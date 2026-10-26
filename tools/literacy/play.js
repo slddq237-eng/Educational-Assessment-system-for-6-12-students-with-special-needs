@@ -689,8 +689,21 @@ function showPartners(kids, mode){
   box.insertAdjacentHTML("beforeend", `<div class="partners ${mode}">${kids.map(c => {
     const i = g.partner[c], st = Themes.stars(g.theme, i) || 1;
     const fx = mode === "hit" ? `<span class="beam"></span><span class="fx"><u></u>${"<b></b>".repeat(FX_RINGS[st])}${Array.from({length:FX_COUNT[st]}, (_, n) => `<i style="--a:${-80 + 160 * (n + .5) / FX_COUNT[st]}deg;--w:${st === 4 && n % 2 ? .2 : 0}s"></i>`).join("")}</span>` : "";
-    return `<div class="pt t${st}">${fx}<div class="pimg">${Themes.stickerSvg(g.theme, i)}</div><span>${mode === "miss" ? "休息一下…" : esc(Themes.THEMES[g.theme].stickers[i][1])}</span></div>`;
+    return `<div class="pt t${st}"><div class="mv">${fx}<div class="pimg">${Themes.stickerSvg(g.theme, i)}</div></div><span>${mode === "miss" ? "休息一下…" : esc(Themes.THEMES[g.theme].stickers[i][1])}</span></div>`;
   }).join("")}</div>`);
+  box.querySelector(".scenehold").classList.remove("bonk");   /* 場景再顯示時，沒撞怪獸的那次不要又晃一次 */
+  if(mode !== "hit") return;
+  /* 衝過去撞怪獸：算出從夥伴現在的位置到怪獸（場景中央偏上）要走多遠；全隊一起出場時錯開一點，才不會疊在一起 */
+  const hold = box.querySelector(".scenehold").getBoundingClientRect(), pts = [...box.querySelectorAll(".pt")];
+  let top = 0;
+  pts.forEach((el, n) => {
+    const m = el.querySelector(".mv"), r = el.querySelector(".pimg").getBoundingClientRect();
+    m.style.setProperty("--dx", `${hold.left + hold.width / 2 + (n - (pts.length - 1) / 2) * 90 - (r.left + r.width / 2)}px`);
+    m.style.setProperty("--dy", `${hold.top + hold.height * .5 - (r.top + r.height / 2)}px`);
+    top = Math.max(top, +(el.className.match(/t(\d)/) || [0, 1])[1]);
+  });
+  const sh = box.querySelector(".scenehold");   /* 撞到的瞬間怪獸那一塊晃一下，星等越高晃越大 */
+  sh.style.setProperty("--sh", `${[0, 3, 5, 8, 12][top]}px`); sh.classList.remove("bonk"); void sh.offsetWidth; sh.classList.add("bonk");
 }
 const partnerKids = (g, code) => g.game === "coop" ? g.kids : [code];
 
