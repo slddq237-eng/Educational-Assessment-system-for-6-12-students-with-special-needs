@@ -730,6 +730,8 @@ html.tabpre #tabPick[hidden]{display:block!important}
 #tSimple .schip span{font-size:13px;color:var(--muted);line-height:1.3}
 #tSimple,#tSimple .ssec{min-width:0;max-width:100%}   /* 表格太寬時只在表格裡橫向捲動，不把整頁撐寬 */
 #tSimple .tablewrap{overflow-x:auto;max-width:100%}
+#tResult,#tResult>*{min-width:0;max-width:100%}   /* 多位學生那頁：下面的「學生 × 生字」寬表格不能把整個區塊撐寬，否則上面的折線圖會跟著放大、超出卡片 */
+#tResult .tablewrap{overflow-x:auto;max-width:100%}
 #tSimple .sgrp{margin:18px 0 4px;font-size:18px}
 #tSimple .sgrp span{font-weight:400;color:var(--muted);font-size:15px}
 #tSimple .schars{letter-spacing:.15em;font-size:17px;font-family:var(--kai,inherit);display:inline-block;max-width:11em;white-space:normal;word-break:break-all}   /* 字很多時在格子裡換行，整張表才放得進畫面 */
