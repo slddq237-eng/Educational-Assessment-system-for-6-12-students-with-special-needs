@@ -389,14 +389,16 @@ function turnCard(code, first, then){
 }
 
 /* ---------- 3-2 全課賓果卡（只在練習） ----------
-   一課的字排成賓果卡（不夠排滿就用別課的字補），聽到哪個字就點哪個。
-   答對的格子蓋上學生的頭像，連成一條線（橫、直、斜）會跳出「連線！」。每位學生每一課各有自己的卡。 */
+   選的所有課要考的字一起排成賓果卡（不夠排滿就用別課的字補），聽到哪個字就點哪個。
+   答對的格子蓋上學生的頭像，連成一條線（橫、直、斜）會跳出「連線！」。每位學生整次作答只有一張固定的卡，換課不會換卡。 */
 const bingoOK = c => c.choices === "bingo" && !c.formal && !c.flu;
 const gridFor = n => n <= 9 ? [3,3] : n <= 16 ? [4,4] : n <= 20 ? [5,4] : n <= 25 ? [5,5] : n <= 30 ? [6,5] : [6,6];
-function bingoBoard(kid, k){
-  const id = kid + "|" + k;
+function bingoBoard(kid){
+  const id = kid;
   if(!G.boards[id]){
-    const own = [...new Set(testChars(k))].slice(0, 36), [cols, rows] = gridFor(own.length);
+    /* 這位學生要考的字（題目的字排在前面，超過 36 個也不會被截掉）加上每一課要考的所有字 */
+    const mine = G.queue.filter(x => x.kid === kid);
+    const own = [...new Set([...mine.map(x => x.c), ...mine.flatMap(x => testChars(x.k))])].slice(0, 36), [cols, rows] = gridFor(own.length);
     const fill = shuffle(ALL_CHARS.filter(c => !own.includes(c))).slice(0, cols * rows - own.length);
     const lines = [];
     for(let r = 0; r < rows; r++) lines.push(Array.from({length:cols}, (_, c) => r * cols + c));
@@ -441,7 +443,7 @@ if(document.fonts && document.fonts.addEventListener) document.fonts.addEventLis
   o.style.display = "none"; void o.offsetHeight; o.style.display = "";
 });
 function newItem(it){
-  const b = splitKey(it.k)[0], board = G.layout === "bingo" ? bingoBoard(it.kid, it.k) : null;
+  const b = splitKey(it.k)[0], board = G.layout === "bingo" ? bingoBoard(it.kid) : null;
   const regroup = G.goal === "4-1";   /* 目標 4-1 部件重組：看部件選字，不唸題目 */
   G.cur = {it, b, board, opts: board ? board.cells.map(ch => ({ch, type: optType(it.c, ch, it.k)})) : (regroup ? makePartsOptions : makeOptions)(it.c, it.k, G.choices),
            wrong:0, firstPick:null, firstSec:null, shown:[], hintPos:0, teacher:0, reads:new Set(), t0:null, tShown:performance.now(), done:false};
