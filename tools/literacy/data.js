@@ -71,11 +71,12 @@ const PLAYS = [
    學生看到的是遊戲卡片（主題・動作），點一張就同時選好主題和遊戲；前台不顯示分類名稱。
    之後加新的遊戲或主題：在 GAME_CARDS 加一列，能不能用的規則都寫在 playWhy。
    （現在一個主題一張卡片，卡片用主題代號辨認；之後同一個主題要有兩種遊戲時，卡片要另外給代號。） */
+/* partner：這個遊戲有「貼紙夥伴出場」（2026-10-26 維護者決定：海洋是釣魚、甜點是做蛋糕，不是攻擊，所以沒有） */
 const GAME_TYPES = {fight:"對抗類", build:"建築類"};
 const GAME_CARDS = [
-  {theme:"space",   type:"fight", act:"打外星人"},
+  {theme:"space",   type:"fight", act:"打外星人", partner:true},
   {theme:"ocean",   type:"fight", act:"釣大魚"},
-  {theme:"dino",    type:"fight", act:"孵恐龍蛋"},
+  {theme:"dino",    type:"fight", act:"孵恐龍蛋", partner:true},
   {theme:"dessert", type:"build", act:"做蛋糕"}
 ];
 const gameCard = theme => GAME_CARDS.find(c => c.theme === theme);

@@ -658,10 +658,10 @@ function showScene(on, cap = "", code = ""){
   if(on) $("#sceneCap").innerHTML = `${code ? Rewards.avatarHtml(code) : ""}<span>${esc(cap)}</span>`;
 }
 /* ---------- 貼紙夥伴（練習的打怪獸加強，2026-10-26 維護者決定；第一版沒有按鈕互動） ----------
-   細部設定打開「貼紙夥伴出場」才有；平板沒有貼紙收藏（D3），不出場。
+   細部設定打開「貼紙夥伴出場」才有；只有太空、恐龍（GAME_CARDS 的 partner）：海洋是釣魚、甜點是做蛋糕，不用夥伴攻擊（2026-10-26 維護者決定）；平板沒有貼紙收藏（D3），不出場。
    開始前輪流請有貼紙的學生點自己貼紙簿裡的貼紙當夥伴，沒有貼紙的用預設那張；過場時夥伴出現在怪獸下方。
    攻擊特效依星等不同，只是外觀：打到幾格還是看第一次就答對幾題（g.blockHits），夥伴不影響分數和紀錄。 */
-const partnerOn = g => !!(g.game && settings.partner && !TABLET);
+const partnerOn = g => !!(g.game && settings.partner && !TABLET && (gameCard(g.theme) || {}).partner);
 const defaultPartner = theme => Math.max(0, (Themes.LISTS[theme] || []).findIndex(d => d.stars === 1 && !d.evo));
 const FX_COUNT = {1:3, 2:6, 3:10, 4:16};   /* 星等越高，火花越多；光環、光暈、光柱在 CSS（.pt.t2～t4） */
 const FX_RINGS = {1:0, 2:1, 3:2, 4:3};
