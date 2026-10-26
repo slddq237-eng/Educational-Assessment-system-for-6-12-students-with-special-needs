@@ -12,6 +12,7 @@
 | 查合作規則、通知等級（①②③）、規格書怎麼用 | `rules.md` |
 | 改任何程式（新增、刪除、改名檔案，或改到別的檔案會用的東西） | `code/architecture.md`（程式地圖：誰用誰、資料存哪裡、改這裡要一起檢查哪裡）、`code/architecture-notes.md`（注意事項：平板不載入哪些檔案等）、`code/refactor.md`（整理程式的規則：存資料走入口等） |
 | 整理（重構）程式 | `code/refactor.md`（規則與進度清單）、`code/architecture.md` |
+| 改設定畫面、選項之間的限制（玩法、作答方式、主題、題數） | `code/setup-flow-audit.md`（2026-10-26 全面檢查：每兩個選項怎麼互相限制、哪些悄悄改掉）、`design/game-design.md` 第 2 節 |
 | 改識字評量的功能、畫面、玩法 | `design/literacy-design.md`；賓果整合、增強系統、血量、部件重組讀 `design/literacy-play.md`；`plans/roadmap.md`（確認屬於哪個階段） |
 | 改貼紙、扭蛋、星等、進化、設定步驟、玩法設定表 | `design/game-design.md` |
 | 改老師專區、分析、報告、備課分析 | `design/analysis-design.md`、`design/records.md` |
@@ -32,6 +33,7 @@
 | `rules.md` | 改完要更新哪些檔案、規格書的角色、專案說明、合作規則詳細版、三級通知、合併審核進度（2026-10-24 從本頁搬去） | 1、2 |
 | `code/architecture.md` | 程式地圖：每個檔案做什麼、載入順序、資料流、存放位置、改動連帶影響（2026-10-23 新增） | （新） |
 | `code/architecture-notes.md` | 程式架構的注意事項：共用名稱、平板作答模式、作答紀錄的存取界線（2026-10-24 從 `code/architecture.md` 第 10 節拆出） | （新） |
+| `code/setup-flow-audit.md` | 設定流程全面檢查：選項之間的限制一覽、發現的問題、建議做法（2026-10-26 新增） | （新） |
 | `code/refactor.md` | 整理程式（重構）的規則與進度清單：不整個重寫、存資料一律走入口、一次整理一件事（2026-10-23 新增） | （新） |
 | `plans/roadmap.md` | 開發路線圖（階段 A～F，版本規劃 2026-10-24 併入）、開放給其他老師前的準備 | 2-1、5、3-3 的「開放給其他老師前的準備」 |
 | `plans/roadmap-plans.md` | 還沒做的計畫細節：E9～E11、平台首頁規劃、多人合作破關遊戲、網站瀏覽量統計（2026-10-24 從 `plans/roadmap.md` 拆出） | 3-3 的「平台首頁規劃」「多人合作破關遊戲」 |
