@@ -88,6 +88,11 @@
 
 ## 授權說明
 
+本專案自己寫的程式與文件，依 **GNU GPL 第 3 版（GPLv3）** 授權，全文見 [LICENSE](LICENSE)。Copyright (C) 2026 本專案維護者。
+白話說明：可以免費使用、修改；改了再發布給別人時，也要用同樣的授權公開（2026-10-26 維護者決定，討論過程見 `docs/materials/data-sources.md`）。**這不是法律意見**；公開給外部老師前，建議請學校或大學的智財單位看過。
+
+下面這些不是我們寫的，各依原本的授權（完整清單見 `docs/materials/data-sources.md` 和網站的「關於我們」頁）。課本生字、語詞、例句是出版社的著作，不在 GPLv3 的範圍內，也不因為放在這個專案裡而改變授權。
+
 識字評量的注音字型改自 But Ko「ㄅ字嗨注音標楷」（[bpmfvs](https://github.com/ButTaiwan/bpmfvs)），漢字部分 CC BY 4.0，其餘 SIL OFL 1.1。
 
-`shared/parts.js` 的部件拆解改自 [cjkvi-ids](https://github.com/cjkvi/cjkvi-ids)（衍生自 CHISE 專案），依 GPLv2 授權。
+`shared/parts.js` 的部件拆解改自 [cjkvi-ids](https://github.com/cjkvi/cjkvi-ids)（衍生自 CHISE 專案），依 GPLv2 或更新版授權（依 CHISE 專案條款；Copyright (c) 2014-2017 CJKVI Database）。
