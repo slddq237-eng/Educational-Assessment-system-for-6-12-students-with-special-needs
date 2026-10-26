@@ -477,7 +477,7 @@ function trendView(rs, m){
     const g = groupBy(withStart, r => daysBetween(teachFor(key(r.book, r.lesson), r.kid).start, dayOf(r)));
     groups = [...g].sort((a, b) => a[0] - b[0]).map(([d, list]) => ({x:d, label: d < 0 ? `開始前 ${-d} 天` : `第 ${d} 天`, rs:list, phase: mainPhase(list), ...fn(list)}));
     note = `只有輸入過教學日期的課才能這樣對齊（${withStart.length} / ${src.length} ${unitN("acc")}）。0＝教學開始那一天。`;
-    const o = {metric:m, xLabel: d => `${d}`, events:[{x:0, label:"教學開始"}], xName:"教學開始後第幾天"};
+    const o = {metric:m, xLabel: d => `${d}`, events:[{x:0, label:"教學開始"}], eventsInDomain:true, xName:"教學開始後第幾天"};
     if(T.split === "lesson"){
       ({chart, groups} = lessonPanels(withStart, (r, kk) => daysBetween(teachFor(kk, r.kid).start, dayOf(r)), fn,
         (x, list) => ({label: x < 0 ? `開始前 ${-x} 天` : `第 ${x} 天`}), o, null, groups));
@@ -548,12 +548,25 @@ function lessonPanels(src, xOf, fn, info, o, all, total){
       .map(([x, rs]) => ({x, ...info(x, rs), lesson:name, rs, phase: mainPhase(rs), ...fn(rs)}));
     return {name, pts};
   });
-  const xs = (all || lessons.flatMap(l => l.pts)).map(p => p.x).concat((o.events || []).map(e => e.x));
-  const domain = xs.length ? [Math.min(...xs), Math.max(...xs)] : [0, 1];
+  /* 橫軸：「全部課合計」用全部的點；每一課小圖用自己的範圍（2026-10-26 維護者決定：老師要的是直觀看單課的進步，
+     不用上下對齊，後面的課才不會被前面的空白擠到一邊）。直線（教學安排、教學開始）只畫在範圍內；o.eventsInDomain＝直線一定要在圖裡（教學開始） */
+  const rangeOf = (pts, evs) => {
+    const xs = pts.map(p => p.x).concat(evs.map(e => e.x));
+    if(!xs.length) return [0, 1];
+    const a = Math.min(...xs), b = Math.max(...xs), pad = b > a ? (b - a) * 0.04 : 0.5;
+    return [a - pad, b + pad];
+  };
+  const events = o.events || [];
+  const totalDomain = rangeOf(all || lessons.flatMap(l => l.pts), events);
   /* 縱軸也統一，各課才比得出高低（正確率本來就固定 0～100%） */
   const ymax = Math.max(...lessons.flatMap(l => l.pts.map(p => p.v || 0)), ...(total || []).map(p => p.v || 0));
-  const chart = (total && total.length ? lineChart(total, {...o, domain, ymax, axisPts: all, title:"全部課合計（每次評量一個點，不分時期）", compact:true, noPhase:true, xName:""}) : "") + phaseLegend(lessons.flatMap(l => l.pts)) + lessons.map((l, i) =>
-    lineChart(l.pts, {...o, domain, ymax, axisPts: all, title:l.name, compact:true, xName: i === lessons.length - 1 ? o.xName : ""})).join("");
+  const own = l => {
+    const lo = Math.min(...l.pts.map(p => p.x)), hi = Math.max(...l.pts.map(p => p.x));
+    const evs = o.eventsInDomain ? events : events.filter(e => e.x >= lo - 1 && e.x <= hi + 1);
+    return {domain: rangeOf(l.pts, evs), events: evs};
+  };
+  const chart = (total && total.length ? lineChart(total, {...o, domain: totalDomain, ymax, axisPts: all, title:"全部課合計（每次評量一個點，不分時期）", compact:true, noPhase:true, xName:""}) : "") + phaseLegend(lessons.flatMap(l => l.pts)) + lessons.map((l, i) =>
+    lineChart(l.pts, {...o, ...own(l), ymax, axisPts: l.pts, title:l.name, compact:true, xName: i === lessons.length - 1 ? o.xName : ""})).join("");
   return {chart, groups: lessons.flatMap(l => l.pts).sort((a, b) => a.x - b.x)};
 }
 /* 時期的背景色（淺色，靠圖例和虛線輔助，不只靠顏色分辨）；未標記不塗色 */
