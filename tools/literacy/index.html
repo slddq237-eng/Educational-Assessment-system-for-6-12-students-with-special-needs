@@ -460,6 +460,10 @@ details.howto{margin:10px 0 0}
 /* 貼紙夥伴：怪獸下方一排，答對時「衝過去撞怪獸」（JS 算出 --dx --dy），撞到的地方放特效；特效依星等差很多：
    1 星：3 顆小黃星；2 星：藍色光環＋6 顆藍星；3 星：紫色旋轉光暈＋兩圈光環＋10 顆火花；
    4 星：金色光柱＋金色光暈＋三圈光環＋16 顆金星。都只播一次（不閃爍，對光敏感的學生比較安全）；總長 1.7 秒內，不超過過場的 1.8 秒 */
+.team{display:inline-flex;gap:8px;align-items:center}
+.team .tm{opacity:.4;transform:scale(.82);transition:opacity .2s,transform .2s}
+.team .tm.on{opacity:1;transform:scale(1.1)}
+.team .tm.on .av{box-shadow:0 0 0 3px #ffd23f}
 .partners{position:relative;z-index:5;display:flex;gap:2.2vw;justify-content:center;align-items:flex-end;margin-top:-26px}
 .pt{--u:var(--pu,clamp(72px,11.5vh,112px));position:relative;display:grid;justify-items:center;font-size:14px;font-weight:700;width:calc(var(--u) * 1.5)}
 .pt .mv{position:relative;display:grid;justify-items:center}
