@@ -71,7 +71,7 @@ function drawStickers(g){
     /* 打怪獸：打敗怪獸得到的東西（開始前就決定好）就是這次的貼紙；合作時預設大家得到一樣的，細部設定可改成各抽各的（開始時記在 g.coopSame） */
     const pick = g.game && (g.game !== "coop" || g.coopSame) ? g.prize : undefined;
     /* 平板不存收藏（2026-10-24 決定）：只抽、寫進紀錄送給老師，老師匯入後才收進貼紙簿 */
-    const idx = TABLET ? (pick ?? Themes.drawSticker(theme, [])) : Rewards.award(code, theme, {tool:"識字評量", session:g.session, idx:pick});
+    const idx = TABLET ? (pick ?? Themes.drawSticker(theme)) : Rewards.award(code, theme, {tool:"識字評量", session:g.session, idx:pick});
     if(TABLET) (tabletGot[code] ||= []).push(Themes.codeOf(theme, idx));   /* 平板的貼紙簿看得到今天抽到的（不存起來） */
     const text = Themes.stickerName(theme, idx);
     const mine = records.filter(r => r.session === g.session && r.kid === code);
