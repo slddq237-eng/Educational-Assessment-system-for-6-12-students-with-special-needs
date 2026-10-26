@@ -129,7 +129,7 @@ function hintHtml(id, c, b){
   if(id === "sound") return `<div class="h">再慢慢唸一次</div>`;
   if(id === "parts"){
     /* 部件（來源與規則見 data.js 的 partsOf）；拆不開的字用切塊，不直接顯示答案。部件重組的題目本身就是部件，不再重複提示 */
-    if(G && G.goal === "4-1") return "";
+    if(G && G.goal === "R4") return "";
     const p = partsOf(c);
     return p ? `<div class="h">${esc(p.join(" ＋ "))}</div>` : `<div class="h pieces" aria-label="切開的字">${cutHtml(c)}</div>`;
   }
@@ -230,7 +230,7 @@ function sessionText(lessons, bpmf){
   for(const k of lessons){
     const b = splitKey(k)[0];
     for(const c of charsOf(k)){
-      const [sound = "", shape = ""] = confOf(c, b) || [], opts = c + sound + shape + (state.goal === "4-1" ? (partsOf(c) || []).join("") : "");
+      const [sound = "", shape = ""] = confOf(c, b) || [], opts = c + sound + shape + (state.goal === "R4" ? (partsOf(c) || []).join("") : "");
       if(bpmf) ruby += [...opts].map(x => Bpmf.char(x, b)).join(""); else kai += opts;   /* 加注音時選項只用注音字型 */
     }
   }
@@ -307,7 +307,7 @@ function startSession(){
     /* 選項加注音（3-4）：只在練習，第 4 步決定；正式評量一律不加 */
     bpmf: state.kind !== "formal" && !!settings.practiceBpmf,
     /* 報讀提示：練習看第 4 步，正式評量看評量設定；部件重組（4-1）沒有題目讀音，報讀會念出答案，所以一律不開 */
-    read: state.goal !== "4-1" && state.kind !== "formal" && settings.practiceRead !== false,   /* 正式評量不報讀（A3-10） */
+    read: state.goal !== "R4" && state.kind !== "formal" && settings.practiceRead !== false,   /* 正式評量不報讀（A3-10） */
     tally: Object.fromEntries(list.map(k => [k, {n:0, first:0, passed:0, secs:[], wrong:0}])),
     quitArm: false
   };
@@ -418,7 +418,7 @@ function bingoBoard(kid){
 function optType(c, x, k, goal = G && G.goal){
   const b = splitKey(k)[0], [sound = "", shape = ""] = confOf(c, b) || [];
   if(x === c) return "答案";
-  if(goal === "4-1"){   /* 部件重組：沒有唸題目，只分形近、同部件 */
+  if(goal === "R4"){   /* 部件重組：沒有唸題目，只分形近、同部件 */
     if(shape.includes(x)) return "形近";
     if((partsOf(x) || []).some(p => (partsOf(c) || []).includes(p))) return "同部件";
     return charsOf(k).includes(x) ? "課文字" : "其他字";
@@ -449,7 +449,7 @@ if(document.fonts && document.fonts.addEventListener) document.fonts.addEventLis
 });
 function newItem(it){
   const b = splitKey(it.k)[0], board = G.layout === "bingo" ? bingoBoard(it.kid) : null;
-  const regroup = G.goal === "4-1";   /* 目標 4-1 部件重組：看部件選字，不唸題目 */
+  const regroup = G.goal === "R4";   /* 目標 4-1 部件重組：看部件選字，不唸題目 */
   G.cur = {it, b, board, opts: board ? board.cells.map(ch => ({ch, type: optType(it.c, ch, it.k)})) : (regroup ? makePartsOptions : makeOptions)(it.c, it.k, G.choices),
            wrong:0, firstPick:null, firstSec:null, shown:[], hintPos:0, teacher:0, reads:new Set(), t0:null, tShown:performance.now(), done:false};
   drawBar(it);
