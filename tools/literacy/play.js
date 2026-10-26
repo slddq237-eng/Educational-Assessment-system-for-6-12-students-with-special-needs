@@ -320,7 +320,11 @@ function startSession(){
   startClockShow();
   if(G.mode === "flu"){ G.turn = 0; showScreen("#play"); showReady(); return; }
   /* 正確率模式：每位學生各抽一份題目，再交錯排成輪流順序 */
-  const lists = list.map(code => pickItems(code, q).map(it => ({...it, kid:code})));
+  /* 賓果卡整次只有一張、一個字只有一格：同一個字出現在好幾課時只問一次，否則第二次那一格已蓋章點不了 */
+  const lists = list.map(code => {
+    const items = pickItems(code, q), seen = new Set();
+    return (G.layout === "bingo" ? items.filter(it => !seen.has(it.c) && seen.add(it.c)) : items).map(it => ({...it, kid:code}));
+  });
   G.queue = interleaveLists(lists);
   G.pos = 0;
   showScreen("#play");
