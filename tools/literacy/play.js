@@ -328,7 +328,7 @@ function startSession(){
   G.queue = G.shared ? (q.method === "weak" ? sharedBingoQueue(lists) : sharedBingoDraw(list, q)) : interleaveLists(lists);
   G.pos = 0;
   showScreen("#play");
-  if(G.game) return sceneStart(nextItem);
+  if(G.game) return partnerOn(G) ? pickPartners(() => { G.started = performance.now(); sceneStart(nextItem); })   /* 選夥伴的時間不算進右上角的計時 */ : sceneStart(nextItem);
   nextItem();
 }
 
@@ -657,6 +657,42 @@ function showScene(on, cap = "", code = ""){
   $("#pBody").hidden = on; $("#pScene").hidden = !on;
   if(on) $("#sceneCap").innerHTML = `${code ? Rewards.avatarHtml(code) : ""}<span>${esc(cap)}</span>`;
 }
+/* ---------- 貼紙夥伴（練習的打怪獸加強，2026-10-26 維護者決定；第一版沒有按鈕互動） ----------
+   細部設定打開「貼紙夥伴出場」才有；平板沒有貼紙收藏（D3），不出場。
+   開始前輪流請有貼紙的學生點自己貼紙簿裡的貼紙當夥伴，沒有貼紙的用預設那張；過場時夥伴出現在怪獸下方。
+   攻擊特效依星等不同，只是外觀：打到幾格還是看第一次就答對幾題（g.blockHits），夥伴不影響分數和紀錄。 */
+const partnerOn = g => !!(g.game && settings.partner && !TABLET);
+const defaultPartner = theme => Math.max(0, (Themes.LISTS[theme] || []).findIndex(d => d.stars === 1 && !d.evo));
+const FX_COUNT = {1:1, 2:3, 3:5, 4:8};
+function pickPartners(then){
+  const g = G;
+  g.partner = Object.fromEntries(g.kids.map(c => [c, defaultPartner(g.theme)]));
+  const todo = g.kids.filter(c => Rewards.owned(c, g.theme).length);
+  const next = () => {
+    if(G !== g || g.over) return;
+    const code = todo.shift(); if(code === undefined) return then();
+    const k = kidBy(code), th = g.theme;
+    const own = [...new Set(Rewards.owned(code, th))].sort((a, b) => Themes.stars(th, b) - Themes.stars(th, a) || a - b);
+    $("#pWho").innerHTML = `${Rewards.avatarHtml(code)}${esc(k ? kidShow(k) : code)}`;
+    $("#pProg").textContent = "";
+    $("#pBody").innerHTML = `<div class="ready"><h2>選一個夥伴一起打怪獸！</h2>
+      <div class="pickrow">${own.map(i => `<button class="pickp" data-i="${i}">${Themes.stickerSvg(th, i)}<span>${esc(Themes.THEMES[th].stickers[i][1])}</span><b>${"★".repeat(Themes.stars(th, i))}</b></button>`).join("")}</div></div>`;
+    $("#pBody").querySelectorAll(".pickp").forEach(b => b.onclick = () => { g.partner[code] = +b.dataset.i; next(); });
+  };
+  next();
+}
+/* 怪獸下方的夥伴列：stand＝站著等、hit＝出擊（依星等放特效）、miss＝沒打中、休息一下 */
+function showPartners(kids, mode){
+  const g = G, box = $("#pScene"); if(!g.partner) return;
+  const old = box.querySelector(".partners"); if(old) old.remove();
+  box.insertAdjacentHTML("beforeend", `<div class="partners ${mode}">${kids.map(c => {
+    const i = g.partner[c], st = Themes.stars(g.theme, i) || 1;
+    const fx = mode === "hit" ? `<span class="fx">${Array.from({length:FX_COUNT[st]}, (_, n) => `<i style="--a:${-70 + 140 * (n + .5) / FX_COUNT[st]}deg"></i>`).join("")}</span>` : "";
+    return `<div class="pt t${st}">${fx}<div class="pimg">${Themes.stickerSvg(g.theme, i)}</div><span>${mode === "miss" ? "休息一下…" : esc(Themes.THEMES[g.theme].stickers[i][1])}</span></div>`;
+  }).join("")}</div>`);
+}
+const partnerKids = (g, code) => g.game === "coop" ? g.kids : [code];
+
 /* 開始前：看看要打的怪獸，停 1.8 秒。
    平板（2026-10-24 維護者決定）：「是你嗎？」那一頁已經是遊戲開始畫面，按「開始」後直接出第一題、馬上唸，不再停 1.8 秒 */
 function sceneStart(then){
@@ -667,6 +703,7 @@ function sceneStart(then){
   g.scene.setPlayer(g.queue[0].kid);
   if(TABLET){ $("#pProg").textContent = `做完 ${g.queue.length} 題就成功！`; return then(); }
   showScene(true, `${g.game === "coop" ? "大家一起：" : ""}${t.line}`);
+  showPartners(partnerKids(g, g.queue[0].kid), "stand");
   $("#pProg").textContent = `做完 ${g.queue.length} 題就成功！`;
   setTimeout(() => { if(G === g && !g.over){ showScene(false); then(); } }, SCENE_MS);
 }
@@ -677,6 +714,7 @@ function sceneBeat(code, then){
   g.scene.setPlayer(code);
   if(n){ showScene(true, `${who}${g.game === "coop" ? "" : " "}${SCENE_ACT[g.theme](n)}！`, g.game === "coop" ? "" : code); g.scene.hit(g.hits, g.queue.length - g.pos); }
   else { showScene(true, SCENE_MISS[g.theme], g.game === "coop" ? "" : code); g.scene.miss(g.queue.length - g.pos); }
+  showPartners(partnerKids(g, code), n ? "hit" : "miss");
   setTimeout(() => { if(G === g && !g.over){ showScene(false); then(); } }, SCENE_MS);
 }
 /* 最後一題做完：打敗怪獸，播完才到結果畫面（結果畫面再揭曉貼紙） */
@@ -685,6 +723,7 @@ function sceneWin(){
   const t = Themes.THEMES[g.theme], last = g.queue[g.queue.length - 1].kid, k = kidBy(last);
   g.scene.setPlayer(last);
   showScene(true, g.game === "coop" ? t.coopWin : `${k ? kidShow(k) : last} ${t.winBanner}`, g.game === "coop" ? "" : last);
+  showPartners(partnerKids(g, last), "hit");
   const r = g.scene.win(g.hits);   /* 一律完成；蛋糕高度、外星人剩的血照答對題數 */
   setTimeout(() => { if(G === g && !g.over) sfx.fanfare(); }, r.bannerAt);   /* 上方的字已經寫了結果，不另外跳大字，免得蓋住怪獸 */
   setTimeout(() => { if(G === g && !g.over) finish(); }, r.delay);

@@ -689,6 +689,7 @@ function renderPractice(){
   $("#pEvery").innerHTML = SCENE_EVERY.map(([v, t]) => `<button class="chip ${cur === v ? "on" : ""}" data-every="${v}" aria-pressed="${cur === v}">${t}</button>`).join("");
   $("#pEvery").querySelectorAll("[data-every]").forEach(b => b.onclick = () => { settings.sceneEvery = b.dataset.every; saveSettings(); renderPractice(); });
   $("#vClock").checked = settings.clockPractice !== false;
+  $("#vPartner").checked = !!settings.partner;
 }
 /* 把字的大小、畫面大小套到整個網頁（CSS 變數 --fs、--uiz） */
 function applyDisplay(){
@@ -696,6 +697,7 @@ function applyDisplay(){
   document.documentElement.style.setProperty("--uiz", settings.uiScale);
 }
 $("#vSfx").onchange = e => { settings.sfx = e.target.checked; saveSettings(); };
+$("#vPartner").onchange = e => { settings.partner = e.target.checked; saveSettings(); };
 $("#vClock").onchange = e => { settings.clockPractice = e.target.checked; saveSettings(); };
 $("#vTryRight").onclick = () => sfx.right(true);
 $("#vTryWrong").onclick = () => sfx.wrong(true);

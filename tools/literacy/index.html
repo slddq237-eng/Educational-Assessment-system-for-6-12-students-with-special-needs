@@ -457,6 +457,25 @@ details.howto{margin:10px 0 0}
 .scenecap{font-size:clamp(22px,2.2vw,34px);font-weight:700;display:flex;align-items:center;gap:12px}
 .scenecap .av{--s:1.8em}
 .scenehold{width:100%;display:grid;gap:8px;justify-items:center}
+/* 貼紙夥伴：怪獸下方一排；特效依星等（1 顆小星、2 藍、3 紫、4 金），只是外觀 */
+.partners{display:flex;gap:18px;justify-content:center;align-items:flex-end}
+.pt{position:relative;display:grid;justify-items:center;font-size:15px;font-weight:700;width:96px}
+.pt .pimg{width:72px;height:72px}.pt .pimg svg{width:100%;height:100%;display:block}
+.pt .fx{position:absolute;top:-8px;left:50%;width:0;height:0;pointer-events:none}
+.pt .fx i{position:absolute;width:14px;height:14px;margin:-7px;border-radius:50%;background:#ffd24a;opacity:0}
+.pt.t2 .fx i{background:#4aa3ff}.pt.t3 .fx i{background:#a36bff;width:18px;height:18px;margin:-9px}.pt.t4 .fx i{background:#ffc400;width:22px;height:22px;margin:-11px;box-shadow:0 0 12px 4px #fff3b0}
+.partners.miss .pt{opacity:.8}
+.pickrow{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.pickp{display:grid;justify-items:center;gap:2px;width:120px;padding:8px;border:3px solid var(--line,#ccc);border-radius:14px;background:#fff;font-size:15px;cursor:pointer}
+.pickp svg{width:80px;height:80px}.pickp b{color:#e8a200;font-size:14px}
+@media (prefers-reduced-motion:no-preference){
+  .partners.hit .pimg{animation:ptjump .9s ease-out .3s}
+  .partners.hit .fx i{animation:ptfx 1s ease-out .55s both}
+  .partners.miss .pimg{animation:ptsway 1.2s ease-in-out}
+  @keyframes ptjump{0%{transform:translateY(0)}35%{transform:translateY(-34px) scale(1.12)}60%{transform:translateY(0)}100%{transform:translateY(0)}}
+  @keyframes ptfx{0%{opacity:1;transform:rotate(var(--a)) translateY(0)}100%{opacity:0;transform:rotate(var(--a)) translateY(-70px)}}
+  @keyframes ptsway{0%,100%{transform:rotate(0)}30%{transform:rotate(-6deg)}70%{transform:rotate(6deg)}}
+}
 .scene{width:100%;display:grid;gap:8px;justify-items:center}
 .scn{width:100%;height:auto;max-width:calc(58vh * 560 / 360);display:block;border-radius:22px;box-shadow:0 8px 0 rgba(0,0,0,.22)}
 .scenelab{font-size:clamp(16px,1.25vw,22px);text-align:center;background:var(--soft);padding:6px 18px;border-radius:999px}
@@ -980,6 +999,8 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
       <h3>遊戲：每做完幾題跳一次動畫</h3>
       <div class="group" id="pEvery"></div>
       <p class="note" style="margin:0">預設每 3 題：每題都跳動畫會打斷學生的注意力。這幾題第一次就答對幾題就前進幾格（例如疊幾層蛋糕），都沒答對就播「再加油」；最後一律完成、拿到貼紙。多位學生合作時，算全隊輪流的題數。</p>
+      <label class="group"><input type="checkbox" id="vPartner" style="width:20px;height:20px;accent-color:var(--green)"> 貼紙夥伴出場（遊戲用）</label>
+      <p class="note" style="margin:0">開始前學生輪流選自己貼紙簿裡的貼紙當夥伴（還沒有貼紙的用預設的），動畫時夥伴出來打怪獸，攻擊特效依星等不同。只是外觀不同：打到幾格還是看第一次就答對幾題。只有練習用，平板作答沒有。</p>
       <h3>計時</h3>
       <label class="group"><input type="checkbox" id="vClock" style="width:20px;height:20px;accent-color:var(--green)"> 練習時在右上角顯示計時</label>
       <p class="note" style="margin:0">正式評量要不要顯示計時，在「評量設定」調整（預設不顯示）。</p>
