@@ -27,9 +27,17 @@ let ui = load(KEYS.ui, "quick");      /* 這台電腦上次用的是快速開始
 const savedPreset = load(KEYS.preset, "") === "rti" ? "test" : load(KEYS.preset, "");
 state.preset = PRESETS.some(p => p.id === savedPreset) ? savedPreset : "class";
 const isQuick = () => ui === "quick";
+/* 設定被程式自動改掉時，在畫面上方寫一行說明，幾秒後自動收起（規則 8：不能悄悄改掉老師選好的東西） */
+let flowTimer = 0;
+function flowNote(msg){
+  const el = $("#flowNote"); if(!el) return;
+  el.textContent = msg; el.hidden = false;
+  clearTimeout(flowTimer); flowTimer = setTimeout(() => { el.hidden = true; }, 8000);
+}
 function applyPreset(id){
   if(state.preset !== id) state.prepost = "";
   state.preset = id; store(KEYS.preset, id);
+  if(state.qCount !== null || state.qMethod !== "even") flowNote("換了快速開始的卡片，題數和出題方式已回到預設。");
   Object.assign(state, {qCount:null, qMethod:"even"});   /* 評量目標沿用第 1 步選的 */
   PRESETS.find(p => p.id === id).apply();
   /* 作答方式：快速開始只有大螢幕輪流、平板掃 QR code 兩種（2026-10-25 起平板也能用在正式評量，A3-18） */
@@ -274,7 +282,7 @@ function renderThemePick(){
   $("#themeSec").hidden = !useRewards();
   if(!useRewards()) return;
   const fight = willFight(), list = selKids().map(kidBy);
-  if(fight && !gameCard(state.themePick)) state.themePick = "";
+  if(fight && !gameCard(state.themePick)){ if(state.themePick) flowNote("這次玩遊戲，原本選的主題沒有遊戲，請重新選一個遊戲。"); state.themePick = ""; }
   $("#h8").textContent = fight ? "選一個喜歡的遊戲！" : "選一個喜歡的主題！";
   const ids = fight ? GAME_CARDS.map(c => c.theme) : Themes.ids;
   const NAME = id => fight ? `${Themes.THEMES[id].name}・${gameCard(id).act}` : Themes.THEMES[id].name;
@@ -341,7 +349,9 @@ function oneLesson(){
   return sizes.length ? Math.round(sizes.reduce((a,b) => a+b, 0) / sizes.length) : 0;
 }
 function quizPlan(){
-  const pool = state.lessons.reduce((s,k) => s + lessonSize(k), 0);
+  /* 生字賓果：整次一張卡，最多 36 格、同一個字只問一次，所以每人最多 36 題（play.js 的 startSession） */
+  const bingo = bingoOK(current());
+  const pool = bingo ? Math.min(36, new Set(state.lessons.flatMap(k => wsPick(k))).size) : state.lessons.reduce((s,k) => s + lessonSize(k), 0);
   const one = Math.min(oneLesson(), pool);
   const def = state.kind === "formal" ? one : Math.min(PRACTICE_COUNT, pool);   /* 預設題數 */
   /* state.qCount：null＝預設、"all"＝全部（換課次後仍是全部）、數字＝老師自己輸入的題數 */
@@ -361,8 +371,11 @@ function quizPlan(){
     if(!moved) break; }
   const n = Math.max(1, selKids().length);
   const sec = count * (SEC_PER_ITEM[state.answer] || 8) * (isTurnLike(state.answer) ? n : 1);
-  return {pool, one, def, count, isAll, isDefault, canChoose, method, freqN, per, sec, n};
+  return {pool, one, def, count, isAll, isDefault, canChoose, method, freqN, per, sec, n, bingo};
 }
+/* 題數旁的補充說明：賓果卡的上限、只考部分字（練習和正式評量各自點選的字組，題數以點選的字為準） */
+const extraNote = q => (q.bingo ? "生字賓果卡最多 36 格，每人最多 36 題，同一個字只考一次。" : "")
+  + (state.lessons.some(k => wsPartial(k)) ? "有課只考部分的字（第 2 步「只考有教的字」），題數以點選的字為準。" : "");
 const methodName = m => m === "all" ? "全部出題" : METHODS.find(x => x.id === m).name;
 const minutes = s => s < 60 ? "不到 1 分鐘" : `約 ${Math.ceil(s / 30) / 2} 分鐘`;
 function renderQuiz(){
@@ -379,7 +392,7 @@ function renderQuiz(){
       <button class="chip ${q.isAll ? "" : "on"}" data-qq="def" aria-pressed="${!q.isAll}">快速隨選</button>
       <button class="chip ${q.isAll ? "on" : ""}" data-qq="all" aria-pressed="${q.isAll}">全課生字</button></div>`;
     /* 剛好 10 個字：兩個按鈕一樣，不顯示也不說明；真的不到 10 個字才寫明 */
-    const note = practice ? (q.pool < PRACTICE_COUNT ? "不到 10 個字，全課生字都考。" : "") : "要改題數，請切換到「進階設定」。";
+    const note = (practice ? (q.pool < PRACTICE_COUNT ? "不到 10 個字，全課生字都考。" : "") : "要改題數，請切換到「進階設定」。") + extraNote(q);
     box.innerHTML = `${pick}<p class="time"><b>${q.count} 題，${minutes(q.sec)}</b><span class="note" style="margin:0">${selKids().length > 1 ? "（學生輪流作答）" : ""}${note}</span></p>`;
     box.querySelectorAll("[data-qq]").forEach(b => b.onclick = () => { state.qCount = b.dataset.qq === "all" ? "all" : null; render(); });
     return;
@@ -408,7 +421,7 @@ function renderQuiz(){
       <button class="chip ${q.count === q.one && (state.kind === "formal" || state.qCount != null) ?"on":""}" data-qc="one">一課的量（${q.one} 字）</button>
       <button class="chip ${q.isAll?"on":""}" data-qc="all">全課生字（${q.pool} 字）</button></label>
     ${how}
-    <p class="time"><b>${minutes(q.sec)}</b>　<span class="note" style="margin:0">${isTurnLike(state.answer) && q.n > 1 ? `${q.n} 位學生輪流，每人 ${q.count} 題，` : ""}每題約 ${SEC_PER_ITEM[state.answer] || 8} 秒估算</span></p>`;
+    <p class="time"><b>${minutes(q.sec)}</b>　<span class="note" style="margin:0">${isTurnLike(state.answer) && q.n > 1 ? `${q.n} 位學生輪流，每人 ${q.count} 題，` : ""}每題約 ${SEC_PER_ITEM[state.answer] || 8} 秒估算${extraNote(q)}</span></p>`;
   $("#qCount").onchange = e => { const v = Math.max(1, Math.min(q.pool, +e.target.value || 1)); state.qCount = v; render(); };
   box.querySelectorAll("[data-qc]").forEach(b => b.onclick = () => {
     const qc = b.dataset.qc;
@@ -731,4 +744,4 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets()
 document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); if(t && t.dataset.open === "kids"){ renderKidSheet(); openSheet("#kidsSheet"); } });
 $("#openRecords").onclick = () => { renderRecSheet(); openSheet("#recSheet"); };
 
-function render(){ if(state.answer === "splitturn" && selKids().length < 2) state.answer = "turn"; renderPresets(); renderPrepost(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderTeam(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }
+function render(){ if(state.answer === "splitturn" && selKids().length < 2){ state.answer = "turn"; flowNote("只剩 1 位學生，沒有別人的區可以分，作答方式已改回「大螢幕・輪流」。"); } renderPresets(); renderPrepost(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderTeam(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }
