@@ -14,13 +14,10 @@ const {THEMES, RARE_GLOW, FISH, DINOS, fishBody, dinoSvg} = Themes;
 const REDUCE = matchMedia("(prefers-reduced-motion: reduce)").matches;
 function retrigger(el,cls,ms){ if(!el) return; el.classList.remove(cls); void el.getBoundingClientRect(); el.classList.add(cls); clearTimeout(el["_t_"+cls]); el["_t_"+cls]=setTimeout(()=>el.classList.remove(cls),ms); }
 /* 場景裡的主角換成這位學生的頭像（照片或卡通動物）；沒有頭像資料時保留原本畫的臉 */
-function avHref(code){
-  const a = code ? (Rewards.get(code).avatar || {}) : {};
-  return a.type === "photo" && a.data ? a.data : a.type === "animal" ? "data:image/svg+xml;charset=utf-8," + encodeURIComponent(Rewards.animalSvg(a.id).replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ')) : "";
-}
 function setSvgAv(img, face, code){
   if(!img) return;
-  const href = avHref(code);
+  const a = code ? (Rewards.get(code).avatar || {}) : {};
+  const href = a.type === "photo" && a.data ? a.data : a.type === "animal" ? "data:image/svg+xml;charset=utf-8," + encodeURIComponent(Rewards.animalSvg(a.id).replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ')) : "";
   if(href){ img.setAttribute("href", href); img.style.display = ""; face.style.display = "none"; }
   else { img.style.display = "none"; face.style.display = ""; }
 }
@@ -335,7 +332,7 @@ function dessertScene(el, goal){
   const wOf=i=> LG>1 ? W0-(W0-W1)*i/(LG-1) : W0;
   const label=()=>{ if(prog){ const left=prog[1]-prog[0]; q("sceneLab").textContent = left>0 ? `還有 ${left} 個字，蛋糕就完成了！` : "超級大蛋糕完成了！"; return; }
     q("sceneLab").textContent = qLeft>0 ? `再答 ${qLeft} 題，蛋糕就完成了！` : "蛋糕完成了！"; };
-  function layer(i, who){
+  function layer(i){
     const w=wOf(i), x=CX-w/2, y=BASE-(i+1)*H, [c,f]=FL[i%FL.length];
     let drip=`M${x} ${y+2} H${x+w} V${y+H*.42}`; const n=Math.max(4,Math.round(w/18));
     for(let j=n;j>0;j--){ const x1=x+w*j/n, x0=x+w*(j-1)/n, dy=(j%2?H*.62:H*.42); drip+=` Q${((x0+x1)/2).toFixed(1)} ${(y+dy+H*.2).toFixed(1)} ${x0.toFixed(1)} ${(y+H*.42).toFixed(1)}`; }
@@ -348,19 +345,13 @@ function dessertScene(el, goal){
     const g=document.createElementNS(NS,"g"); g.setAttribute("class","lay");
     g.style.setProperty("--fall", (-(y+90)).toFixed(0)+"px");
     g.innerHTML=`<rect x="${x}" y="${y}" width="${w}" height="${H}" rx="6" fill="${c}" stroke="#7a3a4a" stroke-width="2"/><path d="${drip}" fill="${f}"/>${dots}`;
-    /* 合作：這一層是誰疊的，中間貼那位學生的小頭像（顏色框分得出是不同的人） */
-    const href = who ? avHref(who) : "";
-    if(href){ const r=Math.min(H*.42, 13), id="lc"+Math.random().toString(36).slice(2,8);
-      g.insertAdjacentHTML("beforeend", `<clipPath id="${id}"><circle cx="${CX}" cy="${(y+H/2).toFixed(1)}" r="${r.toFixed(1)}"/></clipPath><circle cx="${CX}" cy="${(y+H/2).toFixed(1)}" r="${(r+1.5).toFixed(1)}" fill="#fff" stroke="${WHOCOL[(WHOLIST.indexOf(who)+WHOCOL.length)%WHOCOL.length]}" stroke-width="2.5"/><image href="${href}" x="${CX-r}" y="${(y+H/2-r).toFixed(1)}" width="${(r*2).toFixed(1)}" height="${(r*2).toFixed(1)}" clip-path="url(#${id})" preserveAspectRatio="xMidYMid slice"/>`); }
     q("cLayers").appendChild(g);
   }
   /* 一層一層從高處掉下來，著地時才出聲音和亮片 */
   const DROP=380, LAND=540;
-  const WHOCOL=["#e8553f","#3b8fe8","#2fa84f"], WHOLIST=[];   /* 每位學生一個框的顏色（照出現順序） */
-  function dropTo(target, startDelay, by){
-    let k=0; const total=target-done;
-    while(done<target){ const i=done++, who = !by || !by.length ? "" : total >= by.length ? by[Math.floor(k*by.length/total)] : [...new Set(by)][k % new Set(by).size];   /* 層數比答對的題數少時，輪流給每位答對的學生一層 */ if(who && !WHOLIST.includes(who)) WHOLIST.push(who);
-      setTimeout(()=>{ layer(i, who); setTimeout(()=>{ SFX.hit(); sparkle(10, BASE-(i+1)*H); },LAND); }, startDelay+k*DROP); k++; }
+  function dropTo(target, startDelay){
+    let k=0;
+    while(done<target){ const i=done++; setTimeout(()=>{ layer(i); setTimeout(()=>{ SFX.hit(); sparkle(10, BASE-(i+1)*H); },LAND); }, startDelay+k*DROP); k++; }
     return startDelay + Math.max(0,k-1)*DROP + LAND;
   }
   let prog=null;
@@ -374,7 +365,7 @@ function dessertScene(el, goal){
   label();
   return {
     setPlayer(p){ setSvgAv(q("cAv"), q("cFace"), p); },
-    hit(d, left, by){ if(left!=null) qLeft=left; retrigger(chef,"toss",800); dropTo(Math.min(LG-1, Math.ceil(d/goal*LG)), 250, by); label(); },
+    hit(d, left){ if(left!=null) qLeft=left; retrigger(chef,"toss",800); dropTo(Math.min(LG-1, Math.ceil(d/goal*LG)), 250); label(); },
     /* 進度條：一個杯子蛋糕＝一個字（每位同學都答完這一輪才算做好一個） */
     progress(r,T,part){ prog=[r,T]; const box=q("dProg");
       if(box.children.length!==T) box.innerHTML=Array.from({length:T},(_,i)=>`<span class="cup">${cupSvg(i)}</span>`).join("");
@@ -383,9 +374,9 @@ function dessertScene(el, goal){
       box.setAttribute("aria-label",`蛋糕進度：完成 ${r} 個字，共 ${T} 個字`); label(); },
     miss(left){ if(left!=null){ qLeft=left; label(); } retrigger(chef,"wobble",700); retrigger(svg,"oopsing",1000); },
     /* 最後一律完成（插蠟燭），蛋糕高度照答對題數；一題都沒答對也有一層 */
-    win(final, by){ retrigger(chef,"toss",800);
+    win(final){ retrigger(chef,"toss",800);
       const top=Math.max(1, done, Math.min(LG, Math.ceil(final/goal*LG)));
-      qLeft=0; const landed = dropTo(top, 250, by); label();
+      qLeft=0; const landed = dropTo(top, 250); label();
       setTimeout(()=>sparkle(14, BASE-top*H), landed);
       setTimeout(()=>{ const topY=BASE-top*H, w=wOf(top-1);
         let cand=""; [-0.28,0,0.28].forEach((f,i)=>{ const cx=CX+f*w, col=["#4fa8f0","#ff5d73","#ffd23f"][i];

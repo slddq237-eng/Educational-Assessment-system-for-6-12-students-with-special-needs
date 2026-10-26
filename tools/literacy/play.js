@@ -611,7 +611,7 @@ function endItem(passed, correctSec, revealed){
   };
   saveRecord(rec);
   /* 打怪獸：做完幾題、前進幾格（練習＝第一次就答對的題數；正式評量維持原本「每題都前進」，等 A3 討論） */
-  if(G.game){ G.doneN++; if(rec.firstCorrect || G.kind === "formal"){ G.hits++; G.blockHits++; (G.blockBy ||= []).push(it.kid); } }
+  if(G.game){ G.doneN++; if(rec.firstCorrect || G.kind === "formal"){ G.hits++; G.blockHits++; } }
   const t = G.tally[it.kid];
   t.n++; if(rec.firstCorrect) t.first++; if(passed){ t.passed++; t.secs.push(correctSec); } else t.wrong++;
   if(G.mode === "flu"){
@@ -727,7 +727,7 @@ function sceneStart(then){
   const g = G, box = $("#pScene"), t = Themes.THEMES[g.theme];
   box.innerHTML = `<div class="scenecap" id="sceneCap"></div><div class="scenehold"></div>`;
   g.scene = Scenes[g.theme](box.querySelector(".scenehold"), g.queue.length, g.prize);
-  g.hits = 0; g.doneN = 0; g.blockHits = 0; g.blockBy = [];
+  g.hits = 0; g.doneN = 0; g.blockHits = 0;
   g.scene.setPlayer(g.queue[0].kid);
   if(TABLET){ $("#pProg").textContent = `做完 ${g.queue.length} 題就成功！`; return then(); }
   showScene(true, `${g.game === "coop" ? "大家一起：" : ""}${t.line}`, "", teamHtml(g, g.queue[0].kid));
@@ -738,9 +738,9 @@ function sceneStart(then){
 /* 每做完幾題：主角換成剛剛作答的學生；這幾題答對幾題就前進幾格，都沒答對就播「再加油」，停 1.8 秒 */
 function sceneBeat(code, then){
   const g = G, k = kidBy(code), n = g.blockHits, who = g.game === "coop" ? "大家" : k ? kidShow(k) : code;
-  const by = g.blockBy; g.blockHits = 0; g.blockBy = [];   /* by＝這幾題第一次就答對的是哪些學生（甜點合作時蛋糕每一層標是誰疊的） */
+  g.blockHits = 0;
   g.scene.setPlayer(code);
-  if(n){ showScene(true, `${who}${g.game === "coop" ? "" : " "}${SCENE_ACT[g.theme](n)}！`, g.game === "coop" ? "" : code, teamHtml(g, code)); g.scene.hit(g.hits, g.queue.length - g.pos, g.game === "coop" ? by : null); }
+  if(n){ showScene(true, `${who}${g.game === "coop" ? "" : " "}${SCENE_ACT[g.theme](n)}！`, g.game === "coop" ? "" : code, teamHtml(g, code)); g.scene.hit(g.hits, g.queue.length - g.pos); }
   else { showScene(true, SCENE_MISS[g.theme], g.game === "coop" ? "" : code, teamHtml(g, code)); g.scene.miss(g.queue.length - g.pos); }
   showPartners(partnerKids(g, code), n ? "hit" : "miss");
   setTimeout(() => { if(G === g && !g.over){ showScene(false); then(); } }, SCENE_MS);
@@ -752,7 +752,7 @@ function sceneWin(){
   g.scene.setPlayer(last);
   showScene(true, g.game === "coop" ? t.coopWin : `${k ? kidShow(k) : last} ${t.winBanner}`, g.game === "coop" ? "" : last, teamHtml(g, last));
   showPartners(partnerKids(g, last), "hit");
-  const r = g.scene.win(g.hits, g.game === "coop" ? g.blockBy : null);   /* 一律完成；蛋糕高度、外星人剩的血照答對題數 */
+  const r = g.scene.win(g.hits);   /* 一律完成；蛋糕高度、外星人剩的血照答對題數 */
   setTimeout(() => { if(G === g && !g.over) sfx.fanfare(); }, r.bannerAt);   /* 上方的字已經寫了結果，不另外跳大字，免得蓋住怪獸 */
   setTimeout(() => { if(G === g && !g.over) finish(); }, r.delay);
 }
