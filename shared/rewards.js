@@ -124,7 +124,7 @@ const owned = (code, theme) => (get(code).stickers[theme] || []).map(c => { cons
 function award(code, theme, info){
   info = info || {};
   const x = copy(get(code)), n = Themes.THEMES[theme].stickers.length, f = info.sticker ? Themes.findCode(info.sticker) : null;
-  const idx = f && f.theme === theme ? f.idx : Number.isInteger(info.idx) && info.idx >= 0 && info.idx < n ? info.idx : Themes.drawSticker(theme, owned(code, theme));
+  const idx = f && f.theme === theme ? f.idx : Number.isInteger(info.idx) && info.idx >= 0 && info.idx < n ? info.idx : Themes.drawSticker(theme);
   const sticker = Themes.codeOf(theme, idx);
   (x.stickers[theme] ||= []).push(sticker);
   (x.log ||= []).push({at:new Date().toISOString(), tool:info.tool || "", session:info.session || "", theme, sticker});
