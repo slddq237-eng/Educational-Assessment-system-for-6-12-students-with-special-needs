@@ -682,7 +682,6 @@ function renderSettings(){
   $("#sChoices").querySelectorAll("button").forEach(b => b.onclick = () => { settings.choices = b.dataset.c; saveSettings(); renderSettings(); render(); });
   $("#sTheme").checked = settings.formalTheme;
   $("#sClock").checked = !!settings.clockFormal;
-  $("#sGame").checked = !!settings.formalGame; $("#sGame").disabled = !settings.formalTheme;
 }
 /* 畫面與聲音面板 */
 function renderView(){
@@ -725,8 +724,7 @@ if("speechSynthesis" in window) speechSynthesis.addEventListener && speechSynthe
 applyDisplay();
 $("#sRate").oninput = e => { settings.rate = +e.target.value; $("#sRateV").textContent = `${settings.rate} 倍`; saveSettings(); };
 $("#sTest").onclick = () => speak("努力的努");
-$("#sTheme").onchange = e => { settings.formalTheme = e.target.checked; saveSettings(); $("#sGame").disabled = !settings.formalTheme; };
-$("#sGame").onchange = e => { settings.formalGame = e.target.checked; saveSettings(); };
+$("#sTheme").onchange = e => { settings.formalTheme = e.target.checked; saveSettings(); };
 $("#sClock").onchange = e => { settings.clockFormal = e.target.checked; saveSettings(); };
 
 let lastFocus = null;

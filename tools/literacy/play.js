@@ -670,7 +670,7 @@ function heartsOut(code){
    遊戲分對抗類、建築類（data.js 的 GAME_CARDS），紀錄的 gameType 記是哪一類。
    場景只在「題目之間」出現：開始前一段、每做完幾題一段（固定 1.8 秒），最後一題做完是打敗怪獸。
    幾題一段看細部設定的 sceneEvery（預設 3 題，2026-10-22 維護者決定：每題都跳會打斷注意力）；合作時算全隊輪流的題數。
-   以下只改練習；正式評量開了打怪獸時，維持原本的每題一次、不論對錯都前進（正式評量的條件由 A3 一起決定）。
+   以下只改練習；正式評量不玩遊戲（A3-16，2026-10-25 維護者決定：各玩各的做出來前先停用）。
    前進多少＝這幾題「第一次就答對」的題數（答對 3 題疊 3 層蛋糕）；都沒答對就播各主題的「再加油」動畫、不前進。
    最後一律打敗怪獸、拿到貼紙（鼓勵參與），但蛋糕高度、外星人剩的血，照答對的題數呈現。
    作答時看不到場景，選項的版面和沒玩時完全一樣。 */
@@ -681,10 +681,10 @@ const gameName = r => !r.game ? "無" : `${r.gameType ? `遊戲・${GAME_TYPES[r
 const gameAllowed = () => state.mode === "acc" && !bingoOK(current());
 function gameFor(g){
   if(g.mode !== "acc" || g.layout !== "cards" || !g.theme || !window.Scenes || !Scenes[g.theme]) return "";
-  if(g.kind === "formal" ? !(settings.formalTheme && settings.formalGame) : playNow() !== "game") return "";
+  if(g.kind === "formal" || playNow() !== "game") return "";   /* 正式評量不玩遊戲（A3-16） */
   return g.kids.length < 2 ? "solo" : team() === "coop" ? "coop" : "";   /* 多位學生各玩各的還不能玩遊戲 */
 }
-const sceneEvery = () => G.kind === "formal" ? 1 : +settings.sceneEvery || 3;   /* 正式評量維持每題一次（A3 討論前不改） */
+const sceneEvery = () => +settings.sceneEvery || 3;
 /* 場景上方的一行字：答對 k 題時做了什麼；都沒答對時的「再加油」 */
 const SCENE_ACT = {ocean: k => `把大魚拉近 ${k} 格`, space: k => `命中外星人 ${k} 次`, dino: k => `敲了恐龍蛋 ${k} 下`, dessert: k => `疊了 ${k} 層蛋糕`};
 const SCENE_MISS = {ocean:"大魚掙扎了一下，再加油！", space:"外星人反擊了，再加油！", dino:"恐龍蛋還沒動靜，再加油！", dessert:"哎呀，蛋糕歪了，再加油！"};
