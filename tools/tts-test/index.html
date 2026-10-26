@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>語音測試（暫時）</title>
+<style>
+  :root{--bg:#f6faf7;--ink:#1f3a33;--card:#fff;--line:#b9d3c7;--accent:#2f7d6a}
+  @media (prefers-color-scheme:dark){:root{--bg:#14211d;--ink:#e6f2ec;--card:#1d2d28;--line:#3b5a50;--accent:#6fcfb4}}
+  body{margin:0;padding:16px;background:var(--bg);color:var(--ink);font:18px/1.6 system-ui,sans-serif}
+  h1{font-size:22px;margin:0 0 4px} .note{font-size:15px;opacity:.8;margin:0 0 12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:0 0 12px}
+  button{font:inherit;min-height:48px;padding:8px 14px;margin:4px 4px 4px 0;border:2px solid var(--accent);border-radius:10px;background:var(--card);color:var(--ink)}
+  button.ok{background:var(--accent);color:#fff}
+  select,input{font:inherit;width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+  #log{white-space:pre-wrap;font-size:14px;max-height:160px;overflow:auto}
+  code{background:rgba(127,127,127,.18);padding:0 4px;border-radius:4px}
+</style>
+</head>
+<body>
+<h1>語音測試（暫時用，不會放進正式版）</h1>
+<p class="note">每個按鈕唸一種說法，聽到多一個字、唸錯，就記下是哪一個按鈕。語速和識字評量預設一樣（0.85）。</p>
+
+<div class="card">
+  <b>這台裝置的語音</b>
+  <div id="voiceInfo">讀取中…</div>
+  <label>改用這個語音：<select id="voiceSel"></select></label>
+  <label>語速：<input id="rate" type="number" step="0.05" min="0.3" max="1.5" value="0.85"></label>
+</div>
+
+<div class="card">
+  <b>「項」這一題</b><br>
+  <button data-t="曲項的項">曲項的項（現在網站唸的）</button>
+  <button data-t="曲向的向">曲向的向（#157 換字後）</button>
+  <button data-t="曲項">曲項</button>
+  <button data-t="項">項</button>
+  <button data-t="項鍊的項">項鍊的項</button>
+  <button data-t="脖子的脖">脖子的脖</button>
+</div>
+<div class="card">
+  <b>對照：別的題目</b><br>
+  <button data-t="彎曲的曲">彎曲的曲</button>
+  <button data-t="漂浮的浮">漂浮的浮</button>
+  <button data-t="紅掌的掌">紅掌的掌</button>
+  <button data-t="撥水的撥">撥水的撥</button>
+</div>
+<div class="card">
+  <b>自己輸入</b>
+  <input id="free" value="曲項向天歌">
+  <button class="ok" id="freeGo">唸這句</button>
+</div>
+<div class="card"><b>記錄</b><div id="log"></div></div>
+
+<script>
+const $ = s => document.querySelector(s), log = t => { $("#log").textContent = t + "\n" + $("#log").textContent; };
+let voices = [];
+// 和識字評量 play.js 的 pickVoice 一樣的挑法
+const pick = () => voices.find(v => v.lang === "zh-TW" && /Google/i.test(v.name)) || voices.find(v => v.lang === "zh-TW")
+  || voices.find(v => /zh[-_]TW/i.test(v.lang)) || voices.find(v => /^zh/i.test(v.lang)) || null;
+function load(){
+  try { voices = speechSynthesis.getVoices(); } catch(e){ voices = []; }
+  const zh = voices.filter(v => /^zh/i.test(v.lang)), app = pick();
+  $("#voiceInfo").textContent = !("speechSynthesis" in window) ? "這個瀏覽器沒有語音功能"
+    : `共 ${voices.length} 個語音，中文 ${zh.length} 個。識字評量會用：${app ? app.name + "（" + app.lang + (app.localService ? "，本機" : "，雲端") + "）" : "（找不到中文語音）"}`;
+  $("#voiceSel").innerHTML = `<option value="">跟識字評量一樣</option>` + zh.map((v, i) => `<option value="${voices.indexOf(v)}">${v.name}（${v.lang}${v.localService ? "，本機" : "，雲端"}）</option>`).join("");
+}
+if("speechSynthesis" in window){ load(); speechSynthesis.onvoiceschanged = load; setTimeout(load, 1500); }
+function say(text){
+  const u = new SpeechSynthesisUtterance(text), sel = $("#voiceSel").value, v = sel === "" ? pick() : voices[+sel];
+  u.lang = "zh-TW"; if(v) u.voice = v; u.rate = +$("#rate").value || 0.85;
+  speechSynthesis.cancel(); speechSynthesis.speak(u);
+  log(`唸「${text}」 語音：${v ? v.name : "預設"} 語速：${u.rate}`);
+}
+document.querySelectorAll("button[data-t]").forEach(b => b.onclick = () => say(b.dataset.t));
+$("#freeGo").onclick = () => say($("#free").value);
+</script>
+</body>
+</html>
