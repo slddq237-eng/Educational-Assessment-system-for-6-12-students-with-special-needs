@@ -682,7 +682,7 @@ const gameAllowed = () => state.mode === "acc" && !bingoOK(current());
 function gameFor(g){
   if(g.mode !== "acc" || g.layout !== "cards" || !g.theme || !window.Scenes || !Scenes[g.theme]) return "";
   if(g.kind === "formal" || playNow() !== "game") return "";   /* 正式評量不玩遊戲（A3-16） */
-  return g.kids.length < 2 ? "solo" : team() === "coop" ? "coop" : "";   /* 多位學生各玩各的還不能玩遊戲 */
+  return g.kids.length < 2 ? "solo" : "coop";   /* 多位學生玩遊戲就是大家合作（各玩各的的遊戲還沒做） */
 }
 const sceneEvery = () => +settings.sceneEvery || 3;
 /* 場景上方的一行字：答對 k 題時做了什麼；都沒答對時的「再加油」 */
