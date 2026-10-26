@@ -23,7 +23,6 @@ const PAGES = [
   'index.html', 'about.html', 'privacy.html',
   'tools/literacy/index.html',
   'tools/prep/index.html',
-  'tools/tts-test/index.html',   /* 暫時的語音測試頁，用完連同這一行一起移掉 */
 ];
 
 /* 1. 小網站：照路徑把 repo 裡的檔案送出去 */
