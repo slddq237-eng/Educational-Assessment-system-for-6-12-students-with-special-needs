@@ -80,10 +80,11 @@ const GAME_CARDS = [
 ];
 const gameCard = theme => GAME_CARDS.find(c => c.theme === theme);
 /* 個人或合作（2026-10-26 起不再讓老師選，跟著玩法走）：多位學生在大螢幕輪流的練習才有「合作」，
-   而且合作只有「遊戲」能玩（各玩各的的遊戲還沒做）；選遊戲就是大家合作，選一般、賓果就是各玩各的。
+   選「遊戲」或「賓果」就是大家合作（遊戲＝同一隻怪獸，賓果＝共用一張卡），只有「一般」是各玩各的。
    平板（每人一台）、正式評量（每位學生獨立作答，2026-10-24 決定）、流暢性、只有一位學生都是個人 */
 const coopPossible = () => state.kind !== "formal" && state.answer !== "qr" && state.mode !== "flu" && selKids().length > 1;
-const team = () => coopPossible() && playNow() === "game" ? "coop" : "solo";
+const team = () => coopPossible() && (playNow() === "game" || playNow() === "bingo") ? "coop" : "solo";
+const sharedBingo = () => coopPossible() && playNow() === "bingo";   /* 多位學生共用一張賓果卡（E15）；平板、一位學生仍是一人一張 */
 /* 某個玩法這次能不能用；不能用時回傳原因（設定畫面把卡片變灰並寫出來），能用回傳空字串 */
 function playWhy(id){
   if(id === "color") return "";

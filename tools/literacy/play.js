@@ -301,7 +301,7 @@ function startSession(){
     /* 每位學生這次的提示與答錯規則（進階設定的練習可以每人不同，見 data.js 的 kidCfg） */
     per: Object.fromEntries(list.map(k => { const p = kidCfg(c, k); return [k, {hints: p.hints, rule: p.rule || []}]; })),
     /* 版面：選項卡，或全課賓果卡（只在練習；正式評量、流暢性一律是選項卡，選項版面不能變） */
-    choices: bingoOK(c) ? 0 : +c.choices, layout: bingoOK(c) ? "bingo" : "cards", boards: {},
+    choices: bingoOK(c) ? 0 : +c.choices, layout: bingoOK(c) ? "bingo" : "cards", boards: {}, shared: bingoOK(c) && list.length > 1 && state.answer !== "qr",
     /* 主題（設定第 4 步學生點的，""＝不用主題）、要不要給貼紙；遊戲玩法（3-3 打怪獸：solo 自己打、coop 合作，""＝不玩） */
     theme: state.theme || "", rewards: useRewards(), game: "",
     /* 選項加注音（3-4）：只在練習，第 4 步決定；正式評量一律不加 */
@@ -326,11 +326,28 @@ function startSession(){
     const items = pickItems(code, q), seen = new Set();
     return (G.layout === "bingo" ? items.filter(it => !seen.has(it.c) && seen.add(it.c)).slice(0, 36) : items).map(it => ({...it, kid:code}));
   });
-  G.queue = interleaveLists(lists);
+  G.queue = G.shared ? sharedBingoQueue(lists) : interleaveLists(lists);
   G.pos = 0;
   showScreen("#play");
   if(G.game) return sceneStart(nextItem);
   nextItem();
+}
+
+/* 賓果共用一張卡（E15）：卡最多 36 格、一個字只有一格，所以全隊合計最多 36 題。
+   學生輪流各拿自己名單裡下一個還沒出現過的字，直到名單用完或滿 36 題；每人被問到的字比一人一張時少 */
+function sharedBingoQueue(lists){
+  const seen = new Set(), out = [], at = lists.map(() => 0);
+  for(let moved = true; moved && out.length < 36;){
+    moved = false;
+    lists.forEach((l, n) => {
+      while(at[n] < l.length && out.length < 36){
+        const it = l[at[n]++];
+        if(seen.has(it.c)) continue;
+        seen.add(it.c); out.push(it); moved = true; break;
+      }
+    });
+  }
+  return out;
 }
 
 /* ---------- 右上角計時 ----------
@@ -399,17 +416,17 @@ function turnCard(code, first, then){
 const bingoOK = c => c.choices === "bingo" && !c.formal && !c.flu;
 const gridFor = n => n <= 9 ? [3,3] : n <= 16 ? [4,4] : n <= 20 ? [5,4] : n <= 25 ? [5,5] : n <= 30 ? [6,5] : [6,6];
 function bingoBoard(kid){
-  const id = kid;
+  const id = G.shared ? "shared" : kid;
   if(!G.boards[id]){
     /* 這位學生要考的字（題目最多 36 題，見 startSession）加上每一課要考的所有字 */
-    const mine = G.queue.filter(x => x.kid === kid);
+    const mine = G.shared ? G.queue : G.queue.filter(x => x.kid === kid);
     const own = [...new Set([...mine.map(x => x.c), ...mine.flatMap(x => testChars(x.k))])].slice(0, 36), [cols, rows] = gridFor(own.length);
     const fill = shuffle(ALL_CHARS.filter(c => !own.includes(c))).slice(0, cols * rows - own.length);
     const lines = [];
     for(let r = 0; r < rows; r++) lines.push(Array.from({length:cols}, (_, c) => r * cols + c));
     for(let c = 0; c < cols; c++) lines.push(Array.from({length:rows}, (_, r) => r * cols + c));
     if(rows === cols){ lines.push(Array.from({length:rows}, (_, i) => i * cols + i)); lines.push(Array.from({length:rows}, (_, i) => i * cols + cols - 1 - i)); }
-    G.boards[id] = {cells: shuffle([...own, ...fill]), cols, rows, lines, marks:new Set(), done:new Set()};
+    G.boards[id] = {cells: shuffle([...own, ...fill]), cols, rows, lines, marks:new Set(), done:new Set(), by:{}};
   }
   return G.boards[id];
 }
@@ -455,7 +472,7 @@ function newItem(it){
   drawBar(it);
   const split = G.answer === "splitturn" && G.kids.length > 1;   /* 分區輪流：每區只有螢幕的 1/2～1/3 寬，選項一律 2 欄 */
   const cols = board ? board.cols : split || G.choices === 4 ? 2 : 3, rows = board ? board.rows : Math.ceil(G.choices / cols);
-  const stamp = board ? `<span class="stamp2" aria-hidden="true">${Rewards.avatarHtml(it.kid)}</span>` : "";
+  const stampOf = i => `<span class="stamp2" aria-hidden="true">${Rewards.avatarHtml(board.by[i] || it.kid)}</span>`;   /* 共用一張卡時，每一格蓋答對那位學生的頭像 */
   const cellClass = i => !board ? "" : board.marks.has(i) ? ` marked${[...board.done].some(L => board.lines[L].includes(i)) ? " win" : ""}` : "";
   const stageHtml = `<div class="stage">
       <div class="prompt">
@@ -466,7 +483,7 @@ function newItem(it){
         <div class="hintbox" id="hintbox" aria-live="polite"></div>
       </div>
       <div class="optsbox"><div class="opts ${board ? "bingo" : ""}" style="--cols:${cols};--rows:${rows}">
-        ${G.cur.opts.map((o, i) => `<button class="opt-big${cellClass(i)}${G.bpmf ? " bpmf" : ""}" data-i="${i}" ${board && board.marks.has(i) ? "disabled" : ""}><span class="och">${esc(G.bpmf ? Bpmf.char(o.ch, b) : o.ch)}</span>${board && board.marks.has(i) ? stamp : ""}</button>`).join("")}
+        ${G.cur.opts.map((o, i) => `<button class="opt-big${cellClass(i)}${G.bpmf ? " bpmf" : ""}" data-i="${i}" ${board && board.marks.has(i) ? "disabled" : ""}><span class="och">${esc(G.bpmf ? Bpmf.char(o.ch, b) : o.ch)}</span>${board && board.marks.has(i) ? stampOf(i) : ""}</button>`).join("")}
       </div></div>
     </div>`;
   /* 分區輪流（E14）：每位學生一區並排，輪到的那一區亮起、有題目和選項，其他區變暗、選項只剩空框。
@@ -524,7 +541,7 @@ function pick(i, btn){
 /* 賓果卡蓋章、檢查有沒有新的連線 */
 function bingoMark(i){
   const B = G.cur.board;
-  B.marks.add(i);
+  B.marks.add(i); B.by[i] = G.cur.it.kid;
   const fresh = B.lines.map((L, n) => n).filter(n => !B.done.has(n) && B.lines[n].every(x => B.marks.has(x)));
   if(!fresh.length) return;
   fresh.forEach(n => { B.done.add(n); B.lines[n].forEach(x => { const el = $(`#pBody .opt-big[data-i="${x}"]`); if(el) el.classList.add("win"); }); });
@@ -623,7 +640,7 @@ function setupHearts(g){
   g.pools = {};
   if(!g.hpMax) return;
   const mk = () => ({hp: g.hpMax, streak: 0, out: false});
-  if(g.game === "coop"){ const shared = mk(); g.kids.forEach(k => g.pools[k] = shared); }
+  if(g.game === "coop" || g.shared){ const shared = mk(); g.kids.forEach(k => g.pools[k] = shared); }
   else g.kids.forEach(k => g.pools[k] = mk());
 }
 const heartPool = code => G.pools[code];
