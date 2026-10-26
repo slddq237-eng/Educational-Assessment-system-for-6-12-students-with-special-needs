@@ -147,10 +147,19 @@ $("#topMenu .menulist").addEventListener("click", e => {
 document.addEventListener("click", e => { if($("#topMenu").open && !e.target.closest("#topMenu")) $("#topMenu").open = false; });
 document.addEventListener("keydown", e => { if(e.key === "Escape" && $("#topMenu").open){ $("#topMenu").open = false; $("#topMenu summary").focus(); } });
 
+let showOffGoals = false;   /* 「顯示準備中的功能」：預設收起來，老師好奇再點開（不存起來） */
 function renderGoals(){
-  $("#goals").innerHTML = GOALS.map(g => `<button class="goal ${state.goal===g.id?"on":""}" data-g="${g.id}" ${g.off?"disabled":""} aria-pressed="${state.goal===g.id}">
-      <b>${g.name}</b><span class="what">${g.what}</span>${g.img ? `<img class="shot" src="${g.img}" alt="${g.name}的作答畫面" loading="lazy">` : ""}${g.off ? `<span class="pill warn">${g.off}</span>` : ""}</button>`).join("");
-  $("#goals").querySelectorAll("button:not(:disabled)").forEach(b => b.onclick = () => { state.goal = b.dataset.g; render(); });
+  const btn = g => `<button class="goal ${state.goal===g.id?"on":""}" data-g="${g.id}" ${g.off?"disabled":""} aria-pressed="${state.goal===g.id}">
+      <b>${g.name}</b><span class="what">${g.what}</span>${g.img ? `<img class="shot" src="${g.img}" alt="${g.name}的作答畫面" loading="lazy">` : ""}${g.off ? `<span class="pill warn">${g.off}</span>` : ""}</button>`;
+  const col = grp => {
+    const list = GOALS.filter(g => g.group === grp && (showOffGoals || !g.off));
+    return `<div class="gcol"><h3>${grp}</h3><div class="goals">${list.length ? list.map(btn).join("") : `<p class="note" style="margin:0">還沒有開放的目標</p>`}</div></div>`;
+  };
+  const offN = GOALS.filter(g => g.off).length;
+  $("#goals").innerHTML = `<div class="goalcols">${col("識字")}<div class="gdiv" aria-hidden="true"></div>${col("寫字")}</div>
+    <button class="linkbtn" id="goalOff" aria-expanded="${showOffGoals}">${showOffGoals ? "收起準備中的功能" : `顯示準備中的功能（${offN} 個）`}</button>`;
+  $("#goals").querySelectorAll("button.goal:not(:disabled)").forEach(b => b.onclick = () => { state.goal = b.dataset.g; render(); });
+  $("#goalOff").onclick = () => { showOffGoals = !showOffGoals; renderGoals(); };
 }
 
 function renderKind(){
@@ -244,7 +253,7 @@ function renderPlay(){
   if(formal){
     const fid = willFight() ? "game" : "color";
     rows.push(row("玩法", `<div class="locked"><span class="lock">固定</span>${useRewards() ? `<span class="playicon">${PLAYS.find(x => x.id === fid).icon}</span>` : ""}<span>${playText()}。<button class="linkbtn" data-open="set">到評量設定修改</button></span></div>`));
-    rows.push(row("報讀", `<span class="note" style="margin:0">${state.goal === "4-1" ? "部件重組沒有報讀" : "不念（正式評量不提示）"}</span>`));
+    rows.push(row("報讀", `<span class="note" style="margin:0">${state.goal === "R4" ? "部件重組沒有報讀" : "不念（正式評量不提示）"}</span>`));
   } else {
     /* 不能用的玩法寫原因（data.js 的 playWhy：流暢性只能一般、合作只能玩遊戲、多位學生各玩各的還不能玩遊戲） */
     const why = playWhy, cur = playNow();
@@ -258,7 +267,7 @@ function renderPlay(){
     }
     rows.push(row("注音", `<div class="group">${chipRow([["0", "選項不加"], ["1", "選項加注音"]], settings.practiceBpmf ? "1" : "0", "bpmf")}</div>
       <p class="note">語詞、句子提示一律有注音。</p>`));
-    rows.push(row("報讀", state.goal === "4-1" ? `<span class="note" style="margin:0">部件重組沒有報讀（會念出答案的讀音）。</span>`
+    rows.push(row("報讀", state.goal === "R4" ? `<span class="note" style="margin:0">部件重組沒有報讀（會念出答案的讀音）。</span>`
       : `<div class="group">${chipRow([["1", "提示可以按喇叭念出來"], ["0", "不念"]], settings.practiceRead !== false ? "1" : "0", "read")}</div>`));
   }
   $("#playArea").innerHTML = rows.join("");

@@ -23,12 +23,18 @@ for(const [bk, b] of Object.entries(BOOKS)) for(const L of Object.values(b.lesso
 }
 
 const GOALS = [
-  /* 選目標的畫面只顯示名稱、一句話描述、遊戲畫面截圖（img，在 img/ 資料夾；還沒開放的目標沒有）；建議順序和目標編號先拿掉，之後有要做再加（2026-10-25 維護者要求）；id 還是紀錄裡的 goal 值，不能改。括弧內標示的寫法統一：（音 ↔ 義）（形 ↔ 義）（形 ↔ 音） */
-  {id:"1",  name:"聽音選圖",  what:"聽語詞，點出正確的圖片（音 ↔ 義）", off:"準備中"},
-  {id:"2",  name:"看字選圖",  what:"看字或語詞，點出正確的圖片（形 ↔ 義）", off:"準備中"},
-  {id:"3",  name:"聽音選字",  what:"聽「努力的努」，從形近字、同音字、同詞字中選出目標字（形 ↔ 音）", img:"img/goal-3.jpg"},
-  {id:"4-1",name:"部件重組",  what:"看拆開的部件，選出組成的字", img:"img/goal-4-1.jpg"},
-  {id:"4-2",name:"看提示書寫", what:"寫出目標字；先用紙筆作答、老師登錄", off:"準備中"}
+  /* 選目標的畫面只顯示名稱、一句話描述、遊戲畫面截圖（img，在 img/ 資料夾；還沒開放的目標沒有）。
+     代號（2026-10-26 A1）：識字 R、寫字 W，一律「字母＋數字」，只是永久識別、不代表難度順序（排列順序用這個陣列的順序）；group 決定畫面左右欄；off 有字＝還沒開放（預設收起來）。舊代號 3、4-1 的紀錄不轉換 */
+  {id:"R1", group:"識字", name:"聽音選圖",  what:"聽語詞，點出正確的圖片（音 ↔ 義）", off:"準備中"},
+  {id:"R2", group:"識字", name:"看字選圖",  what:"看字或語詞，點出正確的圖片（形 ↔ 義）", off:"準備中"},
+  {id:"R3", group:"識字", name:"聽音選字",  what:"聽「努力的努」，從形近字、同音字、同詞字中選出目標字（形 ↔ 音）", img:"img/goal-3.jpg"},
+  {id:"R4", group:"識字", name:"部件重組",  what:"看拆開的部件，選出組成的字", img:"img/goal-4-1.jpg"},
+  {id:"R5", group:"識字", name:"聽音補部件", what:"聽音，畫面給一半部件，選出另一半（單選）", off:"準備中"},
+  {id:"R6", group:"識字", name:"聽音拼部件", what:"聽音，從一堆部件挑出全部組成部件（複選）", off:"準備中"},
+  {id:"R7", group:"識字", name:"看句子選字", what:"看句子，選出適合的字；「念句子」放在提示", off:"準備中"},
+  {id:"W1", group:"寫字", name:"看注音寫國字", what:"看注音寫出國字；紙筆作答、老師登錄", off:"準備中"},
+  {id:"W2", group:"寫字", name:"聽音寫字",  what:"聽音寫出國字；紙筆作答、老師登錄", off:"準備中"},
+  {id:"W3", group:"寫字", name:"看部件寫字", what:"看部件寫出國字；紙筆作答、老師登錄", off:"準備中"}
 ];
 /* 紀錄裡的 goal 值換成畫面和 Excel 上的目標名稱（2026-10-25 起不寫「目標 3」）；沒有這個目標就照寫原值 */
 const goalName = id => { const g = GOALS.find(x => x.id === id); return g ? g.name : `目標 ${id}`; };
@@ -252,7 +258,7 @@ const state = {
   themePick:"",   /* 第 4 步學生點的主題：""＝還沒點、none＝不用主題、或主題代號；選好才能開始，再玩一次沿用 */
   /* 每位學生不同的提示（只在進階設定的練習）：學生代號 → {hints:Set, rule:[]}；沒有的學生用大家共用的 pHints、pRule */
   kidHints:{}, hintFor:"",
-  goal:"3", kind:"formal", mode:"acc", limit:"60",
+  goal:"R3", kind:"formal", mode:"acc", limit:"60",
   pChoices:"6", pHints:new Set(["word","parts"]), pRule:["next","next","free"],   /* 練習提示預設（A3-6，2026-10-25 改）：錯 1 次語詞挖空、錯 2 次部件拆解、錯 3 次沒有提示也不顯示答案，讓學生自己點 */
   ed:"翰林", book:"h2", lessons:[], qCount:null, qMethod:"even", answer:"turn",
   prepost:"",   /* 這次是前測還是後測（只有正式評量；""＝不標）。沒有前後測代號、不做補考（2026-10-25） */
@@ -280,9 +286,9 @@ const selKids = () => [...state.kids].filter(kidBy);
 /* 不適合某些評量目標的提示（開發路線圖 A2，規格書「提示和題目的適配性」表裡的 ✗）：會直接給出答案，程式自動跳過。
    △（提示很強）的還是可以用，等維護者討論決定。之後新增評量目標時，在這裡加一列。 */
 const HINT_UNFIT = {
-  "1":   {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"},
-  "2":   {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"},
-  "4-1": {parts:"題目本身就是部件", sound:"會唸出答案的讀音，部件重組不唸題目"}
+  "R1":  {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"},
+  "R2":  {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"},
+  "R4":  {parts:"題目本身就是部件", sound:"會唸出答案的讀音，部件重組不唸題目"}
 };
 const unfitWhy = (goal, h) => (HINT_UNFIT[goal] || {})[h] || "";
 const fitHints = (goal, list) => list.filter(h => !unfitWhy(goal, h));

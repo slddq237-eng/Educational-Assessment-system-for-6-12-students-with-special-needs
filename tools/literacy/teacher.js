@@ -691,7 +691,7 @@ const WPOS_ORDER = ["詞首（第 1 個字）", "詞中", "詞尾（最後一個
 const wposOf = r => { const w = [...(r.word || "")], i = w.indexOf(r.char); return w.length < 2 || i < 0 ? "" : i === 0 ? WPOS_ORDER[0] : i === w.length - 1 ? WPOS_ORDER[2] : WPOS_ORDER[1]; };
 /* 錯誤類型說明的最後一段：目標字在詞首、詞尾時的第一次就答對率與同詞易混次數（語詞是整塊記的學生，常常一邊比較穩） */
 function wposNote(rs){
-  const g = groupBy(rs.filter(r => wposOf(r) && r.goal !== "4-1"), wposOf);
+  const g = groupBy(rs.filter(r => wposOf(r) && r.goal !== "R4"), wposOf);
   const parts = WPOS_ORDER.filter(p => g.has(p)).map(p => {
     const list = g.get(p), a = accOf(list), mix = list.filter(r => !r.firstCorrect && r.errorType === "同詞易混").length;
     return `${p}：正確率 ${fmt("acc", a.v)}（${a.n} 題），同詞 ${mix} 次`;
