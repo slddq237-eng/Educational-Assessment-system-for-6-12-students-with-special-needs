@@ -325,7 +325,7 @@ function startSession(){
     const items = pickItems(code, q), seen = new Set();
     return (G.layout === "bingo" ? items.filter(it => !seen.has(it.c) && seen.add(it.c)).slice(0, 36) : items).map(it => ({...it, kid:code}));
   });
-  G.queue = G.shared ? sharedBingoQueue(lists) : interleaveLists(lists);
+  G.queue = G.shared ? (q.method === "weak" ? sharedBingoQueue(lists) : sharedBingoDraw(list, q)) : interleaveLists(lists);
   G.pos = 0;
   showScreen("#play");
   if(G.game) return sceneStart(nextItem);
@@ -333,7 +333,13 @@ function startSession(){
 }
 
 /* 賓果共用一張卡（E15）：卡最多 36 格、一個字只有一格，所以全隊合計最多 36 題。
-   學生輪流各拿自己名單裡下一個還沒出現過的字，直到名單用完或滿 36 題；每人被問到的字比一人一張時少 */
+   大家選的課本和生字一樣，所以全隊統一抽一次（題數是每人題數×人數，不超過 36），同一個字只留一次，再輪流分給每位學生；
+   只有「常錯優先」要看每位學生自己的紀錄，改成各抽一份再合併（sharedBingoQueue：輪流各拿自己名單裡下一個還沒出現過的字） */
+function sharedBingoDraw(kidCodes, q){
+  const n = kidCodes.length, seen = new Set();
+  const team = {...q, count: Math.min(36, q.count * n), freqN: q.freqN * n, per: new Map([...q.per].map(([k, v]) => [k, v * n]))};
+  return pickItems(kidCodes[0], team).filter(it => !seen.has(it.c) && seen.add(it.c)).slice(0, 36).map((it, i) => ({...it, kid: kidCodes[i % n]}));
+}
 function sharedBingoQueue(lists){
   const seen = new Set(), out = [], at = lists.map(() => 0);
   for(let moved = true; moved && out.length < 36;){

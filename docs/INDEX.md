@@ -38,7 +38,7 @@
 | `plans/roadmap.md` | 開發路線圖（階段 A～F，版本規劃 2026-10-24 併入）、開放給其他老師前的準備 | 2-1、5、3-3 的「開放給其他老師前的準備」 |
 | `plans/roadmap-plans.md` | 還沒做的計畫細節：E9～E11、平台首頁規劃、多人合作破關遊戲、網站瀏覽量統計（2026-10-24 從 `plans/roadmap.md` 拆出） | 3-3 的「平台首頁規劃」「多人合作破關遊戲」 |
 | `design/literacy-design.md` | 識字評量已定案的設計（評量目標、正式評量與練習、提示、評量時機、畫面）、待決的設計問題 | 3 |
-| `design/literacy-play.md` | 賓果整合與增強系統、部件重組（2026-10-24 從 `design/literacy-design.md` 拆出） | 3-1、3-3 的「血量模式」「目標 4-1」 |
+| `design/literacy-play.md` | 賓果整合與增強系統、部件重組（2026-10-24 從 `design/literacy-design.md` 拆出） | 3-1、3-3 的「目標 4-1」 |
 | `design/game-design.md` | 遊戲與獎勵：貼紙代號、星等、扭蛋、進化、設定步驟與玩法設定表（2026-10-24 新增） | （新） |
 | `design/analysis-design.md` | 老師專區（分析）、研究方法分層、學扶前後測、分析教學、備課分析 | 3-2、3-4、3-3 的「學扶前後測」「分析教學」 |
 | `design/records.md` | 資料怎麼存、作答紀錄 | 4 |
