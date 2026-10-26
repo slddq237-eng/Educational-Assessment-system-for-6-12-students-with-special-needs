@@ -7,7 +7,7 @@
 再執行一次不會有任何變化（已經有的就跳過）。
 
 需要：Python 3、openpyxl（pip install openpyxl）、Node.js
-需要先下載（不放進 repo）：cjkvi-ids 的 ids.txt  https://github.com/cjkvi/cjkvi-ids（衍生自 CHISE，GPLv2）
+需要先下載（不放進 repo）：cjkvi-ids 的 ids.txt  https://github.com/cjkvi/cjkvi-ids（衍生自 CHISE，GPLv2 或更新版）
 執行（在 repo 最上層）：
   python3 docs/scripts/make_parts.py <ids.txt>
 
