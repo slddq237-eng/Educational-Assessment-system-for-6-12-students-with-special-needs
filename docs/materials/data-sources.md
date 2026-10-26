@@ -12,7 +12,7 @@
 | 資料 | 位置 | 來源 | 版本 | 授權 | 狀態 |
 |---|---|---|---|---|---|
 | 課本生字、語詞、例句、形近字 | `shared/lessons.js` | 各出版社課本、維護者提供的生字表與字音字形檔（夥伴生字賓果原有四本也來自出版社，2026-10-23 夥伴確認）；翰林三～六上、南一四～六上取自夥伴「1021 更新全版本」（語詞夥伴說應該來自出版社，形近同音字出處不明）；部分由 Claude 擬定 | 各本課本的學年度，見 `materials.md`「教材資料的來源與使用邏輯」（例：康軒六上 115 學年度） | 出版社著作權，未取得授權 | 只放字表與短語詞；待討論 |
-| 部件拆解 | `shared/parts.js`、`docs/materials/parts-table.xlsx` | cjkvi-ids（CHISE） | cjkvi-ids commit 86b4d16（2019-02-07） | GPLv2 或更新版（我們用的 `ids.txt` 依 CHISE 條款；2026-10-26 查證，見「LICENSE 討論內容」） | 已標示 |
+| 部件拆解 | `shared/parts.js`、`docs/materials/parts-table.xlsx` | cjkvi-ids（CHISE；部分資料源自中央研究院謝清俊教授團隊的 CDP 資料庫，見 CHISE 說明的 Acknowledgment） | cjkvi-ids commit 86b4d16（2019-02-07） | GPLv2 或更新版（我們用的 `ids.txt` 依 CHISE 條款；2026-10-26 查證，見「LICENSE 討論內容」） | 已標示 |
 | 字頻總表 | `shared/freq.js` | 教育部語文成果網「表一：字頻總表」（BIAU1，5,731 字） | BIAU1 網頁版（2026-10-20 下載） | 維護者確認可用，須在「關於我們」列出處 | 2026-10-20 匯入；已列入關於我們 |
 | 注音字型（原生字賓果內嵌的版本） | 2026-10-21 隨生字賓果移除 | ButTaiwan/bpmfvs | — | 漢字 CC BY 4.0、其餘 SIL OFL 1.1 | 已移除；識字評量用的子集見下一列 |
 | 網頁字型 Huninn | 各頁面（Google Fonts） | Google Fonts | Google Fonts 線上版（隨 Google 更新，不固定） | SIL OFL 1.1 | 已列入關於我們 |
@@ -81,6 +81,7 @@
 
 ### LICENSE 討論內容（待決）
 - **2026-10-26 進度**：維護者比較過 MIT、Apache 2.0、GPLv3 後傾向 **GPLv3**，版權人傾向寫「本專案維護者」，但決定**先不放 LICENSE**（還沒和夥伴確認、也還沒請專業人士看；試用老師只是用網站，不受影響）。對照：MIT 最自由，別人改了再發布不用公開；GPLv3 改了再發布也要用同樣授權公開，且和部件資料（GPLv2 或更新版）授權一致。CC 授權不建議用在程式，可用在自己寫的教材內容。相關 PR #160 已關閉，要放時從最新的 main 重開。
+- **CDP 致謝**（2026-10-26 維護者看 CHISE 說明截圖發現）：CHISE 說明的 Acknowledgment 寫「IDS-UCS 檔案裡的部分資料，改自並擴充自中央研究院謝清俊教授團隊的 CDP 資料庫」。這是出處致謝，已補進關於我們頁、`parts.js` 檔頭和上面的來源表；**CDP 資料庫本身有沒有另外的授權條件，我們沒有查**。
 - **部件資料授權查證**（2026-10-26）：我們用的 cjkvi-ids `ids.txt`，檔頭「Copyright (c) 2014-2017 CJKVI Database，Based on CHISE IDS Database」；cjkvi-ids 說明寫「ids.txt 衍生自 CHISE，授權依 CHISE 條款」，其他資料檔才是單純 GPLv2；CHISE 的 IDS 資料庫（github.com/chise/ids）說明寫 GPL「第 2 版，或（由使用者選擇）任何更新的版本」。**這是用網頁摘要工具讀的，沒看到 CHISE 的 `COPYING` 全文，建議維護者自己確認。**
 （2026-10-22 從 `docs/plans/pending.md` 移來；pending.md 只留一行摘要）
 - **LICENSE 用哪一種**（授權條款＝告訴別人「可以怎麼使用、修改、再發布這些程式」的說明檔；2026-10-20 維護者決定暫定 MIT、之後再討論；**路線圖 B4 第一批老師試用、公開網址前要決定**）：
