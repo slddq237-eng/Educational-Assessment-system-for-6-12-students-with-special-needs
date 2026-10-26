@@ -93,9 +93,9 @@ function renderPrepost(){
 }
 
 /* ---------- 四個步驟：一次只看一步（像生字賓果） ----------
-   1 選目標和評量方式（快速開始的卡片、進階的正式或練習）→ 2 選學生和課次 → 3 選作答方式（大螢幕、平板）和個人或合作 → 4 選玩法和主題
+   1 選目標和評量方式（快速開始的卡片、進階的正式或練習）→ 2 選學生和課次 → 3 選作答方式（大螢幕、平板）→ 4 選玩法和主題
    （2026-10-24 維護者改的順序：先決定「怎麼玩」，再決定「玩什麼」；右邊的摘要和「開始」只在第 4 步出現）。
-   每一步要先完成才能往下；第 3 步只剩一個選項時自動跳過（例如小考：只能大螢幕、固定個人）。上方的步驟標籤也可以直接點。 */
+   每一步要先完成才能往下；第 3 步只剩一個選項時自動跳過（例如小考：只能大螢幕）。上方的步驟標籤也可以直接點。 */
 const WSTEPS = ["選目標和評量方式", "選學生和課次", "選作答方式", "選玩法和主題"];
 let wstep = 1;
 /* 每一步還缺什麼（空字串＝可以往下） */
@@ -114,8 +114,8 @@ function step3Miss(){
 const answerList = () => ANSWERS.filter(a => (!isQuick() || a.id === "turn" || a.id === "splitturn" || a.id === "qr") && (a.id !== "splitturn" || selKids().length > 1));
 const isTurnLike = id => id === "turn" || id === "splitturn";   /* 大螢幕輪流（全螢幕或分區） */
 const answerOff = a => a.off || "";
-/* 第 3 步可以跳過嗎：作答方式只有一個能選、而且個人或合作是固定的 */
-const skip3 = () => answerList().filter(a => !answerOff(a)).length === 1 && !!teamFixed() && !step3Miss();
+/* 第 3 步可以跳過嗎：作答方式只有一個能選 */
+const skip3 = () => answerList().filter(a => !answerOff(a)).length === 1 && !step3Miss();
 function renderWizard(){
   const miss = [step1Miss(), step2Miss(), step3Miss()];
   /* 第 n 步能不能去：前面每一步都要完成 */
@@ -255,11 +255,11 @@ function renderPlay(){
     rows.push(row("玩法", `<div class="locked"><span class="lock">固定</span>${useRewards() ? `<span class="playicon">${PLAYS.find(x => x.id === fid).icon}</span>` : ""}<span>${playText()}。<button class="linkbtn" data-open="set">到評量設定修改</button></span></div>`));
     rows.push(row("報讀", `<span class="note" style="margin:0">${state.goal === "R4" ? "部件重組沒有報讀" : "不念（正式評量不提示）"}</span>`));
   } else {
-    /* 不能用的玩法寫原因（data.js 的 playWhy：流暢性只能一般、合作只能玩遊戲、多位學生各玩各的還不能玩遊戲） */
+    /* 不能用的玩法寫原因（data.js 的 playWhy：流暢性只能一般、分區輪流不能玩賓果） */
     const why = playWhy, cur = playNow();
     /* 三張卡片：小圖示＋名稱＋一句話；不能用的卡片寫原因 */
     rows.push(row("玩法", `<div class="playcards">${PLAYS.map(x => `<button class="opt playcard ${cur === x.id ? "on" : ""}" data-play="${x.id}" aria-pressed="${cur === x.id}" ${why(x.id) ? "disabled" : ""}>
-        <span class="playicon">${x.icon}</span><span><b>${x.name}</b><small>${why(x.id) || x.desc}</small></span></button>`).join("")}</div>`));
+        <span class="playicon">${x.icon}</span><span><b>${x.name}</b><small>${why(x.id) || x.desc + (x.id === "game" && coopPossible() ? "（多位學生輪流作答、大家合作）" : "")}</small></span></button>`).join("")}</div>`));
     if(heartsAllowed()){
       const hp = +settings.practiceHearts || 0;
       rows.push(row("血量", `<div class="group">${chipRow([["0", "無限"], ...HEART_CHOICES.map(n => [String(n), `${n} 點`])], String(hp), "hearts")}</div>
@@ -450,15 +450,6 @@ function renderAnswers(){
   $("#answers").innerHTML = answerList().map(a => `<button class="opt ${state.answer===a.id?"on":""}" data-a="${a.id}" ${answerOff(a)?"disabled":""} aria-pressed="${state.answer===a.id}">${a.name}<small>${answerOff(a) && !a.desc.includes(answerOff(a))?`${a.desc}（${answerOff(a)}）`:a.desc}</small></button>`).join("");
   $("#answers").querySelectorAll("button:not(:disabled)").forEach(b => b.onclick = () => { state.answer = b.dataset.a; render(); });
 }
-/* 個人或合作（第 3 步）：固定的情況只顯示原因（data.js 的 teamFixed） */
-const TEAMS = [["solo", "個人", "每位學生自己玩自己的"], ["coop", "合作", "大家輪流作答，一起完成同一個遊戲（合作時只能玩遊戲）"]];
-function renderTeam(){
-  const fixed = teamFixed(), cur = team();
-  $("#teams").innerHTML = fixed ? `<div class="locked"><span class="lock">固定</span><span>個人（${fixed}）</span></div>`
-    : TEAMS.map(([id, name, d]) => `<button class="opt ${cur === id ? "on" : ""}" data-team="${id}" aria-pressed="${cur === id}">${name}<small>${d}</small></button>`).join("");
-  $("#teams").querySelectorAll("[data-team]").forEach(b => b.onclick = () => { settings.practiceTeam = b.dataset.team; saveSettings(); render(); });
-}
-
 function renderKids(){
   /* 人數上限不在這裡寫，第 3 步選作答方式時，人數不合的選項會寫原因 */
   $("#kidsHintQ").textContent = "點選要做的學生，可以選好幾位。";
@@ -682,7 +673,6 @@ function renderSettings(){
   $("#sChoices").querySelectorAll("button").forEach(b => b.onclick = () => { settings.choices = b.dataset.c; saveSettings(); renderSettings(); render(); });
   $("#sTheme").checked = settings.formalTheme;
   $("#sClock").checked = !!settings.clockFormal;
-  $("#sGame").checked = !!settings.formalGame; $("#sGame").disabled = !settings.formalTheme;
 }
 /* 畫面與聲音面板 */
 function renderView(){
@@ -725,8 +715,7 @@ if("speechSynthesis" in window) speechSynthesis.addEventListener && speechSynthe
 applyDisplay();
 $("#sRate").oninput = e => { settings.rate = +e.target.value; $("#sRateV").textContent = `${settings.rate} 倍`; saveSettings(); };
 $("#sTest").onclick = () => speak("努力的努");
-$("#sTheme").onchange = e => { settings.formalTheme = e.target.checked; saveSettings(); $("#sGame").disabled = !settings.formalTheme; };
-$("#sGame").onchange = e => { settings.formalGame = e.target.checked; saveSettings(); };
+$("#sTheme").onchange = e => { settings.formalTheme = e.target.checked; saveSettings(); };
 $("#sClock").onchange = e => { settings.clockFormal = e.target.checked; saveSettings(); };
 
 let lastFocus = null;
@@ -753,4 +742,4 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets()
 document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); if(t && t.dataset.open === "kids"){ renderKidSheet(); openSheet("#kidsSheet"); } });
 $("#openRecords").onclick = () => { renderRecSheet(); openSheet("#recSheet"); };
 
-function render(){ if(state.answer === "splitturn" && selKids().length < 2){ state.answer = "turn"; flowNote("只剩 1 位學生，沒有別人的區可以分，作答方式已改回「大螢幕・輪流」。"); } renderPresets(); renderPrepost(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderTeam(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }
+function render(){ if(state.answer === "splitturn" && selKids().length < 2){ state.answer = "turn"; flowNote("只剩 1 位學生，沒有別人的區可以分，作答方式已改回「大螢幕・輪流」。"); } renderPresets(); renderPrepost(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }

@@ -79,18 +79,16 @@ const GAME_CARDS = [
   {theme:"dessert", type:"build", act:"做蛋糕"}
 ];
 const gameCard = theme => GAME_CARDS.find(c => c.theme === theme);
-/* 個人或合作（第 3 步）：平板、正式評量（2026-10-24 決定：每位學生要獨立作答）、只有一位學生時固定個人；
-   其他（練習、大螢幕輪流、2 位以上）由老師選，存在 settings.practiceTeam */
-const teamFixed = () => state.answer === "qr" ? "平板作答每人一台，固定個人" : state.kind === "formal" ? "正式評量每位學生獨立作答，固定個人"
-  : state.mode === "flu" ? "流暢性模式每人輪流一回合，固定個人" : selKids().length < 2 ? "只有一位學生，固定個人" : "";
-const team = () => teamFixed() ? "solo" : settings.practiceTeam;
+/* 個人或合作（2026-10-26 起不再讓老師選，跟著玩法走）：多位學生在大螢幕輪流的練習才有「合作」，
+   而且合作只有「遊戲」能玩（各玩各的的遊戲還沒做）；選遊戲就是大家合作，選一般、賓果就是各玩各的。
+   平板（每人一台）、正式評量（每位學生獨立作答，2026-10-24 決定）、流暢性、只有一位學生都是個人 */
+const coopPossible = () => state.kind !== "formal" && state.answer !== "qr" && state.mode !== "flu" && selKids().length > 1;
+const team = () => coopPossible() && playNow() === "game" ? "coop" : "solo";
 /* 某個玩法這次能不能用；不能用時回傳原因（設定畫面把卡片變灰並寫出來），能用回傳空字串 */
 function playWhy(id){
-  const flu = state.mode === "flu", coop = team() === "coop";
-  if(id === "color") return coop ? "合作只能玩遊戲" : "";
-  if(flu) return "流暢性模式不能用";
-  if(id === "game") return !coop && selKids().length > 1 && (state.answer === "turn" || state.answer === "splitturn") ? "多位學生各玩各的還不能玩遊戲（之後做），要玩請選合作" : "";
-  if(id === "bingo") return state.answer === "splitturn" ? "分區輪流之後再支援賓果" : coop ? "合作賓果之後再做" : "";
+  if(id === "color") return "";
+  if(state.mode === "flu") return "流暢性模式不能用";
+  if(id === "bingo") return state.answer === "splitturn" ? "分區輪流之後再支援賓果" : "";
   return "";
 }
 /* 這次實際用的玩法：選的不能用時，改用第一個能用的 */
@@ -191,10 +189,9 @@ const settings = Object.assign({choices:"4", rate:0.85, formalTheme:true,
   fontScale:"1", uiScale:"1", sfx:true, turnStyle:"chime",
   /* 作答時右上角顯示計時：練習預設顯示；正式評量預設不顯示（可能讓學生緊張、影響反應時間），在評量設定打開 */
   clockPractice:true, clockFormal:false,
-  /* 打怪獸（3-3）：正式評量預設不玩，在評量設定打開，從基線期起維持同一個設定。
+  /* 打怪獸（3-3）：正式評量不玩（A3-16）。
      練習的玩法在第 4 步選（practicePlay：一般 color／遊戲 game／生字賓果 bingo，預設遊戲）；
-     多位學生在大螢幕輪流時個人或合作（practiceTeam：solo／coop，預設合作） */
-  formalGame:false, practiceTeam:"coop",
+     多位學生在大螢幕輪流時，選遊戲就是大家合作（data.js 的 team） */
   /* 練習打怪獸：每做完幾題跳一次動畫（細部設定 → 練習與遊戲；預設 3 題，2026-10-22 維護者決定） */
   sceneEvery:"3",
   /* 血量模式（3-3b，只在練習）：開始前選幾點血量，0＝不用 */

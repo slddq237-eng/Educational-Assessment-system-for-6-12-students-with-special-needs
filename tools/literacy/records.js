@@ -262,7 +262,7 @@ async function restoreBackup(data){
   }
   saveKids(); saveTeach();
   /* 評量設定（正式評量的條件）跟著還原，換電腦後前後才能比較；畫面與聲音是每台電腦自己的，不動 */
-  const FORMAL_KEYS = ["choices", "formalTheme", "formalGame", "clockFormal"];   /* A3-6、A3-10（2026-10-25）：正式評量不提示、不報讀，提示與報讀不再是設定 */
+  const FORMAL_KEYS = ["choices", "formalTheme", "clockFormal"];   /* A3-6、A3-10（2026-10-25）：正式評量不提示、不報讀，提示與報讀不再是設定 */
   /* 封存檔是舊學年的資料，不動現在的設定（2026-10-25 維護者決定）；備份檔才還原設定 */
   const isArchive = fileKind(data) === "archive";
   if(!isArchive && data.settings) FORMAL_KEYS.forEach(k => { if(data.settings[k] !== undefined) settings[k] = data.settings[k]; });
