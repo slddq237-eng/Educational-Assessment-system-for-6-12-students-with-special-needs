@@ -312,7 +312,6 @@ function startSession(){
     quitArm: false
   };
   G.game = gameFor(G); G.gameType = G.game ? (gameCard(G.theme) || {}).type || "" : "";
-  setupHearts(G);
   /* 打怪獸的戰利品（大魚、恐龍等）開始前就決定好，打敗怪獸後就是這次的貼紙 */
   if(G.game) G.prize = Themes.drawSticker(G.theme, Rewards.owned(list[0], G.theme));
   applySkin(G.theme, G.kind !== "formal");
@@ -375,12 +374,11 @@ function drawBar(it){
   $("#pWho").innerHTML = `${Rewards.avatarHtml(it.kid)}輪到 ${esc(k ? kidShow(k) : it.kid)}`;
   if(G.mode === "flu") $("#pProg").textContent = `答對 ${G.round.correct} 個`;
   else { const mine = G.queue.filter(x => x.kid === it.kid), idx = mine.indexOf(it) + 1; $("#pProg").textContent = `第 ${idx} / ${mine.length} 題`; }
-  drawHearts(it.kid);
 }
 
 function nextItem(){
   if(G.over) return;   /* 已經按「結束」了，不要再出題（避免結果畫面還在唸題目） */
-  if(G.pos >= G.queue.length) return G.game && !G.hpOver ? sceneWin() : finish();
+  if(G.pos >= G.queue.length) return G.game ? sceneWin() : finish();
   const it = G.queue[G.pos], prev = G.queue[G.pos - 1];
   /* 多人輪流時，換到另一位學生先出現換人畫面 */
   if(G.kids.length > 1 && (!prev || prev.kid !== it.kid)){
@@ -399,7 +397,6 @@ function turnCard(code, first, then){
   const k = kidBy(code), name = k ? kidShow(k) : code, g = G;
   $("#pWho").innerHTML = `${Rewards.avatarHtml(code)}輪到 ${esc(name)}`;
   $("#pProg").textContent = "";
-  drawHearts(code);
   $("#pBody").innerHTML = `<div class="turncard" role="status"><div class="turnav">${Rewards.avatarHtml(code)}</div>
     <h2>${first ? `先從 ${esc(name)} 開始` : `換 ${esc(name)}`}！</h2><p class="note" style="margin:0">請 ${esc(name)} 準備好</p></div>`;
   /* 提醒方式看「畫面與聲音」的設定：預設只有提示音，選了才唸名字 */
@@ -524,14 +521,12 @@ function pick(i, btn){
   if(fb && G.layout === "cards") btn.classList.add("fx");
   if(o.type === "答案"){
     if(fb){ btn.classList.add("right"); btn.insertAdjacentHTML("beforeend", BURST); sfx.right(); } else btn.classList.add("picked");
-    if(cur.wrong === 0) heartStreak(cur.it.kid);
     if(cur.board) bingoMark(i);
     return endItem(true, sec);
   }
   cur.wrong++;
   if(fb){ btn.classList.add("wrong", "shake"); sfx.wrong(); } else btn.classList.add("picked");
   btn.disabled = true;
-  if(cur.wrong === 1 && loseHeart(cur.it.kid)){ cur.hpOut = true; return endItem(false, null); }   /* 血量用完：這題記成沒通過，直接結束 */
   if(G.mode === "flu" || G.noHelp) return endItem(false, null);
   const act = G.per[cur.it.kid].rule[cur.wrong - 1] || "free";   /* 規則沒寫到的次數：不處理，讓學生自己點（答案選項一直都在） */
   if(act === "next") showNextHint();
@@ -606,7 +601,6 @@ function endItem(passed, correctSec, revealed){
     read: !!G.read, readUsed: [...cur.reads].map(id => ({word:"語詞", sent:"句子"})[id]).join("、"),   /* 報讀：這次有沒有開、這題按了哪幾種提示的喇叭 */
     fontScale: settings.fontScale, rate: settings.rate, sfx: settings.sfx,
     clock: !!G.clock,                      /* 作答時右上角有沒有顯示計時 */
-    hpMax: G.hpMax || "", hp: G.hpMax ? heartPool(it.kid).hp : "",   /* 血量模式：開始時幾點、這題做完剩幾點 */
     ...G.ws[it.k]   /* 只考有教的字：ws＝第幾組（""＝整課，"p"＝練習自己點的）、wsChars＝這課考的字、wsAll＝整課幾個字 */
   };
   saveRecord(rec);
@@ -624,61 +618,8 @@ function endItem(passed, correctSec, revealed){
   }
   G.pos++;
   const g = G;
-  if(cur.hpOut) return heartsOut(it.kid);
   setTimeout(() => { if(G !== g || g.over) return; if(g.game && g.pos < g.queue.length && g.doneN % sceneEvery() === 0) sceneBeat(it.kid, nextItem); else nextItem(); },
     passed ? (cur.line ? 1800 : 900) : revealed ? 2200 : 1000);
-}
-
-/* ---------- 3-3b 血量模式（只在練習） ----------
-   開始前在第 4 步選幾點血量（3、5、7，畫面上一點＝一顆紅心）。一題第一次選錯就少一點（同一題再錯不會再扣），連續 3 題第一次就答對補一點（不超過開始的點數）。
-   血量用完就直接結束、看成績：這次算「做完」（不是中途結束），一樣抽一張貼紙。
-   合作打怪獸時全組共用一份血量，用完全組一起結束；其他時候每人各自，某人用完只結束他的部分，其他人繼續。 */
-const HEART_CHOICES = [3, 5, 7];
-const heartsAllowed = () => state.kind !== "formal" && state.mode === "acc";
-function setupHearts(g){
-  g.hpMax = g.kind !== "formal" && g.mode === "acc" ? +settings.practiceHearts || 0 : 0;
-  g.pools = {};
-  if(!g.hpMax) return;
-  const mk = () => ({hp: g.hpMax, streak: 0, out: false});
-  if(g.game === "coop" || g.shared){ const shared = mk(); g.kids.forEach(k => g.pools[k] = shared); }
-  else g.kids.forEach(k => g.pools[k] = mk());
-}
-const heartPool = code => G.pools[code];
-/* 上方的血量（一排紅心）：fx＝"lose"（剛少一顆）或 "gain"（剛補一顆） */
-function drawHearts(code, fx){
-  const el = $("#pHearts");
-  if(!G.hpMax){ el.hidden = true; return; }
-  const p = heartPool(code);
-  el.hidden = false;
-  el.setAttribute("aria-label", `血量剩 ${p.hp} 點，共 ${G.hpMax} 點`);
-  el.innerHTML = Array.from({length: G.hpMax}, (_, i) => `<i class="${i < p.hp ? "" : "empty"}${fx === "lose" && i === p.hp ? " lose" : fx === "gain" && i === p.hp - 1 ? " gain" : ""}">${i < p.hp ? "❤" : "♡"}</i>`).join("");
-}
-/* 第一次就答錯：少一顆；回傳 true＝用完了 */
-function loseHeart(code){
-  if(!G.hpMax) return false;
-  const p = heartPool(code);
-  p.hp = Math.max(0, p.hp - 1); p.streak = 0;
-  drawHearts(code, "lose");
-  return p.hp === 0;
-}
-/* 第一次就答對：連續 3 題補一顆 */
-function heartStreak(code){
-  if(!G.hpMax) return;
-  const p = heartPool(code);
-  if(++p.streak < 3) return;
-  p.streak = 0;
-  if(p.hp < G.hpMax){ p.hp++; drawHearts(code, "gain"); }
-}
-/* 血量用完：拿掉這份血量的人還沒做的題目，顯示「血量用完了」1.6 秒，再接著出題或到結果畫面 */
-function heartsOut(code){
-  const g = G, p = heartPool(code), who = g.kids.filter(k => heartPool(k) === p);
-  p.out = true;
-  g.queue = g.queue.filter((x, i) => i < g.pos || !who.includes(x.kid));
-  g.hpOver = g.kids.every(k => heartPool(k).out);
-  const k = kidBy(code), name = who.length > 1 ? "大家" : k ? kidShow(k) : code;
-  $("#pBody").innerHTML = `<div class="hpout" role="status"><div class="big" aria-hidden="true">💔</div><h2>${esc(name)}的血量用完了！</h2>
-    <p class="note" style="margin:0">${g.hpOver ? "這次就到這裡，來看看成績吧！" : "換下一位繼續。"}</p></div>`;
-  setTimeout(() => { if(G === g && !g.over) nextItem(); }, 1600);
 }
 
 /* ---------- 3-3 打怪獸 ----------
@@ -806,7 +747,7 @@ function finish(){
   if(G.over) return;
   G.over = true;   /* 之後還在排隊的出題、換人畫面都會停下來 */
   try { speechSynthesis.cancel(); } catch(e){}
-  $("#pTimer").hidden = true; $("#pHearts").hidden = true; $("#pQuit").textContent = "結束";
+  $("#pTimer").hidden = true; $("#pQuit").textContent = "結束";
   const g = G;
   if(g.scene){ g.scene.stop(); $("#pScene").hidden = true; $("#pBody").hidden = false; }
   /* 哪些學生做完了：正確率模式＝自己的題目都答完；流暢性模式＝自己那一回合時間到。
@@ -832,11 +773,10 @@ function finish(){
         ${cheer}</div>`;
     }
     const avg = t.secs.length ? (t.secs.reduce((a, b) => a + b, 0) / t.secs.length).toFixed(1) : "—";
-    const hp = g.hpMax ? g.pools[code] : null;
     return `${head}<span class="rlabel">答對率</span><span class="big">${t.n ? Math.round(t.first / t.n * 100) : 0}%</span>
       <div class="rstats"><span>第一次就答對 ${t.first} / ${t.n} 題</span><span>答對平均 ${avg} 秒</span></div>
       ${t.passed > t.first ? `<span class="sm">再試一次後，最後答對 ${t.passed} 題</span>` : ""}
-      ${hp ? `<span class="sm">${hp.out ? "💔 血量用完了" : `血量剩下 ${"❤".repeat(hp.hp)}（${hp.hp} / ${g.hpMax}）`}</span>` : ""}${cheer}</div>`;
+      ${cheer}</div>`;
   }).join("") || `<p class="note">這次沒有作答紀錄。</p>`;
   $("#rNote").textContent = (g.kind === "formal" ? "這次是正式評量，做完的結果會納入學習分析。" : "這次是練習，結果另外統計。")
     + (left.length ? "沒有做完的紀錄會保留，但標成「中途結束」，不列入分析。" : "");
