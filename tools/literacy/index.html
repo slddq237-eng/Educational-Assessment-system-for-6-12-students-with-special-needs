@@ -459,19 +459,20 @@ details.howto{margin:10px 0 0}
 #pScene[hidden]{display:none}
 .scenecap{font-size:clamp(22px,2.2vw,34px);font-weight:700;display:flex;align-items:center;gap:12px}
 .scenecap .av{--s:1.8em}
-/* 多位學生（不只遊戲）：「輪到誰」獨佔上方一列、放中間、放大、換成醒目的黃底，學生才知道輪到自己（2026-10-26 維護者要求） */
-#play[data-multi] #pWho,#play[data-multi] .turnbanner .who{order:-1;flex:1 1 100%;justify-content:center;gap:18px;padding:4px 40px;font-size:clamp(30px,4.6vw,60px);font-weight:800;
-  background:#ffd23f;color:#1f1f1f;border:4px solid #1f1f1f;box-shadow:0 4px 0 rgba(0,0,0,.25)}
-#play[data-multi] #pWho .av,#play[data-multi] .turnbanner .who .av{--s:1.7em;box-shadow:0 0 0 4px #1f1f1f}
+/* 多位學生（不只遊戲）：「輪到誰」（頭像＋名字）放大、置中放在最上方，不加底色和外框（2026-10-26 維護者要求） */
+#play[data-multi] #pWho,#play[data-multi] .turnbanner .who{order:-1;flex:1 1 100%;justify-content:center;gap:18px;padding:0;font-size:clamp(34px,5vw,64px);font-weight:800;
+  background:none;border:0;border-radius:0;color:var(--stageink,var(--ink))}
+#play[data-multi] #pWho .av,#play[data-multi] .turnbanner .who .av{--s:1.6em}
 #play[data-multi] .turnbanner .who{flex:0 1 auto}
-/* 分區輪流：輪到的那一區，名字列也換成黃底大字 */
-#play[data-multi] .zone.on .zhead{background:#ffd23f;color:#1f1f1f;border:3px solid #1f1f1f;border-radius:999px;padding:4px 20px;font-size:clamp(26px,3.4vw,48px);font-weight:800}
-#play[data-multi] .zone.on .zhead .av{--s:1.6em;box-shadow:0 0 0 3px #1f1f1f}
+/* 分區輪流：輪到的那一區，名字放大；不顯示題數 */
+#play[data-multi] .zone.on .zhead{justify-content:center;font-size:clamp(26px,3.4vw,48px);font-weight:800}
+#play[data-multi] .zone.on .zhead .av{--s:1.6em}
+#play[data-multi] .zhead > span:last-child{display:none}
 #play[data-multi] .scenecap{font-size:clamp(30px,4vw,56px)}
 #play[data-multi] .scenecap .av{--s:1.9em}
 #play[data-multi] .team .tm .av{--s:2.2em}
 #play[data-multi] .team .tm.on{transform:scale(1.25)}
-#play[data-multi] .team .tm.on .av{box-shadow:0 0 0 5px #ffd23f}
+#play[data-multi] .team .tm.on .av{box-shadow:0 0 0 5px var(--acc,#ffd23f)}
 .scenehold{width:100%;display:grid;gap:8px;justify-items:center}
 /* 貼紙夥伴：怪獸下方一排，答對時「衝過去撞怪獸」（JS 算出 --dx --dy），撞到的地方放特效；特效依星等差很多：
    1 星：3 顆小黃星；2 星：藍色光環＋6 顆藍星；3 星：紫色旋轉光暈＋兩圈光環＋10 顆火花；
