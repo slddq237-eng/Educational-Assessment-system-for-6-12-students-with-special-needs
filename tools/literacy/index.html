@@ -736,13 +736,24 @@ html.tabpre #tabPick[hidden]{display:block!important}
   
 /* 老師專區「一位學生」簡潔畫面（2026-10-25，設計見 docs/design/analysis-page-draft.md）：選學生後整頁往下捲 */
 #tSimple .sname{margin:6px 0 4px;font-size:30px}
-#tSimple .ssec{margin-top:22px}
-#tSimple .ssec .ttitle{margin:0 0 10px}
+#tSimple .ssec,#tResult.tflat .ssec{background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:14px 18px;margin-top:14px}   /* 每個項目一張卡片 */
+#tSimple .ssec .ttitle,#tResult.tflat .ssec .ttitle{margin:0 0 10px}
+#tResult.tflat{background:none;border:0;padding:0;margin-top:0;display:block}
+/* 「個人」「多位學生」：選學生放左側欄，右邊是各項目的卡片 */
+.tbody.hasside{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;align-items:start}
+.tcol{min-width:0}
+.tside{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:12px;margin-top:14px;display:grid;gap:10px}
+.tside .ttitle{font-size:18px}
+.tside .trow{flex-direction:column;align-items:stretch;gap:6px}
+.tside .trow .tl{min-width:0;font-weight:700;color:var(--ink)}
+.tside .chip{text-align:left;border-radius:12px;width:100%}
+.tside .ghost{width:100%;border-radius:12px;padding:6px 10px;font-size:15px}
+@media (max-width:900px){.tbody.hasside{grid-template-columns:minmax(0,1fr)}.tside{position:static;max-height:none}.tside .trow{flex-direction:row;flex-wrap:wrap}.tside .chip,.tside .ghost{width:auto}}
 #tSimple .schips{display:flex;flex-wrap:wrap;gap:8px}
 #tSimple .schip{display:flex;align-items:center;gap:8px;border:2px solid var(--line);border-radius:14px;padding:6px 12px;background:var(--card)}
 #tSimple .schip .charlink{font-size:30px;line-height:1;text-decoration:none;color:var(--ink)}
 #tSimple .schip span{font-size:13px;color:var(--muted);line-height:1.3}
-#tSimple,#tSimple .ssec{min-width:0;max-width:100%}   /* 表格太寬時只在表格裡橫向捲動，不把整頁撐寬 */
+#tSimple,#tSimple .ssec,.tside{min-width:0;max-width:100%}   /* 表格太寬時只在表格裡橫向捲動，不把整頁撐寬 */
 #tSimple .tablewrap{overflow-x:auto;max-width:100%}
 #tResult,#tResult>*{min-width:0;max-width:100%}   /* 多位學生那頁：下面的「學生 × 生字」寬表格不能把整個區塊撐寬，否則上面的折線圖會跟著放大、超出卡片 */
 #tResult .tablewrap{overflow-x:auto;max-width:100%}
@@ -1113,7 +1124,10 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
     <div class="row"><button class="ghost" id="teacherBack">回到設定</button></div></header>
   <div class="row" id="tTabs" role="group" aria-label="老師專區分頁"></div>
   <details class="why thelp" id="tHelp"></details>
-  <section class="card tpanel" id="tSimple" hidden></section>
+  <div class="tbody" id="tBody">
+  <aside class="tside" id="tSide" aria-label="選學生" hidden></aside>
+  <div class="tcol">
+  <div id="tSimple" hidden></div>
   <div class="tmore" id="tMore">
     <div class="row" id="tAdvTabs" role="group" aria-label="進階分析的兩個部分" hidden></div>
     <section class="card tpanel">
@@ -1121,6 +1135,8 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
       <div id="tRangeBox"><div id="tRange"></div></div>
     </section>
     <section class="card tpanel" id="tResult" aria-live="polite"></section>
+  </div>
+  </div>
   </div>
 </div>
 

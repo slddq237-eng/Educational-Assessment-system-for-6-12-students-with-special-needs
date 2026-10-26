@@ -265,15 +265,15 @@ function lessonPrePost(all){
     <p class="note">正確率＝第一次就答對的比例。圓點連成的線是正式評量的前測、後測（灰色背景是前測、藍色是後測）；橘色空心標記是練習，不連線、不分前後測。點上面的課次，可以只看那一課。${events.length ? "直立線是這課教學結束後的時間：畫在「教學結束、滿 1 週、滿 2 週、滿 1 個月」之後的第一次評量前面（那段時間沒有評量就不畫）。" : ""}</p>`;
 }
 function renderSimple(){
-  const box = $("#tSimple"), withData = kidsWithData();
+  const box = $("#tSimple"), side = $("#tSide"), withData = kidsWithData();
   box.hidden = T.tab !== "one";
   if(box.hidden) return;
-  if(!withData.length){ box.innerHTML = `<p class="hint" style="margin:0">還沒有作答紀錄。學生做過評量後，這裡就會出現名字和結果。</p>`; return; }
+  if(!withData.length){ side.innerHTML = ""; box.innerHTML = `<section class="card tpanel"><p class="hint" style="margin:0">還沒有作答紀錄。學生做過評量後，這裡就會出現名字和結果。</p></section>`; return; }
   /* 統計、折線圖、字的清單：正式評量加練習全部一起算（維護者 2026-10-25）；只有前後測是正式評量才有（練習沒有前後測標記）。中途結束的不算 */
   const everything = records.filter(r => r.kid === T.kid), all = everything.filter(okRec);
   const kid = kidBy(T.kid), sec = (title, body) => `<section class="ssec"><h3 class="ttitle">${title}</h3>${body}</section>`;
-  box.innerHTML = `<div class="trow"><span class="tl">看誰</span>${chipRow(withData.map(k => [k.code, esc(kidLabel(k))]), T.kid, "tkid2")}</div>
-    <h2 class="sname">${esc(kid ? kidLabel(kid) : T.kid)}</h2>
+  side.innerHTML = `<div class="trow"><span class="tl">看誰</span>${chipRow(withData.map(k => [k.code, esc(kidLabel(k))]), T.kid, "tkid2")}</div>`;
+  box.innerHTML = `<section class="ssec"><h2 class="sname">${esc(kid ? kidLabel(kid) : T.kid)}</h2></section>
     ${sec("總體紀錄（正式評量＋練習）", simpleSummary(all))}
     ${sec("每天的平均正確率", `<div class="tchart">${dailyChart(all, "acc")}</div><p class="note">正確率＝第一次就答對的比例。每個點是那一天所有評量和練習的平均；有標前測、後測的那天，日期後面會註明。</p>`)}
     ${sec("每天的平均反應時間（越低越快）", `<div class="tchart">${dailyChart(all, "sec")}</div><p class="note">答對的題目，從題目唸完到答對的平均秒數。</p>`)}
@@ -285,7 +285,7 @@ function renderSimple(){
     ${sec("近期正式評量紀錄", recentByLesson(everything, true))}
     ${sec("近期練習紀錄", recentByLesson(everything, false))}`;
   const re = () => { const y = window.scrollY; saveT(); renderTeacher(); window.scrollTo(0, y); };   /* 重畫後回到原本捲到的位置 */
-  box.querySelectorAll("[data-tkid2]").forEach(b => b.onclick = () => { T.kid = b.dataset.tkid2; re(); });
+  side.querySelectorAll("[data-tkid2]").forEach(b => b.onclick = () => { T.kid = b.dataset.tkid2; re(); });
   box.querySelectorAll("[data-tlsn]").forEach(b => b.onclick = () => { T.simpleLesson = b.dataset.tlsn; re(); });
   box.querySelectorAll("[data-char]").forEach(el => el.onclick = () => openCharLog(el.dataset.kid || T.kid, el.dataset.char));
   bindChart(box);
@@ -299,6 +299,10 @@ function renderTeacher(){
   const withData = kidsWithData();
   if(!kidBy(T.kid) && withData.length) T.kid = withData[0].code;
   const isOne = T.tab === "one", isAdv = T.tab === "pivot", charts = isAdv && T.adv !== "pivot";
+  const sideTab = isOne || T.tab === "class";   /* 個人、多位學生：選學生放左側欄 */
+  $("#tBody").classList.toggle("hasside", sideTab);
+  $("#tSide").hidden = !sideTab;
+  $("#tResult").classList.toggle("tflat", T.tab === "class");   /* 多位學生：每個項目各自一張卡片，外層不再包一張大卡片 */
   $("#tMore").hidden = isOne;   /* 個人：只有上面的簡潔畫面 */
   $("#tAdvTabs").hidden = !isAdv;
   if(isAdv){
@@ -876,10 +880,11 @@ function renderClass(){
   /* 和「個人」畫面統一：正式評量加練習、全部日期，中途結束的不算（維護者 2026-10-25），所以這一頁不用範圍選單 */
   const rs = records.filter(r => okRec(r) && sel.includes(r.kid)), kidList = picked.filter(k => rs.some(r => r.kid === k.code));
   $("#tMenu").innerHTML = "";
-  const head = `<h3 class="ttitle">多位學生比較</h3>${classPicker(withData)}`;
+  const side = $("#tSide");
+  side.innerHTML = classPicker(withData);
   const bindPicker = () => {
     const res = $("#tResult"), re = () => { const y = window.scrollY; saveT(); renderTeacher(); window.scrollTo(0, y); };
-    res.querySelectorAll("[data-ckid]").forEach(b => b.onclick = () => {
+    side.querySelectorAll("[data-ckid]").forEach(b => b.onclick = () => {
       const c = b.dataset.ckid, cur = pickedKids();
       if(cur.includes(c)) T.classKids = cur.filter(x => x !== c);
       else if(cur.length >= CLASS_MAX){ $("#cMsg").textContent = `最多選 ${CLASS_MAX} 位，請先取消一位，或分組來看。`; return; }
@@ -888,7 +893,7 @@ function renderClass(){
     });
     res.querySelectorAll("[data-tcl]").forEach(b => b.onclick = () => { T.classLesson = b.dataset.tcl; re(); });
     bindChart(res);
-    res.querySelectorAll("[data-cgrp]").forEach(b => b.onclick = () => { T.classKids = getGroups()[+b.dataset.cgrp].kids.filter(kidBy).slice(0, CLASS_MAX); re(); });
+    side.querySelectorAll("[data-cgrp]").forEach(b => b.onclick = () => { T.classKids = getGroups()[+b.dataset.cgrp].kids.filter(kidBy).slice(0, CLASS_MAX); re(); });
     const save = $("#cGrpSave"), del = $("#cGrpDel");
     if(save) save.onclick = () => {
       const name = (prompt("這一組的名字（例如：一年級組）") || "").trim(); if(!name) return;
@@ -900,7 +905,7 @@ function renderClass(){
   };
   if(!kidList.length){
     tCurrent = null;
-    $("#tResult").innerHTML = head + `<p class="hint">${picked.length ? "選到的學生還沒有作答紀錄。" : "請先點上面的學生（最多 " + CLASS_MAX + " 位），這裡就會出現比較。"}</p>`;
+    $("#tResult").innerHTML = `<section class="ssec"><p class="hint" style="margin:0">${picked.length ? "選到的學生還沒有作答紀錄。" : "請先點左邊的學生（最多 " + CLASS_MAX + " 位），這裡就會出現比較。"}</p></section>`;
     bindPicker(); return;
   }
   /* 字的順序：依課本、課次、課本裡的順序 */
@@ -916,8 +921,7 @@ function renderClass(){
   const rows = []; kidList.forEach(k => chars.forEach(c => { const list = cell.get(k.code + "|" + c); if(list) rows.push({kid:k.code, name:kidLabel(k), char:c, ...accOf(list)}); }));
   const all = accOf(rs);
   tCurrent = null;
-  $("#tResult").innerHTML = head
-    + classSec("每天的平均正確率", classDaily(kidList, rs, "acc", "")) + classSec("每天的平均反應時間（越低越快）", classDaily(kidList, rs, "sec", ""))
+  $("#tResult").innerHTML = classSec("每天的平均正確率", classDaily(kidList, rs, "acc", "")) + classSec("每天的平均反應時間（越低越快）", classDaily(kidList, rs, "sec", ""))
     + classSec("每天的流暢性（每分鐘認出幾個字）", classDaily(kidList, rs, "flu", "選到的學生還沒有流暢性的紀錄（計時挑戰）。")) + classSec("各課前後測正確率", classPrePost(kidList, rs))
     + classTable("常錯的字", kidList, rs, classWrong) + classTable("反應最慢的字", kidList, rs, classSlow) + classTable("容易搞混的字（字→常選成）", kidList, rs, classConfused)
     + `<section class="ssec"><h3 class="ttitle">每個字的正確率（學生 × 生字）</h3>
