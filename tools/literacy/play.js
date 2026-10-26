@@ -694,17 +694,20 @@ function showPartners(kids, mode){
   box.querySelector(".scenehold").classList.remove("bonk");   /* 場景再顯示時，沒撞怪獸的那次不要又晃一次 */
   if(mode !== "hit") return;
   /* 衝過去撞怪獸：算出從夥伴現在的位置到怪獸（場景中央偏上）要走多遠；全隊一起出場時錯開一點，才不會疊在一起 */
-  const hold = box.querySelector(".scenehold").getBoundingClientRect(), pts = [...box.querySelectorAll(".pt")];
+  const holdEl = box.querySelector(".scenehold"), hold = (holdEl.querySelector("svg") || holdEl).getBoundingClientRect(), pts = [...box.querySelectorAll(".pt")];
   let top = 0;
   pts.forEach((el, n) => {
     const m = el.querySelector(".mv"), r = el.querySelector(".pimg").getBoundingClientRect();
-    m.style.setProperty("--dx", `${hold.left + hold.width / 2 + (n - (pts.length - 1) / 2) * 90 - (r.left + r.width / 2)}px`);
-    m.style.setProperty("--dy", `${hold.top + hold.height * .5 - (r.top + r.height / 2)}px`);
+    const [hx, hy] = PARTNER_HIT[g.theme] || [.5, .5];
+    m.style.setProperty("--dx", `${hold.left + hold.width * hx + (n - (pts.length - 1) / 2) * 90 - (r.left + r.width / 2)}px`);
+    m.style.setProperty("--dy", `${hold.top + hold.height * hy - (r.top + r.height / 2)}px`);
     top = Math.max(top, +(el.className.match(/t(\d)/) || [0, 1])[1]);
   });
   const sh = box.querySelector(".scenehold");   /* 撞到的瞬間怪獸那一塊晃一下，星等越高晃越大 */
   sh.style.setProperty("--sh", `${[0, 3, 5, 8, 12][top]}px`); sh.classList.remove("bonk"); void sh.offsetWidth; sh.classList.add("bonk");
 }
+/* 夥伴撞的位置：場景（.scenehold）裡怪獸的中心，左上角為 0、右下角為 1（算在場景的圖上，不是整個欄位，欄位比圖寬）；太空的外星人在右邊，恐龍蛋在中間 */
+const PARTNER_HIT = {space:[.72, .58], dino:[.5, .5]};
 const partnerKids = (g, code) => g.game === "coop" ? g.kids : [code];
 
 /* 開始前：看看要打的怪獸，停 1.8 秒。
