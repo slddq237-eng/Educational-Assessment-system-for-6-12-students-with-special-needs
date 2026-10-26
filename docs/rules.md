@@ -12,7 +12,7 @@
 | 任何改動 | PR 說明：通知等級、有沒有動到共用檔案、「文件更新」一行；**變更紀錄**：在 `docs/changelog/changes/` 加一個小檔案（2026-10-24 起，見 `changelog.md`「怎麼寫」）；改了網頁會載入的 js、css：執行 `node docs/scripts/bump.js` 換版本號 |
 | 新想法、老師回饋 | `roadmap.md` 適合的階段；要討論的加進 `pending.md` |
 | 做了決定（定案、取消、改方向） | 對應的主題檔案改寫現況，舊說法移到最新的決策歷史檔（`history-2026-10-24.md`）；`pending.md` 拿掉或標定案；`roadmap.md` 打 ✅；在規格書討論過的，請擁有者在那一節標「已定案，見 docs/○○.md」 |
-| 新功能、改變行為 | 對應的主題檔案（識字評量 `literacy-design.md`（玩法、增強、血量 `literacy-play.md`）、分析 `analysis-design.md`、紀錄 `records.md`、教材 `materials.md`）、`roadmap.md` 那一列的狀態改成 ✅（只寫日期和「詳細在哪」，做了什麼寫在主題檔案，不寫進路線圖，2026-10-23 重整後的規則）；老師看得到的：首頁 `index.html`「最後更新」 |
+| 新功能、改變行為 | 對應的主題檔案（識字評量 `literacy-design.md`（玩法、增強 `literacy-play.md`）、分析 `analysis-design.md`、紀錄 `records.md`、教材 `materials.md`）、`roadmap.md` 那一列的狀態改成 ✅（只寫日期和「詳細在哪」，做了什麼寫在主題檔案，不寫進路線圖，2026-10-23 重整後的規則）；老師看得到的：首頁 `index.html`「最後更新」 |
 | 新增、刪除、改名程式檔，或改到檔案之間的關係、新的儲存名稱 | `architecture.md`（自動檢查會提醒）；新增、刪除、改名資料夾或主要檔案時，也改根目錄 `README.md` 的「資料夾地圖」（2026-10-24 維護者決定） |
 | 整理程式 | `refactor.md` 進度清單 |
 | 作答紀錄格式、正式評量條件 | **先討論**；`records.md`、`data.js` 的 `RECORD_FORMAT` |

@@ -80,10 +80,11 @@ const GAME_CARDS = [
 ];
 const gameCard = theme => GAME_CARDS.find(c => c.theme === theme);
 /* 個人或合作（2026-10-26 起不再讓老師選，跟著玩法走）：多位學生在大螢幕輪流的練習才有「合作」，
-   而且合作只有「遊戲」能玩（各玩各的的遊戲還沒做）；選遊戲就是大家合作，選一般、賓果就是各玩各的。
+   選「遊戲」或「賓果」就是大家合作（遊戲＝同一隻怪獸，賓果＝共用一張卡），只有「一般」是各玩各的。
    平板（每人一台）、正式評量（每位學生獨立作答，2026-10-24 決定）、流暢性、只有一位學生都是個人 */
 const coopPossible = () => state.kind !== "formal" && state.answer !== "qr" && state.mode !== "flu" && selKids().length > 1;
-const team = () => coopPossible() && playNow() === "game" ? "coop" : "solo";
+const team = () => coopPossible() && (playNow() === "game" || playNow() === "bingo") ? "coop" : "solo";
+const sharedBingo = () => coopPossible() && playNow() === "bingo";   /* 多位學生共用一張賓果卡（E15）；平板、一位學生仍是一人一張 */
 /* 某個玩法這次能不能用；不能用時回傳原因（設定畫面把卡片變灰並寫出來），能用回傳空字串 */
 function playWhy(id){
   if(id === "color") return "";
@@ -93,9 +94,8 @@ function playWhy(id){
 }
 /* 這次實際用的玩法：選的不能用時，改用第一個能用的 */
 const playNow = () => !playWhy(settings.practicePlay) ? settings.practicePlay : PLAYS.map(p => p.id).find(id => !playWhy(id)) || "color";
-/* 第 4 步其他列的小圖示：血量（紅心，和作答畫面一樣）、注音、報讀（喇叭） */
+/* 第 4 步其他列的小圖示：注音、報讀（喇叭） */
 const ROW_ICONS = {
-  "血量": `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z" fill="#d64534"/></svg>`,
   "注音": `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" fill="#2c7a69"/><text x="12" y="17" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">ㄅ</text></svg>`,
   "報讀": `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#2a78d6" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>`
 };
@@ -194,8 +194,6 @@ const settings = Object.assign({choices:"4", rate:0.85, formalTheme:true,
      多位學生在大螢幕輪流時，選遊戲就是大家合作（data.js 的 team） */
   /* 練習打怪獸：每做完幾題跳一次動畫（細部設定 → 練習與遊戲；預設 3 題，2026-10-22 維護者決定） */
   sceneEvery:"3",
-  /* 血量模式（3-3b，只在練習）：開始前選幾點血量，0＝不用 */
-  practiceHearts:0,
   /* 練習的選項加注音（3-4）：第 4 步可以改；正式評量的選項一律不加（會變成看注音找字） */
   practiceBpmf:false,
   /* 報讀提示：語詞、句子提示旁的小喇叭，按了念出完整語詞或句子。練習在第 4 步開關（預設開）；

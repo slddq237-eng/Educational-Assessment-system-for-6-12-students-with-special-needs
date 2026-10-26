@@ -31,7 +31,6 @@ const DIMS = {
   etype:     ["第一次的結果／錯誤類型", r => r.firstCorrect ? "第一次就對" : r.errorType || "其他"],
   theme:     ["主題", r => r.theme ? themeName(r.theme) : "無"],
   game:      ["遊戲玩法", r => gameName(r)],
-  hearts:    ["血量模式", r => r.hpMax ? `${r.hpMax} 點血量` : "沒有"],
   bpmf:      ["選項注音", r => r.bpmf ? "有注音" : "沒有"],
   read:      ["報讀提示", r => !r.read ? "沒有開" : r.readUsed ? "有按報讀" : "有開、沒按"],
   kind:      ["正式或練習", r => r.kind === "formal" ? "正式評量" : "練習"],

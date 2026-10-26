@@ -48,7 +48,7 @@
 | 獎勵（主題、貼紙、扭蛋、星等） | 預設開；要做研究的老師可關，但同一位學生從第一次評量起要維持同一個設定 | `docs/design/game-design.md` |
 | 前測、後測條件 | 完全一樣 | `docs/design/a8-terms.md` 第 13 點 |
 | 「學會」標準 | 系統不定義 | `docs/design/a8-terms.md` 第 21 點 |
-| 練習的 20% 常用字、血量、遊戲玩法 | 只在練習 | `docs/design/game-design.md` |
+| 練習的 20% 常用字、遊戲玩法 | 只在練習 | `docs/design/game-design.md` |
 
 ## 二、原本的待決表（每題有現況、建議、理由；結果以第〇節為準）
 

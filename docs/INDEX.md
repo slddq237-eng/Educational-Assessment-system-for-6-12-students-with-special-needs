@@ -13,7 +13,7 @@
 | 改任何程式（新增、刪除、改名檔案，或改到別的檔案會用的東西） | `code/architecture.md`（程式地圖：誰用誰、資料存哪裡、改這裡要一起檢查哪裡）、`code/architecture-notes.md`（注意事項：平板不載入哪些檔案等）、`code/refactor.md`（整理程式的規則：存資料走入口等） |
 | 整理（重構）程式 | `code/refactor.md`（規則與進度清單）、`code/architecture.md` |
 | 改設定畫面、選項之間的限制（玩法、作答方式、主題、題數） | `code/setup-flow-audit.md`（2026-10-26 全面檢查：每兩個選項怎麼互相限制、哪些悄悄改掉）、`design/game-design.md` 第 2 節 |
-| 改識字評量的功能、畫面、玩法 | `design/literacy-design.md`；賓果整合、增強系統、血量、部件重組讀 `design/literacy-play.md`；`plans/roadmap.md`（確認屬於哪個階段） |
+| 改識字評量的功能、畫面、玩法 | `design/literacy-design.md`；賓果整合、增強系統、部件重組讀 `design/literacy-play.md`；`plans/roadmap.md`（確認屬於哪個階段） |
 | 改貼紙、扭蛋、星等、進化、設定步驟、玩法設定表 | `design/game-design.md` |
 | 改老師專區、分析、報告、備課分析 | `design/analysis-design.md`、`design/records.md` |
 | 改作答紀錄格式、資料儲存、匯出入 | `design/records.md`、`design/a8-terms.md`（**改格式前一定要先讀，並先和維護者討論**） |
@@ -38,7 +38,7 @@
 | `plans/roadmap.md` | 開發路線圖（階段 A～F，版本規劃 2026-10-24 併入）、開放給其他老師前的準備 | 2-1、5、3-3 的「開放給其他老師前的準備」 |
 | `plans/roadmap-plans.md` | 還沒做的計畫細節：E9～E11、平台首頁規劃、多人合作破關遊戲、網站瀏覽量統計（2026-10-24 從 `plans/roadmap.md` 拆出） | 3-3 的「平台首頁規劃」「多人合作破關遊戲」 |
 | `design/literacy-design.md` | 識字評量已定案的設計（評量目標、正式評量與練習、提示、評量時機、畫面）、待決的設計問題 | 3 |
-| `design/literacy-play.md` | 賓果整合與增強系統、血量模式、部件重組（2026-10-24 從 `design/literacy-design.md` 拆出） | 3-1、3-3 的「血量模式」「目標 4-1」 |
+| `design/literacy-play.md` | 賓果整合與增強系統、部件重組（2026-10-24 從 `design/literacy-design.md` 拆出） | 3-1、3-3 的「目標 4-1」 |
 | `design/game-design.md` | 遊戲與獎勵：貼紙代號、星等、扭蛋、進化、設定步驟與玩法設定表（2026-10-24 新增） | （新） |
 | `design/analysis-design.md` | 老師專區（分析）、研究方法分層、學扶前後測、分析教學、備課分析 | 3-2、3-4、3-3 的「學扶前後測」「分析教學」 |
 | `design/records.md` | 資料怎麼存、作答紀錄 | 4 |

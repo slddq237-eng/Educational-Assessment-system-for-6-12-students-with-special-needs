@@ -235,16 +235,15 @@ function renderHints(){
   area.querySelectorAll(".ladder select").forEach(s => s.onchange = () => { rule[+s.dataset.i] = s.value; render(); });
 }
 
-/* ---------- 第 4 步：怎麼玩（玩法、血量、注音、報讀）與主題 ----------
+/* ---------- 第 4 步：怎麼玩（玩法、注音、報讀）與主題 ----------
    練習在這裡自由選；正式評量照「評量設定」，這裡只顯示（從基線期起每次都一樣，前後才能比較）。 */
 const playName = id => (PLAYS.find(p => p.id === id) || {}).name || "";
 function playText(){
   const c = current();
   if(!useRewards()) return "不用主題（評量設定）";
   const card = willFight() && state.themePick && gameCard(state.themePick);
-  const base = willFight() ? `遊戲${card ? `・${card.act}` : ""}（${team() === "coop" && selKids().length > 1 ? "大家合作" : "個人"}）` : c.choices === "bingo" ? "生字賓果" : "一般";
-  const hp = heartsAllowed() && +settings.practiceHearts ? `・血量 ${settings.practiceHearts} 點` : "";
-  return base + hp;
+  const base = willFight() ? `遊戲${card ? `・${card.act}` : ""}（${team() === "coop" && selKids().length > 1 ? "大家合作" : "個人"}）` : c.choices === "bingo" ? (sharedBingo() ? "生字賓果（大家共用一張卡）" : "生字賓果") : "一般";
+  return base;
 }
 function renderPlay(){
   const c = current(), formal = c.formal, row = (t, body) => `<div class="playrow"><span class="tl">${ROW_ICONS[t] || ""}${t}</span><div>${body}</div></div>`;
@@ -259,12 +258,7 @@ function renderPlay(){
     const why = playWhy, cur = playNow();
     /* 三張卡片：小圖示＋名稱＋一句話；不能用的卡片寫原因 */
     rows.push(row("玩法", `<div class="playcards">${PLAYS.map(x => `<button class="opt playcard ${cur === x.id ? "on" : ""}" data-play="${x.id}" aria-pressed="${cur === x.id}" ${why(x.id) ? "disabled" : ""}>
-        <span class="playicon">${x.icon}</span><span><b>${x.name}</b><small>${why(x.id) || x.desc + (x.id === "game" && coopPossible() ? "（多位學生輪流作答、大家合作）" : "")}</small></span></button>`).join("")}</div>`));
-    if(heartsAllowed()){
-      const hp = +settings.practiceHearts || 0;
-      rows.push(row("血量", `<div class="group">${chipRow([["0", "無限"], ...HEART_CHOICES.map(n => [String(n), `${n} 點`])], String(hp), "hearts")}</div>
-        <p class="note">${hp ? `畫面上方一排紅心。答錯扣 1 點、連續答對 3 題補 1 點，用完就結束${selKids().length > 1 ? (team() === "coop" ? "（大家共用）" : "（每人各自）") : ""}。` : "不限制答錯次數。"}</p>`));
-    }
+        <span class="playicon">${x.icon}</span><span><b>${x.name}</b><small>${why(x.id) || x.desc + ((x.id === "game" || x.id === "bingo") && coopPossible() ? (x.id === "game" ? "（多位學生輪流作答、大家合作）" : "（多位學生輪流作答、共用一張卡）") : "")}</small></span></button>`).join("")}</div>`));
     rows.push(row("注音", `<div class="group">${chipRow([["0", "選項不加"], ["1", "選項加注音"]], settings.practiceBpmf ? "1" : "0", "bpmf")}</div>
       <p class="note">語詞、句子提示一律有注音。</p>`));
     rows.push(row("報讀", state.goal === "R4" ? `<span class="note" style="margin:0">部件重組沒有報讀（會念出答案的讀音）。</span>`
@@ -273,7 +267,6 @@ function renderPlay(){
   $("#playArea").innerHTML = rows.join("");
   const bind = (key, f) => $("#playArea").querySelectorAll(`[data-${key}]:not(:disabled)`).forEach(b => b.onclick = () => { f(b.dataset[key]); saveSettings(); render(); });
   bind("play", v => settings.practicePlay = v);
-  bind("hearts", v => settings.practiceHearts = +v);
   bind("bpmf", v => settings.practiceBpmf = v === "1");
   bind("read", v => settings.practiceRead = v === "1");
 }
@@ -360,7 +353,8 @@ function oneLesson(){
 function quizPlan(){
   /* 生字賓果：整次一張卡，最多 36 格、同一個字只問一次，所以每人最多 36 題（play.js 的 startSession） */
   const bingo = bingoOK(current());
-  const pool = bingo ? Math.min(36, new Set(state.lessons.flatMap(k => wsPick(k))).size) : state.lessons.reduce((s,k) => s + lessonSize(k), 0);
+  const nKids = Math.max(1, selKids().length), shared = bingo && sharedBingo();
+  const pool = bingo ? Math.min(shared ? Math.floor(36 / nKids) : 36, new Set(state.lessons.flatMap(k => wsPick(k))).size) : state.lessons.reduce((s,k) => s + lessonSize(k), 0);
   const one = Math.min(oneLesson(), pool);
   const def = state.kind === "formal" ? one : Math.min(PRACTICE_COUNT, pool);   /* 預設題數 */
   /* state.qCount：null＝預設、"all"＝全部（換課次後仍是全部）、數字＝老師自己輸入的題數 */
@@ -380,10 +374,10 @@ function quizPlan(){
     if(!moved) break; }
   const n = Math.max(1, selKids().length);
   const sec = count * (SEC_PER_ITEM[state.answer] || 8) * (isTurnLike(state.answer) ? n : 1);
-  return {pool, one, def, count, isAll, isDefault, canChoose, method, freqN, per, sec, n, bingo};
+  return {pool, one, def, count, isAll, isDefault, canChoose, method, freqN, per, sec, n, bingo, shared};
 }
 /* 題數旁的補充說明：賓果卡的上限、只考部分字（練習和正式評量各自點選的字組，題數以點選的字為準） */
-const extraNote = q => (q.bingo ? "生字賓果卡最多 36 格，每人最多 36 題，同一個字只考一次。" : "")
+const extraNote = q => (q.shared ? `大家共用一張賓果卡，最多 36 格，全隊合計最多 36 題（每人最多 ${Math.floor(36 / q.n)} 題），同一個字只考一次。` : q.bingo ? "生字賓果卡最多 36 格，每人最多 36 題，同一個字只考一次。" : "")
   + (state.lessons.some(k => wsPartial(k)) ? "有課只考部分的字（第 2 步「只考有教的字」），題數以點選的字為準。" : "");
 const methodName = m => m === "all" ? "全部出題" : METHODS.find(x => x.id === m).name;
 const minutes = s => s < 60 ? "不到 1 分鐘" : `約 ${Math.ceil(s / 30) / 2} 分鐘`;
