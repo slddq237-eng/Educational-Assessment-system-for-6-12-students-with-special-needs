@@ -71,11 +71,12 @@ const PLAYS = [
    學生看到的是遊戲卡片（主題・動作），點一張就同時選好主題和遊戲；前台不顯示分類名稱。
    之後加新的遊戲或主題：在 GAME_CARDS 加一列，能不能用的規則都寫在 playWhy。
    （現在一個主題一張卡片，卡片用主題代號辨認；之後同一個主題要有兩種遊戲時，卡片要另外給代號。） */
+/* partner：這個遊戲有「貼紙夥伴出場」（2026-10-26 維護者決定：海洋是釣魚、甜點是做蛋糕，不是攻擊，所以沒有） */
 const GAME_TYPES = {fight:"對抗類", build:"建築類"};
 const GAME_CARDS = [
-  {theme:"space",   type:"fight", act:"打外星人"},
+  {theme:"space",   type:"fight", act:"打外星人", partner:true},
   {theme:"ocean",   type:"fight", act:"釣大魚"},
-  {theme:"dino",    type:"fight", act:"孵恐龍蛋"},
+  {theme:"dino",    type:"fight", act:"孵恐龍蛋", partner:true},
   {theme:"dessert", type:"build", act:"做蛋糕"}
 ];
 const gameCard = theme => GAME_CARDS.find(c => c.theme === theme);
@@ -194,6 +195,8 @@ const settings = Object.assign({choices:"4", rate:0.85, formalTheme:true,
      多位學生在大螢幕輪流時，選遊戲就是大家合作（data.js 的 team） */
   /* 練習打怪獸：每做完幾題跳一次動畫（細部設定 → 練習與遊戲；預設 3 題，2026-10-22 維護者決定） */
   sceneEvery:"3",
+  /* 貼紙夥伴出場（練習的打怪獸加強，2026-10-26 維護者決定；預設關，第一版沒有按鈕互動） */
+  partner:false,
   /* 練習的選項加注音（3-4）：第 4 步可以改；正式評量的選項一律不加（會變成看注音找字） */
   practiceBpmf:false,
   /* 報讀提示：語詞、句子提示旁的小喇叭，按了念出完整語詞或句子。練習在第 4 步開關（預設開）；

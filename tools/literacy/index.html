@@ -455,11 +455,76 @@ details.howto{margin:10px 0 0}
 /* 注音（3-4）：字的右邊有注音；注音字型只有一種粗細 */
 .bpmf,.hintbox .h.bpmf,.opt-big.bpmf{font-family:"BpmfKai",var(--kai);font-weight:400}
 .hintbox .h.sent.bpmf{font-size:calc(clamp(24px,2.6vw,34px) * var(--fs,1))}   /* 句子加注音時字放大，注音才看得清楚 */
-#pScene{flex:1;min-height:0;display:grid;align-content:center;justify-items:center;gap:10px}
+#pScene{position:relative;flex:1;min-height:0;display:grid;align-content:center;justify-items:center;gap:10px}
 #pScene[hidden]{display:none}
 .scenecap{font-size:clamp(22px,2.2vw,34px);font-weight:700;display:flex;align-items:center;gap:12px}
 .scenecap .av{--s:1.8em}
 .scenehold{width:100%;display:grid;gap:8px;justify-items:center}
+/* 貼紙夥伴：怪獸下方一排，答對時「衝過去撞怪獸」（JS 算出 --dx --dy），撞到的地方放特效；特效依星等差很多：
+   1 星：3 顆小黃星；2 星：藍色光環＋6 顆藍星；3 星：紫色旋轉光暈＋兩圈光環＋10 顆火花；
+   4 星：金色光柱＋金色光暈＋三圈光環＋16 顆金星。都只播一次（不閃爍，對光敏感的學生比較安全）；總長 1.7 秒內，不超過過場的 1.8 秒 */
+.team{display:inline-flex;gap:8px;align-items:center}
+.team .tm{opacity:.4;transform:scale(.82);transition:opacity .2s,transform .2s}
+.team .tm.on{opacity:1;transform:scale(1.1)}
+.team .tm.on .av{box-shadow:0 0 0 3px #ffd23f}
+.partners{position:relative;z-index:5;display:flex;gap:2.2vw;justify-content:center;align-items:flex-end;margin-top:-26px}
+.pt{--u:var(--pu,clamp(72px,11.5vh,112px));position:relative;display:grid;justify-items:center;font-size:14px;font-weight:700;width:calc(var(--u) * 1.5)}
+.pt .mv{position:relative;display:grid;justify-items:center}
+.pt .pimg{position:relative;z-index:2;width:var(--u);height:var(--u)}.pt .pimg svg{width:100%;height:100%;display:block}
+.pt.t2 .pimg{width:calc(var(--u) * 1.08);height:calc(var(--u) * 1.08)}
+.pt.t3 .pimg{width:calc(var(--u) * 1.2);height:calc(var(--u) * 1.2)}
+.pt.t4 .pimg{width:calc(var(--u) * 1.36);height:calc(var(--u) * 1.36)}
+.pt .fx{position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none}   /* 不設 z-index：星星、光環在貼紙上面，光暈、光柱墊在貼紙下面，貼紙才看得清楚 */
+.pt .fx i,.pt .fx b{z-index:3}
+.pt .fx i{position:absolute;width:20px;height:20px;margin:-10px;background:#ffd24a;opacity:0;clip-path:polygon(50% 0,62% 36%,100% 38%,70% 60%,80% 100%,50% 76%,20% 100%,30% 60%,0 38%,38% 36%)}
+.pt.t2 .fx i{background:#4aa3ff;width:26px;height:26px;margin:-13px}
+.pt.t3 .fx i{background:#b07bff;width:32px;height:32px;margin:-16px}
+.pt.t4 .fx i{background:linear-gradient(135deg,#fff3b0,#ffc400);width:40px;height:40px;margin:-20px}
+.pt .fx i:nth-child(3n){background:#fff}
+.pt .fx b{position:absolute;border-radius:50%;opacity:0;border:5px solid #4aa3ff;width:56px;height:56px;margin:-28px}
+.pt.t3 .fx b{border-color:#b07bff}.pt.t4 .fx b{border-color:#ffc400;border-width:8px}
+.pt.t1 .fx b{display:none}
+.pt .fx u{display:none}
+.pt.t3 .fx u,.pt.t4 .fx u{display:block;position:absolute;left:-80px;top:-80px;width:160px;height:160px;border-radius:50%;opacity:0;z-index:1}
+.pt.t3 .fx u{background:conic-gradient(#b07bff,#fff,#b07bff,#6b3fd1,#b07bff);filter:blur(6px)}
+.pt.t4 .fx u{left:-110px;top:-110px;width:220px;height:220px;background:radial-gradient(#fff6c2 10%,#ffc400 45%,rgba(255,196,0,0) 72%)}
+.pt .beam{display:none}
+.pt.t4 .beam{display:block;position:absolute;left:50%;bottom:30%;width:90px;margin-left:-45px;height:300px;background:linear-gradient(to top,rgba(255,215,90,.75),rgba(255,240,170,.25) 60%,rgba(255,240,170,0));opacity:0;z-index:1;pointer-events:none;-webkit-mask-image:linear-gradient(to right,transparent,#000 30%,#000 70%,transparent);mask-image:linear-gradient(to right,transparent,#000 30%,#000 70%,transparent)}
+.pt>span:last-child{position:relative;z-index:4;text-shadow:0 0 3px rgba(255,255,255,.55)}
+.partners.miss .pt{opacity:.8}
+.partners.inscene{position:absolute;margin:0;gap:0;transform:translate(-50%,-100%)}
+.partners.inscene .pt{margin:0 calc(var(--u) * -.1)}
+.partners.inscene .pt>span:last-child{text-shadow:0 1px 2px rgba(20,10,60,.6)}   /* 太空背景是深色，字用白色，不要白色光暈 */
+.pickrow{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.pickp{display:grid;justify-items:center;gap:2px;width:120px;padding:8px;border:3px solid var(--line,#ccc);border-radius:14px;background:#fff;font-size:15px;cursor:pointer}
+.pickp svg{width:80px;height:80px}.pickp b{color:#e8a200;font-size:14px}
+@media (prefers-reduced-motion:no-preference){
+  .partners.hit .pt .mv{animation:ptdash 1.7s cubic-bezier(.3,.1,.3,1) both}
+  .partners.hit .t1{--sc:1.15}.partners.hit .t2{--sc:1.25}.partners.hit .t3{--sc:1.4}.partners.hit .t4{--sc:1.55}
+  .partners.hit .fx i{animation:ptfx 1s ease-out calc(.5s + var(--w,0s)) both}
+  .partners.hit .t1 .fx i{--d:56px}.partners.hit .t2 .fx i{--d:90px}.partners.hit .t3 .fx i{--d:120px;animation-duration:1.15s}.partners.hit .t4 .fx i{--d:160px;animation-duration:1.1s}
+  .partners.hit .fx b{animation:ptring .8s ease-out calc(.5s + var(--w,0s)) both}
+  .partners.hit .fx b:nth-of-type(2){--w:.2s}.partners.hit .fx b:nth-of-type(3){--w:.4s}
+  .partners.hit .t3 .fx u{animation:ptaura 1.2s ease-out .45s both}
+  .partners.hit .t4 .fx u{animation:ptaura 1.2s ease-out .45s both}
+  .partners.hit .t4 .beam{animation:ptbeam 1.3s ease-out .35s both}
+  .partners.miss .pimg{animation:ptsway 1.2s ease-in-out}
+  .scenehold.bonk{animation:ptbonk .4s linear .5s both}
+  @keyframes ptdash{0%{transform:translate(0,0) scale(1)}
+    9%{transform:translate(0,8px) scale(1.12,.88)}
+    28%{transform:translate(var(--dx),var(--dy)) scale(var(--sc)) rotate(-14deg)}
+    34%{transform:translate(var(--dx),var(--dy)) scale(calc(var(--sc) * 1.15)) rotate(10deg)}
+    68%{transform:translate(var(--dx),var(--dy)) scale(var(--sc)) rotate(0)}
+    100%{transform:translate(0,0) scale(1)}}
+  @keyframes ptbonk{0%,100%{transform:translate(0,0)}15%{transform:translate(calc(var(--sh) * -1),calc(var(--sh) * .4))}35%{transform:translate(var(--sh),calc(var(--sh) * -.4))}55%{transform:translate(calc(var(--sh) * -.6),0)}75%{transform:translate(calc(var(--sh) * .4),0)}}
+  @keyframes ptfx{0%{opacity:1;transform:rotate(var(--a)) translateY(0) scale(.6)}70%{opacity:1}100%{opacity:0;transform:rotate(var(--a)) translateY(calc(var(--d) * -1)) scale(1.2)}}
+  @keyframes ptring{0%{opacity:.9;transform:scale(.3)}100%{opacity:0;transform:scale(3.6)}}
+  @keyframes ptaura{0%{opacity:0;transform:scale(.5) rotate(0)}30%{opacity:.85}100%{opacity:0;transform:scale(1.6) rotate(200deg)}}
+  @keyframes ptbeam{0%{opacity:0;transform:scaleY(.2);transform-origin:bottom}25%{opacity:1;transform:scaleY(1)}100%{opacity:0;transform:scaleY(1)}}
+  @keyframes ptsway{0%,100%{transform:rotate(0)}30%{transform:rotate(-6deg)}70%{transform:rotate(6deg)}}
+}
+
+
 .scene{width:100%;display:grid;gap:8px;justify-items:center}
 .scn{width:100%;height:auto;max-width:calc(58vh * 560 / 360);display:block;border-radius:22px;box-shadow:0 8px 0 rgba(0,0,0,.22)}
 .scenelab{font-size:clamp(16px,1.25vw,22px);text-align:center;background:var(--soft);padding:6px 18px;border-radius:999px}
@@ -983,6 +1048,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
       <h3>遊戲：每做完幾題跳一次動畫</h3>
       <div class="group" id="pEvery"></div>
       <p class="note" style="margin:0">預設每 3 題：每題都跳動畫會打斷學生的注意力。這幾題第一次就答對幾題就前進幾格（例如疊幾層蛋糕），都沒答對就播「再加油」；最後一律完成、拿到貼紙。多位學生合作時，算全隊輪流的題數。</p>
+      <label class="group"><input type="checkbox" id="vPartner" style="width:20px;height:20px;accent-color:var(--green)"> 貼紙夥伴出場（太空、恐龍）</label>
       <h3>計時</h3>
       <label class="group"><input type="checkbox" id="vClock" style="width:20px;height:20px;accent-color:var(--green)"> 練習時在右上角顯示計時</label>
       <p class="note" style="margin:0">正式評量要不要顯示計時，在「評量設定」調整（預設不顯示）。</p>
