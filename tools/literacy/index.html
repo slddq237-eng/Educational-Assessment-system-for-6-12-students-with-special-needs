@@ -398,6 +398,9 @@ details.howto{margin:10px 0 0}
 }
 .tbar .chip.on{background:var(--amber);border-color:var(--amber)}
 .who .av{--s:1.5em}
+/* 共用賓果卡的「輪到誰」：放大、固定在卡片正上方中間，換人時只換名字（卡片不消失） */
+.turnbanner{display:flex;justify-content:center}
+.turnbanner .who{font-size:clamp(28px,4vw,52px);padding:6px 32px}
 .pdeco{display:inline-flex}
 .pclock{font-size:clamp(20px,2.2vw,28px);font-variant-numeric:tabular-nums;background:var(--card);color:var(--ink);border:2px solid var(--ink);border-radius:999px;padding:4px 16px;margin-left:auto}.pdeco svg{width:52px;height:52px}
 /* 主題背景插圖（只在練習，shared/themes.js 的 backdrop）：墊在最底層、不能點、不會動 */
