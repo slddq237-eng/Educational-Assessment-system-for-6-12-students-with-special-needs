@@ -375,13 +375,15 @@ function startClockShow(){
 }
 
 /* 畫上方的學生名字與進度 */
+const whoHtml = code => { const k = kidBy(code); return `${Rewards.avatarHtml(code)}輪到 ${esc(k ? kidShow(k) : code)}`; };
 function drawBar(it){
-  const k = kidBy(it.kid);
-  $("#pWho").innerHTML = `${Rewards.avatarHtml(it.kid)}輪到 ${esc(k ? kidShow(k) : it.kid)}`;
+  /* 大家共用一張賓果卡：輪到誰改放在卡片正上方中間（newItem 畫），上方列不重複顯示 */
+  const w = $("#pWho"); w.innerHTML = whoHtml(it.kid); w.hidden = sharedTurns();
   if(G.mode === "flu") $("#pProg").textContent = `答對 ${G.round.correct} 個`;
   else { const mine = G.queue.filter(x => x.kid === it.kid), idx = mine.indexOf(it) + 1; $("#pProg").textContent = `第 ${idx} / ${mine.length} 題`; }
 }
 
+const sharedTurns = () => G.shared && G.kids.length > 1;
 function nextItem(){
   if(G.over) return;   /* 已經按「結束」了，不要再出題（避免結果畫面還在唸題目） */
   if(G.pos >= G.queue.length) return G.game ? sceneWin() : finish();
@@ -390,6 +392,8 @@ function nextItem(){
   if(G.kids.length > 1 && (!prev || prev.kid !== it.kid)){
     /* 分區輪流（E14）：不跳換人過場，直接亮起下一位的區；換人時只播一聲提示音（維護者 2026-10-25） */
     if(G.answer === "splitturn"){ if(prev) sfx.turn(); return newItem(it); }
+    /* 大家共用一張賓果卡：不跳換人過場（卡片不會消失），只換卡片上方的名字、播換人提醒（維護者 2026-10-26） */
+    if(sharedTurns()){ if(prev) turnAlert(it.kid, false); return newItem(it); }
     return turnCard(it.kid, !prev, () => newItem(it));
   }
   newItem(it);
@@ -401,16 +405,20 @@ function nextItem(){
 const TURN_MS = 1600;
 function turnCard(code, first, then){
   const k = kidBy(code), name = k ? kidShow(k) : code, g = G;
-  $("#pWho").innerHTML = `${Rewards.avatarHtml(code)}輪到 ${esc(name)}`;
+  const w = $("#pWho"); w.hidden = false; w.innerHTML = whoHtml(code);
   $("#pProg").textContent = "";
   $("#pBody").innerHTML = `<div class="turncard" role="status"><div class="turnav">${Rewards.avatarHtml(code)}</div>
     <h2>${first ? `先從 ${esc(name)} 開始` : `換 ${esc(name)}`}！</h2><p class="note" style="margin:0">請 ${esc(name)} 準備好</p></div>`;
-  /* 提醒方式看「畫面與聲音」的設定：預設只有提示音，選了才唸名字 */
+  turnAlert(code, first);
+  setTimeout(() => { if(G === g && !g.over) then(); }, TURN_MS);
+}
+/* 換人提醒：提醒方式看「畫面與聲音」的設定，預設只有提示音，選了才唸名字 */
+function turnAlert(code, first){
+  const k = kidBy(code), name = k ? kidShow(k) : code, g = G;
   const style = settings.turnStyle || "chime";
   if(style === "chime" || style === "both") sfx.turn();
   /* 唸名字只用本機語音；這台電腦沒有本機中文語音時改成提示音（「唸出名字」那一種原本沒有提示音） */
   if(style === "voice" || style === "both") setTimeout(() => { if(G === g && !g.over && !speak(`${first ? "先從" : "換"}${name}`, null, null, true) && style === "voice") sfx.turn(); }, style === "both" ? 450 : 0);
-  setTimeout(() => { if(G === g && !g.over) then(); }, TURN_MS);
 }
 
 /* ---------- 3-2 全課賓果卡（只在練習） ----------
@@ -499,7 +507,8 @@ function newItem(it){
     return `<section class="zone wait">${head}<div class="stage"><div class="prompt"><span class="zwait">等一下</span></div>
       <div class="optsbox ghostbox"><div class="opts" style="--cols:${cols};--rows:${rows}">${Array.from({length:G.choices}, () => `<span class="opt-ghost"></span>`).join("")}</div></div></div></section>`;
   };
-  $("#pBody").innerHTML = `${split ? `<div class="zones" style="--n:${G.kids.length}">${G.kids.map(zoneHtml).join("")}</div>` : stageHtml}
+  const banner = sharedTurns() ? `<div class="turnbanner" role="status"><div class="who">${whoHtml(it.kid)}</div></div>` : "";
+  $("#pBody").innerHTML = `${banner}${split ? `<div class="zones" style="--n:${G.kids.length}">${G.kids.map(zoneHtml).join("")}</div>` : stageHtml}
     ${G.mode === "flu" ? "" : `<div class="tbar" data-side="${settings.hintSide === "left" ? "left" : "right"}"><span>老師提示紀錄</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
   fitOpts();
   $("#pBody").querySelectorAll(".opt-big").forEach(btn => btn.onclick = () => pick(+btn.dataset.i, btn));
@@ -693,7 +702,7 @@ function sceneWin(){
 /* ---------- 流暢性模式：一位學生一回合 ---------- */
 function showReady(){
   const code = G.kids[G.turn], k = kidBy(code);
-  $("#pWho").innerHTML = `${Rewards.avatarHtml(code)}輪到 ${esc(k ? kidShow(k) : code)}`;
+  const w = $("#pWho"); w.hidden = false; w.innerHTML = whoHtml(code);
   $("#pProg").textContent = "";
   $("#pTimer").hidden = true;
   $("#pBody").innerHTML = `<div class="ready"><div class="turnav">${Rewards.avatarHtml(code)}</div><h2>${G.turn ? "換 " : ""}${esc(k ? kidShow(k) : code)}，準備好了嗎？</h2>
