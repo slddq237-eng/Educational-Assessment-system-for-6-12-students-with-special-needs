@@ -90,4 +90,4 @@
 
 識字評量的注音字型改自 But Ko「ㄅ字嗨注音標楷」（[bpmfvs](https://github.com/ButTaiwan/bpmfvs)），漢字部分 CC BY 4.0，其餘 SIL OFL 1.1。
 
-`shared/parts.js` 的部件拆解改自 [cjkvi-ids](https://github.com/cjkvi/cjkvi-ids)（衍生自 CHISE 專案），依 GPLv2 授權。
+`shared/parts.js` 的部件拆解改自 [cjkvi-ids](https://github.com/cjkvi/cjkvi-ids)（衍生自 CHISE 專案），依 GPLv2 或更新版授權（依 CHISE 專案條款；Copyright (c) 2014-2017 CJKVI Database）。
