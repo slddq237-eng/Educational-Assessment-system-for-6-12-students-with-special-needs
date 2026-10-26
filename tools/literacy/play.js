@@ -320,10 +320,11 @@ function startSession(){
   startClockShow();
   if(G.mode === "flu"){ G.turn = 0; showScreen("#play"); showReady(); return; }
   /* 正確率模式：每位學生各抽一份題目，再交錯排成輪流順序 */
-  /* 賓果卡整次只有一張、一個字只有一格：同一個字出現在好幾課時只問一次，否則第二次那一格已蓋章點不了 */
+  /* 賓果卡整次只有一張、最多 36 格、一個字只有一格：同一個字出現在好幾課時只問一次（否則第二次那一格已蓋章點不了），
+     每位學生最多出 36 題（否則多出來的字不在卡上） */
   const lists = list.map(code => {
     const items = pickItems(code, q), seen = new Set();
-    return (G.layout === "bingo" ? items.filter(it => !seen.has(it.c) && seen.add(it.c)) : items).map(it => ({...it, kid:code}));
+    return (G.layout === "bingo" ? items.filter(it => !seen.has(it.c) && seen.add(it.c)).slice(0, 36) : items).map(it => ({...it, kid:code}));
   });
   G.queue = interleaveLists(lists);
   G.pos = 0;
@@ -400,7 +401,7 @@ const gridFor = n => n <= 9 ? [3,3] : n <= 16 ? [4,4] : n <= 20 ? [5,4] : n <= 2
 function bingoBoard(kid){
   const id = kid;
   if(!G.boards[id]){
-    /* 這位學生要考的字（題目的字排在前面，超過 36 個也不會被截掉）加上每一課要考的所有字 */
+    /* 這位學生要考的字（題目最多 36 題，見 startSession）加上每一課要考的所有字 */
     const mine = G.queue.filter(x => x.kid === kid);
     const own = [...new Set([...mine.map(x => x.c), ...mine.flatMap(x => testChars(x.k))])].slice(0, 36), [cols, rows] = gridFor(own.length);
     const fill = shuffle(ALL_CHARS.filter(c => !own.includes(c))).slice(0, cols * rows - own.length);
