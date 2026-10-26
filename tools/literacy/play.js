@@ -314,6 +314,7 @@ function startSession(){
   G.game = gameFor(G); G.gameType = G.game ? (gameCard(G.theme) || {}).type || "" : "";
   /* 打怪獸的戰利品（大魚、恐龍等）開始前就決定好，打敗怪獸後就是這次的貼紙 */
   if(G.game) G.prize = Themes.drawSticker(G.theme, Rewards.owned(list[0], G.theme));
+  $("#play").dataset.multi = list.length > 1 ? "1" : "";   /* 多位學生：「輪到誰」放大放中間（CSS 的 data-multi） */
   G.coopSame = settings.coopSame !== false;   /* 合作時全組同一張貼紙（細部設定，預設是）；開始時記下來，玩到一半改設定不影響這一次 */
   applySkin(G.theme, G.kind !== "formal");
   $("#pScene").hidden = true; $("#pScene").innerHTML = ""; $("#pBody").hidden = false;
@@ -379,7 +380,7 @@ function startClockShow(){
 const whoHtml = code => { const k = kidBy(code); return `${Rewards.avatarHtml(code)}輪到 ${esc(k ? kidShow(k) : code)}`; };
 function drawBar(it){
   /* 大家共用一張賓果卡：輪到誰改放在卡片正上方中間（newItem 畫），上方列不重複顯示 */
-  const w = $("#pWho"); w.innerHTML = whoHtml(it.kid); w.hidden = sharedTurns();
+  const w = $("#pWho"); w.innerHTML = whoHtml(it.kid); w.hidden = sharedTurns() || (G.answer === "splitturn" && G.kids.length > 1);   /* 分區輪流：輪到的那一區自己有黃色大名字，上方不重複 */
   if(G.mode === "flu") $("#pProg").textContent = `答對 ${G.round.correct} 個`;
   else { const mine = G.queue.filter(x => x.kid === it.kid), idx = mine.indexOf(it) + 1; $("#pProg").textContent = `第 ${idx} / ${mine.length} 題`; }
 }
