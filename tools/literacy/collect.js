@@ -68,8 +68,8 @@ function drawStickers(g){
   for(const code of g.kids){
     if(!g.done.has(code)) continue;   /* 沒做完（中途按結束）就不給 */
     const theme = g.theme || Themes.ids[Math.floor(Math.random() * Themes.ids.length)];
-    /* 打怪獸：打敗怪獸得到的東西（開始前就決定好）就是這次的貼紙，合作時大家得到一樣的 */
-    const pick = g.game ? g.prize : undefined;
+    /* 打怪獸：打敗怪獸得到的東西（開始前就決定好）就是這次的貼紙；合作時預設大家得到一樣的，細部設定可改成各抽各的（開始時記在 g.coopSame） */
+    const pick = g.game && (g.game !== "coop" || g.coopSame) ? g.prize : undefined;
     /* 平板不存收藏（2026-10-24 決定）：只抽、寫進紀錄送給老師，老師匯入後才收進貼紙簿 */
     const idx = TABLET ? (pick ?? Themes.drawSticker(theme, [])) : Rewards.award(code, theme, {tool:"識字評量", session:g.session, idx:pick});
     if(TABLET) (tabletGot[code] ||= []).push(Themes.codeOf(theme, idx));   /* 平板的貼紙簿看得到今天抽到的（不存起來） */

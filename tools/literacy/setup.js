@@ -690,6 +690,7 @@ function renderPractice(){
   $("#pEvery").querySelectorAll("[data-every]").forEach(b => b.onclick = () => { settings.sceneEvery = b.dataset.every; saveSettings(); renderPractice(); });
   $("#vClock").checked = settings.clockPractice !== false;
   $("#vPartner").checked = !!settings.partner;
+  $("#vCoopSame").checked = settings.coopSame !== false;
 }
 /* 把字的大小、畫面大小套到整個網頁（CSS 變數 --fs、--uiz） */
 function applyDisplay(){
@@ -698,6 +699,7 @@ function applyDisplay(){
 }
 $("#vSfx").onchange = e => { settings.sfx = e.target.checked; saveSettings(); };
 $("#vPartner").onchange = e => { settings.partner = e.target.checked; saveSettings(); };
+$("#vCoopSame").onchange = e => { settings.coopSame = e.target.checked; saveSettings(); };
 $("#vClock").onchange = e => { settings.clockPractice = e.target.checked; saveSettings(); };
 $("#vTryRight").onclick = () => sfx.right(true);
 $("#vTryWrong").onclick = () => sfx.wrong(true);
