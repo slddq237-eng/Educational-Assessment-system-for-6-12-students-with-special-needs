@@ -663,7 +663,8 @@ function showScene(on, cap = "", code = ""){
    攻擊特效依星等不同，只是外觀：打到幾格還是看第一次就答對幾題（g.blockHits），夥伴不影響分數和紀錄。 */
 const partnerOn = g => !!(g.game && settings.partner && !TABLET);
 const defaultPartner = theme => Math.max(0, (Themes.LISTS[theme] || []).findIndex(d => d.stars === 1 && !d.evo));
-const FX_COUNT = {1:1, 2:3, 3:5, 4:8};
+const FX_COUNT = {1:3, 2:6, 3:10, 4:16};   /* 星等越高，火花越多；光環、光暈、光柱在 CSS（.pt.t2～t4） */
+const FX_RINGS = {1:0, 2:1, 3:2, 4:3};
 function pickPartners(then){
   const g = G;
   g.partner = Object.fromEntries(g.kids.map(c => [c, defaultPartner(g.theme)]));
@@ -687,7 +688,7 @@ function showPartners(kids, mode){
   const old = box.querySelector(".partners"); if(old) old.remove();
   box.insertAdjacentHTML("beforeend", `<div class="partners ${mode}">${kids.map(c => {
     const i = g.partner[c], st = Themes.stars(g.theme, i) || 1;
-    const fx = mode === "hit" ? `<span class="fx">${Array.from({length:FX_COUNT[st]}, (_, n) => `<i style="--a:${-70 + 140 * (n + .5) / FX_COUNT[st]}deg"></i>`).join("")}</span>` : "";
+    const fx = mode === "hit" ? `<span class="beam"></span><span class="fx"><u></u>${"<b></b>".repeat(FX_RINGS[st])}${Array.from({length:FX_COUNT[st]}, (_, n) => `<i style="--a:${-80 + 160 * (n + .5) / FX_COUNT[st]}deg;--w:${st === 4 && n % 2 ? .2 : 0}s"></i>`).join("")}</span>` : "";
     return `<div class="pt t${st}">${fx}<div class="pimg">${Themes.stickerSvg(g.theme, i)}</div><span>${mode === "miss" ? "休息一下…" : esc(Themes.THEMES[g.theme].stickers[i][1])}</span></div>`;
   }).join("")}</div>`);
 }
