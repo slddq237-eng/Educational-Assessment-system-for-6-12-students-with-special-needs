@@ -132,7 +132,7 @@ for b in order:
                 if vals[8]: ws.cell(r, 9).fill = yellow
                 rows[c] = r; added += 1
 if added or updated:
-    ws.auto_filter.ref = f'A1:L{ws.max_row}'
+    ws.auto_filter.ref = f'A1:{openpyxl.utils.get_column_letter(ws.max_column)}{ws.max_row}'   # 2026-10-28：後面多了 make_parts_columns.py 的三欄
     for dv in ws.data_validations.dataValidation: dv.sqref = MultiCellRange(f'K2:K{ws.max_row}')
     wb.save(TABLE)
 print(f'parts.js 新增 {len(new)} 個字；部件表新增 {added} 列、{updated} 個舊字補上出現課次')
