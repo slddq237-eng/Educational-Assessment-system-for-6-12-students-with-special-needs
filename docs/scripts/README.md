@@ -9,6 +9,7 @@
 | `make_lessons.js` | 更新 `shared/lessons.js` 最後的 `BOOK_FILES`（要載入哪些課本檔）和 `ALL_LESSON_CHARS`（所有課本的字）（2026-10-24 加） | 新增課本（加了 `shared/lessons-代號.js`）、改了生字後；自動檢查會提醒 |
 | `lessons-src.js` | 不單獨執行；給其他程式用，把 `lessons.js` 和各本課本檔接起來讀（2026-10-24 加） | — |
 | `make_parts.py` | `shared/parts.js`、`docs/materials/parts-table.xlsx` | 新增課本後 |
+| `make_parts_columns.py` | `docs/materials/parts-table.xlsx` 最後三欄：A 形符＋聲符、B 可教學角度拆到最細、C 開源部件預設拆法（整欄重算；需要 cjkvi-ids 的 `ids.txt` 和 pinyin-data 的 `pinyin.txt`）（2026-10-28 加） | `make_parts.py` 之後；改了 `lessons.js` 的 `PARTS` 後 |
 | `make_bpmf.py` | `shared/bpmf.js`、`shared/fonts/bpmf-kai*` | 新增課本、改讀音後 |
 | `make_kai.py` | `shared/fonts/tw-kai*` | 新增課本、部件，或改了頁面文字後 |
 | `make_conf_candidates.py` | `docs/materials/material-review.xlsx` 的「干擾字候選」頁 | 要請老師挑干擾字時 |
