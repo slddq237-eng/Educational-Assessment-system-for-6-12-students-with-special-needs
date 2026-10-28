@@ -5,7 +5,8 @@
   A：形符＋聲符（只拆兩塊）    Claude 依規則自動判斷，黃色＝待老師確認
   B：可教學角度拆到最細        Claude 依規則自動產生，黃色＝待老師確認
   C：開源部件預設拆法          cjkvi-ids 原本的第一層拆法（沒經過人工修改）
-原本的欄位一個都不動；這三欄每次執行都整欄重算（不要在這三欄手動修改，要改請寫在「老師修正：部件」或「備註」）。
+A、B 右邊各有一欄「人工手動」（綠色），老師覺得 A、B 不對時寫在這裡，程式不會動它。
+原本的欄位一個都不動；A、B、C 三欄每次執行都整欄重算（不要直接改這三欄，要改請寫在旁邊的人工手動欄）。
 平台（識字評量、備課分析）不讀這三欄，仍然用「人工 PARTS 優先，沒有才用 parts.js」。
 
 什麼時候跑：make_parts.py 之後（新增課本、改了 shared/lessons.js 的 PARTS 之後）。
@@ -164,32 +165,43 @@ def col_c(c):
     e = ids_first(c)
     return ' '.join(e) if e else '獨體字'
 
-# 4. 寫進部件表：表頭找得到就覆蓋那三欄，找不到就加在最後面
+# 4. 寫進部件表：A、B、C 三欄整欄重算；A、B 右邊各有一欄「人工手動」給老師填（綠色），程式不動裡面的內容
+#    （2026-10-28 維護者要求加人工手動欄）。表頭找得到就照原位置寫，找不到就加在最後面；舊版沒有人工欄的，插一欄進去。
+MANUAL = ['A：人工手動', 'B：人工手動']
+LAYOUT = [HEAD[0], MANUAL[0], HEAD[1], MANUAL[1], HEAD[2]]
+WIDTH = {HEAD[0]: 30, MANUAL[0]: 20, HEAD[1]: 26, MANUAL[1]: 20, HEAD[2]: 22}
 wb = openpyxl.load_workbook(TABLE); ws = wb['生字部件']
 head = [ws.cell(1, j).value for j in range(1, ws.max_column + 1)]
 start = head.index(HEAD[0]) + 1 if HEAD[0] in head else ws.max_column + 1
-yellow, none = PatternFill('solid', fgColor='FBF1DC'), PatternFill()
+for k, h in enumerate(LAYOUT):   # 舊版表格缺人工欄：在該在的位置插一欄（後面的欄往右移，裡面的內容不變）
+    if h in MANUAL and ws.cell(1, start + k).value not in (None, h) and ws.cell(1, start + k).value != h:
+        ws.insert_cols(start + k)
+yellow, green, none = PatternFill('solid', fgColor='FBF1DC'), PatternFill('solid', fgColor='E4F3EC'), PatternFill()
 last = ws.cell(1, start - 1)
-for k, h in enumerate(HEAD):
+for k, h in enumerate(LAYOUT):
     cell = ws.cell(1, start + k, h)
     cell.font, cell.fill, cell.alignment, cell.border = copy.copy(last.font), copy.copy(last.fill), copy.copy(last.alignment), copy.copy(last.border)
-    ws.column_dimensions[openpyxl.utils.get_column_letter(start + k)].width = (30, 26, 22)[k]
-note = {0: 'Claude 自動判斷（2026-10-28 第一版），黃色＝待老師確認；規則見 docs/scripts/make_parts_columns.py',
-        1: 'Claude 依規則自動產生，黃色＝待老師確認；不拆成單一筆畫或罕用字',
-        2: 'cjkvi-ids 原本的拆法，沒經過人工修改'}
-for k, t in note.items(): ws.cell(1, start + k).comment = Comment(t, 'Claude')
+    ws.column_dimensions[openpyxl.utils.get_column_letter(start + k)].width = WIDTH[h]
+note = {HEAD[0]: 'Claude 自動判斷（2026-10-28 第一版），黃色＝待老師確認；規則見 docs/scripts/make_parts_columns.py',
+        HEAD[1]: 'Claude 依規則自動產生，黃色＝待老師確認；不拆成單一筆畫或罕用字',
+        HEAD[2]: 'cjkvi-ids 原本的拆法，沒經過人工修改',
+        MANUAL[0]: '老師填：左邊 A 欄不對時，在這裡寫正確的形符、聲符，例如「形 氵 聲 工」；程式重算時不會動這一欄',
+        MANUAL[1]: '老師填：左邊 B 欄不對時，在這裡寫可教學的拆法，部件用半形空格分開，例如「足 耳 耳 耳」；程式重算時不會動這一欄'}
+for k, h in enumerate(LAYOUT): ws.cell(1, start + k).comment = Comment(note[h], 'Claude')
 stat = {'A 待確認': 0, 'A 形聲': 0, 'A 獨體': 0}
 for r in range(2, ws.max_row + 1):
     c = ws.cell(r, 1).value
     if not c: continue
     a, unsure = col_a(c)
-    vals = (a, col_b(c), col_c(c))
+    vals = {HEAD[0]: a, HEAD[1]: col_b(c), HEAD[2]: col_c(c)}
     src = ws.cell(r, 3)
-    for k, v in enumerate(vals):
-        cell = ws.cell(r, start + k, v)
+    for k, h in enumerate(LAYOUT):
+        cell = ws.cell(r, start + k)
+        if h in vals: cell.value = vals[h]
         cell.font, cell.alignment, cell.border = copy.copy(src.font), copy.copy(src.alignment), copy.copy(src.border)
-        cell.fill = yellow if k < 2 else none
+        cell.fill = green if h in MANUAL else yellow if h != HEAD[2] else none
     stat['A 待確認'] += unsure; stat['A 形聲'] += a.startswith('形：'); stat['A 獨體'] += a == '獨體字'
-ws.auto_filter.ref = f'A1:{openpyxl.utils.get_column_letter(start + 2)}{ws.max_row}'
+end = start + len(LAYOUT) - 1
+ws.auto_filter.ref = f'A1:{openpyxl.utils.get_column_letter(end)}{ws.max_row}'
 wb.save(TABLE)
-print(f'寫入 {ws.max_row - 1} 列（第 {start}～{start + 2} 欄）；', stat)
+print(f'寫入 {ws.max_row - 1} 列（第 {start}～{end} 欄）；', stat)
