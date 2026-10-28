@@ -19,13 +19,15 @@ const ALIAS = {"糸":"糹"};
 const LABEL = {"糹":"糹（糸）", "⺼":"⺼（肉）", "⺕":"⺕（彐）"};
 const label = p => LABEL[p] || p;
 
-/* 查一個字的第一層部件（人工 PARTS 優先，見 shared/common.js 的 rawParts）；備課分析把同一部件的不同寫法合併計算 */
+/* 查一個字的第一層部件（老師的 A 人工手動拆法優先，再來是人工 PARTS，見 shared/common.js 的 rawParts；2026-10-28）；備課分析把同一部件的不同寫法合併計算 */
 /* 拆法來源：獨體字（拆不開）不算自動拆，不用檢查 */
-const srcOf = c => partsOf(c).length ? partsSource(c) : "";
+const srcOf = c => partsOf(c).length ? partsSource(c, "first") : "";
 const SRC_NAME = {manual:"人工", auto:"自動（請檢查）", "":"—"};
-const partsOf = c => rawParts(c).filter(p => p !== c).map(p => ALIAS[p] || p);
-/* 拆到最細：把部件一路往下拆，收集途中所有部件（不重複） */
+const partsOf = c => rawParts(c, "first").filter(p => p !== c).map(p => ALIAS[p] || p);
+/* 拆到最細：老師有寫 B 人工手動拆法的字直接用它（2026-10-28）；沒有就把部件一路往下拆，收集途中所有部件（不重複） */
 function allParts(c, seen = new Set()){
+  const fine = manualPartsOf(c, "teach");
+  if(fine){ for(const p of fine.split(/\s+/)) if(p && p !== c) seen.add(ALIAS[p] || p); return seen; }
   for(const p of partsOf(c)) if(!seen.has(p)){ seen.add(p); allParts(p, seen); }
   return seen;
 }

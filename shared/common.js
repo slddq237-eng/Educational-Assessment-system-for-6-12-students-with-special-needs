@@ -26,11 +26,23 @@ const wordOf = (c, b) => fromEd(typeof WORDS_ED !== "undefined" ? WORDS_ED : und
 const sentOf = (c, b) => fromEd(typeof SENT_ED !== "undefined" ? SENT_ED : undefined, b, c) || SENT[c] || "";
 const confOf = (c, b) => fromEd(typeof CONF_ED !== "undefined" ? CONF_ED : undefined, b, c) || CONF[c];
 
-/* 部件：先用 lessons.js 的 PARTS（人工整理），沒有再用 parts.js 的 PARTS_AUTO（自動拆解）；回傳第一層部件的清單。
+/* 部件：依用途優先讀老師的人工手動拆法（2026-10-28 維護者決定：人工拆法不蓋掉電腦資料，只是先讀；電腦自動拆法不刪不改）
+   kind＝"teach"（識字評量的部件提示、部件重組，備課分析「拆到最細」）：PARTS_B → PARTS → PARTS_AUTO
+   kind＝"first"（備課分析「第一層」）：PARTS_A → PARTS → PARTS_AUTO
+   不給 kind：PARTS → PARTS_AUTO（舊的查法）。PARTS_A、PARTS_B 在 lessons.js（從部件表 Excel 的人工手動欄寫入），PARTS 是更早的人工整理，PARTS_AUTO 在 parts.js。
    各工具再依用途加規則：識字評量只把拆成 2 塊以上的當成「拆得開」，備課分析把同一部件的不同寫法合併計算。 */
-/* 這個字的拆法從哪裡來：manual＝人工（lessons.js 的 PARTS）、auto＝電腦自動拆（parts.js，不一定適合教學，要人工檢查）、""＝沒有拆法 */
-const partsSource = c => (typeof PARTS !== "undefined" && PARTS[c]) ? "manual" : (typeof PARTS_AUTO !== "undefined" && PARTS_AUTO[c]) ? "auto" : "";
-const rawParts = c => ((typeof PARTS !== "undefined" && PARTS[c]) || (typeof PARTS_AUTO !== "undefined" && PARTS_AUTO[c]) || "").split(/\s+/).filter(Boolean);
+const manualPartsOf = (c, kind) => (kind === "first" ? (typeof PARTS_A !== "undefined" && PARTS_A[c])
+  : kind === "teach" ? (typeof PARTS_B !== "undefined" && PARTS_B[c]) : "") || "";
+function pickParts(c, kind){
+  const m = manualPartsOf(c, kind);
+  if(m) return [m, "manual"];
+  if(typeof PARTS !== "undefined" && PARTS[c]) return [PARTS[c], "manual"];
+  if(typeof PARTS_AUTO !== "undefined" && PARTS_AUTO[c]) return [PARTS_AUTO[c], "auto"];
+  return ["", ""];
+}
+/* 這個字的拆法從哪裡來：manual＝人工（老師人工手動欄或 lessons.js 的 PARTS）、auto＝電腦自動拆（parts.js，不一定適合教學，要人工檢查）、""＝沒有拆法 */
+const partsSource = (c, kind) => pickParts(c, kind)[1];
+const rawParts = (c, kind) => pickParts(c, kind)[0].split(/\s+/).filter(Boolean);
 
 /* 顯示一行提示：畫面已經換掉、找不到那個位置時就不顯示（匯出要等元件載入，這段時間老師可能已經切到別的畫面） */
 const setMsg = (sel, text) => { const el = document.querySelector(sel); if(el) el.textContent = text; };

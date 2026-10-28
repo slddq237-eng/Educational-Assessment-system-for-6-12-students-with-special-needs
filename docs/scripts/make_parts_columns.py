@@ -205,3 +205,32 @@ end = start + len(LAYOUT) - 1
 ws.auto_filter.ref = f'A1:{openpyxl.utils.get_column_letter(end)}{ws.max_row}'
 wb.save(TABLE)
 print(f'寫入 {ws.max_row - 1} 列（第 {start}～{end} 欄）；', stat)
+
+# 5. 把老師在「A：人工手動」「B：人工手動」填的拆法寫進 shared/lessons.js 的 PARTS_A、PARTS_B（平台依用途優先讀，見 shared/common.js）
+#    A 可以寫「形 氵 聲 工」「形：氵　聲：工」「氵 工」「氵＋工」；B 寫「足 耳 耳 耳」或「足＋耳＋耳＋耳」；寫字本身＝不拆（獨體字）。
+#    每一塊必須是一個字；格式不對的列跳過並印出來，不寫進平台。
+def tokens(s, label):
+    s = re.sub(r'[形聲][：:]', ' ', str(s))
+    return [t for t in re.split(r'[\s＋+、,，]+', s) if t and not (label and t in ('形', '聲'))]
+manual, bad = {'PARTS_A': {}, 'PARTS_B': {}}, []
+for r in range(2, ws.max_row + 1):
+    c = ws.cell(r, 1).value
+    for name, col, label in (('PARTS_A', start + 1, True), ('PARTS_B', start + 3, False)):
+        v = ws.cell(r, col).value
+        if v in (None, ''): continue
+        t = tokens(v, label)
+        if not t or any(len(x) != 1 for x in t) or (name == 'PARTS_A' and len(t) not in (1, 2)) or (len(t) == 1 and t[0] != c):
+            bad.append(f'{c}（{name[-1]} 人工手動）：「{v}」'); continue
+        manual[name][c] = ' '.join(t)
+LES = 'shared/lessons.js'
+s = open(LES, encoding='utf8').read(); before = s
+for name, d in manual.items():
+    line = f'const {name} = ' + json.dumps(d, ensure_ascii=False, separators=(',', ':')) + ';'
+    s, n = re.subn(rf'^const {name} = .*;$', lambda m: line, s, flags=re.M)
+    if n != 1: sys.exit(f'lessons.js 找不到 const {name} 那一行')
+if s != before:
+    open(LES, 'w', encoding='utf8').write(s)
+    print('lessons.js 已更新：PARTS_A', len(manual['PARTS_A']), '字、PARTS_B', len(manual['PARTS_B']), '字；記得跑 node docs/scripts/bump.js 換版本號')
+else:
+    print('人工手動欄沒有變動：PARTS_A', len(manual['PARTS_A']), '字、PARTS_B', len(manual['PARTS_B']), '字')
+for b in bad: print('格式不對、沒有寫進平台：', b)
