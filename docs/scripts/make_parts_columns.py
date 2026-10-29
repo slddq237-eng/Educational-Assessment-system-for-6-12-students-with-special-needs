@@ -177,6 +177,8 @@ for k, h in enumerate(LAYOUT):   # 舊版表格缺人工欄：在該在的位置
     if h in MANUAL and ws.cell(1, start + k).value not in (None, h) and ws.cell(1, start + k).value != h:
         ws.insert_cols(start + k)
 yellow, green, none = PatternFill('solid', fgColor='FBF1DC'), PatternFill('solid', fgColor='E4F3EC'), PatternFill()
+red = PatternFill('solid', fgColor='F4C7C3')   # 人工手動欄寫「待討論」：紅色（2026-10-29 維護者要求）
+PENDING = lambda v: isinstance(v, str) and v.strip().startswith('待討論')
 last = ws.cell(1, start - 1)
 for k, h in enumerate(LAYOUT):
     cell = ws.cell(1, start + k, h)
@@ -199,7 +201,7 @@ for r in range(2, ws.max_row + 1):
         cell = ws.cell(r, start + k)
         if h in vals: cell.value = vals[h]
         cell.font, cell.alignment, cell.border = copy.copy(src.font), copy.copy(src.alignment), copy.copy(src.border)
-        cell.fill = green if h in MANUAL else yellow if h != HEAD[2] else none
+        cell.fill = (red if PENDING(cell.value) else green) if h in MANUAL else yellow if h != HEAD[2] else none
     stat['A 待確認'] += unsure; stat['A 形聲'] += a.startswith('形：'); stat['A 獨體'] += a == '獨體字'
 end = start + len(LAYOUT) - 1
 ws.auto_filter.ref = f'A1:{openpyxl.utils.get_column_letter(end)}{ws.max_row}'
@@ -208,7 +210,7 @@ print(f'寫入 {ws.max_row - 1} 列（第 {start}～{end} 欄）；', stat)
 
 # 5. 把老師在「A：人工手動」「B：人工手動」填的拆法寫進 shared/lessons.js 的 PARTS_A、PARTS_B（平台依用途優先讀，見 shared/common.js）
 #    A 可以寫「形 氵 聲 工」「形：氵　聲：工」「氵 工」「氵＋工」；B 寫「足 耳 耳 耳」或「足＋耳＋耳＋耳」；寫字本身＝不拆（獨體字）。
-#    每一塊必須是一個字；格式不對的列跳過並印出來，不寫進平台。
+#    每一塊必須是一個字；格式不對的列跳過並印出來，不寫進平台。寫「待討論」的格子標紅色、不寫進平台。
 def tokens(s, label):
     s = re.sub(r'[形聲][：:]', ' ', str(s))
     return [t for t in re.split(r'[\s＋+、,，]+', s) if t and not (label and t in ('形', '聲'))]
@@ -217,7 +219,7 @@ for r in range(2, ws.max_row + 1):
     c = ws.cell(r, 1).value
     for name, col, label in (('PARTS_A', start + 1, True), ('PARTS_B', start + 3, False)):
         v = ws.cell(r, col).value
-        if v in (None, ''): continue
+        if v in (None, '') or PENDING(v): continue   # 待討論的字不寫進平台，照舊用原本的拆法
         t = tokens(v, label)
         if not t or any(len(x) != 1 for x in t) or (name == 'PARTS_A' and len(t) not in (1, 2)) or (len(t) == 1 and t[0] != c):
             bad.append(f'{c}（{name[-1]} 人工手動）：「{v}」'); continue
