@@ -107,6 +107,7 @@ def pieces(s):   # 把 IDS 最上層切成兩塊或三塊（每塊是一個字�
 def col_a(c):
     m = [p for p in (PARTS.get(c) or '').split() if p != c]
     if c in PARTS and not m: return '獨體字', False
+    if c in KEEP_WHOLE: return '獨體字（不再往下拆的部件）', False
     if len(m) == 2: two = m
     else:
         s = D.get(c)
@@ -114,10 +115,13 @@ def col_a(c):
         ps = pieces(s)
         if ps is None: return '拆不成兩塊（資料格式特殊，見 C 欄）', True
         if len(ps) == 3: return '三塊並排（' + '＋'.join(REV.get(p, p) for p in ps) + '），拆不成兩塊', True
-        two = [REV.get(p, p) for p in ps]
+        two = ['足' if p in ('𧾷', '⻊') else REV.get(p, p) for p in ps]   # 足字旁一律寫成足
         if any(len(p) > 1 or junk(p) for p in two):
             return '其中一塊打不出來（' + '＋'.join(two) + '），請老師判斷', True
     x, y = two
+    if x == '足' and y != '足':   # 足在左邊（足字旁）一律是形符（2026-10-29）；捉、促的足在右邊，照一般規則判斷
+        pho = y
+        return (f'形：足　聲：{pho}', False) if sound(pho, c) else (f'足＋{pho}（看不出聲符：可能是會意字，或古今讀音不同）', True)
     sx, sy = sound(x, c), sound(y, c)
     if sx == sy == 0: return f'{x}＋{y}（看不出聲符：可能是會意字，或古今讀音不同）', True
     if sx != sy:
@@ -128,7 +132,12 @@ def col_a(c):
         return f'形：{sem}　聲：{pho}', False
     return f'{x}＋{y}（兩塊讀音都像，哪個是聲符？）', True
 
-def parts(c): return [p for p in (PARTS.get(c) or AUTO.get(c) or '').split() if p != c]
+# 不再往下拆的部件（2026-10-29 維護者決定，和 shared/common.js 的 KEEP_WHOLE 一致）：足、酋當成一整塊；電腦拆成「口 止」開頭的合回「足」
+KEEP_WHOLE = {'足', '酋'}
+def keep_whole(v): return re.sub(r'^口 止(?= |$)', '足', v)
+def parts(c):
+    if c in KEEP_WHOLE: return []
+    return [p for p in (PARTS.get(c) or keep_whole(AUTO.get(c) or '')).split() if p != c]
 def ok(p): return p not in STROKES and not rare(p) and not junk(p)
 # 部首（康熙 214 部首和常見的變形）是最小的教學單位，拆到部首就停（例如足不再拆成口＋龰、金不再拆）
 import unicodedata
@@ -141,6 +150,7 @@ def fine(p, depth=0):
         return [q for s in sub for q in fine(s, depth + 1)]
     return [p]
 def col_b(c):
+    if c in KEEP_WHOLE: return '獨體字（不再往下拆的部件）'
     first = parts(c)
     if not first: return '獨體字'
     return ' '.join(q for p in first for q in fine(p))

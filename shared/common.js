@@ -33,11 +33,16 @@ const confOf = (c, b) => fromEd(typeof CONF_ED !== "undefined" ? CONF_ED : undef
    各工具再依用途加規則：識字評量只把拆成 2 塊以上的當成「拆得開」，備課分析把同一部件的不同寫法合併計算。 */
 const manualPartsOf = (c, kind) => (kind === "first" ? (typeof PARTS_A !== "undefined" && PARTS_A[c])
   : kind === "teach" ? (typeof PARTS_B !== "undefined" && PARTS_B[c]) : "") || "";
+/* 不再往下拆的部件（2026-10-29 維護者決定）：足、酋一律當成一整塊。電腦把足字旁拆成「口 止」的，讀的時候合回「足」
+   （parts.js 原始資料不改；make_parts_columns.py 的 KEEP_WHOLE 要和這裡一致） */
+const KEEP_WHOLE = new Set(["足", "酋"]);
+const keepWhole = v => v.replace(/^口 止(?= |$)/, "足");
 function pickParts(c, kind){
   const m = manualPartsOf(c, kind);
   if(m) return [m, "manual"];
+  if(KEEP_WHOLE.has(c)) return [c, "manual"];
   if(typeof PARTS !== "undefined" && PARTS[c]) return [PARTS[c], "manual"];
-  if(typeof PARTS_AUTO !== "undefined" && PARTS_AUTO[c]) return [PARTS_AUTO[c], "auto"];
+  if(typeof PARTS_AUTO !== "undefined" && PARTS_AUTO[c]) return [keepWhole(PARTS_AUTO[c]), "auto"];
   return ["", ""];
 }
 /* 這個字的拆法從哪裡來：manual＝人工（老師人工手動欄或 lessons.js 的 PARTS）、auto＝電腦自動拆（parts.js，不一定適合教學，要人工檢查）、""＝沒有拆法 */
