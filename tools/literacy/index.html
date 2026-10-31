@@ -714,7 +714,9 @@ details.howto{margin:10px 0 0}
 @keyframes bpop{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}15%{transform:translate(-50%,-50%) scale(1.1);opacity:1}25%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0}}
 /* ---------- 結果與紀錄 ---------- */
 /* 結果畫面：每人一格、左右並列（放不下自動換行，手機上一人一列） */
-.res{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:14px}
+/* 一張卡一張卡置中（只有一位學生時在畫面正中間；多位放不下自動換行，2026-10-31 維護者要求） */
+.res{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
+.res>.rcard{flex:1 1 min(100%,320px);max-width:min(100%,400px);box-sizing:border-box}
 .rcard{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;border:2px solid var(--ink);border-radius:20px;padding:16px 14px;background:var(--card)}
 .rcard b{font-size:22px}
 .rcard .rname2{display:flex;align-items:center;gap:10px}
@@ -747,7 +749,7 @@ details.howto{margin:10px 0 0}
 }
 /* 很矮的螢幕（手機橫放、矮筆電）：卡片內容左右並排，高度減半 */
 @media (max-height:620px){
-  #result .res{grid-template-columns:repeat(auto-fill,minmax(min(100%,440px),1fr))}
+  #result .res>.rcard{flex-basis:min(100%,440px);max-width:min(100%,560px)}
   #result .rcard{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 14px;padding:8px 12px}
   #result .rcard .rname2{flex:1 1 100%;justify-content:center}
   #result .rcard .rlabel{margin:0}
