@@ -121,7 +121,7 @@
 
 ## 9. 自動產生資料的程式 `docs/scripts/`
 
-`check.js`、`smoke.js`（含 `combo.js` 識字評量組合測試）、`bump.js`、`changelog.js`、`make_lessons.js`、`lessons-src.js`、`make_parts*.py`、`make_bpmf.py`、`make_kai.py`、`make_conf_candidates.py`：各產生什麼、什麼時候跑，見 `docs/scripts/README.md`（2026-10-24 搬去）。
+`check.js`、`smoke.js`（含 `combo.js` 識字評量組合測試）、`bump.js`、`changelog.js`、`make_lessons.js`、`lessons-src.js`、`make_parts*.py`、`make_mask_fix.js`（遮擋位置調整資料）、`make_bpmf.py`、`make_kai.py`、`make_conf_candidates.py`：各產生什麼、什麼時候跑，見 `docs/scripts/README.md`（2026-10-24 搬去）。
 
 ## 10. 現在架構的特點與注意事項
 

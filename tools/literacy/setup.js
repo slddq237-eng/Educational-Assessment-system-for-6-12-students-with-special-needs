@@ -159,7 +159,7 @@ function renderGoals(){
   const offN = GOALS.filter(g => g.off).length;
   $("#goals").innerHTML = `<div class="goalcols">${col("識字")}<div class="gdiv" aria-hidden="true"></div>${col("寫字")}</div>
     <button class="linkbtn" id="goalOff" aria-expanded="${showOffGoals}">${showOffGoals ? "收起準備中的功能" : `顯示準備中的功能（${offN} 個）`}</button>`;
-  $("#goals").querySelectorAll("button.goal:not(:disabled)").forEach(b => b.onclick = () => { state.goal = b.dataset.g; render(); });
+  $("#goals").querySelectorAll("button.goal:not(:disabled)").forEach(b => b.onclick = () => { state.goal = b.dataset.g; render(); if(goalCaps().loadMaskFix) loadMaskFix().then(render); });
   $("#goalOff").onclick = () => { showOffGoals = !showOffGoals; renderGoals(); };
 }
 

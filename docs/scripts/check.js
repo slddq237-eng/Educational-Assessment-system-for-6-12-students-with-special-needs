@@ -163,7 +163,7 @@ try {
 } catch (e) { /* 沒有 git 或沒有 origin/main：不比 */ }
 
 /* ---------- 4. 學生資料 ---------- */
-const ALLOW_DATA = ['docs/materials/material-review.xlsx', 'docs/materials/parts-table.xlsx'];   /* 教材資料，沒有學生資料 */
+const ALLOW_DATA = ['docs/materials/material-review.xlsx', 'docs/materials/parts-table.xlsx', 'docs/materials/mask-fix.json'];   /* 教材資料，沒有學生資料 */
 const ALLOW_IMAGES = ['tools/literacy/img/goal-3.jpg', 'tools/literacy/img/goal-4-1.jpg'];   /* 選評量目標畫面的遊戲截圖（2026-10-25 維護者要求）；用假資料截的、不套主題背景，已裁掉學生代號和頭像 */
 for (const f of files) {
   const ext = path.extname(f).toLowerCase();
@@ -275,6 +275,30 @@ const BIG_DOC = 20 * 1024;
 for (const f of files.filter(f => /^docs\/.+\.md$/.test(f) && !/^docs\/(history|changelog)\//.test(f)))
   if (fs.statSync(path.join(ROOT, f)).size > BIG_DOC && !read('CLAUDE.md').includes(path.posix.basename(f)))
     warn(f, `超過 20KB（${Math.round(fs.statSync(path.join(ROOT, f)).size / 1024)}KB），請加進 CLAUDE.md「省 token」的 docs 大檔案清單`);
+
+/* ---------- 遮擋位置的人工調整（tools/literacy/mask-fix.js，2026-10-31） ----------
+   MASK_FIX 每個字存「調整當時的第一層部件」；第一層後來被老師改了，遊戲不再套用舊調整（回到預設位置），這裡提醒重新調整。
+   格式不對（塊號、數字範圍）是錯誤。資料由 docs/scripts/make_mask_fix.js 產生，來源是 docs/materials/mask-fix.json */
+if (files.includes('tools/literacy/mask-fix.js')) {
+  try {
+    const w = {};
+    new Function('window', ['shared/parts.js', 'shared/parts-layers.js', 'shared/parts-api.js'].map(f => read(f)).join('\n') + '\n' + read('tools/literacy/mask-fix.js')
+      + ';window.__fix = [MASK_FIX, MASK_GROUP_FIX];')(w);
+    const [fix, grp] = w.__fix;
+    const okShape = s => Array.isArray(s) && (s.length === 4 || s.length === 5) && s.every(Number.isFinite) && s[2] > s[0] && s[3] > s[1] && s.slice(0, 4).every(v => v > -0.05 && v < 1.05) || (s.length === 5 && s[4] !== 0 && s.slice(0, 4).every(Number.isFinite) && s[2] > s[0] && s[3] > s[1]);
+    const stale = [];
+    for (const [c, o] of Object.entries(fix)) {
+      const r = w.Parts.read(c, { from: 1 });
+      if (!r || r.layer !== 1 || r.parts.join(' ') !== o.ps) stale.push(c);
+      for (const [k, list] of Object.entries(o)) {
+        if (k === 'ps') continue;
+        if (!/^[1-9]$/.test(k) || +k > (r ? r.parts.length : 0) || !Array.isArray(list) || !list.length || !list.every(okShape)) err('tools/literacy/mask-fix.js', `「${c}」第 ${k} 塊的資料格式不對`);
+      }
+    }
+    for (const [g, o] of Object.entries(grp)) for (const [k, list] of Object.entries(o)) if (!/^[1-9]$/.test(k) || !list.every(okShape)) err('tools/literacy/mask-fix.js', `整組「${g}」第 ${k} 塊的資料格式不對`);
+    if (stale.length) warn('tools/literacy/mask-fix.js', `${stale.length} 個字的第一層部件已經和調整當時不同（${stale.slice(0, 12).join('')}${stale.length > 12 ? '…' : ''}），遊戲會改用預設位置；請用遮擋位置調整工具重新調整後，跑 node docs/scripts/make_mask_fix.js`);
+  } catch (e) { err('tools/literacy/mask-fix.js', `載入失敗：${e.message.split('\n')[0]}`); }
+}
 
 /* ---------- 9. 楷書字型缺字 ----------
    畫面文字（.html、tools/ 的 .js，不含註解）和教材（lessons.js、parts.js、parts-layers.js）的中文字，要在 shared/fonts/tw-kai.css 的範圍裡；
