@@ -602,6 +602,15 @@ function deleteKid(k){
   saveKids(); saveArchived(); saveTeach();
   renderKidSheet(); renderRecSheet(); render();
 }
+/* 重置全部貼紙（2026-10-31 維護者決定）：老師專用，確認視窗寫出會清掉幾張；作答紀錄、頭像不動，救不回來 */
+$("#resetStickers").onclick = () => {
+  const all = Rewards.exportAll(), total = all.reduce((n, x) => n + Object.values(x.stickers || {}).reduce((m, a) => m + a.length, 0), 0);
+  const who = all.filter(x => Object.values(x.stickers || {}).some(a => a.length)).length;
+  if(!confirm(`要重置全部學生的貼紙嗎？\n\n會清空 ${who} 位學生共 ${total} 張貼紙。作答紀錄和頭像不會動。清空後救不回來。\n\n• 想保險：請先到「作答紀錄」下載備份。\n• 重置之前的舊平板紀錄再匯入，也不會補發貼紙。`)) return;
+  Rewards.resetAll([...kids, ...kidsArchived].map(k => k.code));
+  $("#resetMsg").textContent = `已清空 ${total} 張貼紙。`;
+  render();
+};
 /* 學生名單的「分組」：每組一列（組名、刪除、全部學生的加入開關） */
 function renderKidGroupSheet(){
   const gs = getGroups(), box = $("#kGroups");
