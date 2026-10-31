@@ -96,7 +96,9 @@ vs = wb[VSHEET]
 VARIANT = {}
 for r in range(2, vs.max_row + 1):
     p, t = vs.cell(r, 1).value, vs.cell(r, 2).value
-    if p and t: VARIANT[norm(str(p).strip())] = [x for x in re.split(r'[／/、,\s]+', str(t)) if x]
+    if p and t:   # 「部件」「對照成」兩欄同一格都可以放多個，用頓號、斜線、逗號或空格分開（例如「忄、⺗」對照成「心」）
+        for q in re.split(r'[／/、,，\s]+', str(p)):
+            if q: VARIANT[norm(q)] = [x for x in re.split(r'[／/、,，\s]+', str(t)) if x]
 readable = lambda p: norm(p) in HAS_READING or any(x in HAS_READING for x in VARIANT.get(norm(p), []))
 
 # 5. 規則
