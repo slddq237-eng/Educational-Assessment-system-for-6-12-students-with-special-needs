@@ -99,8 +99,9 @@ function renderPrepost(){
 const WSTEPS = ["選目標和評量方式", "選學生和課次", "選作答方式", "選玩法和主題"];
 let wstep = 1;
 /* 每一步還缺什麼（空字串＝可以往下） */
-const step1Miss = () => "";
-const step2Miss = () => !selKids().length ? (isQuick() ? "請先點選要做的學生" : "請先點選要評量的學生") : !state.lessons.length ? "請先選課次" : !state.lessons.some(k => lessonSize(k)) ? "所選課次的字都沒有部件可以重組（都是獨體字），請換課次或換評量目標" : "";
+/* 聽音選部件（R6）先只開放練習的正確率模式（2026-10-31 維護者決定，等 A3 再開放正式評量；流暢性要連續快點，複選不適合） */
+const step1Miss = () => { const g = GOALS.find(x => x.id === state.goal); return g && g.practiceOnly && state.kind === "formal" ? `「${g.name}」先只能用在練習，請改選「練習」或換評量目標` : g && g.practiceOnly && state.mode === "flu" ? `「${g.name}」還不能用在流暢性模式，請改選「正確率」` : ""; };
+const step2Miss = () => !selKids().length ? (isQuick() ? "請先點選要做的學生" : "請先點選要評量的學生") : !state.lessons.length ? "請先選課次" : !state.lessons.some(k => lessonSize(k)) ? `所選課次的字都不能出「${goalName(state.goal)}」（沒有部件，或部件太多），請換課次或換評量目標` : "";
 function step3Miss(){
   const n = selKids().length, a = ANSWERS.find(x => x.id === state.answer);
   if(n < a.min || n > a.max) return `「${a.name}」可以 ${a.min}～${a.max} 位學生，目前 ${n} 位`;
@@ -150,7 +151,7 @@ document.addEventListener("keydown", e => { if(e.key === "Escape" && $("#topMenu
 let showOffGoals = false;   /* 「顯示準備中的功能」：預設收起來，老師好奇再點開（不存起來） */
 function renderGoals(){
   const btn = g => `<button class="goal ${state.goal===g.id?"on":""}" data-g="${g.id}" ${g.off?"disabled":""} aria-pressed="${state.goal===g.id}">
-      <b>${g.name}</b><span class="what">${g.what}</span>${g.img ? `<img class="shot" src="${g.img}" alt="${g.name}的作答畫面" loading="lazy">` : ""}${g.off ? `<span class="pill warn">${g.off}</span>` : ""}</button>`;
+      <b>${g.name}</b><span class="what">${g.what}</span>${g.img ? `<img class="shot" src="${g.img}" alt="${g.name}的作答畫面" loading="lazy">` : ""}${g.off ? `<span class="pill warn">${g.off}</span>` : g.practiceOnly ? `<span class="pill">${g.practiceOnly}</span>` : ""}</button>`;
   const col = grp => {
     const list = GOALS.filter(g => g.group === grp && (showOffGoals || !g.off));
     return `<div class="gcol"><h3>${grp}</h3><div class="goals">${list.length ? list.map(btn).join("") : `<p class="note" style="margin:0">還沒有開放的目標</p>`}</div></div>`;
@@ -180,6 +181,7 @@ function renderKind(){
   } else {
     $("#choiceArea").innerHTML = `<div class="group">${CHOICES.map(([v,t]) => `<button class="chip ${state.pChoices===v?"on":""}" data-c="${v}">${t}</button>`).join("")}</div>
       ${c.choices === "bingo" ? `<p class="note">第 4 步的玩法選了「生字賓果」，這次用賓果卡作答，選項數不適用。</p>` : ""}`;
+    if(c.choices === "parts") $("#choiceArea").innerHTML = `<div class="locked"><span class="lock">固定</span><span>${choiceText("parts")}。學生選取、再按「送出」。</span></div>`;
     $("#choiceArea").querySelectorAll("[data-c]").forEach(b => b.onclick = () => { state.pChoices = b.dataset.c; render(); });
   }
 }
@@ -383,7 +385,8 @@ const extraNote = q => (q.shared ? `大家共用一張賓果卡，最多 36 格�
 /* 這個評量目標不出題的字（部件重組：獨體字等沒有部件可重組），要告訴老師，不能悄悄少題（docs/code/refactor.md 規則 8） */
 function skipNote(){
   const skip = [...new Set(state.lessons.flatMap(k => wsPick(k)))].filter(c => goalSkips(c));
-  return skip.length ? `部件重組：所選課次有 ${skip.length} 個字沒有部件可以重組（獨體字等），不出題：${skip.join("")}。` : "";
+  const why = state.goal === "R6" ? `沒有部件可以選（獨體字等），或部件超過 ${R6_MAX_PARTS} 個` : "沒有部件可以重組（獨體字等）";
+  return skip.length ? `${goalName(state.goal)}：所選課次有 ${skip.length} 個字${why}，不出題：${skip.join("")}。` : "";
 }
 const methodName = m => m === "all" ? "全部出題" : METHODS.find(x => x.id === m).name;
 const minutes = s => s < 60 ? "不到 1 分鐘" : `約 ${Math.ceil(s / 30) / 2} 分鐘`;
