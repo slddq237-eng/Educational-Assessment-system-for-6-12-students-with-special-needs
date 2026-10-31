@@ -300,6 +300,15 @@ if (files.includes('tools/literacy/mask-fix.js')) {
   } catch (e) { err('tools/literacy/mask-fix.js', `載入失敗：${e.message.split('\n')[0]}`); }
 }
 
+/* mask-fix.js 要和 mask-fix.json 對得上（2026-10-31）：改了 json（維護者從調整工具下載的結果）卻忘了跑 make_mask_fix.js，遊戲不會更新，這裡擋下來 */
+if (files.includes('docs/materials/mask-fix.json') || files.includes('tools/literacy/mask-fix.js')) {
+  try {
+    if (!files.includes('tools/literacy/mask-fix.js') || !files.includes('docs/materials/mask-fix.json')) err('tools/literacy/mask-fix.js', 'mask-fix.js 和 docs/materials/mask-fix.json 要一起存在（跑 node docs/scripts/make_mask_fix.js 產生）');
+    else if (require('./make_mask_fix.js').build().out !== read('tools/literacy/mask-fix.js'))
+      err('tools/literacy/mask-fix.js', '和 docs/materials/mask-fix.json 對不上（改了 json 或第一層部件的寫法？），請跑 node docs/scripts/make_mask_fix.js 重新產生，再把 mask-fix.js 一起放進這次的修改');
+  } catch (e) { err('tools/literacy/mask-fix.js', `檢查對得上時出錯：${e.message.split('\n')[0]}`); }
+}
+
 /* ---------- 9. 楷書字型缺字 ----------
    畫面文字（.html、tools/ 的 .js，不含註解）和教材（lessons.js、parts.js、parts-layers.js）的中文字，要在 shared/fonts/tw-kai.css 的範圍裡；
    沒有的字會變成電腦裡的別種字型。新增頁面文字、課本、部件後跑 make_kai.py 就好 */
