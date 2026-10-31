@@ -84,12 +84,10 @@
 .gcap .gtop{transition:transform .45s,opacity .45s;transform-origin:50% 50%}
 .gfx{position:absolute;left:50%;top:83%;width:0;height:0}
 .gfx i{position:absolute;left:-5px;top:-7px;width:10px;height:14px;border-radius:3px;opacity:0}
-.godds{position:absolute;left:50%;bottom:76px;transform:translateX(-50%);width:min(600px,92vw);text-align:left;z-index:2}
 .grain{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .grain i{position:absolute;top:-24px;width:8px;height:12px;border-radius:2px;opacity:0}
 .gcrank,.gballs,.gbub{transform-box:fill-box;transform-origin:50% 50%}
 .gflame{transform-box:fill-box;transform-origin:50% 0}   /* 太空主題：火箭底下的火焰 */
-.godds .odds{margin:0}
 .reveal.gacha .row{gap:10px}
 @media (prefers-reduced-motion:no-preference){
   .glever:not(.held) .gknob{animation:gnudge 1.6s ease-in-out infinite}
