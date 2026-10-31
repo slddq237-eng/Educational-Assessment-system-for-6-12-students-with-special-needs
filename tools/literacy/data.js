@@ -39,7 +39,26 @@ function maskBox(c, idx){
 }
 const maskIdxs = c => { const r = Parts.read(c, {from: 1}); return r && r.layer === 1 ? r.parts.map((_, i) => i + 1).filter(i => maskBox(c, i)) : []; };
 const R6_MAX_PARTS = 5;   /* 聽音選部件：部件超過 5 個的字不出（要選的部件太多，選項會擠不下；2026-10-31 課本生字有 36 個） */
-const goalSkips = (c, goal = state.goal) => goal === "R4" ? !partsOf(c) : goal === "R5" ? !maskIdxs(c).length : goal === "R6" ? !partsOf(c) || partsOf(c).length > R6_MAX_PARTS : false;
+/* 評量目標能力表（B12，2026-10-31）：每個目標的特性只在這裡宣告，其他程式（設定畫面、玩法、提示、備課分析）都讀這張表，不再各自寫「if 目標是 R5 或 R6」。
+   新增評量目標時在這裡加一列。欄位：
+   formal／flu：能不能用在正式評量／流暢性（沒寫＝能；false＝只能練習的正確率）；
+   noBingo：不能玩賓果的原因（沒寫＝能）；
+   partsAnswer：答案是部件不是字（備課分析不做字的混淆和亂猜分析）；
+   skip(c)：這個字這個目標不出題（沒寫＝都出）；
+   hintUnfit：不適合的提示和原因（開發路線圖 A2，規格書「提示和題目的適配性」表裡的 ✗；△ 提示很強的還是可用，等維護者討論） */
+const GOAL_CAPS = {
+  R1: {hintUnfit: {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"}},
+  R2: {hintUnfit: {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"}},
+  R3: {},
+  R4: {skip: c => !partsOf(c), hintUnfit: {parts:"題目本身就是部件", sound:"會唸出答案的讀音，部件重組不唸題目"}},
+  R5: {formal:false, flu:false, noBingo:"答案是部件，不能用賓果卡", partsAnswer:true, skip: c => !maskIdxs(c).length,
+       hintUnfit: {parts:"答案就是部件之一", mask:"畫面已經是遮住的字", shape:"畫面已經有這個字"}},
+  R6: {formal:false, flu:false, noBingo:"答案是部件，不能用賓果卡", partsAnswer:true, skip: c => !partsOf(c) || partsOf(c).length > R6_MAX_PARTS,
+       hintUnfit: {parts:"答案就是部件"}},
+  R7: {}, W1: {}, W2: {}, W3: {}
+};
+const goalCaps = (goal = state.goal) => GOAL_CAPS[goal] || {};
+const goalSkips = (c, goal = state.goal) => { const f = goalCaps(goal).skip; return f ? f(c) : false; };
 /* 部件提示對拆不開的字：黑圓圈遮住字的中心、只露出旁邊的樣子（2026-10-31，取代以前打亂旋轉的切塊；圓圈直徑約字寬的 0.5 倍，維護者 2026-10-31 看過 0.4、0.5、0.6 倍的截圖後選的）。
    蓋住中心後剩下的筆畫太少、認不出字形的字，不給這種提示，系統自動跳到下一個提示。
    用全字庫正楷體畫出 111 個拆不開的字，看截圖挑出認不出來的：一、入、人、八（「入」「人」「八」蓋住後都只剩兩撇，看起來一樣） */
@@ -57,8 +76,8 @@ const GOALS = [
   {id:"R2", group:"識字", name:"看字選圖",  what:"看字或語詞，點出正確的圖片（形 ↔ 義）", off:"準備中"},
   {id:"R3", group:"識字", name:"聽音選字",  what:"聽「努力的努」，從形近字、同音字、同詞字中選出目標字（形 ↔ 音）", img:"img/goal-3.jpg"},
   {id:"R4", group:"識字", name:"部件重組",  what:"看拆開的部件，選出組成的字", img:"img/goal-4-1.jpg"},
-  {id:"R5", group:"識字", name:"聽音補部件", what:"聽音，畫面上的字被遮住一塊部件，選出被遮的部件（4 選 1）", practiceOnly:"只有練習"},
-  {id:"R6", group:"識字", name:"聽音選部件", what:"聽音，從一堆部件中選出這個字的全部部件，再按「送出」（複選）", practiceOnly:"只有練習"},
+  {id:"R5", group:"識字", name:"聽音補部件", what:"聽音，畫面上的字被遮住一塊部件，選出被遮的部件（4 選 1）"},
+  {id:"R6", group:"識字", name:"聽音選部件", what:"聽音，從一堆部件中選出這個字的全部部件，再按「送出」（複選）"},
   {id:"R7", group:"識字", name:"看句子選字", what:"看句子，選出適合的字；「念句子」放在提示", off:"準備中"},
   {id:"W1", group:"寫字", name:"看注音寫國字", what:"看注音寫出國字；紙筆作答、老師登錄", off:"準備中"},
   {id:"W2", group:"寫字", name:"聽音寫字",  what:"聽音寫出國字；紙筆作答、老師登錄", off:"準備中"},
@@ -118,7 +137,7 @@ const sharedBingo = () => coopPossible() && playNow() === "bingo";   /* 多位�
 function playWhy(id){
   if(id === "color") return "";
   if(state.mode === "flu") return "流暢性模式不能用";
-  if(id === "bingo") return state.goal === "R6" || state.goal === "R5" ? "答案是部件，不能用賓果卡" : state.answer === "splitturn" ? "分區輪流之後再支援賓果" : "";
+  if(id === "bingo") return goalCaps().noBingo ? goalCaps().noBingo : state.answer === "splitturn" ? "分區輪流之後再支援賓果" : "";
   return "";
 }
 /* 這次實際用的玩法：選的不能用時，改用第一個能用的 */
@@ -336,14 +355,7 @@ const selKids = () => [...state.kids].filter(kidBy);
 /* 這次實際套用的條件 */
 /* 不適合某些評量目標的提示（開發路線圖 A2，規格書「提示和題目的適配性」表裡的 ✗）：會直接給出答案，程式自動跳過。
    △（提示很強）的還是可以用，等維護者討論決定。之後新增評量目標時，在這裡加一列。 */
-const HINT_UNFIT = {
-  "R1":  {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"},
-  "R2":  {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"},
-  "R4":  {parts:"題目本身就是部件", sound:"會唸出答案的讀音，部件重組不唸題目"},
-  "R5":  {parts:"答案就是部件之一", mask:"畫面已經是遮住的字", shape:"畫面已經有這個字"},
-  "R6":  {parts:"答案就是部件"}
-};
-const unfitWhy = (goal, h) => (HINT_UNFIT[goal] || {})[h] || "";
+const unfitWhy = (goal, h) => (goalCaps(goal).hintUnfit || {})[h] || "";
 const fitHints = (goal, list) => list.filter(h => !unfitWhy(goal, h));
 function current(){
   const formal = state.kind === "formal", flu = state.mode === "flu";

@@ -112,7 +112,7 @@
 | 作答紀錄欄位（`play.js` 的 `endItem`、`records.js` 的 `COLS`） | Excel 匯出、老師專區、進階分析（`pivot.js` 的 `DIMS`）、備份與匯入、`RECORD_FORMAT` 版本、`docs/design/records.md`；**先討論** |
 | 前後測（`data.js` 的 `state.prepost`；`setup.js` 的 `renderPrepost`；`play.js` 寫進紀錄的 `prepost`） | 紀錄欄位、Excel 匯出 `records.js` 的 `COLS`、老師專區 `teacher.js` 的 `phaseOf`、進階分析 `pivot.js` 的 `prepost` 分組；屬 A8（`docs/design/a8-terms.md`），**改欄位前先討論** |
 | 教學日期的存法（`teach`、`teachFor`） | 時期判斷、老師專區「教學開始後第幾天」（用現在的教學日期回推）、備份 |
-| 提示的種類或順序（`data.js` 的 `HINT_ORDER`、`HINT_UNFIT`） | 設定畫面、`play.js` 的 `hintHtml`、紀錄的 `hintSet`、老師專區「提示層級」 |
+| 提示的種類或順序（`data.js` 的 `HINT_ORDER`、目標能力表 `GOAL_CAPS` 的 `hintUnfit`） | 設定畫面、`play.js` 的 `hintHtml`、紀錄的 `hintSet`、老師專區「提示層級」 |
 | 字組（`wordsets.js`） | 設定第 3 步、出題 `testChars`、紀錄的 `ws` 欄、備份、匯入檔案 |
 | 主題、貼紙（`shared/themes.js`、`rewards.js`） | 設定第 4 步、作答背景、打怪獸場景、貼紙簿、備份 |
 | 新增 localStorage／IndexedDB 名稱 | 第 6 節的表、備份（`addBackupPart`）、`privacy.html` |
@@ -121,7 +121,7 @@
 
 ## 9. 自動產生資料的程式 `docs/scripts/`
 
-`check.js`、`smoke.js`、`bump.js`、`changelog.js`、`make_lessons.js`、`lessons-src.js`、`make_parts*.py`、`make_bpmf.py`、`make_kai.py`、`make_conf_candidates.py`：各產生什麼、什麼時候跑，見 `docs/scripts/README.md`（2026-10-24 搬去）。
+`check.js`、`smoke.js`（含 `combo.js` 識字評量組合測試）、`bump.js`、`changelog.js`、`make_lessons.js`、`lessons-src.js`、`make_parts*.py`、`make_bpmf.py`、`make_kai.py`、`make_conf_candidates.py`：各產生什麼、什麼時候跑，見 `docs/scripts/README.md`（2026-10-24 搬去）。
 
 ## 10. 現在架構的特點與注意事項
 

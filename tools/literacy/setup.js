@@ -100,7 +100,7 @@ const WSTEPS = ["選目標和評量方式", "選學生和課次", "選作答方�
 let wstep = 1;
 /* 每一步還缺什麼（空字串＝可以往下） */
 /* 聽音補部件（R5）、聽音選部件（R6）先只開放練習的正確率模式（2026-10-31 維護者決定，等 A3 再開放正式評量；流暢性要連續快點，複選不適合） */
-const step1Miss = () => { const g = GOALS.find(x => x.id === state.goal); return g && g.practiceOnly && state.kind === "formal" ? `「${g.name}」先只能用在練習，請改選「練習」或換評量目標` : g && g.practiceOnly && state.mode === "flu" ? `「${g.name}」還不能用在流暢性模式，請改選「正確率」` : ""; };
+const step1Miss = () => { const g = GOALS.find(x => x.id === state.goal), c = goalCaps(); return g && c.formal === false && state.kind === "formal" ? `「${g.name}」先只能用在練習，請改選「練習」或換評量目標` : g && c.flu === false && state.mode === "flu" ? `「${g.name}」還不能用在流暢性模式，請改選「正確率」` : ""; };
 const step2Miss = () => !selKids().length ? (isQuick() ? "請先點選要做的學生" : "請先點選要評量的學生") : !state.lessons.length ? "請先選課次" : !state.lessons.some(k => lessonSize(k)) ? `所選課次的字都不能出「${goalName(state.goal)}」（沒有部件，或部件太多），請換課次或換評量目標` : "";
 function step3Miss(){
   const n = selKids().length, a = ANSWERS.find(x => x.id === state.answer);

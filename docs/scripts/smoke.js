@@ -92,6 +92,7 @@ async function visit(browser, base, url, after){
 
   for (const p of PAGES) report(p, await visit(browser, base, p));
   report('shared/parts-api.js 部件入口（不用瀏覽器）', partsApiErrors());
+  report('識字評量 組合測試（目標×練習／正式×模式×玩法×作答方式）', await require('./combo.js')(browser, base));
 
   /* 3. 平板作答：在電腦版用產生 QR code 的同一個函數做出網址，再用新分頁打開 */
   let tabUrl = '';
