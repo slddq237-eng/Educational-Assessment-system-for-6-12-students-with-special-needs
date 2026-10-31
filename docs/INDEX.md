@@ -53,6 +53,7 @@
 | `design/analysis-page-draft.md` | 老師專區「一位學生」簡潔畫面設計草稿：預設畫面、換字表、待決題號（2026-10-25 新增） | （新） |
 | `materials/data-sources.md` | 資料來源與授權清單、上傳教材檔案時讀得到哪些檔案 | 4-1、「上傳教材檔案、課本改版時」 |
 | `materials/materials.md` | 教材資料的來源與使用邏輯、待確認清單、資料掃描發現、部件資料 | 4-1 的「教材資料的來源與使用邏輯」 |
+| `materials/parts-table-google-sheet.md` | 部件表上傳 Google 試算表給老師共編的操作清單：上傳、鎖欄位、分享分工、老師怎麼填、下載回來怎麼驗證（2026-10-31 新增） | （新） |
 | `materials/distractors.md` | 干擾字：跟著版本還是固定、怎麼分配、形音都像、老師選干擾字類型（2026-10-24 從 `materials/materials.md` 拆出） | 4-1 |
 | `materials/pronunciation.md` | 讀音與注音：破音字、以課本為主、老師怎麼回報讀音、人名地名的特殊讀音（2026-10-24 從 `materials/materials.md` 拆出） | 4-1 |
 | `plans/a3-conditions.md` | A3 正式評量標準條件表（草案）：已定案項目、待決項目與 Claude 的建議，回答用題號（2026-10-25 新增） | （新） |
