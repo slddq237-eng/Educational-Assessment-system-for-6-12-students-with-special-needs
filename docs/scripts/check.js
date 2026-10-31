@@ -191,7 +191,8 @@ for (const f of files.filter(f => /^(docs\/.+|CLAUDE)\.md$/.test(f))) {
 /* ---------- 6. 程式地圖 ---------- */
 /* 新增或改名的 .js 檔要寫進 docs/code/architecture.md，之後改程式的人才找得到它和誰有關係 */
 if (files.includes('docs/code/architecture.md')) {
-  const map = read('docs/code/architecture.md');
+  /* 程式地圖拆成兩份（2026-10-31）：architecture.md、architecture-literacy.md（識字評量的檔案），一起讀 */
+  const map = ['docs/code/architecture.md', 'docs/code/architecture-literacy.md'].filter(f => files.includes(f)).map(read).join('\n');
   for (const f of files.filter(f => f.endsWith('.js') && !f.startsWith('shared/vendor/'))) {
     const name = /^shared\/lessons-\w+\.js$/.test(f) ? 'lessons-代號.js' : path.basename(f);   /* 各本課本檔合寫成一列 */
     if (!map.includes(name)) warn(f, '這個 .js 檔沒有寫在程式地圖 docs/code/architecture.md，請補上它做什麼、誰會用到');
