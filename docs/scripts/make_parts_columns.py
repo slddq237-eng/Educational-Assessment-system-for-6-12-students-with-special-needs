@@ -256,7 +256,8 @@ end = openpyxl.utils.get_column_letter(len(H))
 ws.auto_filter.ref = f'A1:{end}{ws.max_row}'; ws.freeze_panes = 'B2'
 ws.data_validations.dataValidation = []
 for h, items in (('老師修正：結構', STRUCTS), ('第一層狀態', STATUS), ('第二層狀態', STATUS), ('正式評量遮第幾塊（人工手動）', ['1', '2', '3'])):
-    dv = DataValidation(type='list', formula1='"' + ','.join(items) + '"', allow_blank=True)
+    dv = DataValidation(type='list', formula1='"' + ','.join(items) + '"', allow_blank=True, showErrorMessage=True, errorStyle='stop',
+                        errorTitle='請從選單選', error='請點格子右邊的小箭頭，從選單選一個；不要自己打字')   # 打別的字會被擋下來
     dv.add(f'{openpyxl.utils.get_column_letter(COL[h])}2:{openpyxl.utils.get_column_letter(COL[h])}{ws.max_row}'); ws.add_data_validation(dv)
 # 讀不出聲音的部件：加進「部首變體對照」頁當候選（「對照成」留空，老師填了才生效；已經在表裡的只更新說明）
 known = {c for r in range(2, vs.max_row + 1) for c in chars_of(vs.cell(r, 1).value or '')}
