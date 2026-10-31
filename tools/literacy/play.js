@@ -138,8 +138,9 @@ function makeFillOptions(c, k, idx){
   const pool = partDistractors(c, k, [ans], 3, ps.filter((_, i) => i !== idx - 1));
   return shuffle([{ch: ans, type:"答案"}, ...pool.map(ch => ({ch, type:"選到干擾部件"}))]);
 }
-const maskedCharHtml = (c, idx) => { const bx = maskBox(c, idx);
-  return `<div class="maskedchar" role="img" aria-label="有一塊部件被遮住的字"><span class="mcg">${esc(c)}</span><span class="mhole" style="left:${bx[0] * 100}%;top:${bx[1] * 100}%;width:${(bx[2] - bx[0]) * 100}%;height:${(bx[3] - bx[1]) * 100}%"><i>？</i></span></div>`; };
+/* 被遮住一塊部件的字：一個部件可以有好幾個色塊、可以旋轉（data.js 的 maskShapes）；色塊裁在字格內（旋轉後超出的部分不顯示），純色、沒有外框和問號（2026-10-31 維護者決定：多色塊加了外框和「？」看起來很怪） */
+const maskedCharHtml = (c, idx) => { const sh = maskShapes(c, idx);
+  return `<div class="maskedchar" role="img" aria-label="有一塊部件被遮住的字"><span class="mcg">${esc(c)}</span><span class="mholes">${sh.map(s => `<span class="mhole" style="left:${s[0] * 100}%;top:${s[1] * 100}%;width:${(s[2] - s[0]) * 100}%;height:${(s[3] - s[1]) * 100}%${s[4] ? `;transform:rotate(${s[4]}deg)` : ""}"></span>`).join("")}</span></div>`; };
 
 /* 部件重組的題目：部件打亂成一塊一塊（拆不開的字這個目標不出，見 data.js 的 goalSkips） */
 const regroupHtml = c => shuffle([...(partsOf(c) || [])]).map(x => `<span class="ptile">${esc(x)}</span>`).join("");
@@ -321,6 +322,7 @@ function prepareThen(go){
 }
 
 function startSession(){
+  if(goalCaps().loadMaskFix && typeof MASK_FIX === "undefined" && !maskFixTried) return void loadMaskFix().then(startSession);   /* 聽音補部件：先載入遮擋調整資料再開始 */
   const c = current(), q = quizPlan(), list = selKids();
   G = {
     session: Date.now(), cfg: c, q, kids: list,

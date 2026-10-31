@@ -37,7 +37,42 @@ function maskBox(c, idx){
   }
   return null;
 }
-const maskIdxs = c => { const r = Parts.read(c, {from: 1}); return r && r.layer === 1 ? r.parts.map((_, i) => i + 1).filter(i => maskBox(c, i)) : []; };
+/* 遮擋位置調整資料 mask-fix.js（約 23KB）只有聽音補部件（R5）用得到，選了這個目標或開始作答時才下載（網頁打開時的下載量有 1MB 上限，check.js 第 10 項）；
+   網址帶著本檔的版本號（?v=…），改版時瀏覽器會重新下載。載入失敗就先用預設位置。 */
+const MASK_FIX_SRC = document.currentScript ? document.currentScript.src.replace(/[^/]*$/, "") + "mask-fix.js" + (document.currentScript.src.match(/\?v=[^&]*/) || [""])[0] : "mask-fix.js";
+let maskFixLoading = null, maskFixTried = false;
+function loadMaskFix(){
+  if(typeof MASK_FIX !== "undefined") return Promise.resolve();
+  return maskFixLoading = maskFixLoading || new Promise(res => {
+    const s = document.createElement("script");
+    s.src = MASK_FIX_SRC;
+    s.onload = () => { maskFixTried = true; res(); };
+    s.onerror = () => { maskFixTried = true; maskFixLoading = null; s.remove(); res(); };
+    document.head.appendChild(s);
+  });
+}
+/* 分組名稱：同一組的字用同一個預設位置（維護者的遮擋調整工具用它分組，MASK_GROUP_FIX 的 key 也是這個；改這裡要同步改 docs/scripts/make_mask_fix.js 說明和調整工具） */
+function maskGroup(c){
+  const r = Parts.read(c, {from: 1}), ps = r && r.layer === 1 ? r.parts : [], st = Parts.struct(c);
+  if(st.includes("包圍")) return `${st}｜外層 ${ps[0]}`;
+  if(st === "左右") return "左右｜" + (MASK_NARROW_LEFT.has(ps[0]) ? "左窄 " + ps[0] : MASK_NARROW_RIGHT.has(ps[1]) ? "右窄 " + ps[1] : "一般對半");
+  if(st === "上下") return "上下｜" + (MASK_SHORT_TOP.has(ps[0]) ? "上短 " + ps[0] : MASK_SHORT_BOTTOM.has(ps[1]) ? "下短 " + ps[1] : "一般對半");
+  return st;
+}
+/* 某個字第 idx 塊的遮擋：一串色塊，每塊 [左, 上,右, 下, 旋轉角度]（占字格的比例；角度單位是度，順時針為正，繞色塊中心）；沒有回傳 null。
+   優先順序（2026-10-31）：個別字的人工調整（mask-fix.js 的 MASK_FIX，調整當時的第一層部件和現在一樣才用）→ 整組的人工調整（MASK_GROUP_FIX）→ 預設位置（maskBox）。
+   第一層後來被老師改過的字，舊的調整不套用（回到預設位置），docs/scripts/check.js 會提醒重新調整。 */
+function maskShapes(c, idx){
+  const r = Parts.read(c, {from: 1});
+  if(!r || r.layer !== 1) return null;
+  const f = typeof MASK_FIX !== "undefined" ? MASK_FIX[c] : null;
+  if(f && f.ps === r.parts.join(" ") && f[idx]) return f[idx].map(s => [s[0], s[1], s[2], s[3], s[4] || 0]);
+  const g = typeof MASK_GROUP_FIX !== "undefined" ? MASK_GROUP_FIX[maskGroup(c)] : null;
+  if(g && g[idx]) return g[idx].map(s => [s[0], s[1], s[2], s[3], s[4] || 0]);
+  const b = maskBox(c, idx);
+  return b ? [[...b, 0]] : null;
+}
+const maskIdxs = c => { const r = Parts.read(c, {from: 1}); return r && r.layer === 1 ? r.parts.map((_, i) => i + 1).filter(i => maskShapes(c, i)) : []; };
 const R6_MAX_PARTS = 5;   /* 聽音選部件：部件超過 5 個的字不出（要選的部件太多，選項會擠不下；2026-10-31 課本生字有 36 個） */
 /* 評量目標能力表（B12，2026-10-31）：每個目標的特性只在這裡宣告，其他程式（設定畫面、玩法、提示、備課分析）都讀這張表，不再各自寫「if 目標是 R5 或 R6」。
    新增評量目標時在這裡加一列。欄位：
@@ -45,13 +80,14 @@ const R6_MAX_PARTS = 5;   /* 聽音選部件：部件超過 5 個的字不出（
    noBingo：不能玩賓果的原因（沒寫＝能）；
    partsAnswer：答案是部件不是字（備課分析不做字的混淆和亂猜分析）；
    skip(c)：這個字這個目標不出題（沒寫＝都出）；
+   loadMaskFix：要先載入遮擋調整資料 mask-fix.js（loadMaskFix()）；
    hintUnfit：不適合的提示和原因（開發路線圖 A2，規格書「提示和題目的適配性」表裡的 ✗；△ 提示很強的還是可用，等維護者討論） */
 const GOAL_CAPS = {
   R1: {hintUnfit: {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"}},
   R2: {hintUnfit: {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"}},
   R3: {},
   R4: {skip: c => !partsOf(c), hintUnfit: {parts:"題目本身就是部件", sound:"會唸出答案的讀音，部件重組不唸題目"}},
-  R5: {formal:false, flu:false, noBingo:"答案是部件，不能用賓果卡", partsAnswer:true, skip: c => !maskIdxs(c).length,
+  R5: {loadMaskFix:true, formal:false, flu:false, noBingo:"答案是部件，不能用賓果卡", partsAnswer:true, skip: c => !maskIdxs(c).length,
        hintUnfit: {parts:"答案就是部件之一", mask:"畫面已經是遮住的字", shape:"畫面已經有這個字"}},
   R6: {formal:false, flu:false, noBingo:"答案是部件，不能用賓果卡", partsAnswer:true, skip: c => !partsOf(c) || partsOf(c).length > R6_MAX_PARTS,
        hintUnfit: {parts:"答案就是部件"}},
