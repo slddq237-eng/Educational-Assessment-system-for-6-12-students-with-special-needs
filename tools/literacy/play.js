@@ -608,7 +608,9 @@ function submitParts(){
   bad.forEach(i => { const b = card(i); b.classList.remove("sel"); b.classList.add("wrong", "fx", "shake"); b.disabled = true; });
   sfx.wrong();
   const go = $("#submitParts"); if(go) go.disabled = true;
-  const note = $("#pickNote"); if(note) note.textContent = bad.length ? "打叉的不是這個字的部件，再選選看" : `還有 ${miss} 個部件沒選到`;
+  const note = $("#pickNote"); if(note) note.textContent = bad.length ? (miss ? "打叉的不是這個字的部件，再選選看" : "多選了不是這個字的部件（打叉的）") : `還有 ${miss} 個部件沒選到`;
+  /* 答案部件都選到了、但多選了干擾部件：沒有東西可以再選，這題算錯，直接進下一題（不然「送出」按不了，會卡住；維護者 2026-10-31） */
+  if(!miss) return endItem(false, null);
   if(G.mode === "flu" || G.noHelp) return endItem(false, null);
   const act = G.per[cur.it.kid].rule[cur.wrong - 1] || "free";
   if(act === "next") showNextHint();
