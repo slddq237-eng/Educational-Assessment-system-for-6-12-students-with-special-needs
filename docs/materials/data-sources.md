@@ -13,7 +13,7 @@
 |---|---|---|---|---|---|
 | 課本生字、語詞、例句、形近字 | `shared/lessons.js` | 各出版社課本、維護者提供的生字表與字音字形檔（夥伴生字賓果原有四本也來自出版社，2026-10-23 夥伴確認）；翰林三～六上、南一四～六上取自夥伴「1021 更新全版本」（語詞夥伴說應該來自出版社，形近同音字出處不明）；部分由 Claude 擬定 | 各本課本的學年度，見 `materials.md`「教材資料的來源與使用邏輯」（例：康軒六上 115 學年度） | 出版社著作權，未取得授權 | 只放字表與短語詞；待討論 |
 | 部件拆解 | `shared/parts.js`、`docs/materials/parts-table.xlsx` | cjkvi-ids（CHISE；部分資料源自中央研究院謝清俊教授團隊的 CDP 資料庫，見 CHISE 說明的 Acknowledgment） | cjkvi-ids commit 86b4d16（2019-02-07） | GPLv2 或更新版（我們用的 `ids.txt` 依 CHISE 條款；2026-10-26 查證，見「LICENSE 討論內容」） | 已標示 |
-| 判斷聲符用的讀音 | 只用來產生 `docs/materials/parts-table.xlsx` 的 A 欄（部件和字的讀音像不像），讀音本身沒有放進 repo 或網站 | pinyin-data（mozillazg，整理自 Unicode Unihan 等） | commit 9d05c9e（2026-10-24） | MIT | 2026-10-28 加；已列入關於我們 |
+| 判斷部件讀不讀得出聲音用的讀音 | 只用來產生 `docs/materials/parts-table.xlsx` 的第一層（檢查每塊部件有沒有讀音），讀音本身沒有放進 repo 或網站 | pinyin-data（mozillazg，整理自 Unicode Unihan 等） | commit 9d05c9e（2026-10-24） | MIT | 2026-10-28 加（原本用來判斷聲符，2026-10-31 改成檢查讀得出聲音）；已列入關於我們 |
 | 字頻總表 | `shared/freq.js` | 教育部語文成果網「表一：字頻總表」（BIAU1，5,731 字） | BIAU1 網頁版（2026-10-20 下載） | 維護者確認可用，須在「關於我們」列出處 | 2026-10-20 匯入；已列入關於我們 |
 | 注音字型（原生字賓果內嵌的版本） | 2026-10-21 隨生字賓果移除 | ButTaiwan/bpmfvs | — | 漢字 CC BY 4.0、其餘 SIL OFL 1.1 | 已移除；識字評量用的子集見下一列 |
 | 網頁字型 Huninn | 各頁面（Google Fonts） | Google Fonts | Google Fonts 線上版（隨 Google 更新，不固定） | SIL OFL 1.1 | 已列入關於我們 |

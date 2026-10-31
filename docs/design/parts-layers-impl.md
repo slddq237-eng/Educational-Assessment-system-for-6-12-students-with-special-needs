@@ -9,7 +9,7 @@
 1. **一個資料檔**：新增 `shared/parts-layers.js`，**由 `make_parts_columns.py` 自動產生、不手改**（來源是部件表 Excel 的人工手動欄加 cjkvi-ids）。每個字存：結構、第一～第三層的電腦拆法、老師的人工手動拆法、每層的狀態（已確認／待確認／待討論）、正式評量遮哪一塊。
    - 不放進 `shared/lessons.js`（約 86 KB，混著各本課本的字、語詞，改版號和課本資料時容易衝突；現在用正規表示式改寫裡面的 `PARTS_A`、`PARTS_B` 兩行也很脆弱）。**這修正了先前「結構表放 `lessons.js`」的建議，2026-10-31 維護者確認改放新檔。**
    - 舊的 `PARTS`（康軒四上 86 字）、`PARTS_A`、`PARTS_B` 都併進這個檔，`parts.js` 的 `PARTS_AUTO` 先留著當第三層的原料，之後再看要不要併。
-   - 大小我用現在部件表估過：2,160 字約 100 KB 上下（壓縮後約 25 KB），和 `parts.js`（約 45 KB）同等級；獨立一個檔，不需要部件的頁面可以不載入。
+   - 大小（2026-10-31 實際產生）：2,160 字約 210 KB，壓縮後約 40 KB（其中第三層約 53 KB、第二層約 41 KB、第一層約 27 KB）；`parts.js` 約 45 KB（壓縮後約 19 KB）。**這比我先前說的「約 100 KB、壓縮後約 25 KB」大**（先前估算時我把自己量到的 212 KB 誤報成約 100 KB，這裡更正）。獨立一個檔，不需要部件的頁面可以不載入；步驟 3a 做 `Parts` 時可以考慮不存第三層、改由 `parts.js` 在程式裡算（可省約 66 KB、壓縮後約 12 KB）。
 2. **一個入口 `window.Parts`**（新的共用盒子，檔案開頭有中文說明）：
    - `Parts.read(字, {from: 起點層})`：回傳 `{層, 部件, 來源（人工／電腦）, 狀態}`，從起點層開始、每層「人工 → 電腦」、沒有就往下一層。
    - `Parts.layer(字, 第幾層)`：只看某一層（備課分析用）。
@@ -25,7 +25,7 @@
 |---|---|---|
 | 0 | 收尾 #179（文件補齊） | ✅ 2026-10-31 合併 |
 | 1 | 寫本檔（只有文件） | `docs/` |
-| 2 | 部件表改版（三層欄位、人工手動欄、狀態欄）；舊 `PARTS` 搬進第二層人工欄標「待確認」；部首變體對照；`make_parts_columns.py` 產生 `shared/parts-layers.js`（平台還不讀） | `parts-table.xlsx`、`shared/parts-layers.js`、`make_parts_columns.py`；文件：`materials.md` 部件現況改寫、`docs/scripts/README.md` |
+| 2 | ✅ 2026-10-31 完成：部件表改版（三層欄位、人工手動欄、狀態欄）；舊 `PARTS` 搬進第二層人工欄標「待確認」；部首變體對照；`make_parts_columns.py` 產生 `shared/parts-layers.js`（平台還不讀） | `parts-table.xlsx`、`shared/parts-layers.js`、`make_parts_columns.py`；文件：`materials.md` 部件現況改寫、`docs/scripts/README.md` |
 | 3a | **整理，行為不變**：新增 `window.Parts`；`rawParts`、`partsSource` 改成包裝；提示、重組、備課分析改呼叫 `Parts`（起點層維持現在的讀法）；自動檢查加規則；順便修 `make_conf_candidates.py` | `shared/`、`tools/literacy/data.js`、`tools/prep/prep.js`、`check.js`；文件：`refactor.md` 進度清單加一列、`architecture.md` 加新檔案和 `Parts` 入口 |
 | 3b | 切換起點層：提示、重組改讀第二層；備課分析加第二層選項 | `Parts` 呼叫的參數、`prep.js` |
 | 4a | 聽音選部件（先做部件選項池） | 新玩法，**先討論紀錄欄位** |

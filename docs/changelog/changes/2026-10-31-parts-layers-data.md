@@ -1,0 +1,5 @@
+# 部件表改成三層欄位，產生 shared/parts-layers.js（步驟 2，平台畫面不變）
+- 日期：2026-10-31
+- 動到哪裡：部件表 Excel、共用教材（新增 `parts-layers.js`）、產生程式、文件、關於我們
+- 改了什麼：`parts-table.xlsx` 的欄位換成結構、第一層、第二層、第三層、正式評量遮第幾塊（電腦欄＋老師的人工手動欄＋狀態欄），新增「部首變體對照」頁；舊的人工部件 `PARTS` 86 字搬到第二層人工手動、標待確認；`make_parts_columns.py` 重寫成重算電腦欄位並產生 `shared/parts-layers.js`；`make_parts.py` 新列只寫字和出現課次；過渡期仍把狀態「已確認」的人工手動拆法寫進 `lessons.js` 的 `PARTS_A`、`PARTS_B`（結果和以前相同，平台還沒讀 `parts-layers.js`）；pinyin-data 改成只檢查部件有沒有讀音
+- 想法或決定的變化：不再標形符、聲符（維護者 2026-10-31 決定）；部件資料集中到一個檔案，之後由 `window.Parts` 入口讀取
