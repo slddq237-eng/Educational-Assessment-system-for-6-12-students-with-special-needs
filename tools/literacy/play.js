@@ -961,19 +961,18 @@ function finish(){
   $("#rList").innerHTML = g.kids.map((code, i) => {
     const t = g.tally[code], k = kidBy(code), name = esc(k ? kidShow(k) : code);
     const head = `<div class="rcard" data-kid="${esc(code)}" style="--i:${i}"><b class="rname2">${Rewards.avatarHtml(code)}${name}</b>`;
-    if(!g.done.has(code)) return `${head}<span class="big">沒有做完</span>
-      <span class="sm">這次中途結束，紀錄不列入分析，也沒有貼紙。下次做完就可以抽貼紙喔！</span></div>`;
+    if(!g.done.has(code)) return `${head}<span class="big">這次還沒做完</span>
+      <div class="rrows"><div>做完才可以抽貼紙。</div><div>下次再來一次吧！</div></div></div>`;
     const cheer = lively ? `<div class="cheer2">${esc(cheerLine(g, code))}</div>` : "";
     if(g.mode === "flu"){
       const perMin = Math.round((t.roundCorrect || 0) * 60 / g.limit);
-      return `${head}<span class="rlabel">每分鐘認出</span><span class="big">${perMin} 個</span>
-        <div class="rstats"><span>答對 ${t.roundCorrect || 0} 個</span><span>答錯 ${t.roundWrong || 0} 個</span><span>${LIMITS.find(l => +l[0] === g.limit)[1]}</span></div>
+      return `${head}<span class="rlabel">1 分鐘裡，你認出了</span><span class="big">${perMin} 個字</span>
+        <div class="rrows"><div>答對了 <b>${t.roundCorrect || 0}</b> 個字</div><div>還要再練習的有 <b>${t.roundWrong || 0}</b> 個字</div><div>時間是 <b>${LIMITS.find(l => +l[0] === g.limit)[1]}</b></div></div>
         ${cheer}</div>`;
     }
     const avg = t.secs.length ? (t.secs.reduce((a, b) => a + b, 0) / t.secs.length).toFixed(1) : "—";
-    return `${head}<span class="rlabel">答對率</span><span class="big">${t.n ? Math.round(t.first / t.n * 100) : 0}%</span>
-      <div class="rstats"><span>第一次就答對 ${t.first} / ${t.n} 題</span><span>答對平均 ${avg} 秒</span></div>
-      ${t.passed > t.first ? `<span class="sm">再試一次後，最後答對 ${t.passed} 題</span>` : ""}
+    return `${head}<span class="rlabel">你第一次就答對了</span><span class="big">${t.first} 題</span>
+      <div class="rrows"><div>這次一共做了 <b>${t.n}</b> 題</div>${t.secs.length ? `<div>答對一題，平均用 <b>${avg}</b> 秒</div>` : ""}${t.passed > t.first ? `<div>再試一次，又答對了 <b>${t.passed - t.first}</b> 題</div>` : ""}</div>
       ${cheer}</div>`;
   }).join("") || `<p class="note">這次沒有作答紀錄。</p>`;
   $("#rNote").textContent = (g.kind === "formal" ? "這次是正式評量，做完的結果會納入學習分析。" : "這次是練習，結果另外統計。")
