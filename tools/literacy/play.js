@@ -518,6 +518,7 @@ function newItem(it){
   const pickParts = G.goal === "R6";   /* 聽音選部件：聽音，選出全部部件（複選），按「送出」才算作答 */
   const fillPart = G.goal === "R5";    /* 聽音補部件：聽音，畫面上的字被遮住一塊部件，4 選 1 */
   const maskAt = fillPart ? (() => { const l = maskIdxs(it.c); return l[Math.floor(Math.random() * l.length)]; })() : 0;
+  lapTime(it.kid);   /* 把上一題到現在的時間記給上一位學生（結果卡片的「這次玩了多久」，多位學生輪流時每人各自算） */
   G.cur = {it, b, board, opts: board ? board.cells.map(ch => ({ch, type: optType(it.c, ch, it.k)})) : pickParts ? makePartsPickOptions(it.c, it.k) : fillPart ? makeFillOptions(it.c, it.k, maskAt) : (regroup ? makePartsOptions : makeOptions)(it.c, it.k, G.choices),
            maskAt,
            wrong:0, firstPick:null, firstSec:null, shown:[], hintPos:0, teacher:0, reads:new Set(), t0:null, tShown:performance.now(), done:false,
@@ -941,13 +942,19 @@ $("#pQuit").onclick = () => {
 /* =========================================================
    10. 結果畫面
    ========================================================= */
+/* 每位學生各自玩了多久：從他的一題出現，到下一題出現（含答題、過場、打怪獸動畫）；別人的回合不算。換題時呼叫，nextKid＝null 表示整次結束 */
+function lapTime(nextKid){
+  const now = performance.now(), last = G.lap;
+  if(last && G.tally[last.kid]) G.tally[last.kid].playMs = (G.tally[last.kid].playMs || 0) + now - last.t;
+  G.lap = nextKid ? {kid: nextKid, t: now} : null;
+}
 function finish(){
   if(G.over) return;
   G.over = true;   /* 之後還在排隊的出題、換人畫面都會停下來 */
   try { speechSynthesis.cancel(); } catch(e){}
   $("#pTimer").hidden = true; $("#pQuit").textContent = "結束";
   const g = G;
-  g.elapsed = Math.max(1, Math.round((performance.now() - g.started) / 1000));   /* 這一次玩了多久（結果卡片給學生看；選夥伴的時間不算） */
+  lapTime(null);
   if(g.scene){ g.scene.stop(); $("#pScene").hidden = true; $("#pBody").hidden = false; }
   /* 哪些學生做完了：正確率模式＝自己的題目都答完；流暢性模式＝自己那一回合時間到。
      按「結束」提早離開時，沒做完的學生這次的紀錄標成「中途結束」（不列入分析），也不抽貼紙。 */
@@ -972,7 +979,7 @@ function finish(){
         ${cheer}</div>`;
     }
     return `${head}<span class="rlabel">你第一次就答對了</span><span class="big">${t.first} 題</span>
-      <div class="rrows"><div>這次一共做了 <b>${t.n}</b> 題</div><div>這次玩了 <b>${g.elapsed >= 60 ? `${Math.floor(g.elapsed / 60)} 分 ${g.elapsed % 60} 秒` : `${g.elapsed} 秒`}</b></div></div>
+      <div class="rrows"><div>這次一共做了 <b>${t.n}</b> 題</div><div>這次玩了 <b>${playTime(t.playMs)}</b></div></div>
       ${cheer}</div>`;
   }).join("") || `<p class="note">這次沒有作答紀錄。</p>`;
   $("#rNote").textContent = (g.kind === "formal" ? "這次是正式評量，做完的結果會納入學習分析。" : "這次是練習，結果另外統計。")
@@ -989,6 +996,11 @@ function finish(){
   if(g.done.size) showTrophy(g, go); else go();
 }
 
+/* 玩了多久，給學生看：不到 1 分鐘「45 秒」，1 分鐘以上「2 分 15 秒」 */
+function playTime(ms){
+  const sec = Math.max(1, Math.round((ms || 0) / 1000));
+  return sec >= 60 ? `${Math.floor(sec / 60)} 分 ${sec % 60} 秒` : `${sec} 秒`;
+}
 /* 一次作答（同一位學生、同一個 session）的成績：第一次就答對幾題、答對平均秒數、每分鐘幾個 */
 function sessionStats(rs){
   const secs = rs.filter(r => r.passed && r.correctSec != null).map(r => r.correctSec);
