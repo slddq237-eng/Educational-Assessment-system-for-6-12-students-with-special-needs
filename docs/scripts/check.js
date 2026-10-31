@@ -210,6 +210,16 @@ for (const f of files.filter(f => /\.(js|html)$/.test(f) && !f.startsWith('docs/
     err(f, `直接存取瀏覽器儲存空間。請改用入口（識字評量用 data.js 的 load、store；作答紀錄用 records.js；貼紙頭像用 Rewards），見 docs/code/refactor.md 規則 1`);
 }
 
+/* 部件資料一律走入口 window.Parts（shared/parts-api.js；docs/code/refactor.md 規則 1、2，2026-10-31 步驟 3a）：
+   其他網頁程式不能直接讀 PARTS、PARTS_A、PARTS_B、PARTS_AUTO、PARTS_LAYERS（資料檔本身、parts-api.js、docs/ 不算；先去掉註解再檢查） */
+const PARTS_ENTRY = ['shared/parts-api.js'];
+for (const f of files.filter(f => /\.js$/.test(f) && !f.startsWith('docs/') && !f.startsWith('shared/vendor/') && !PARTS_ENTRY.includes(f)
+    && !/^shared\/(lessons(-\w+)?|parts|parts-layers)\.js$/.test(f))) {
+  const code = read(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:\\])\/\/.*$/gm, '$1');
+  const m = code.match(/\b(PARTS_LAYERS|PARTS_AUTO|PARTS_A|PARTS_B|PARTS)\b/);
+  if (m) err(f, `直接讀了部件資料 ${m[1]}。請改用入口 window.Parts（shared/parts-api.js），見 docs/code/refactor.md 規則 1`);
+}
+
 /* 識字評量的儲存名稱只寫在 data.js 的 KEYS（docs/code/refactor.md「儲存名稱集中」）：
    用了表裡沒有的 KEYS.xxx（多半是打錯字，老師存的資料會讀不到）報錯；其他檔案自己打 "literacy-xxx" 提醒 */
 if (files.includes('tools/literacy/data.js')) {

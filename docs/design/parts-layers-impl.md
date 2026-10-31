@@ -14,7 +14,7 @@
    - `Parts.read(字, {from: 起點層})`：回傳 `{層, 部件, 來源（人工／電腦）, 狀態}`，從起點層開始、每層「人工 → 電腦」、沒有就往下一層。
    - `Parts.layer(字, 第幾層)`：只看某一層（備課分析用）。
    - `Parts.struct(字)`：結構；`Parts.mask(字)`：正式評量遮哪一塊（練習的隨機由玩法自己抽）。
-   - `common.js` 現在的 `rawParts`、`partsSource`、`KEEP_WHOLE` 等先變成呼叫 `Parts` 的薄包裝，各檔案改完再移除。
+   - `common.js` 原本的 `rawParts`、`partsSource`、`KEEP_WHOLE` 等已搬進 `parts-api.js`（2026-10-31 步驟 3a）；因為只有識字評量 `data.js` 和備課分析 `prep.js` 兩處在用，直接改成呼叫 `Parts.compat`，沒有另外留包裝。
 3. **自動檢查加一條規則**（像存資料的 `STORAGE_ENTRY`）：只有 `parts-layers.js` 和 `Parts` 盒子可以直接讀 `PARTS`、`PARTS_AUTO`、`PARTS_A`、`PARTS_B`，其他檔案直接讀會報錯誤。
 4. **文件**：`architecture.md` 加這個檔案和入口；`materials.md` 部件資料的狀況改寫現況。
 5. 這些都不改作答紀錄格式；紀錄記的是字本身，部件拆法改了不影響舊紀錄。
@@ -26,7 +26,7 @@
 | 0 | 收尾 #179（文件補齊） | ✅ 2026-10-31 合併 |
 | 1 | 寫本檔（只有文件） | `docs/` |
 | 2 | ✅ 2026-10-31 完成：部件表改版（三層欄位、人工手動欄、狀態欄）；舊 `PARTS` 搬進第二層人工欄標「待確認」；部首變體對照；`make_parts_columns.py` 產生 `shared/parts-layers.js`（平台還不讀） | `parts-table.xlsx`、`shared/parts-layers.js`、`make_parts_columns.py`；文件：`materials.md` 部件現況改寫、`docs/scripts/README.md` |
-| 3a | **整理，行為不變**：新增 `window.Parts`；`rawParts`、`partsSource` 改成包裝；提示、重組、備課分析改呼叫 `Parts`（起點層維持現在的讀法）；自動檢查加規則；順便修 `make_conf_candidates.py` | `shared/`、`tools/literacy/data.js`、`tools/prep/prep.js`、`check.js`；文件：`refactor.md` 進度清單加一列、`architecture.md` 加新檔案和 `Parts` 入口 |
+| 3a | ✅ 2026-10-31 完成：**整理，行為不變**：新增 `window.Parts`；`rawParts`、`partsSource` 改成包裝；提示、重組、備課分析改呼叫 `Parts`（起點層維持現在的讀法）；自動檢查加規則；順便修 `make_conf_candidates.py` | `shared/`、`tools/literacy/data.js`、`tools/prep/prep.js`、`check.js`；文件：`refactor.md` 進度清單加一列、`architecture.md` 加新檔案和 `Parts` 入口 |
 | 3b | 切換起點層：提示、重組改讀第二層；備課分析加第二層選項 | `Parts` 呼叫的參數、`prep.js` |
 | 3c | 獨體字的部件提示改成黑圓圈遮住字中心（先做原型，筆畫太少的字不給）；部件重組不出獨體字；設定畫面顯示「這個目標有 N 字不出題」 | `tools/literacy/play.js`、`setup.js`、`data.js` |
 | 4a | 聽音選部件（先做部件選項池） | 新玩法，**先討論紀錄欄位** |

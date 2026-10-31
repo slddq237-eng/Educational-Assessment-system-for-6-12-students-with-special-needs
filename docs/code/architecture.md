@@ -17,7 +17,7 @@
                  └──────────────────────────────┬──────────────────────────────────────┘
                                                 │ 讀
                  ┌──────────── 共用程式 ─────────┴──────────────────────────────────────┐
-                 │ shared/common.js   課本排序與名稱、語詞、干擾字、部件查詢、載入 Excel 元件 │
+                 │ shared/common.js   課本排序與名稱、語詞、干擾字、載入 Excel 元件          │
                  │ shared/themes.js   主題、貼紙圖形（window.Themes）                     │
                  │ shared/rewards.js  學生貼紙收藏與頭像（window.Rewards，存 IndexedDB）  │
                  └───────────────┬──────────────────────────────┬──────────────────────┘
@@ -50,11 +50,12 @@
 |---|---|---|---|
 | `lessons.js` | `BOOKS`（課本→課次→習寫字 write、認讀字 read；課次可有 `title`、`sayChar`＝題目只唸字，見 play.js 的 `promptOf`）、`WORDS`/`WORDS_ED` 語詞、`SENT`/`SENT_ED` 例句、`CONF`/`CONF_ED` 干擾字、`PARTS` 人工部件、`PARTS_A`／`B` 人工手動、`PICS`、`POLY_ED`；最早四本和共用表在這裡，`BOOK_FILES` 依序載入其他課本、`ALL_LESSON_CHARS` 所有課本的字（2026-10-24 R4b） | 識字評量、備課分析、自動檢查、所有 make_*.py | 人工改；新增課本後跑 `make_lessons.js` 和三支 make_*.py |
 | `lessons-代號.js` | 其他各本課本：`BOOKS.代號` 和這本的 `*_ED`（例如 `lessons-k5.js`）；平板只載入用到的（`tools/literacy/index.html` 的 `LESSON_ONLY`） | 同上 | 人工改 |
-| `parts.js` | `PARTS_AUTO` 自動拆的部件 | 透過 `common.js` 的 `rawParts` | `make_parts.py` 只新增，可手改錯的 |
-| `parts-layers.js` | `PARTS_LAYERS` 部件三層資料（見 `docs/design/parts-layers.md`） | 還沒有網頁讀 | 跑 `make_parts_columns.py` |
+| `parts.js` | `PARTS_AUTO` 自動拆的部件 | 透過 `parts-api.js` 的 `Parts` | `make_parts.py` 只新增，可手改錯的 |
+| `parts-layers.js` | `PARTS_LAYERS` 部件三層資料（見 `docs/design/parts-layers.md`） | 只有 `Parts` 讀；網頁還沒載入（3b） | 跑 `make_parts_columns.py` |
 | `bpmf.js` | `BPMF_TXT`、`BPMF_CH`、`BPMF_SAY`、`Bpmf`（注音顯示、唸題換字） | 識字評量（`play.js` 的 `sayOf`、選項注音） | **不要手改**，跑 `make_bpmf.py`；讀音例外寫在它的 `CHECKED` |
 | `freq.js` | `FREQ`（字→排名） | 識字評量（常用字、字頻優先、高字頻）、備課分析 | 從原始檔重新產生 |
-| `common.js` | `esc`（防止文字變成程式碼）、`BOOK_ORDER`、`bookName`、`gradeTerm`（「二上」「六下」寫法）、`lessonName`、`lessonKeys`、`wordOf`、`sentOf`、`confOf`、`rawParts`、`partsSource`、`setMsg`、`loadXlsx` | 識字評量、備課分析 | 規則只寫在這裡，**改一處兩個工具都變** |
+| `parts-api.js` | `window.Parts` 部件資料入口：`compat`、`compatManual`（過渡讀法，行為和 3a 以前一樣）、`read`、`layer`、`struct`、`mask`（新讀法）；**只有它能讀 `PARTS*`**（自動檢查）（2026-10-31） | 識字評量 `data.js`、備課分析 `prep.js` | 步驟 3b 各功能改用新讀法後拿掉過渡讀法 |
+| `common.js` | `esc`（防止文字變成程式碼）、`BOOK_ORDER`、`bookName`、`gradeTerm`（「二上」「六下」寫法）、`lessonName`、`lessonKeys`、`wordOf`、`sentOf`、`confOf`、`setMsg`、`loadXlsx` | 識字評量、備課分析 | 規則只寫在這裡，**改一處兩個工具都變** |
 | `themes.js`、`themes.css` | `window.Themes`：四主題、貼紙清單與圖、星等、代號、抽貼紙、作答背景 `backdrop`（新圖在 sticker-art.js） | `collect.js`、`scenes.js`、`play.js`、`rewards.js` | |
 | `rewards.js` | `window.Rewards`：頭像、貼紙收藏、`ready`、`award`、`owned`、`hasSession`、`exportAll`/`importAll`、`remove`（刪除一位學生的收藏）、`resetKids`／`afterReset`（清空勾選學生的貼紙，每位被清空的學生記 `resetAt`） | 識字評量各處（頭像）、`collect.js`（發貼紙） | 之後的新工具也可以發貼紙 |
 | `fonts/` | `tw-kai*` 楷書、`bpmf-kai*` 注音字型（依用到的字切成小檔） | 所有頁面 | 跑 `make_kai.py`、`make_bpmf.py`，不要手改 |
@@ -65,7 +66,7 @@
 
 ## 5. 備課分析 `tools/prep/`
 
-`prep.js` 一個檔案：讀 `BOOKS`、部件（`rawParts`）、`FREQ`，算部件排行、生字一覽、字頻；畫面狀態存 localStorage；可匯出 Excel。**不讀、不寫任何學生資料。**
+`prep.js` 一個檔案：讀 `BOOKS`、部件（`Parts`）、`FREQ`，算部件排行、生字一覽、字頻；畫面狀態存 localStorage；可匯出 Excel。**不讀、不寫任何學生資料。**
 
 ## 6. 資料存在哪裡
 
