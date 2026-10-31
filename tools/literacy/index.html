@@ -204,6 +204,7 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
 .krow.head{border:none;padding:0;font-size:13px;color:var(--muted)}
 @media (max-width:620px){.krow{grid-template-columns:52px 1fr 1fr}.krow.head{display:none}}
 .rlist{display:grid;gap:6px;margin:6px 0}.rlist label{display:flex;gap:8px;align-items:center}.rlist small{color:var(--muted)}
+.tlist{display:grid;gap:6px;margin:6px 0}.tlist label{display:flex;gap:8px;align-items:center}.tlist small{color:var(--muted)}
 .arow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-top:1px solid var(--grid);padding-top:8px}.arow .an{flex:1 1 140px;font-weight:600}.arow small{font-weight:400;color:var(--muted)}.arow select{border:2px solid var(--ink);border-radius:10px;padding:4px 8px}
 .codemap{border-collapse:collapse;font-size:14px}.codemap th,.codemap td{border-top:1px solid var(--grid);padding:4px 12px 4px 0;text-align:left}.codemap code{font-family:ui-monospace,Menlo,Consolas,monospace}
 .avedit{border:none;background:none;padding:0;border-radius:50%}
@@ -936,6 +937,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
         <p class="hint adv-only">學生的年級在「學生名單」設定，系統會用年級判斷每一課對這位學生是哪個時期。</p>
         <p class="hint quick-only" id="kidsHintQ">點選要做的學生，最多 4 位輪流。</p>
         <div class="row" id="kids"></div>
+        <p class="note" id="tidyNote" hidden>新學期了：有 <b id="tidyN"></b> 位學生上學期沒有作答紀錄，可以封存。 <button class="linkbtn" data-open="kids">整理名單</button></p>
         <p class="note"><button class="linkbtn" data-open="kids">新增學生或修改年級</button></p>
       </section>
 
@@ -1028,6 +1030,9 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="kTitle">
     <header><h2 id="kTitle">學生名單</h2><button class="ghost" data-close>關閉</button></header>
     <p class="hint" style="margin:0">年級填「今年」的年級，之後每年 8 月系統會自動升一個年級。學生作答時畫面會顯示名字。名字只存在這台電腦，不會上傳。代號由系統自動產生，老師不用管。<b>學生名字不能重複</b>（現在名單和封存區都算）；<b>改名字不會變成另一位學生</b>，評量紀錄和貼紙都會沿用；要新增另一位學生，請用下方「加入」。「本學期安排」是選填，記錄原班、資源班、學習扶助的每週節數與開始日期。</p>
+    <details id="kTidy" style="margin:10px 0"><summary id="kTidySum">整理名單</summary>
+      <p class="hint" style="margin:6px 0">列出<b>上一學期完全沒有作答紀錄</b>的學生（這學期才加入或才取消封存的不列）。系統不會自動封存，請自己勾選；封存後紀錄和貼紙都保留，隨時可以到封存區取消封存。</p>
+      <div id="kTidyBody"></div></details>
     <div class="krow head"><span>頭像</span><span>名字</span><span>年級</span><span></span><span></span><span></span></div>
     <p id="kDup" class="note warn" role="alert" hidden style="margin:8px 0"></p>
     <div id="kTable" style="display:grid;gap:8px"></div>

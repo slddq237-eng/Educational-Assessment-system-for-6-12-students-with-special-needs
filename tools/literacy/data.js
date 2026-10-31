@@ -138,6 +138,7 @@ function deviceType(){
   return coarse ? "平板" : "電腦";
 }
 
+let recordsLoaded = false;   /* records.js 讀完作答紀錄後設成 true（新學期整理名單要等紀錄讀完才能判斷） */
 const DAY = 864e5;
 const today = new Date(); today.setHours(0,0,0,0);
 const iso = d => new Date(d.getTime() - d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
@@ -148,7 +149,7 @@ const md = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()}`;
    用了表裡沒有的名稱，自動檢查會報錯。新增名稱時也寫進 docs/code/architecture.md 第 6 節。
    作答紀錄的 IndexedDB 名稱在 records.js 的 REC_DB（只有它用）。 */
 const KEYS = Object.freeze({
-  settings:"literacy-settings", kids:"literacy-kids", kidsArchived:"literacy-kids-archived", teach:"literacy-teach", wordsets:"literacy-wordsets",
+  settings:"literacy-settings", kids:"literacy-kids", kidsArchived:"literacy-kids-archived", kidsTerm:"literacy-kids-term", teach:"literacy-teach", wordsets:"literacy-wordsets",
   ui:"literacy-ui", preset:"literacy-preset", teacher:"literacy-teacher", pivot:"literacy-pivot", pivots:"literacy-pivots",
   lastBackup:"literacy-lastBackup",
   tablet:"literacy-tablet"   /* sessionStorage：平板作答這個分頁的練習設定 */
