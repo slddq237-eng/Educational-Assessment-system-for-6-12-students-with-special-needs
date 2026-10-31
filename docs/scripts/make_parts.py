@@ -122,17 +122,17 @@ for b in order:
                     if w not in (cell.value or '').split('、'): cell.value = (cell.value + '、' if cell.value else '') + w; updated += 1
                     continue
                 r, has = ws.max_row + 1, bool(parts(c))
-                vals = [c, w, ' '.join(parts(c)) if has else None, (STRUCT.get(D.get(c, '')[:1]) if has else '獨體字'), None, None,
+                vals = [c, w, ' '.join(parts(c)) if has else None, (STRUCT.get(D.get(c, '')[:1]) if has else '獨體字'),
                         ' '.join(deep(c)) if has else None, ('人工（lessons.js）' if c in PARTS else '自動（parts.js）') if has else '—',
                         flags(c) if has else None, None, None, None]
                 for j, v in enumerate(vals, 1):
                     cell, src = ws.cell(r, j, v), ws.cell(r - 1, j)
                     cell.font, cell.alignment, cell.border = copy.copy(src.font), copy.copy(src.alignment), copy.copy(src.border)
-                    if j in (5, 6, 10, 11, 12): cell.fill = green
-                if vals[8]: ws.cell(r, 9).fill = yellow
+                    if j in (8, 9, 10): cell.fill = green   # 綠色＝老師填（2026-10-28 拿掉空的義符、聲符兩欄，改由 A 欄判斷形符、聲符）
+                if vals[6]: ws.cell(r, 7).fill = yellow
                 rows[c] = r; added += 1
 if added or updated:
-    ws.auto_filter.ref = f'A1:L{ws.max_row}'
-    for dv in ws.data_validations.dataValidation: dv.sqref = MultiCellRange(f'K2:K{ws.max_row}')
+    ws.auto_filter.ref = f'A1:{openpyxl.utils.get_column_letter(ws.max_column)}{ws.max_row}'   # 2026-10-28：後面多了 make_parts_columns.py 的三欄
+    for dv in ws.data_validations.dataValidation: dv.sqref = MultiCellRange(f'I2:I{ws.max_row}')
     wb.save(TABLE)
 print(f'parts.js 新增 {len(new)} 個字；部件表新增 {added} 列、{updated} 個舊字補上出現課次')
