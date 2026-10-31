@@ -714,12 +714,18 @@ details.howto{margin:10px 0 0}
 @keyframes bpop{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}15%{transform:translate(-50%,-50%) scale(1.1);opacity:1}25%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0}}
 /* ---------- 結果與紀錄 ---------- */
 /* 結果畫面：每人一格、左右並列（放不下自動換行，手機上一人一列） */
-.res{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+/* 一張卡一張卡置中（只有一位學生時在畫面正中間；多位放不下自動換行，2026-10-31 維護者要求） */
+.res{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
+.res>.rcard{flex:1 1 min(100%,320px);max-width:min(100%,400px);box-sizing:border-box}
 .rcard{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;border:2px solid var(--ink);border-radius:20px;padding:16px 14px;background:var(--card)}
 .rcard b{font-size:22px}
 .rcard .rname2{display:flex;align-items:center;gap:10px}
 .rcard .rname2 .av{--s:56px}
 .rcard .rlabel{font-size:14px;color:var(--muted);margin-top:4px}
+/* 學生的結果卡：一個項目一列，每句話用學生聽得懂的白話（2026-10-31 維護者要求） */
+.rcard .rrows{display:grid;gap:6px;width:100%;margin:2px 0}
+.rcard .rrows>div{background:var(--mint);border-radius:14px;padding:6px 14px;font-size:18px;line-height:1.4}
+.rcard .rrows b{font-size:1.2em;font-variant-numeric:tabular-nums}
 .rcard .rstats{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:2px 0}
 .rcard .rstats span{background:var(--mint);border-radius:999px;padding:2px 12px;font-size:15px;font-variant-numeric:tabular-nums}
 .rcard .cheer2{background:#fff6d6;border:2px dashed #e0b23a;border-radius:14px;padding:8px 12px;font-size:17px;color:#5a4410;margin-top:4px}
@@ -736,11 +742,14 @@ details.howto{margin:10px 0 0}
   #result .tsend{margin-top:8px}
   #result .rcard{padding:12px 12px;gap:4px}
   #result .rcard .sticker{padding:6px 12px}
+  #result .rcard .rrows{gap:4px}
+  #result .rcard .rrows>div{padding:3px 12px;font-size:17px}
+  #result .rcard .big{font-size:34px}
   #result .rcard .sticker svg{width:52px;height:52px}
 }
 /* 很矮的螢幕（手機橫放、矮筆電）：卡片內容左右並排，高度減半 */
 @media (max-height:620px){
-  #result .res{grid-template-columns:repeat(auto-fill,minmax(min(100%,440px),1fr))}
+  #result .res>.rcard{flex-basis:min(100%,440px);max-width:min(100%,560px)}
   #result .rcard{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 14px;padding:8px 12px}
   #result .rcard .rname2{flex:1 1 100%;justify-content:center}
   #result .rcard .rlabel{margin:0}

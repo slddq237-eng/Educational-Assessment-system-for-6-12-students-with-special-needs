@@ -518,6 +518,7 @@ function newItem(it){
   const pickParts = G.goal === "R6";   /* 聽音選部件：聽音，選出全部部件（複選），按「送出」才算作答 */
   const fillPart = G.goal === "R5";    /* 聽音補部件：聽音，畫面上的字被遮住一塊部件，4 選 1 */
   const maskAt = fillPart ? (() => { const l = maskIdxs(it.c); return l[Math.floor(Math.random() * l.length)]; })() : 0;
+  lapTime(it.kid);   /* 把上一題到現在的時間記給上一位學生（結果卡片的「這次玩了多久」，多位學生輪流時每人各自算） */
   G.cur = {it, b, board, opts: board ? board.cells.map(ch => ({ch, type: optType(it.c, ch, it.k)})) : pickParts ? makePartsPickOptions(it.c, it.k) : fillPart ? makeFillOptions(it.c, it.k, maskAt) : (regroup ? makePartsOptions : makeOptions)(it.c, it.k, G.choices),
            maskAt,
            wrong:0, firstPick:null, firstSec:null, shown:[], hintPos:0, teacher:0, reads:new Set(), t0:null, tShown:performance.now(), done:false,
@@ -941,12 +942,19 @@ $("#pQuit").onclick = () => {
 /* =========================================================
    10. 結果畫面
    ========================================================= */
+/* 每位學生各自玩了多久：從他的一題出現，到下一題出現（含答題、過場、打怪獸動畫）；別人的回合不算。換題時呼叫，nextKid＝null 表示整次結束 */
+function lapTime(nextKid){
+  const now = performance.now(), last = G.lap;
+  if(last && G.tally[last.kid]) G.tally[last.kid].playMs = (G.tally[last.kid].playMs || 0) + now - last.t;
+  G.lap = nextKid ? {kid: nextKid, t: now} : null;
+}
 function finish(){
   if(G.over) return;
   G.over = true;   /* 之後還在排隊的出題、換人畫面都會停下來 */
   try { speechSynthesis.cancel(); } catch(e){}
   $("#pTimer").hidden = true; $("#pQuit").textContent = "結束";
   const g = G;
+  lapTime(null);
   if(g.scene){ g.scene.stop(); $("#pScene").hidden = true; $("#pBody").hidden = false; }
   /* 哪些學生做完了：正確率模式＝自己的題目都答完；流暢性模式＝自己那一回合時間到。
      按「結束」提早離開時，沒做完的學生這次的紀錄標成「中途結束」（不列入分析），也不抽貼紙。 */
@@ -961,19 +969,17 @@ function finish(){
   $("#rList").innerHTML = g.kids.map((code, i) => {
     const t = g.tally[code], k = kidBy(code), name = esc(k ? kidShow(k) : code);
     const head = `<div class="rcard" data-kid="${esc(code)}" style="--i:${i}"><b class="rname2">${Rewards.avatarHtml(code)}${name}</b>`;
-    if(!g.done.has(code)) return `${head}<span class="big">沒有做完</span>
-      <span class="sm">這次中途結束，紀錄不列入分析，也沒有貼紙。下次做完就可以抽貼紙喔！</span></div>`;
+    if(!g.done.has(code)) return `${head}<span class="big">這次還沒做完</span>
+      <div class="rrows"><div>做完才可以抽貼紙。</div><div>下次再來一次吧！</div></div></div>`;
     const cheer = lively ? `<div class="cheer2">${esc(cheerLine(g, code))}</div>` : "";
     if(g.mode === "flu"){
       const perMin = Math.round((t.roundCorrect || 0) * 60 / g.limit);
-      return `${head}<span class="rlabel">每分鐘認出</span><span class="big">${perMin} 個</span>
-        <div class="rstats"><span>答對 ${t.roundCorrect || 0} 個</span><span>答錯 ${t.roundWrong || 0} 個</span><span>${LIMITS.find(l => +l[0] === g.limit)[1]}</span></div>
+      return `${head}<span class="rlabel">1 分鐘裡，你認出了</span><span class="big">${perMin} 個字</span>
+        <div class="rrows"><div>答對了 <b>${t.roundCorrect || 0}</b> 個字</div><div>還要再練習的有 <b>${t.roundWrong || 0}</b> 個字</div><div>時間是 <b>${LIMITS.find(l => +l[0] === g.limit)[1]}</b></div></div>
         ${cheer}</div>`;
     }
-    const avg = t.secs.length ? (t.secs.reduce((a, b) => a + b, 0) / t.secs.length).toFixed(1) : "—";
-    return `${head}<span class="rlabel">答對率</span><span class="big">${t.n ? Math.round(t.first / t.n * 100) : 0}%</span>
-      <div class="rstats"><span>第一次就答對 ${t.first} / ${t.n} 題</span><span>答對平均 ${avg} 秒</span></div>
-      ${t.passed > t.first ? `<span class="sm">再試一次後，最後答對 ${t.passed} 題</span>` : ""}
+    return `${head}<span class="rlabel">你第一次就答對了</span><span class="big">${t.first} 題</span>
+      <div class="rrows"><div>這次一共做了 <b>${t.n}</b> 題</div><div>這次玩了 <b>${playTime(t.playMs)}</b></div></div>
       ${cheer}</div>`;
   }).join("") || `<p class="note">這次沒有作答紀錄。</p>`;
   $("#rNote").textContent = (g.kind === "formal" ? "這次是正式評量，做完的結果會納入學習分析。" : "這次是練習，結果另外統計。")
@@ -990,6 +996,11 @@ function finish(){
   if(g.done.size) showTrophy(g, go); else go();
 }
 
+/* 玩了多久，給學生看：不到 1 分鐘「45 秒」，1 分鐘以上「2 分 15 秒」 */
+function playTime(ms){
+  const sec = Math.max(1, Math.round((ms || 0) / 1000));
+  return sec >= 60 ? `${Math.floor(sec / 60)} 分 ${sec % 60} 秒` : `${sec} 秒`;
+}
 /* 一次作答（同一位學生、同一個 session）的成績：第一次就答對幾題、答對平均秒數、每分鐘幾個 */
 function sessionStats(rs){
   const secs = rs.filter(r => r.passed && r.correctSec != null).map(r => r.correctSec);
