@@ -505,6 +505,7 @@ function renderKidSheet(){
   });
   bindAvatarPanel($("#kTable .avpick"), () => { renderKidSheet(); render(); });
   renderKidGroupSheet();
+  renderResetList();
   /* 封存區：取消封存時請老師確認年級（年級是用學年算的，隔很久才回來會一次補算好幾年；留級也要老師自己改） */
   $("#kArchSum").textContent = `封存區（${kidsArchived.length} 位）`;
   $("#kArchBody").innerHTML = kidsArchived.length ? kidsArchived.map((k, i) => `<div class="arow" data-i="${i}">
@@ -553,13 +554,30 @@ function deleteKid(k){
   saveKids(); saveArchived(); saveTeach();
   renderKidSheet(); renderRecSheet(); render();
 }
-/* 重置全部貼紙（2026-10-31 維護者決定）：老師專用，確認視窗寫出會清掉幾張；作答紀錄、頭像不動，救不回來 */
+/* 清空貼紙（2026-10-31 維護者決定）：老師專用，勾選要清空的學生（含封存區），可以只清空特定學生，也可以全選；
+   確認視窗寫出會清掉幾位、幾張；作答紀錄、頭像不動，救不回來 */
+const stickerCount = code => Object.values(Rewards.get(code).stickers || {}).reduce((n, a) => n + a.length, 0);
+const resetPick = new Set();
+function renderResetList(){
+  const all = [...kids, ...kidsArchived], box = $("#resetList"), btn = $("#resetStickers");
+  for(const c of [...resetPick]) if(!all.some(k => k.code === c)) resetPick.delete(c);   /* 刪除或不存在的學生不留著 */
+  box.innerHTML = all.length ? `<label><input type="checkbox" id="resetAllBox" ${resetPick.size === all.length ? "checked" : ""}> <b>全選</b></label>`
+    + all.map(k => `<label><input type="checkbox" data-rk="${esc(k.code)}" ${resetPick.has(k.code) ? "checked" : ""}> ${esc(kidShow(k))}${kidsArchived.includes(k) ? "<small>（封存）</small>" : ""} <small>${stickerCount(k.code)} 張</small></label>`).join("")
+    : `<p class="note" style="margin:0">還沒有學生。</p>`;
+  const sync = () => { const n = resetPick.size; btn.disabled = !n; btn.textContent = n ? `清空勾選的 ${n} 位的貼紙` : "清空勾選學生的貼紙"; };
+  box.querySelectorAll("[data-rk]").forEach(c => c.onchange = () => { c.checked ? resetPick.add(c.dataset.rk) : resetPick.delete(c.dataset.rk); if($("#resetAllBox")) $("#resetAllBox").checked = resetPick.size === all.length; sync(); });
+  if($("#resetAllBox")) $("#resetAllBox").onchange = e => { all.forEach(k => e.target.checked ? resetPick.add(k.code) : resetPick.delete(k.code)); box.querySelectorAll("[data-rk]").forEach(c => c.checked = e.target.checked); sync(); };
+  sync();
+}
 $("#resetStickers").onclick = () => {
-  const all = Rewards.exportAll(), total = all.reduce((n, x) => n + Object.values(x.stickers || {}).reduce((m, a) => m + a.length, 0), 0);
-  const who = all.filter(x => Object.values(x.stickers || {}).some(a => a.length)).length;
-  if(!confirm(`要重置全部學生的貼紙嗎？\n\n會清空 ${who} 位學生共 ${total} 張貼紙。作答紀錄和頭像不會動。清空後救不回來。\n\n• 想保險：請先到「作答紀錄」下載備份。\n• 重置之前的舊平板紀錄再匯入，也不會補發貼紙。`)) return;
-  Rewards.resetAll([...kids, ...kidsArchived].map(k => k.code));
-  $("#resetMsg").textContent = `已清空 ${total} 張貼紙。`;
+  const picked = [...kids, ...kidsArchived].filter(k => resetPick.has(k.code));
+  if(!picked.length) return;
+  const total = picked.reduce((n, k) => n + stickerCount(k.code), 0);
+  const who = picked.length <= 5 ? picked.map(k => `「${kidShow(k)}」`).join("、") : `這 ${picked.length} 位學生`;
+  if(!confirm(`要清空${who}的貼紙嗎？\n\n共 ${picked.length} 位、${total} 張貼紙。作答紀錄和頭像不會動，沒有勾選的學生也不會動。清空後救不回來。\n\n• 想保險：請先到「作答紀錄」下載備份。\n• 清空之前的舊平板紀錄再匯入，也不會補發貼紙。`)) return;
+  Rewards.resetKids(picked.map(k => k.code));
+  resetPick.clear(); renderResetList();
+  $("#resetMsg").textContent = `已清空 ${picked.length} 位學生的 ${total} 張貼紙。`;
   render();
 };
 /* 學生名單的「分組」：每組一列（組名、刪除、全部學生的加入開關） */

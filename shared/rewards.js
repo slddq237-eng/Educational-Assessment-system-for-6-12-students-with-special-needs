@@ -144,7 +144,7 @@ function importAll(list){
     toCodes(y);
     const x = mem[y.code] ? copy(mem[y.code]) : {code:y.code, stickers:{}, log:[]};
     if(!mem[y.code] && y.avatar) x.avatar = y.avatar;
-    /* 重置貼紙之後（resetAll）：比這台電腦的重置更舊的備份，貼紙和記錄不合併（不然重置會被舊備份還原）；
+    /* 清空貼紙之後（resetKids）：比這台電腦的重置更舊的備份，貼紙和記錄不合併（不然重置會被舊備份還原）；
        備份是重置之後才做的，這台電腦現有的貼紙就是重置前的，先清掉再合併 */
     const mine = x.resetAt || "", theirs = y.resetAt || "";
     if(theirs > mine){ x.stickers = {}; x.log = []; x.resetAt = theirs; }
@@ -158,11 +158,11 @@ function importAll(list){
   }
   return n;
 }
-/* 重置全部貼紙（老師專用，2026-10-31）：每位學生的貼紙和領取記錄清空，頭像保留，並記下重置時間 resetAt。
-   codes＝學生名單裡的代號（還沒有收藏資料的學生也要記重置時間）；救不回來 */
-function resetAll(codes){
+/* 清空貼紙（老師專用，2026-10-31）：只清空 codes 裡這幾位學生的貼紙和領取記錄，頭像保留，並記下每位的重置時間 resetAt
+   （還沒有收藏資料的學生也要記）；沒有列在 codes 的學生完全不動；救不回來 */
+function resetKids(codes){
   const at = new Date().toISOString();
-  for(const code of new Set([...Object.keys(mem), ...(codes || [])])){
+  for(const code of new Set(codes || [])){
     const x = copy(get(code)); x.stickers = {}; x.log = []; x.resetAt = at; put(x);
   }
   return at;
@@ -178,7 +178,7 @@ function rename(oldCode, newCode){
 window.Rewards = {
   ready, ANIMALS, animalSvg, avatarHtml, setAvatar, photoFromFile,
   get: code => copy(get(code)), owned, award, hasSession, exportAll, importAll, rename,
-  resetAll, afterReset,
+  resetKids, afterReset,
   remove: code => del(code),   /* 老師刪除一位學生（識字評量，2026-10-31）：貼紙收藏、頭像、領取記錄全部刪掉，救不回來 */
   saved: () => !!db
 };
