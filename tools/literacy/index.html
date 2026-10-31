@@ -687,6 +687,10 @@ details.howto{margin:10px 0 0}
 /* 矮螢幕（手機橫放、矮筆電）場景圖縮小一點，下面的字才不會被擠出螢幕（2026-10-31） */
 @media (max-height:720px){.scn{max-width:calc(44vh * 560 / 360)}.dprog{max-width:calc(46vh * 560 / 360)}}
 @media (max-height:480px){.scn{max-width:calc(38vh * 560 / 360)}.dprog{max-width:calc(40vh * 560 / 360)}.turnav .av{--s:min(18vh,240px)}.ready h2,.turncard h2{font-size:clamp(24px,min(5vw,8vh),48px)}}
+/* 手機橫放：貼紙夥伴縮小、往上靠，場景下面的夥伴才不會被擠出螢幕（2026-10-31） */
+@media (max-height:480px){.pt{--u:var(--pu,clamp(40px,10vh,112px));font-size:12px;white-space:nowrap;width:auto;min-width:calc(var(--u) * 1.5)}.partners{margin-top:-18px}}
+/* 窄螢幕多位學生：頭像排一列、標題在下面橫著排，不要被擠成一條直排（2026-10-31） */
+@media (max-width:760px){.scenecap{flex-wrap:wrap;justify-content:center;text-align:center;gap:6px 10px}#play[data-multi] .scenecap{font-size:clamp(20px,5.5vw,30px)}}
 .dprog .cup{width:clamp(24px,2.4vw,40px);display:block;transform-origin:50% 100%}
 .dprog .cup svg{width:100%;height:auto;display:block;overflow:visible}
 .dprog .liner{fill:#fff;stroke:#d9b3c0;stroke-dasharray:4 3}
