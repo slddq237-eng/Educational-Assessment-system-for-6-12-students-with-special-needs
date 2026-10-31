@@ -5,7 +5,7 @@
 
 ## 4. 資料怎麼存
 
-- 教材：`shared/lessons.js`（BOOKS、WORDS、WORDS_ED、SENT、SENT_ED、PICS、PARTS、CONF、CONF_ED、POLY_ED）。
+- 教材：`shared/lessons.js`（BOOKS、WORDS、WORDS_ED、SENT、SENT_ED、PICS、CONF、CONF_ED、POLY_ED）。
   - 目前課本：翰林 2～6上、南一 2～6上、康軒 1～6上（16 本，都是上學期；翰林 3～6上、南一 4～6上 2026-10-23 加入）。賓果原有的四本都是上學期（2026-10-23 夥伴確認）。
   - 各本課本當初怎麼匯入（語詞、例句、干擾字的來源與數量）：原文在 `history-materials.md`「各本課本的匯入紀錄」；AI 擬定的數量與待確認清單見 `materials.md`。
   - （生字賓果 2026-10-21 已移除，它內嵌的注音字型缺字問題不用再處理。）

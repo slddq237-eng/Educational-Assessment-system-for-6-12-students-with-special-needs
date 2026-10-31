@@ -27,11 +27,11 @@ PARTS_JS, TABLE = 'shared/parts.js', 'docs/materials/parts-table.xlsx'
 # 1. 讀 lessons.js 與 parts.js（用 Node 執行後轉成 JSON）
 JS = r'''
 const fs=require("fs");const o={};
-new Function(require("./docs/scripts/lessons-src.js")()+";Object.assign(this,{BOOKS,PARTS})").call(o);
+new Function(require("./docs/scripts/lessons-src.js")()+";Object.assign(this,{BOOKS})").call(o);
 new Function(fs.readFileSync("shared/parts.js","utf8")+";this.PA=PARTS_AUTO").call(o);
-console.log(JSON.stringify({BOOKS:o.BOOKS,PARTS:o.PARTS,PA:o.PA}));'''
+console.log(JSON.stringify({BOOKS:o.BOOKS,PA:o.PA}));'''
 L = json.loads(subprocess.run(['node', '-e', JS], capture_output=True, text=True, check=True).stdout)
-BOOKS, PARTS, PA = L['BOOKS'], L['PARTS'], dict(L['PA'])
+BOOKS, PA = L['BOOKS'], dict(L['PA'])
 EDITION_ORDER = ['翰林', '南一', '康軒']
 order = sorted(BOOKS, key=lambda b: (EDITION_ORDER.index(BOOKS[b]['edition']) if BOOKS[b]['edition'] in EDITION_ORDER else 99,
                                      BOOKS[b]['grade'] * 2 + (BOOKS[b]['term'] == '下')))
@@ -74,7 +74,7 @@ chars = [c for b in order for n in BOOKS[b]['lessons'] for c in BOOKS[b]['lesson
 new, queue = {}, list(dict.fromkeys(chars))
 while queue:
     c = queue.pop(0)
-    if c in PA or c in new or c in PARTS: continue
+    if c in PA or c in new: continue
     e = expand(c)
     if not e or e == [c]: continue
     new[c] = ' '.join(e)

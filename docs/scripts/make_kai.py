@@ -73,7 +73,7 @@ def book_chars(b):
         for c in les['write'] + les['read']: s += list(S.get(c) or L['SENT'].get(c) or '')   # 例句只在提示出現，排在這課後面
     return ordered(s)
 groups, seen = [], set()
-for g in [pages] + [book_chars(b) for b in order] + [ordered(lessons_src()), ordered(read('shared/parts.js'))]:
+for g in [pages] + [book_chars(b) for b in order] + [ordered(lessons_src()), ordered(read('shared/parts.js')), ordered(read('shared/parts-layers.js'))]:
     g = [c for c in g if c not in seen]; seen |= set(g)
     groups += [g[i:i + CHUNK] for i in range(0, len(g), CHUNK)]
 

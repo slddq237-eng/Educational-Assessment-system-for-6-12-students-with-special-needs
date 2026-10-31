@@ -29,9 +29,9 @@ N_SOUND, N_SHAPE = 6, 6      # 每個字最多列幾個候選
 
 data = json.loads(subprocess.run(['node', '-e', '''
 const fs = require("fs");
-const src = [require("./docs/scripts/lessons-src.js")(), ...["shared/parts.js", "shared/parts-api.js", "shared/bpmf.js"].map(f => fs.readFileSync(f, "utf8"))].join("\\n");
-/* 部件和平台一樣，透過 shared/parts-api.js 的 Parts 讀（人工手動拆法 → 人工 PARTS → 電腦自動，足、酋合回），2026-10-31 步驟 3a */
-new Function("window", src + ";const PT = Object.fromEntries([...new Set([...ALL_LESSON_CHARS, ...Object.keys(PARTS_AUTO)])].map(c => [c, window.Parts.compat(c, \"teach\").parts])); process.stdout.write(JSON.stringify({BOOKS,WORDS,WORDS_ED,CONF,CONF_ED,PT,BPMF_CH}))")({});
+const src = [require("./docs/scripts/lessons-src.js")(), ...["shared/parts.js", "shared/parts-layers.js", "shared/parts-api.js", "shared/bpmf.js"].map(f => fs.readFileSync(f, "utf8"))].join("\\n");
+/* 部件和平台（部件提示、部件重組）一樣，透過 shared/parts-api.js 的 Parts 從第二層開始讀（人工手動 → 電腦自動，沒有再讀第三層），2026-10-31 步驟 3b */
+new Function("window", src + ";const PT = Object.fromEntries([...new Set([...ALL_LESSON_CHARS, ...Object.keys(PARTS_AUTO)])].map(c => [c, (window.Parts.read(c, {from: 2}) || {parts: []}).parts])); process.stdout.write(JSON.stringify({BOOKS,WORDS,WORDS_ED,CONF,CONF_ED,PT,BPMF_CH}))")({});
 '''], capture_output=True, text=True, check=True).stdout)
 BOOKS, CONF, CONF_ED = data['BOOKS'], data['CONF'], data['CONF_ED']
 
