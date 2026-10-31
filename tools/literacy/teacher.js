@@ -83,8 +83,8 @@ function gapBucket(r, type){
 
 /* 依選單篩出這次要分析的紀錄（kidFilter＝false 時不篩學生，全班總表用） */
 function filtered(kidFilter = true){
-  const [a, b] = rangeDates();
-  return records.filter(r => !r.quit
+  const [a, b] = rangeDates(), hid = archivedCodes();   /* 封存的學生不算進分析，全班統計也一樣（2026-10-31） */
+  return records.filter(r => !r.quit && !hid.has(r.kid)
     && (!kidFilter || r.kid === T.kid)
     && (T.kind === "both" || r.kind === T.kind)
     && (!T.goal || r.goal === T.goal)
