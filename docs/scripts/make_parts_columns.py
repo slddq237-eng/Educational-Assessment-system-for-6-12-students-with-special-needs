@@ -93,12 +93,12 @@ if VSHEET not in wb.sheetnames:
     for j, w in enumerate([8, 22, 30, 14], 1): vs.column_dimensions[openpyxl.utils.get_column_letter(j)].width = w
     for c in vs[1]: c.font = copy.copy(ws.cell(1, 1).font); c.fill = copy.copy(ws.cell(1, 1).fill)
 vs = wb[VSHEET]
+chars_of = lambda v: [c for c in str(v) if not re.match(r'[／/、,，;；\s]', c)]   # 一格裡的每個字元算一個，分隔符號和空白略過
 VARIANT = {}
 for r in range(2, vs.max_row + 1):
     p, t = vs.cell(r, 1).value, vs.cell(r, 2).value
-    if p and t:   # 「部件」「對照成」兩欄同一格都可以放多個，用頓號、斜線、逗號或空格分開（例如「忄、⺗」對照成「心」）
-        for q in re.split(r'[／/、,，\s]+', str(p)):
-            if q: VARIANT[norm(q)] = [x for x in re.split(r'[／/、,，\s]+', str(t)) if x]
+    if p and t:   # 「部件」「對照成」兩欄同一格都可以放多個：可以連寫（忄⺗）或用頓號、斜線、逗號、空格分開（忄、⺗）；每個字元算一個部件
+        for q in chars_of(p): VARIANT[norm(q)] = chars_of(t)
 readable = lambda p: norm(p) in HAS_READING or any(x in HAS_READING for x in VARIANT.get(norm(p), []))
 
 # 5. 規則
@@ -181,7 +181,7 @@ note = {'結構': '電腦從 cjkvi-ids 判斷第一層的排列方式；不對�
         '需要檢查': '電腦自動：可能有問題的地方，建議優先看這些列'}
 sv = {}   # 字 → 資料
 bad, stat = [], {'第一層': 0, '第二層': 0, '第三層': 0, '遮': 0}
-unread = {}
+unread, unread_ex = {}, {}
 last = ws.cell(1, 1)
 for j, h in enumerate(H, 1):
     c = ws.cell(1, j); c.font, c.fill, c.alignment, c.border = copy.copy(last.font), copy.copy(last.fill), copy.copy(last.alignment), copy.copy(last.border)
@@ -199,7 +199,8 @@ for r in range(2, ws.max_row + 1):
     l1, why = l1_auto(c)
     if why:
         reasons.append(why)
-        for p in re.findall(r'讀不出聲音的部件 (.*)', why)[0].split('、') if '讀不出聲音' in why else []: unread[p] = unread.get(p, 0) + 1
+        for p in re.findall(r'讀不出聲音的部件 (.*)', why)[0].split('、') if '讀不出聲音' in why else []:
+            unread[p] = unread.get(p, 0) + 1; unread_ex.setdefault(p, []).append(c)
     l2, l3 = l2_auto(c), l3_auto(c)
     if l2 and any(rare(p) for p in l2): reasons.append('第二層含罕用部件，可能顯示成方框')
     if l2 and any(p in STROKES for p in l2): reasons.append('第二層含單一筆畫，可能太細')
@@ -257,6 +258,14 @@ ws.data_validations.dataValidation = []
 for h, items in (('老師修正：結構', STRUCTS), ('第一層狀態', STATUS), ('第二層狀態', STATUS), ('正式評量遮第幾塊（人工手動）', ['1', '2', '3'])):
     dv = DataValidation(type='list', formula1='"' + ','.join(items) + '"', allow_blank=True)
     dv.add(f'{openpyxl.utils.get_column_letter(COL[h])}2:{openpyxl.utils.get_column_letter(COL[h])}{ws.max_row}'); ws.add_data_validation(dv)
+# 讀不出聲音的部件：加進「部首變體對照」頁當候選（「對照成」留空，老師填了才生效；已經在表裡的只更新說明）
+known = {c for r in range(2, vs.max_row + 1) for c in chars_of(vs.cell(r, 1).value or '')}
+for p, n in sorted(unread.items(), key=lambda x: -x[1]):
+    desc = f'電腦找到：第一層有 {n} 個字讀不出聲音（例：{"".join(unread_ex[p][:6])}；U+{ord(p[0]):04X}）。請在「對照成」填有讀音的字，沒有就留空'
+    if p not in known: vs.append([p, None, desc, None])
+    else:
+        for r in range(2, vs.max_row + 1):
+            if p in chars_of(vs.cell(r, 1).value or '') and not vs.cell(r, 2).value: vs.cell(r, 3).value = desc
 wb.save(TABLE)
 print(f'寫入 {len(sv)} 列；有第一層 {stat["第一層"]}、第二層 {stat["第二層"]}、第三層 {stat["第三層"]}、有遮擋規則 {stat["遮"]}')
 if unread: print('第一層讀不出聲音的部件（要不要加進「部首變體對照」頁）：', sorted(unread.items(), key=lambda x: -x[1])[:25])
