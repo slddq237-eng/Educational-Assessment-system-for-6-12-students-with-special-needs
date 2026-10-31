@@ -144,14 +144,31 @@ function importAll(list){
     toCodes(y);
     const x = mem[y.code] ? copy(mem[y.code]) : {code:y.code, stickers:{}, log:[]};
     if(!mem[y.code] && y.avatar) x.avatar = y.avatar;
-    for(const [t, arr] of Object.entries(y.stickers || {})) if((arr || []).length > (x.stickers[t] || []).length) x.stickers[t] = [...arr];
-    const key = l => l.at + l.theme + (l.sticker ?? l.idx);
-    const seen = new Set((x.log || []).map(key));
-    for(const l of y.log || []) if(!seen.has(key(l))) (x.log ||= []).push(l);
+    /* 重置貼紙之後（resetAll）：比這台電腦的重置更舊的備份，貼紙和記錄不合併（不然重置會被舊備份還原）；
+       備份是重置之後才做的，這台電腦現有的貼紙就是重置前的，先清掉再合併 */
+    const mine = x.resetAt || "", theirs = y.resetAt || "";
+    if(theirs > mine){ x.stickers = {}; x.log = []; x.resetAt = theirs; }
+    if(theirs >= mine){
+      for(const [t, arr] of Object.entries(y.stickers || {})) if((arr || []).length > (x.stickers[t] || []).length) x.stickers[t] = [...arr];
+      const key = l => l.at + l.theme + (l.sticker ?? l.idx);
+      const seen = new Set((x.log || []).map(key));
+      for(const l of y.log || []) if(!seen.has(key(l))) (x.log ||= []).push(l);
+    }
     put(x); n++;
   }
   return n;
 }
+/* 重置全部貼紙（老師專用，2026-10-31）：每位學生的貼紙和領取記錄清空，頭像保留，並記下重置時間 resetAt。
+   codes＝學生名單裡的代號（還沒有收藏資料的學生也要記重置時間）；救不回來 */
+function resetAll(codes){
+  const at = new Date().toISOString();
+  for(const code of new Set([...Object.keys(mem), ...(codes || [])])){
+    const x = copy(get(code)); x.stickers = {}; x.log = []; x.resetAt = at; put(x);
+  }
+  return at;
+}
+/* 這個時間（作答紀錄的 at）在這位學生重置貼紙之後嗎：重置前的舊平板紀錄匯入時不再補發貼紙 */
+const afterReset = (code, at) => { const t = (mem[code] || {}).resetAt; return !t || !at || at > t; };
 /* 老師在學生名單改了代號：收藏跟著搬過去 */
 function rename(oldCode, newCode){
   if(!mem[oldCode] || mem[newCode]) return;
@@ -161,6 +178,7 @@ function rename(oldCode, newCode){
 window.Rewards = {
   ready, ANIMALS, animalSvg, avatarHtml, setAvatar, photoFromFile,
   get: code => copy(get(code)), owned, award, hasSession, exportAll, importAll, rename,
+  resetAll, afterReset,
   remove: code => del(code),   /* 老師刪除一位學生（識字評量，2026-10-31）：貼紙收藏、頭像、領取記錄全部刪掉，救不回來 */
   saved: () => !!db
 };

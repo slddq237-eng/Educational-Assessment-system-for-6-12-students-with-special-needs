@@ -95,7 +95,7 @@ function importStickers(recs){
   let n = 0;
   for(const r of recs){
     const f = r.rewardCode && !r.quit ? Themes.findCode(r.rewardCode) : null;
-    if(!f || Rewards.hasSession(r.kid, r.session)) continue;
+    if(!f || Rewards.hasSession(r.kid, r.session) || !Rewards.afterReset(r.kid, r.at)) continue;   /* 老師重置貼紙之前的紀錄不再補發 */
     Rewards.award(r.kid, f.theme, {tool:"識字評量（平板）", session:r.session, sticker:r.rewardCode}); n++;
   }
   return n;

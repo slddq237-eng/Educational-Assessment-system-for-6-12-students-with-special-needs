@@ -56,7 +56,7 @@
 | `freq.js` | `FREQ`（字→排名） | 識字評量（常用字、字頻優先、高字頻）、備課分析 | 從原始檔重新產生 |
 | `common.js` | `esc`（防止文字變成程式碼）、`BOOK_ORDER`、`bookName`、`gradeTerm`（「二上」「六下」寫法）、`lessonName`、`lessonKeys`、`wordOf`、`sentOf`、`confOf`、`rawParts`、`partsSource`、`setMsg`、`loadXlsx` | 識字評量、備課分析 | 規則只寫在這裡，**改一處兩個工具都變** |
 | `themes.js`、`themes.css` | `window.Themes`：四主題、貼紙清單與圖、星等、代號、抽貼紙、作答背景 `backdrop`（新圖在 sticker-art.js） | `collect.js`、`scenes.js`、`play.js`、`rewards.js` | |
-| `rewards.js` | `window.Rewards`：頭像、貼紙收藏、`ready`、`award`、`owned`、`hasSession`、`exportAll`/`importAll`、`remove`（刪除一位學生的收藏） | 識字評量各處（頭像）、`collect.js`（發貼紙） | 之後的新工具也可以發貼紙 |
+| `rewards.js` | `window.Rewards`：頭像、貼紙收藏、`ready`、`award`、`owned`、`hasSession`、`exportAll`/`importAll`、`remove`（刪除一位學生的收藏）、`resetAll`／`afterReset`（重置全部貼紙，每位學生記 `resetAt`） | 識字評量各處（頭像）、`collect.js`（發貼紙） | 之後的新工具也可以發貼紙 |
 | `fonts/` | `tw-kai*` 楷書、`bpmf-kai*` 注音字型（依用到的字切成小檔） | 所有頁面 | 跑 `make_kai.py`、`make_bpmf.py`，不要手改 |
 
 ## 4. 識字評量 `tools/literacy/`
