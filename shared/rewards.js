@@ -160,6 +160,8 @@ function rename(oldCode, newCode){
 
 window.Rewards = {
   ready, ANIMALS, animalSvg, avatarHtml, setAvatar, photoFromFile,
-  get: code => copy(get(code)), owned, award, hasSession, exportAll, importAll, rename, saved: () => !!db
+  get: code => copy(get(code)), owned, award, hasSession, exportAll, importAll, rename,
+  remove: code => del(code),   /* 老師刪除一位學生（識字評量，2026-10-31）：貼紙收藏、頭像、領取記錄全部刪掉，救不回來 */
+  saved: () => !!db
 };
 })();

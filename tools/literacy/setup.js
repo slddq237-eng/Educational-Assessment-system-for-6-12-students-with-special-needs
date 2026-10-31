@@ -501,7 +501,7 @@ function renderKidSheet(){
       state.kids.delete(k.code); kids.splice(+r.dataset.i, 1); k.archivedAt = iso(new Date()); kidsArchived.push(k);
       saveKids(); saveArchived(); renderKidSheet(); render();
     };
-    r.querySelector("[data-del]").onclick = () => { state.kids.delete(k.code); kids.splice(+r.dataset.i, 1); saveKids(); renderKidSheet(); render(); };
+    r.querySelector("[data-del]").onclick = () => deleteKid(k);
   });
   bindAvatarPanel($("#kTable .avpick"), () => { renderKidSheet(); render(); });
   renderKidGroupSheet();
@@ -510,9 +510,10 @@ function renderKidSheet(){
   $("#kArchBody").innerHTML = kidsArchived.length ? kidsArchived.map((k, i) => `<div class="arow" data-i="${i}">
     <span class="an">${esc(k.name || k.code)}${k.archivedAt ? `<small>（${esc(k.archivedAt)} 封存）</small>` : ""}</span>
     <label>回來時的年級 <select data-ug aria-label="${esc(k.name || k.code)}取消封存後的年級">${GRADES.map((g, j) => `<option value="${j+1}" ${kidGrade(k) === j+1 ? "selected" : ""}>${g}年級</option>`).join("")}</select></label>
-    <button class="chip" data-unarch>取消封存</button></div>`).join("") : `<p class="note" style="margin:0">沒有封存的學生。</p>`;
+    <button class="chip" data-unarch>取消封存</button><button class="chip" data-adel>刪除</button></div>`).join("") : `<p class="note" style="margin:0">沒有封存的學生。</p>`;
   $("#kArchBody").querySelectorAll(".arow").forEach(r => {
     const k = kidsArchived[+r.dataset.i];
+    r.querySelector("[data-adel]").onclick = () => deleteKid(k);
     r.querySelector("[data-unarch]").onclick = () => {
       const dup = kids.find(x => x.name && x.name === k.name);
       if(dup){ alert(`現在名單裡已經有一位叫「${k.name}」的學生了，學生名字不能重複。\n\n請先把現在名單裡的那位改名（或把他封存），再取消封存。`); return; }
@@ -534,6 +535,23 @@ function renderKidSheet(){
       saveKids(); renderKidSheet(); render();
     });
   });
+}
+/* 刪除一位學生（2026-10-31 維護者決定）：連同作答紀錄、貼紙和頭像、分組、各課個別教學日期、個別提示全部刪掉，救不回來。
+   現在名單和封存區的學生都用這個。不再上課但想留著紀錄，請用「封存」。
+   已經下載的舊備份檔不在這台電腦上，之後再還原，這位學生會回來（confirm 裡有提醒）。 */
+function deleteKid(k){
+  const code = k.code, mine = records.filter(r => r.kid === code);
+  const stickers = Object.values(Rewards.get(code).stickers || {}).reduce((n, a) => n + a.length, 0);
+  if(!confirm(`要刪除「${kidShow(k)}」嗎？\n\n會同時刪除：${mine.length} 筆作答紀錄、${stickers} 張貼紙和頭像、分組與個別教學日期。刪除後救不回來。\n\n• 不再上課、但想留著紀錄：請按「取消」，改用「封存」。\n• 想保險：請先到「作答紀錄」下載備份。已經下載過的舊備份檔，之後再還原的話，這位學生會回來。`)) return;
+  removeRecords(mine);
+  Rewards.remove(code);
+  saveGroups(getGroups().map(g => ({...g, kids: g.kids.filter(c => c !== code)})));
+  for(const t of Object.values(teach)) if(t && t.kids) delete t.kids[code];
+  delete state.kidHints[code]; state.kids.delete(code);
+  if(openPlan === code) openPlan = null; if(openAv === code) openAv = null;
+  for(const list of [kids, kidsArchived]){ const i = list.findIndex(x => x.code === code); if(i >= 0) list.splice(i, 1); }
+  saveKids(); saveArchived(); saveTeach();
+  renderKidSheet(); renderRecSheet(); render();
 }
 /* 學生名單的「分組」：每組一列（組名、刪除、全部學生的加入開關） */
 function renderKidGroupSheet(){
