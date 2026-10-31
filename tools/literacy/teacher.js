@@ -32,6 +32,8 @@ const VIEWS = [["time","依時間"],["lesson","依課別"],["phase","依前後�
 const RANGES = [["term","本學期"],["last","上學期"],["all","全部"],["custom","自訂日期"]];
 const KINDS_F = [["formal","正式評量"],["practice","練習"],["both","全部"]];
 const PHASE_ORDER = [...PREPOST, "未標記"];
+/* 聽音補部件（R5）、聽音選部件（R6）選的是部件，不是字：不納入以「字」為單位的搞混分析和亂猜比較 */
+const isPartsGoal = r => r.goal === "R5" || r.goal === "R6";
 const ETYPES = ["同詞易混","同音","形近","同部件","課文字","其他字","少選","選到干擾部件"];   /* 同部件只出現在目標 4-1 部件重組 */
 const GAP_BUCKETS = {
   after: {name:"教學後天數", what:"該課教學結束到這次評量隔幾天", list:["教學結束前或沒填日期","0～6 天","7～13 天","14～29 天","30 天以上"]},
@@ -179,7 +181,7 @@ function slowChars(rs){
   return detailTable([["字", r => r.char, true], ["詞語", r => r.word], ["課次", r => r.lesson], ["出現", r => r.n], ["正確率", r => `${r.acc}%`], ["平均反應", r => `${r.v} 秒`], ["第一次 → 最近一次", r => r.span]], rows);
 }
 function confusedChars(rs){
-  const wrong = rs.filter(r => !r.firstCorrect && r.firstPick && r.goal !== "R6");   /* 聽音選部件選的是部件，不是字，不算在「容易搞混的字」 */
+  const wrong = rs.filter(r => !r.firstCorrect && r.firstPick && !isPartsGoal(r));   /* 聽音選部件選的是部件，不是字，不算在「容易搞混的字」 */
   if(!wrong.length) return `<p class="note" style="margin:0">還沒有選錯的紀錄。</p>`;
   const g = groupBy(wrong, r => `${r.char}→${r.firstPick}`);
   const rows = [...g].map(([k, l]) => { const [c, p] = k.split("→"), ty = groupBy(l.filter(r => r.errorType), r => r.errorType), top = [...ty].sort((a, b) => b[1].length - a[1].length)[0];
@@ -682,7 +684,7 @@ function charStats(rs){
   const by = groupBy(rs, r => r.char);
   return [...by].map(([c, list]) => {
     const wrong = list.filter(r => !r.firstCorrect), conf = {};
-    wrong.forEach(r => { if(r.firstPick && r.goal !== "R6") conf[r.firstPick] = (conf[r.firstPick] || 0) + 1; });
+    wrong.forEach(r => { if(r.firstPick && !isPartsGoal(r)) conf[r.firstPick] = (conf[r.firstPick] || 0) + 1; });
     const top = Object.entries(conf).sort((a, b) => b[1] - a[1]).slice(0, 3);
     const r0 = list[list.length - 1];
     return {char:c, kid:r0.kid, word:r0.word, lesson:lessonLabel(key(r0.book, r0.lesson)), n:list.length, wrong:wrong.length,
@@ -694,7 +696,7 @@ function charStats(rs){
 function chanceOf(wrong){
   const exp = {};
   wrong.forEach(r => {
-    if(r.goal === "R6") return;   /* 聽音選部件的選項是部件、錯法是少選或選到干擾部件，不拿亂猜比較 */
+    if(isPartsGoal(r)) return;   /* 聽音選部件的選項是部件、錯法是少選或選到干擾部件，不拿亂猜比較 */
     const opts = [...(r.options || "")].filter(x => x !== r.char);
     if(!opts.length) return;
     opts.forEach(x => {
@@ -750,7 +752,7 @@ const LIST_VIEWS = {
       const v = g.has(t) ? g.get(t).length : 0, e = exp[t] || 0;
       return {label:typeName(t), v, n:v, share:pct(v, wrong.length), chance: expAll ? pct(e, expAll) : null, ratio: e ? Math.round(v / e * 10) / 10 : null};
     });
-    const conf = {}; wrong.filter(r => r.goal !== "R6").forEach(r => { const k = `${r.char}→${r.firstPick}`; conf[k] = (conf[k] || 0) + 1; });
+    const conf = {}; wrong.filter(r => !isPartsGoal(r)).forEach(r => { const k = `${r.char}→${r.firstPick}`; conf[k] = (conf[k] || 0) + 1; });
     const pairs = Object.entries(conf).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, n]) => k.replace("→", " 選成 ") + `（${n} 次）`).join("、");
     const top = rows.slice().sort((a, b) => b.v - a.v)[0];
     /* 特別容易搞混的類別：至少 3 次、而且實際比例是亂猜會佔的 1.5 倍以上（倍數只拿來判斷，不顯示） */
@@ -874,7 +876,7 @@ const classWrong = (k, rs) => [...groupBy(rs, r => r.char)].map(([c, l]) => ({c,
   .sort((a, b) => b.w - a.w || a.n - b.n).slice(0, CLASS_TOP).map(x => `${charLink(x.c, k.code)}<small> 錯 ${x.w} 次・${pct(x.n - x.w, x.n)}%</small>`).join("　");
 const classSlow = (k, rs) => [...groupBy(rs, r => r.char)].map(([c, l]) => ({c, v: avg(l.filter(r => r.passed && typeof r.correctSec === "number").map(r => r.correctSec))})).filter(x => x.v != null)
   .sort((a, b) => b.v - a.v).slice(0, CLASS_TOP).map(x => `${charLink(x.c, k.code)}<small> ${x.v} 秒</small>`).join("　");
-const classConfused = (k, rs) => [...groupBy(rs.filter(r => !r.firstCorrect && r.firstPick && r.goal !== "R6"), r => `${r.char}→${r.firstPick}`)].map(([key, l]) => ({key, n: l.length}))
+const classConfused = (k, rs) => [...groupBy(rs.filter(r => !r.firstCorrect && r.firstPick && !isPartsGoal(r)), r => `${r.char}→${r.firstPick}`)].map(([key, l]) => ({key, n: l.length}))
   .sort((a, b) => b.n - a.n).slice(0, CLASS_TOP).map(x => { const [c, p] = x.key.split("→"); return `${charLink(c, k.code)}<small>→${esc(p)}（${x.n} 次）</small>`; }).join("　");
 function renderClass(){
   const withData = kidsWithData(), sel = pickedKids(), picked = withData.filter(k => sel.includes(k.code));

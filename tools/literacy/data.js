@@ -18,8 +18,28 @@ function partsOf(c){
 }
 /* 這個評量目標「不出題」的字（2026-10-31 維護者決定）：部件重組（R4）要有部件可以重組，拆不開的字（獨體字等）沒有部件，所以不出；其他目標都出。
    出題、算題數、設定畫面的提醒都用它（play.js 的 testChars、setup.js 的 lessonSize 和 extraNote） */
+/* 聽音補部件（R5，2026-10-31）：畫面上的字被遮住第一層的一塊部件。遮擋的位置是「結構的預設位置」（占字格的比例 [左, 上, 右, 下]），
+   個別字遮得不準之後再微調（路線圖步驟 4d）。第一層從 Parts.read(c, {from: 1}) 讀，要有第一層、而且有遮擋位置的字才出：
+   左右、上下、左中右、上中下：每一塊都能遮；各種包圍：只遮裡面（第 2 塊）。窄的部首（氵扌亻…）遮擋範圍縮小，才不會蓋到旁邊的部件 */
+const MASK_NARROW_LEFT = new Set([..."氵扌亻忄礻衤糹言金犭彳阝歹"]), MASK_NARROW_RIGHT = new Set([..."刂卩攵"]);
+const MASK_SHORT_TOP = new Set([..."艹宀⺮亠冖爫罒𠂉"]), MASK_SHORT_BOTTOM = new Set([..."心灬皿儿廾"]);
+const MASK_INNER = {左上包圍:[.3,.3,.98,.98], 左下包圍:[.28,.02,.98,.7], 右上包圍:[.02,.3,.7,.98], 上方包圍:[.2,.3,.8,.98], 下方包圍:[.2,.02,.8,.7], 左方包圍:[.3,.1,.98,.9], 全包圍:[.22,.22,.78,.78]};
+function maskBox(c, idx){
+  const r = Parts.read(c, {from: 1}), ps = r && r.layer === 1 ? r.parts : null, st = Parts.struct(c);
+  if(!ps) return null;
+  const n = ps.length;
+  if(st.includes("包圍")) return idx === 2 && n === 2 ? MASK_INNER[st] || null : null;
+  if(st === "左右" && n === 2){ const w = MASK_NARROW_LEFT.has(ps[0]) ? .34 : MASK_NARROW_RIGHT.has(ps[1]) ? .66 : .5; return idx === 1 ? [.02, .02, w + .03, .98] : idx === 2 ? [w - .03, .02, .98, .98] : null; }
+  if(st === "上下" && n === 2){ const h = MASK_SHORT_TOP.has(ps[0]) ? .36 : MASK_SHORT_BOTTOM.has(ps[1]) ? .62 : .5; return idx === 1 ? [.02, .02, .98, h + .03] : idx === 2 ? [.02, h - .03, .98, .98] : null; }
+  if((st === "左中右" || st === "上中下") && n === 3 && idx >= 1 && idx <= 3){
+    const a = (idx - 1) / 3 + (idx > 1 ? -.02 : .02), z = idx / 3 + (idx < 3 ? .02 : -.02);
+    return st === "左中右" ? [a, .02, z, .98] : [.02, a, .98, z];
+  }
+  return null;
+}
+const maskIdxs = c => { const r = Parts.read(c, {from: 1}); return r && r.layer === 1 ? r.parts.map((_, i) => i + 1).filter(i => maskBox(c, i)) : []; };
 const R6_MAX_PARTS = 5;   /* 聽音選部件：部件超過 5 個的字不出（要選的部件太多，選項會擠不下；2026-10-31 課本生字有 36 個） */
-const goalSkips = (c, goal = state.goal) => goal === "R4" ? !partsOf(c) : goal === "R6" ? !partsOf(c) || partsOf(c).length > R6_MAX_PARTS : false;
+const goalSkips = (c, goal = state.goal) => goal === "R4" ? !partsOf(c) : goal === "R5" ? !maskIdxs(c).length : goal === "R6" ? !partsOf(c) || partsOf(c).length > R6_MAX_PARTS : false;
 /* 部件提示對拆不開的字：黑圓圈遮住字的中心、只露出旁邊的樣子（2026-10-31，取代以前打亂旋轉的切塊；圓圈直徑約字寬的 0.5 倍，維護者 2026-10-31 看過 0.4、0.5、0.6 倍的截圖後選的）。
    蓋住中心後剩下的筆畫太少、認不出字形的字，不給這種提示，系統自動跳到下一個提示。
    用全字庫正楷體畫出 111 個拆不開的字，看截圖挑出認不出來的：一、入、人、八（「入」「人」「八」蓋住後都只剩兩撇，看起來一樣） */
@@ -37,7 +57,7 @@ const GOALS = [
   {id:"R2", group:"識字", name:"看字選圖",  what:"看字或語詞，點出正確的圖片（形 ↔ 義）", off:"準備中"},
   {id:"R3", group:"識字", name:"聽音選字",  what:"聽「努力的努」，從形近字、同音字、同詞字中選出目標字（形 ↔ 音）", img:"img/goal-3.jpg"},
   {id:"R4", group:"識字", name:"部件重組",  what:"看拆開的部件，選出組成的字", img:"img/goal-4-1.jpg"},
-  {id:"R5", group:"識字", name:"聽音補部件", what:"聽音，畫面給一半部件，選出另一半（單選）", off:"準備中"},
+  {id:"R5", group:"識字", name:"聽音補部件", what:"聽音，畫面上的字被遮住一塊部件，選出被遮的部件（4 選 1）", practiceOnly:"只有練習"},
   {id:"R6", group:"識字", name:"聽音選部件", what:"聽音，從一堆部件中選出這個字的全部部件，再按「送出」（複選）", practiceOnly:"只有練習"},
   {id:"R7", group:"識字", name:"看句子選字", what:"看句子，選出適合的字；「念句子」放在提示", off:"準備中"},
   {id:"W1", group:"寫字", name:"看注音寫國字", what:"看注音寫出國字；紙筆作答、老師登錄", off:"準備中"},
@@ -98,7 +118,7 @@ const sharedBingo = () => coopPossible() && playNow() === "bingo";   /* 多位�
 function playWhy(id){
   if(id === "color") return "";
   if(state.mode === "flu") return "流暢性模式不能用";
-  if(id === "bingo") return state.goal === "R6" ? "聽音選部件的答案是部件，不能用賓果卡" : state.answer === "splitturn" ? "分區輪流之後再支援賓果" : "";
+  if(id === "bingo") return state.goal === "R6" || state.goal === "R5" ? "答案是部件，不能用賓果卡" : state.answer === "splitturn" ? "分區輪流之後再支援賓果" : "";
   return "";
 }
 /* 這次實際用的玩法：選的不能用時，改用第一個能用的 */
@@ -320,6 +340,7 @@ const HINT_UNFIT = {
   "R1":  {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"},
   "R2":  {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"},
   "R4":  {parts:"題目本身就是部件", sound:"會唸出答案的讀音，部件重組不唸題目"},
+  "R5":  {parts:"答案就是部件之一", mask:"畫面已經是遮住的字", shape:"畫面已經有這個字"},
   "R6":  {parts:"答案就是部件"}
 };
 const unfitWhy = (goal, h) => (HINT_UNFIT[goal] || {})[h] || "";
@@ -331,7 +352,7 @@ function current(){
   const noHelp = flu || formal;
   return {
     formal, flu, noHelp,
-    choices: state.goal === "R6" ? "parts" : formal || flu ? settings.choices : playNow() === "bingo" ? "bingo" : state.pChoices,   /* 聽音選部件的選項數由部件數決定 */
+    choices: state.goal === "R6" ? "parts" : state.goal === "R5" ? "4" : formal || flu ? settings.choices : playNow() === "bingo" ? "bingo" : state.pChoices,   /* 聽音選部件的選項數由部件數決定 */
     hints: noHelp ? [] : fitHints(state.goal, HINT_ORDER.filter(h => state.pHints.has(h))),
     rule: noHelp ? null : state.pRule
   };
