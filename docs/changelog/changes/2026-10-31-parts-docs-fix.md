@@ -1,5 +1,5 @@
 # 部件讀取順序的文件補齊（#179 收尾）
 - 日期：2026-10-31
 - 動到哪裡：文件、部件表產生程式的說明文字
-- 改了什麼：`analysis-design.md`「部件來源」、`materials.md` 的使用順序與「部件資料的狀況」（原本一整行太長，拆成幾條，內容不刪）、`make_parts_columns.py` 開頭說明，改成現在「依用途先讀人工手動拆法」的讀取順序；`2026-10-28-parts-nie.md` 補上躡、擤、敷後來改填 B 人工手動的說明；舊說法搬到 `history/history-materials.md`
+- 改了什麼：`analysis-design.md`「部件來源」、`materials.md` 的使用順序與「部件資料的狀況」（原本一整行太長，拆成幾條，內容不刪）、`make_parts_columns.py` 開頭說明，改成現在「依用途先讀人工手動拆法」的讀取順序；`2026-10-28-parts-nie.md` 補上躡、擤、敷後來改填 B 人工手動的說明；舊說法搬到 `docs/history/history-materials.md`
 - 想法或決定的變化：沒有，只是讓文件跟上程式
