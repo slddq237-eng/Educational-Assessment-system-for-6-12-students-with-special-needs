@@ -3,8 +3,9 @@
 
 新增課本（改了 shared/lessons.js）之後執行一次：
   shared/parts.js        只「新增」還沒有拆法的字（新字＋拆出來的部件再往下拆），原有內容一個字都不改
-  docs/materials/parts-table.xlsx  新字加在最後面；原本就有的字，在「出現課次」補上新課本的課次；老師填的綠色欄位不動
+  docs/materials/parts-table.xlsx  新字加在最後面（只寫字和出現課次）；原本就有的字，在「出現課次」補上新課本的課次；老師填的綠色欄位不動
 再執行一次不會有任何變化（已經有的就跳過）。
+執行完要接著跑 make_parts_columns.py：結構、三層拆法、遮擋、需要檢查和 shared/parts-layers.js 都由它產生。
 
 需要：Python 3、openpyxl（pip install openpyxl）、Node.js
 需要先下載（不放進 repo）：cjkvi-ids 的 ids.txt  https://github.com/cjkvi/cjkvi-ids（衍生自 CHISE，GPLv2 或更新版）
@@ -14,12 +15,11 @@
 拆法規則（和 2026-10-20 第一次產生 parts.js 時相同；拿當時的 1,256 個字重算，1,229 個完全一致）：
   1. 每個字優先用台灣字形（[T]）的拆法；沒有標地區就用第一種。
   2. 拆出來的部件如果是罕用字（擴充區 A 以後），再往下拆成常見部件。
-  3. 資料庫裡打不出來的部分（帶圈數字、片假名等代用符號）略去，所以少數字只拆出一部分，部件表會標黃色提醒檢查。
+  3. 資料庫裡打不出來的部分（帶圈數字、片假名等代用符號）略去，所以少數字只拆出一部分（部件表「需要檢查」欄會提醒）。
 """
 import copy, json, os, re, subprocess, sys
 import openpyxl
 from openpyxl.styles import PatternFill
-from openpyxl.worksheet.cell_range import MultiCellRange
 
 IDS = sys.argv[1]
 PARTS_JS, TABLE = 'shared/parts.js', 'docs/materials/parts-table.xlsx'
@@ -51,9 +51,6 @@ for line in open(IDS, encoding='utf8'):
         pick = plain[0] if plain else re.sub(r'\[\w+\]$', '', f[2])
     D[f[1]] = pick
 IDC = set(chr(c) for c in range(0x2FF0, 0x2FFC))
-STRUCT = {'⿰': '左右', '⿱': '上下', '⿲': '左中右', '⿳': '上中下', '⿴': '全包圍', '⿵': '上方包圍', '⿶': '下方包圍',
-          '⿷': '左方包圍', '⿸': '左上包圍', '⿹': '右上包圍', '⿺': '左下包圍', '⿻': '交疊'}
-STROKES = set('一丨丿丶乀乚𠃌乛亅𠄌㇀㇇㇉乁𡿨𠃊𠃋𠂆')
 rare = lambda c: 0x3400 <= ord(c) <= 0x4DBF or ord(c) >= 0x20000
 junk = lambda x: re.match(r'[①-⓿゠-ヿ　-〿]', x)
 
@@ -89,28 +86,12 @@ if new:
 PA.update(new)
 
 # 4. 補部件表
-def parts(c): return (PARTS.get(c) or PA.get(c) or '').split()
-def deep(c, seen=None):
-    out = []
-    for p in parts(c):
-        if p in out: continue
-        out.append(p)
-        if p != c: out += [q for q in deep(p) if q not in out]
-    return out
-def flags(c):
-    f, raw, ps = [], D.get(c, ''), parts(c)
-    if re.search(r'&[^;]+;|[①-⓿゠-ヿ]', raw): f.append('只拆出部分部件')
-    if len(ps) == 1: f.append('只有一個部件')
-    if any(rare(p) for p in ps): f.append('含罕用部件，可能顯示成方框')
-    if any(p in STROKES for p in ps): f.append('拆出單一筆畫，可能太細')
-    return '；'.join(f) or None
 def where(b, n, read):   # 例如「康軒5上第3課」；第 0 課（課前單元）用單元名稱，例如「康軒1上真簡單」
     les = BOOKS[b]['lessons'][n]
     return f"{BOOKS[b]['edition']}{BOOKS[b]['grade']}{BOOKS[b]['term']}" + (les.get('title') or '課前單元' if n == '0' else f'第{n}課') + ('(認讀)' if read else '')
 
 wb = openpyxl.load_workbook(TABLE); ws = wb['生字部件']
 rows = {ws.cell(r, 1).value: r for r in range(2, ws.max_row + 1)}
-yellow, green = PatternFill('solid', fgColor='FBF1DC'), PatternFill('solid', fgColor='E4F3EC')
 added = updated = 0
 for b in order:
     for n, les in BOOKS[b]['lessons'].items():
@@ -121,18 +102,12 @@ for b in order:
                     cell = ws.cell(rows[c], 2)
                     if w not in (cell.value or '').split('、'): cell.value = (cell.value + '、' if cell.value else '') + w; updated += 1
                     continue
-                r, has = ws.max_row + 1, bool(parts(c))
-                vals = [c, w, ' '.join(parts(c)) if has else None, (STRUCT.get(D.get(c, '')[:1]) if has else '獨體字'),
-                        ' '.join(deep(c)) if has else None, ('人工（lessons.js）' if c in PARTS else '自動（parts.js）') if has else '—',
-                        flags(c) if has else None, None, None, None]
-                for j, v in enumerate(vals, 1):
+                r = ws.max_row + 1   # 2026-10-31 部件表改成三層欄位：新列只寫字和出現課次，其他欄位由 make_parts_columns.py 重算
+                for j, v in enumerate([c, w], 1):
                     cell, src = ws.cell(r, j, v), ws.cell(r - 1, j)
                     cell.font, cell.alignment, cell.border = copy.copy(src.font), copy.copy(src.alignment), copy.copy(src.border)
-                    if j in (8, 9, 10): cell.fill = green   # 綠色＝老師填（2026-10-28 拿掉空的義符、聲符兩欄，改由 A 欄判斷形符、聲符）
-                if vals[6]: ws.cell(r, 7).fill = yellow
                 rows[c] = r; added += 1
 if added or updated:
-    ws.auto_filter.ref = f'A1:{openpyxl.utils.get_column_letter(ws.max_column)}{ws.max_row}'   # 2026-10-28：後面多了 make_parts_columns.py 的三欄
-    for dv in ws.data_validations.dataValidation: dv.sqref = MultiCellRange(f'I2:I{ws.max_row}')
+    ws.auto_filter.ref = f'A1:{openpyxl.utils.get_column_letter(ws.max_column)}{ws.max_row}'   # 篩選範圍、下拉選單的範圍由 make_parts_columns.py 重設
     wb.save(TABLE)
 print(f'parts.js 新增 {len(new)} 個字；部件表新增 {added} 列、{updated} 個舊字補上出現課次')
