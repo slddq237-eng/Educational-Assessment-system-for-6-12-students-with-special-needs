@@ -64,7 +64,7 @@
 | 檔案 | 節 | 做什麼 | 主要對外名稱（別的檔案會用） |
 |---|---|---|---|
 | `data.js` | 1～3 | 基本設定與選項表（目標、提示、玩法）、存讀 localStorage、學生名單（`newKidCode` 產生新學生的隨機代號，2026-10-31；`kidLabel` 名字不重複就只顯示名字；封存名單 `kidsArchived`、`knownKid`；名字不能重複 `nameTaken`）與分組（`getGroups`／`saveGroups`，存在 `literacy-teacher` 的 `groups`）、教學日期與前後測（`daysAfterEnd`、`PREPOST`）、紀錄格式版本 | `state`、`settings`、`kids`、`teach`、`teachFor`、`daysAfterEnd`、`PREPOST`、`key`、`iso`、`today`、`RECORD_FORMAT`、`HINT_UNFIT`、`fitHints`、`partsOf` |
-| `setup.js` | 4～5 | 設定畫面（快速開始、四個步驟、正式評量的前測／後測按鈕 `renderPrepost`）、學生名單（新增、封存、`deleteKid` 刪除學生連同紀錄與貼紙）／教學日期／細部設定面板 | `render()`（任何設定改變都呼叫）、`setUi`、`splitKey`、`rtiDays`、`openSheet` |
+| `setup.js` | 4～5 | 設定畫面（快速開始、四個步驟、正式評量的前測／後測按鈕 `renderPrepost`）、學生名單（新增、封存、`deleteKid` 刪除學生連同紀錄與貼紙、新學期 `renderTidy` 整理名單）／教學日期／細部設定面板 | `render()`（任何設定改變都呼叫）、`setUi`、`splitKey`、`rtiDays`、`openSheet` |
 | `records.js` | 6～7 | 作答紀錄存取（IndexedDB）、`COLS` 紀錄欄位、Excel 匯出、紀錄面板、備份還原、匯入檔案 | `records`（全部紀錄）、`saveRecord`、`updateRecord`、`exportXlsx`、`addBackupPart` |
 | `wordsets.js` | — | 只考有教的字（字組、鎖定、分享） | `wsPick`（這課要考哪些字）、`wsStart`、`wsImport` |
 | `play.js` | 8～10 | 出題、組選項、提示、語音、開始前先下載字型（讀取條）、作答畫面、賓果卡、打怪獸過場、貼紙夥伴（選夥伴、出場）、流暢性、結果畫面 | `startSession`、`prepareThen`（`collect.js` 的 `chooseTheme` 呼叫）、`sessionText`、`loadFonts`（`tablet.js` 也用）、`endItem`、`finish`、`G`（這次作答的狀態） |
@@ -99,6 +99,7 @@
 | IndexedDB | `literacy` / `records` | **作答紀錄**（每題一筆，欄位見 `records.js` 的 `COLS`） | `records.js`（只有它直接存取） |
 | IndexedDB | `platform-rewards` / `kids` | 貼紙收藏、頭像（可能有照片） | `shared/rewards.js` |
 | localStorage | `literacy-kids` | 學生名單 | `data.js` |
+| localStorage | `literacy-kids-term` | 新學期整理名單：已處理過提醒的學期（例如 `"115上"`），換學期才再提醒 | `setup.js` |
 | localStorage | `literacy-kids-archived` | 封存的學生（從 `literacy-kids` 搬過來，只多一個 `archivedAt`；遊玩頁、分析頁、平板都只讀 `kids`，所以看不到；分析頁用 `archivedCodes()` 把他們的紀錄排除；備份檔有 `kidsArchived`） | `data.js`、`setup.js`、`records.js`、`teacher.js`、`pivot.js` |
 | localStorage | `literacy-teach` | 教學日期（全班預設＋個別學生；用「一組」加的個別設定多記組名 `grp`，一組顯示成一列、組內一起改） | `data.js` |
 | localStorage | `literacy-settings` | 細部設定 | `data.js` |
