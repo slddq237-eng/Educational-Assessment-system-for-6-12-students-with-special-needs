@@ -11,11 +11,18 @@
 /* 一排可以點選的小按鈕：list＝[[值, 顯示文字]…]，cur＝目前選的值，key＝data-○○ 的名字（設定畫面、老師專區都用；2026-10-24 從 teacher.js 搬來，因為平板不載入 teacher.js） */
 const chipRow = (list, cur, key, extra = () => "") => list.map(([v, t]) => `<button class="chip ${cur === v ? "on" : ""}" data-${key}="${v}" aria-pressed="${cur === v}" ${extra(v)}>${t}</button>`).join("");
 /* 部件（查法見 shared/parts-api.js 的 Parts.read；2026-10-31 起從第二層開始讀：老師的人工手動拆法 → 電腦自動，沒有再讀第三層）：拆成 2 個以上、而且不含字本身才算「拆得開」；
-   拆不開（獨體字、只拆出一塊、人工手動寫成字自己）回傳 null，部件提示和部件重組會改成把字切成碎塊（見 play.js 的 cutHtml），不會直接顯示答案 */
+   拆不開（獨體字、只拆出一塊、人工手動寫成字自己）回傳 null：部件提示改用黑圓圈遮住字的中心（見 play.js 的 hintHtml），部件重組不出這些字（見 goalSkips），都不會直接顯示答案 */
 function partsOf(c){
   const r = Parts.read(c, {from: 2}), list = r ? r.parts : [];
   return list.length >= 2 && !list.includes(c) ? list : null;
 }
+/* 這個評量目標「不出題」的字（2026-10-31 維護者決定）：部件重組（R4）要有部件可以重組，拆不開的字（獨體字等）沒有部件，所以不出；其他目標都出。
+   出題、算題數、設定畫面的提醒都用它（play.js 的 testChars、setup.js 的 lessonSize 和 extraNote） */
+const goalSkips = (c, goal = state.goal) => goal === "R4" && !partsOf(c);
+/* 部件提示對拆不開的字：黑圓圈遮住字的中心、只露出旁邊的樣子（2026-10-31，取代以前打亂旋轉的切塊）。
+   筆畫太少的字蓋住中心後剩下的筆畫認不出字形，不給這種提示，系統自動跳到下一個提示。
+   用全字庫正楷體畫出 111 個拆不開的字量過，蓋住中心後認不出來的只有這幾個（圓圈直徑約字寬的 0.42 倍） */
+const HOLE_SKIP = new Set([..."一入人八"]);
 /* 幫每一課算好：總字數、是否每個字都有形近同音資料、拆得開的字數 */
 for(const [bk, b] of Object.entries(BOOKS)) for(const L of Object.values(b.lessons)){
   const chars = [...(L.write + L.read)];

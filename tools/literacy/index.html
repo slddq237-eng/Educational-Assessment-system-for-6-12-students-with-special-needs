@@ -15,11 +15,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-31l">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-31m">
 <!-- 平台共用的主題外觀、頭像、貼紙樣式 -->
-<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-31l">
+<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-31m">
 <!-- 注音字型（3-4）：語詞、句子提示和練習的選項加注音；畫面用到注音時才會下載 -->
-<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-31l">
+<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-31m">
 <style>
 /* 版面：沿用生字賓果的生字簿方格紙。
    設定畫面：左邊六個步驟，右邊固定的「本次評量」摘要；評量設定、教學日期、學生名單、作答紀錄放在彈出面板。
@@ -339,9 +339,8 @@ details.howto{margin:10px 0 0}
 .pieces{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:.25em;font-family:var(--kai);line-height:1}
 .pieces.big{font-size:calc(clamp(56px,8vw,110px) * var(--fs,1))}
 .ptile{display:inline-grid;place-items:center;min-width:1.2em;height:1.2em;padding:0 .1em;background:var(--cardbg,var(--card));color:var(--cardink,inherit);border:3px dashed var(--green);border-radius:.2em}
-.cut{display:inline-block;position:relative;width:.5em;height:.5em;overflow:hidden;margin:.12em;transform:rotate(var(--r));outline:2px dashed var(--green);outline-offset:2px;background:var(--cardbg,var(--card));color:var(--cardink,inherit)}
-.cut>span{position:absolute;left:calc(var(--x) * -.5em);top:calc(var(--y) * -.5em);width:1em;height:1em;line-height:1;text-align:center}
-.hintbox .h.pieces{font-size:calc(clamp(48px,6vw,80px) * var(--fs,1));display:flex}
+.hintbox .holech{position:relative;display:inline-block;font-family:var(--kai);font-size:calc(clamp(64px,8vw,120px) * var(--fs,1));line-height:1}
+.hintbox .holech::after{content:"";position:absolute;left:50%;top:54%;width:.35em;height:.35em;transform:translate(-50%,-50%);border-radius:50%;background:#111;box-shadow:0 0 0 2px var(--cardbg,var(--card))}
 .hintbox .maskch{font-family:var(--kai);font-size:calc(clamp(64px,8vw,120px) * var(--fs,1));line-height:1;clip-path:inset(0 0 50% 0)}
 /* 選項：--cols、--rows 由程式給；--cell＝一格的邊長，取「寬放得下」和「高放得下」中較小的那個 */
 .optsbox{container-type:size;min-height:0;min-width:0}
@@ -1261,36 +1260,36 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <!-- 每個檔案後面的 ?v=日期 是版本號：改了任何 .js、.css 檔，就把這頁所有的 ?v= 一起改成當天日期（用「全部取代」；同一天改第二次就在日期後面加 b、c）。
      這樣老師的瀏覽器才會下載新檔案，不會新網頁配到舊程式（例如按「下一步」沒反應）。 -->
 <!-- 生字資料：平台共用的教材資料（shared/lessons.js） -->
-<script src="../../shared/lessons.js?v=2026-10-31l"></script>
+<script src="../../shared/lessons.js?v=2026-10-31m"></script>
 <!-- 注音讀音表（shared/bpmf.js）：語詞、例句裡的破音字該念哪一個音 -->
-<script src="../../shared/bpmf.js?v=2026-10-31l"></script>
+<script src="../../shared/bpmf.js?v=2026-10-31m"></script>
 <!-- 字頻：教育部字頻總表（shared/freq.js），練習的常用字、字頻優先、老師專區高字頻生字會用到 -->
-<script src="../../shared/freq.js?v=2026-10-31l"></script>
+<script src="../../shared/freq.js?v=2026-10-31m"></script>
 <!-- 自動部件拆解（shared/parts.js）：備課分析「拆到最細」往下拆時用（Parts.sub） -->
-<script src="../../shared/parts.js?v=2026-10-31l"></script>
+<script src="../../shared/parts.js?v=2026-10-31m"></script>
 <!-- 部件三層資料（shared/parts-layers.js）：部件提示、部件重組從第二層開始讀（見 shared/parts-api.js 的 Parts） -->
-<script src="../../shared/parts-layers.js?v=2026-10-31l"></script>
+<script src="../../shared/parts-layers.js?v=2026-10-31m"></script>
 <!-- 部件資料入口 window.Parts（shared/parts-api.js）：部件提示、部件重組用；其他檔案不直接讀 PARTS、PARTS_AUTO -->
-<script src="../../shared/parts-api.js?v=2026-10-31l"></script>
+<script src="../../shared/parts-api.js?v=2026-10-31m"></script>
 <!-- 共用小工具（課本排序與名稱、語詞、部件查詢、按匯出時才載入 Excel 元件），識字評量與備課分析共用 -->
-<script src="../../shared/common.js?v=2026-10-31l"></script>
+<script src="../../shared/common.js?v=2026-10-31m"></script>
 <!-- 平台共用：主題與貼紙、每位學生的收藏與頭像 -->
-<script src="../../shared/sticker-art.js?v=2026-10-31l"></script>
-<script src="../../shared/themes.js?v=2026-10-31l"></script>
-<script src="../../shared/rewards.js?v=2026-10-31l"></script>
+<script src="../../shared/sticker-art.js?v=2026-10-31m"></script>
+<script src="../../shared/themes.js?v=2026-10-31m"></script>
+<script src="../../shared/rewards.js?v=2026-10-31m"></script>
 <!-- 程式本體：分成八個檔案，順序不能換（說明見 app.js 開頭） -->
-<script src="data.js?v=2026-10-31l"></script>
-<script src="setup.js?v=2026-10-31l"></script>
-<script src="records.js?v=2026-10-31l"></script>
-<script src="wordsets.js?v=2026-10-31l"></script>
-<script src="play.js?v=2026-10-31l"></script>
-<script src="collect.js?v=2026-10-31l"></script>
-<script src="gacha.js?v=2026-10-31l"></script>
-<script src="scenes.js?v=2026-10-31l"></script>
+<script src="data.js?v=2026-10-31m"></script>
+<script src="setup.js?v=2026-10-31m"></script>
+<script src="records.js?v=2026-10-31m"></script>
+<script src="wordsets.js?v=2026-10-31m"></script>
+<script src="play.js?v=2026-10-31m"></script>
+<script src="collect.js?v=2026-10-31m"></script>
+<script src="gacha.js?v=2026-10-31m"></script>
+<script src="scenes.js?v=2026-10-31m"></script>
 <!-- 老師專區、進階分析：平板作答（網址 #t）用不到，不下載，省約 30 KB（2026-10-24 R4a）。
      用 document.write 是為了讓電腦上的載入順序和以前完全一樣 -->
-<script>if(!/^#t/.test(location.hash)) document.write('<script src="teacher.js?v=2026-10-31l"><\/script><script src="pivot.js?v=2026-10-31l"><\/script>');</script>
-<script src="tablet.js?v=2026-10-31l"></script>
-<script src="app.js?v=2026-10-31l"></script>
+<script>if(!/^#t/.test(location.hash)) document.write('<script src="teacher.js?v=2026-10-31m"><\/script><script src="pivot.js?v=2026-10-31m"><\/script>');</script>
+<script src="tablet.js?v=2026-10-31m"></script>
+<script src="app.js?v=2026-10-31m"></script>
 </body>
 </html>
