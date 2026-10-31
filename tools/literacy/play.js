@@ -510,7 +510,7 @@ function newItem(it){
   const stampOf = i => `<span class="stamp2" aria-hidden="true">${Rewards.avatarHtml(board.by[i] || it.kid)}</span>`;   /* 共用一張卡時，每一格蓋答對那位學生的頭像 */
   const cellClass = i => !board ? "" : board.marks.has(i) ? ` marked${[...board.done].some(L => board.lines[L].includes(i)) ? " win" : ""}` : "";
   const stageHtml = `<div class="stage">
-      <div class="prompt">
+      <div class="prompt${pickParts ? " pick" : ""}">
         ${regroup ? `<div class="pieces big" aria-label="拆開的部件">${regroupHtml(it.c)}</div>
         <span class="note" style="margin:0">這些部件組成哪一個字？</span>`
         : `<button class="speaker" id="speaker" aria-label="再聽一次">${SPEAKER_SVG}</button>
@@ -536,6 +536,7 @@ function newItem(it){
   $("#pBody").innerHTML = `${banner}${split ? `<div class="zones" style="--n:${G.kids.length}">${G.kids.map(zoneHtml).join("")}</div>` : stageHtml}
     ${G.mode === "flu" ? "" : `<div class="tbar" data-side="${settings.hintSide === "left" ? "left" : "right"}"><span>老師提示紀錄</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
   fitOpts();
+  if(pickParts){ fitPickGrid(); requestAnimationFrame(fitPickGrid); }
   $("#pBody").querySelectorAll(".opt-big").forEach(btn => btn.onclick = () => pickParts ? togglePart(+btn.dataset.i, btn) : pick(+btn.dataset.i, btn));
   if(pickParts) $("#submitParts").onclick = submitParts;
   if(!regroup) $("#speaker").onclick = () => speak(promptOf(it));
@@ -573,6 +574,22 @@ function pick(i, btn){
   if(act === "next") showNextHint();
   if(act === "reveal") reveal();
 }
+
+/* 聽音選部件：把選項排成「卡片最大」的行列數（2026-10-31 維護者反映分區作答時選項太小、下方版面沒填滿）。
+   選項 6～7 張，區的寬高每次不一樣（學生人數、螢幕大小），所以畫好之後量選項區，從 1 欄到全部一欄一欄試，取每張卡邊長最大的行列數 */
+function fitPickGrid(){
+  if(!G || G.goal !== "R6" || !G.cur) return;
+  const box = $("#pBody .optsbox:not(.ghostbox)"); if(!box) return;
+  const n = G.cur.opts.length, w = box.clientWidth, h = box.clientHeight, gap = 16;
+  if(!w || !h) return;
+  let best = null;
+  for(let c = 1; c <= n; c++){
+    const r = Math.ceil(n / c), cell = Math.min((w - (c - 1) * gap) / c, (h - (r - 1) * gap - 10) / r);
+    if(!best || cell > best.cell + 0.5) best = {c, r, cell};
+  }
+  $("#pBody").querySelectorAll(".opts").forEach(o => { o.style.setProperty("--cols", best.c); o.style.setProperty("--rows", best.r); });
+}
+window.addEventListener("resize", () => { if(G && G.goal === "R6") fitPickGrid(); });
 
 /* 聽音選部件（R6，2026-10-31）：點一下選取、再點一下取消；按「送出」才算作答；全部選對才算對（維護者 2026-10-31 決定）。
    送出後：選對的卡鎖住（綠色）、選錯的卡（干擾部件，或同一個部件選太多張）打叉不能再選，學生繼續選剩下的再送出；答錯規則照現有的（提示、顯示答案）。
