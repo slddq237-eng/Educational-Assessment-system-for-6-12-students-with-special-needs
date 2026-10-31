@@ -947,6 +947,7 @@ function finish(){
   try { speechSynthesis.cancel(); } catch(e){}
   $("#pTimer").hidden = true; $("#pQuit").textContent = "結束";
   const g = G;
+  g.elapsed = Math.max(1, Math.round((performance.now() - g.started) / 1000));   /* 這一次玩了多久（結果卡片給學生看；選夥伴的時間不算） */
   if(g.scene){ g.scene.stop(); $("#pScene").hidden = true; $("#pBody").hidden = false; }
   /* 哪些學生做完了：正確率模式＝自己的題目都答完；流暢性模式＝自己那一回合時間到。
      按「結束」提早離開時，沒做完的學生這次的紀錄標成「中途結束」（不列入分析），也不抽貼紙。 */
@@ -970,9 +971,8 @@ function finish(){
         <div class="rrows"><div>答對了 <b>${t.roundCorrect || 0}</b> 個字</div><div>還要再練習的有 <b>${t.roundWrong || 0}</b> 個字</div><div>時間是 <b>${LIMITS.find(l => +l[0] === g.limit)[1]}</b></div></div>
         ${cheer}</div>`;
     }
-    const avg = t.secs.length ? (t.secs.reduce((a, b) => a + b, 0) / t.secs.length).toFixed(1) : "—";
     return `${head}<span class="rlabel">你第一次就答對了</span><span class="big">${t.first} 題</span>
-      <div class="rrows"><div>這次一共做了 <b>${t.n}</b> 題</div>${t.secs.length ? `<div>答對一題，用了 <b>${avg}</b> 秒</div>` : ""}</div>
+      <div class="rrows"><div>這次一共做了 <b>${t.n}</b> 題</div><div>這次玩了 <b>${g.elapsed >= 60 ? `${Math.floor(g.elapsed / 60)} 分 ${g.elapsed % 60} 秒` : `${g.elapsed} 秒`}</b></div></div>
       ${cheer}</div>`;
   }).join("") || `<p class="note">這次沒有作答紀錄。</p>`;
   $("#rNote").textContent = (g.kind === "formal" ? "這次是正式評量，做完的結果會納入學習分析。" : "這次是練習，結果另外統計。")
