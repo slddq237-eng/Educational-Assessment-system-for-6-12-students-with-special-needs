@@ -50,6 +50,9 @@
 .reveal .stars{font-size:clamp(40px,6vw,60px);color:#f5b400;letter-spacing:.12em;line-height:1}
 .reveal .rname{font-size:clamp(36px,6vw,68px);font-weight:700}
 .reveal .rare{font-size:20px;padding:4px 18px;border-radius:999px;background:var(--rc);color:#3a2f12;font-weight:700}
+/* 矮螢幕（手機橫放、矮筆電）：圖再縮小、拿掉頭像那一行和重複的句子，按鈕還是看得到 */
+@media (max-height:620px){.reveal .box{gap:2px}.reveal .box > svg{width:min(62vw,30vh);max-height:30vh}.reveal .box > div:nth-last-of-type(1){display:none}.reveal .box .go{font-size:20px;padding:8px 28px}}
+@media (max-height:480px){.reveal .who2{display:none}.reveal .box > svg{max-height:26vh;width:min(62vw,26vh)}.reveal .rare{font-size:16px;padding:2px 14px}}
 @media (prefers-reduced-motion:no-preference){
   .reveal .rays2{animation:spin 14s linear infinite}
   .reveal .box{animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
