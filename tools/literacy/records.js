@@ -222,18 +222,20 @@ $("#recRestore").onchange = async e => {
       + (plan.none.length ? `<br>${esc(plan.none.join("、"))}：這個版本的網頁沒有這一課的字，會略過。` : "");
     doIt = () => { wsImport(plan); render(); return `已匯入 ${plan.ok.length} 課的字組${plan.skip.length ? `，${plan.skip.length} 課沒有換掉` : ""}。到第 2 步選課次就會看到。`; };
   } else if(kind === "tablet"){
-    const have = new Set(records.map(recKey)), add = data.records.filter(r => !have.has(recKey(r)));
-    const unknown = [...new Set(data.records.map(r => r.kid))].filter(c => !knownKid(c));
-    text = `這是${data.sheet ? "從 Google 試算表下載的平板作答紀錄" : "平板上下載的紀錄檔（送不出去時用）"}：${data.sessions} 次練習、${data.records.length} 筆作答紀錄（其中 ${add.length} 筆是這台電腦還沒有的）。`
+    const have = new Set(records.map(recKey)), fresh = data.records.filter(r => !have.has(recKey(r)));
+    /* 名單裡沒有的代號不收進來（2026-10-31 維護者決定）：可能是已經刪除的學生，或是別台電腦的學生；封存的學生算有 */
+    const add = fresh.filter(r => knownKid(r.kid)), skipped = fresh.length - add.length;
+    const unknown = [...new Set(fresh.filter(r => !knownKid(r.kid)).map(r => r.kid))];
+    text = `這是${data.sheet ? "從 Google 試算表下載的平板作答紀錄" : "平板上下載的紀錄檔（送不出去時用）"}：${data.sessions} 次練習、${data.records.length} 筆作答紀錄（其中 ${add.length} 筆是這台電腦還沒有、而且學生在名單裡的）。`
       + (data.missing ? `<br><span class="warn">有 ${data.missing} 次練習少了一部分資料（可能沒有送完），收到的部分照樣匯入。</span>` : "")
-      + (unknown.length ? `<br><span class="warn">代號 ${esc(unknown.join("、"))} 不在這台電腦的學生名單裡，紀錄照樣匯入，請到「學生名單」加上這些代號。</span>` : "");
+      + (skipped ? `<br><span class="warn">有 ${skipped} 筆紀錄不會匯入：代號 ${esc(unknown.join("、"))} 不在這台電腦的學生名單裡（可能是已經刪除的學生，或是別台電腦的學生）。</span>` : "");
     doIt = () => {
       /* 平板沒有學生名字，用這台電腦的學生名單補上 */
-      add.forEach(r => { const k = kidBy(r.kid); r.kidName = k ? k.name : ""; saveRecord(r); });
+      add.forEach(r => { const k = kidBy(r.kid) || kidsArchived.find(x => x.code === r.kid); r.kidName = k ? k.name : ""; saveRecord(r); });
       /* 平板上抽到的貼紙，匯入時才收進貼紙簿（見 collect.js 的 importStickers） */
       const got = importStickers(add);
       render();
-      return `已匯入 ${add.length} 筆新的作答紀錄（重複的紀錄不會再加一次）${got ? `，${got} 張貼紙收進學生的貼紙簿` : ""}。`;
+      return `已匯入 ${add.length} 筆新的作答紀錄（重複的紀錄不會再加一次）${skipped ? `，${skipped} 筆不在學生名單裡所以沒有匯入` : ""}${got ? `，${got} 張貼紙收進學生的貼紙簿` : ""}。`;
     };
   } else { $("#recMsg").textContent = "這個檔案是比較新版本的網頁存的，請重新整理網頁後再匯入一次。"; return; }
   $("#recMsg").textContent = "";

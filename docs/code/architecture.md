@@ -56,7 +56,7 @@
 | `freq.js` | `FREQ`（字→排名） | 識字評量（常用字、字頻優先、高字頻）、備課分析 | 從原始檔重新產生 |
 | `common.js` | `esc`（防止文字變成程式碼）、`BOOK_ORDER`、`bookName`、`gradeTerm`（「二上」「六下」寫法）、`lessonName`、`lessonKeys`、`wordOf`、`sentOf`、`confOf`、`rawParts`、`partsSource`、`setMsg`、`loadXlsx` | 識字評量、備課分析 | 規則只寫在這裡，**改一處兩個工具都變** |
 | `themes.js`、`themes.css` | `window.Themes`：四主題、貼紙清單與圖、星等、代號、抽貼紙、作答背景 `backdrop`（新圖在 sticker-art.js） | `collect.js`、`scenes.js`、`play.js`、`rewards.js` | |
-| `rewards.js` | `window.Rewards`：頭像、貼紙收藏、`ready`、`award`、`owned`、`hasSession`、`exportAll`/`importAll` | 識字評量各處（頭像）、`collect.js`（發貼紙） | 之後的新工具也可以發貼紙 |
+| `rewards.js` | `window.Rewards`：頭像、貼紙收藏、`ready`、`award`、`owned`、`hasSession`、`exportAll`/`importAll`、`remove`（刪除一位學生的收藏） | 識字評量各處（頭像）、`collect.js`（發貼紙） | 之後的新工具也可以發貼紙 |
 | `fonts/` | `tw-kai*` 楷書、`bpmf-kai*` 注音字型（依用到的字切成小檔） | 所有頁面 | 跑 `make_kai.py`、`make_bpmf.py`，不要手改 |
 
 ## 4. 識字評量 `tools/literacy/`
@@ -64,7 +64,7 @@
 | 檔案 | 節 | 做什麼 | 主要對外名稱（別的檔案會用） |
 |---|---|---|---|
 | `data.js` | 1～3 | 基本設定與選項表（目標、提示、玩法）、存讀 localStorage、學生名單（`newKidCode` 產生新學生的隨機代號，2026-10-31；`kidLabel` 名字不重複就只顯示名字；封存名單 `kidsArchived`、`knownKid`；名字不能重複 `nameTaken`）與分組（`getGroups`／`saveGroups`，存在 `literacy-teacher` 的 `groups`）、教學日期與前後測（`daysAfterEnd`、`PREPOST`）、紀錄格式版本 | `state`、`settings`、`kids`、`teach`、`teachFor`、`daysAfterEnd`、`PREPOST`、`key`、`iso`、`today`、`RECORD_FORMAT`、`HINT_UNFIT`、`fitHints`、`partsOf` |
-| `setup.js` | 4～5 | 設定畫面（快速開始、四個步驟、正式評量的前測／後測按鈕 `renderPrepost`）、學生名單／教學日期／細部設定面板 | `render()`（任何設定改變都呼叫）、`setUi`、`splitKey`、`rtiDays`、`openSheet` |
+| `setup.js` | 4～5 | 設定畫面（快速開始、四個步驟、正式評量的前測／後測按鈕 `renderPrepost`）、學生名單（新增、封存、`deleteKid` 刪除學生連同紀錄與貼紙）／教學日期／細部設定面板 | `render()`（任何設定改變都呼叫）、`setUi`、`splitKey`、`rtiDays`、`openSheet` |
 | `records.js` | 6～7 | 作答紀錄存取（IndexedDB）、`COLS` 紀錄欄位、Excel 匯出、紀錄面板、備份還原、匯入檔案 | `records`（全部紀錄）、`saveRecord`、`updateRecord`、`exportXlsx`、`addBackupPart` |
 | `wordsets.js` | — | 只考有教的字（字組、鎖定、分享） | `wsPick`（這課要考哪些字）、`wsStart`、`wsImport` |
 | `play.js` | 8～10 | 出題、組選項、提示、語音、開始前先下載字型（讀取條）、作答畫面、賓果卡、打怪獸過場、貼紙夥伴（選夥伴、出場）、流暢性、結果畫面 | `startSession`、`prepareThen`（`collect.js` 的 `chooseTheme` 呼叫）、`sessionText`、`loadFonts`（`tablet.js` 也用）、`endItem`、`finish`、`G`（這次作答的狀態） |
