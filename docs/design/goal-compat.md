@@ -55,12 +55,12 @@
 
 ## 5. 想改規則時
 
-1. 在這份寫下想改什麼、為什麼（正式評量條件有改動要同步 `plans/a3-conditions.md`；會動到作答紀錄格式要先看 `a8-terms.md`）。
+1. 在這份寫下想改什麼、為什麼（正式評量條件有改動要同步 `docs/plans/a3-conditions.md`；會動到作答紀錄格式要先看 `a8-terms.md`）。
 2. 定案後請 Claude 改 `data.js` 的 `GOAL_CAPS`（目標的特性）或 `playWhy`／`step3Miss`（玩法、作答方式的限制），並更新這份。
 3. 跑 `node docs/scripts/smoke.js`，組合測試會確認每個能選的組合不卡住。
 
 ## 6. 待討論
 
-- 💬 R5、R6 什麼時候開放正式評量、流暢性（等 A3 訂條件，見 `plans/a3-conditions.md`）。
+- 💬 R5、R6 什麼時候開放正式評量、流暢性（等 A3 訂條件，見 `docs/plans/a3-conditions.md`）。
 - 💬 評量目標移到首頁分類（路線圖 D9）：做的時候這張表可以直接產生目標卡片的說明。
-- 💬 分區輪流開放正式評量、流暢性、賓果的時機（`code/setup-flow-audit.md`）。
+- 💬 分區輪流開放正式評量、流暢性、賓果的時機（`docs/code/setup-flow-audit.md`）。
