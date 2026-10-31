@@ -100,7 +100,7 @@ const WSTEPS = ["選目標和評量方式", "選學生和課次", "選作答方�
 let wstep = 1;
 /* 每一步還缺什麼（空字串＝可以往下） */
 const step1Miss = () => "";
-const step2Miss = () => !selKids().length ? (isQuick() ? "請先點選要做的學生" : "請先點選要評量的學生") : !state.lessons.length ? "請先選課次" : "";
+const step2Miss = () => !selKids().length ? (isQuick() ? "請先點選要做的學生" : "請先點選要評量的學生") : !state.lessons.length ? "請先選課次" : !state.lessons.some(k => lessonSize(k)) ? "所選課次的字都沒有部件可以重組（都是獨體字），請換課次或換評量目標" : "";
 function step3Miss(){
   const n = selKids().length, a = ANSWERS.find(x => x.id === state.answer);
   if(n < a.min || n > a.max) return `「${a.name}」可以 ${a.min}～${a.max} 位學生，目前 ${n} 位`;
@@ -298,8 +298,8 @@ function renderThemePick(){
 
 const splitKey = k => k.split("-");
 const EDITIONS = [...new Set(BOOK_ORDER.map(b => BOOKS[b].edition))];
-/* 這課這次要考幾個字（有「只考有教的字」就只算點選的字，見 wordsets.js） */
-const lessonSize = k => wsPick(k).length;
+/* 這課這次要考幾個字（有「只考有教的字」就只算點選的字，見 wordsets.js；部件重組不出拆不開的字，見 data.js 的 goalSkips） */
+const lessonSize = k => testChars(k).length;
 /* 依版本分組顯示已選課次，例如「翰林 2上 第 1、2 課」 */
 function lessonsText(){
   const by = new Map();
@@ -354,7 +354,7 @@ function quizPlan(){
   /* 生字賓果：整次一張卡，最多 36 格、同一個字只問一次，所以每人最多 36 題（play.js 的 startSession） */
   const bingo = bingoOK(current());
   const nKids = Math.max(1, selKids().length), shared = bingo && sharedBingo();
-  const pool = bingo ? Math.min(shared ? Math.floor(36 / nKids) : 36, new Set(state.lessons.flatMap(k => wsPick(k))).size) : state.lessons.reduce((s,k) => s + lessonSize(k), 0);
+  const pool = bingo ? Math.min(shared ? Math.floor(36 / nKids) : 36, new Set(state.lessons.flatMap(k => testChars(k))).size) : state.lessons.reduce((s,k) => s + lessonSize(k), 0);
   const one = Math.min(oneLesson(), pool);
   const def = state.kind === "formal" ? one : Math.min(PRACTICE_COUNT, pool);   /* 預設題數 */
   /* state.qCount：null＝預設、"all"＝全部（換課次後仍是全部）、數字＝老師自己輸入的題數 */
@@ -378,7 +378,13 @@ function quizPlan(){
 }
 /* 題數旁的補充說明：賓果卡的上限、只考部分字（練習和正式評量各自點選的字組，題數以點選的字為準） */
 const extraNote = q => (q.shared ? `大家共用一張賓果卡，最多 36 格，全隊合計最多 36 題（每人最多 ${Math.floor(36 / q.n)} 題），同一個字只考一次。` : q.bingo ? "生字賓果卡最多 36 格，每人最多 36 題，同一個字只考一次。" : "")
-  + (state.lessons.some(k => wsPartial(k)) ? "有課只考部分的字（第 2 步「只考有教的字」），題數以點選的字為準。" : "");
+  + (state.lessons.some(k => wsPartial(k)) ? "有課只考部分的字（第 2 步「只考有教的字」），題數以點選的字為準。" : "")
+  + skipNote();
+/* 這個評量目標不出題的字（部件重組：獨體字等沒有部件可重組），要告訴老師，不能悄悄少題（docs/code/refactor.md 規則 8） */
+function skipNote(){
+  const skip = [...new Set(state.lessons.flatMap(k => wsPick(k)))].filter(c => goalSkips(c));
+  return skip.length ? `部件重組：所選課次有 ${skip.length} 個字沒有部件可以重組（獨體字等），不出題：${skip.join("")}。` : "";
+}
 const methodName = m => m === "all" ? "全部出題" : METHODS.find(x => x.id === m).name;
 const minutes = s => s < 60 ? "不到 1 分鐘" : `約 ${Math.ceil(s / 30) / 2} 分鐘`;
 function renderQuiz(){
