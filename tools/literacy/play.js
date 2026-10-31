@@ -211,6 +211,9 @@ function note(f, t0, dur, type, vol){
 const sfx = {
   right(force){ if(settings.sfx || force) [523, 659, 784].forEach((f, i) => note(f, i * 0.08, 0.3, "triangle", 0.22)); },
   wrong(force){ if(settings.sfx || force){ note(220, 0, 0.16, "square", 0.09); note(165, 0.17, 0.26, "square", 0.09); } },
+  /* 聽音選部件（2026-10-31）：點選卡片的小「啵」聲（選取較高、取消較低）和按「送出」的「滴」聲，支援的手機、平板再加一點點震動；都跟著「音效」開關，關掉就安靜 */
+  tap(on){ if(settings.sfx){ note(on ? 700 : 480, 0, 0.07, "triangle", 0.12); if(navigator.vibrate) navigator.vibrate(on ? 12 : 8); } },
+  send(){ if(settings.sfx){ note(880, 0, 0.09, "triangle", 0.14); if(navigator.vibrate) navigator.vibrate(18); } },
   /* 換人提示音：三個往上跳的小音「叮嚨咚」，輕快可愛 */
   turn(force){ if(settings.sfx || force){ note(988, 0, 0.12, "triangle", 0.16); note(1319, 0.1, 0.14, "triangle", 0.16); note(1568, 0.2, 0.32, "sine", 0.13); } },
   fanfare(){ if(settings.sfx){ [523, 659, 784, 1047].forEach((f, i) => note(f, i * 0.11, 0.35, "triangle", 0.2)); [523, 659, 784].forEach(f => note(f, 0.5, 1.1, "sine", 0.1)); } }
@@ -580,13 +583,14 @@ function togglePart(i, btn){
   const cur = G.cur;
   if(!cur || cur.done || btn.disabled || cur.locked.has(i)) return;
   const at = cur.sel.indexOf(i);
-  if(at >= 0){ cur.sel.splice(at, 1); btn.classList.remove("sel"); btn.setAttribute("aria-pressed", "false"); }
-  else { cur.sel.push(i); btn.classList.add("sel"); btn.setAttribute("aria-pressed", "true"); }
+  if(at >= 0){ cur.sel.splice(at, 1); btn.classList.remove("sel", "pop"); btn.setAttribute("aria-pressed", "false"); sfx.tap(false); }
+  else { cur.sel.push(i); btn.classList.add("sel"); btn.setAttribute("aria-pressed", "true"); sfx.tap(true); btn.classList.remove("pop"); void btn.offsetWidth; btn.classList.add("pop"); }   /* 選取時彈一下 */
   const go = $("#submitParts"); if(go) go.disabled = !cur.sel.length;
 }
 function submitParts(){
   const cur = G.cur;
   if(!cur || cur.done || !cur.sel.length) return;
+  sfx.send();
   const sec = Math.round((performance.now() - (cur.t0 || cur.tShown)) / 100) / 10;
   const left = {};
   answerParts().forEach(p => left[p] = (left[p] || 0) + 1);
