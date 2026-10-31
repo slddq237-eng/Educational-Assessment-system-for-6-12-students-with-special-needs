@@ -100,20 +100,16 @@ function showGacha(item, done){
         <button class="glever" aria-label="拉拉桿"><span class="gbase"></span><span class="grod"></span><span class="gknob"></span></button>
         <div class="gdrop">${capsuleSvg(st)}</div><div class="gfx"></div></div>
       <div class="grain" aria-hidden="true"></div>
-      <div class="row" style="justify-content:center"><button class="ghost gskip">跳過</button><button class="ghost gq" aria-expanded="false">？抽中機會</button></div>
-      <div class="godds" hidden>${oddsHtml()}</div></div>`;
+      <div class="row" style="justify-content:center"><button class="ghost gskip">跳過</button></div></div>`;
   document.body.appendChild(box);
   const $g = s => box.querySelector(s), lever = $g(".glever");
   lever.focus();
   let pulled = false;
   const finish = () => { box.remove(); done(); };
   $g(".gskip").onclick = () => { pulled = true; finish(); };
-  const closeOdds = () => { $g(".godds").hidden = true; $g(".gq").setAttribute("aria-expanded", "false"); box.classList.remove("oddsopen"); };
-  $g(".gq").onclick = e => { const o = $g(".godds"); o.hidden = !o.hidden; e.currentTarget.setAttribute("aria-expanded", !o.hidden); box.classList.toggle("oddsopen", !o.hidden); };   /* 面板排在版面裡，展開時扭蛋機縮小，不蓋住按鈕 */
   /* 拉拉桿：點一下，或按住往下拖都算 */
   const pull = () => {
     if(pulled) return; pulled = true;
-    closeOdds();   /* 拉桿時先收起抽中機會，扭蛋機才不會一邊縮放一邊動畫 */
     gachaSfx.pull();
     if(calmMotion()){ gachaSfx.open(st); return setTimeout(finish, 300); }
     const T = GACHA_T, at = (ms, f) => setTimeout(() => { if(box.isConnected) f(); }, ms);
