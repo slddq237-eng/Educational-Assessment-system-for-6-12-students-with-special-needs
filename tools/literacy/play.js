@@ -109,6 +109,23 @@ function makePartsOptions(c, k, n){
   return shuffle([{ch:c, type:"答案"}, ...out]);
 }
 
+/* 聽音選部件（R6，2026-10-31）的選項：答案＝這個字的部件（第二層，沒有再用第三層；重複照寫，例如森＝木 木 木，選項裡就放 3 張木），
+   再加干擾部件，總數至少 6 張（部件多時＝部件數＋2）。干擾部件（不重複）依序用：形近字的部件、這課其他字的部件、所有課本字的部件。
+   不放：答案裡已有的部件、這個字第一層的部件（例如清的「青」，選了也說得通，會讓學生疑惑）、完全由答案部件組成的部件（答案有龶、月時不放青）、
+   單一筆畫、字型裡沒有的罕用字（超過 U+20000） */
+const PICK_MIN = 6, STROKE_PARTS = new Set([..."一丨丿丶乀乙乚乛亅"]);
+function makePartsPickOptions(c, k){
+  const b = splitKey(k)[0], [, shape = ""] = confOf(c, b) || [], ans = partsOf(c) || [];
+  const bad = new Set([...ans, ...((Parts.read(c, {from: 1}) || {parts: []}).parts)]);
+  const ok = p => isHan(p) && p.codePointAt(0) < 0x20000 && !STROKE_PARTS.has(p) && !bad.has(p) && !((partsOf(p) || []).length && partsOf(p).every(q => ans.includes(q)));
+  const need = Math.max(PICK_MIN, ans.length + 2) - ans.length, pool = [], seen = new Set();
+  const fill = chars => { for(const x of chars){ for(const p of shuffle([...(partsOf(x) || [])])) if(pool.length < need && ok(p) && !seen.has(p)){ seen.add(p); pool.push(p); } if(pool.length >= need) return; } };
+  fill(shuffle([...shape]));
+  fill(shuffle(charsOf(k).filter(x => x !== c)));
+  fill(shuffle(ALL_CHARS.filter(x => x !== c)));
+  return shuffle([...ans.map(ch => ({ch, type:"答案"})), ...pool.map(ch => ({ch, type:"干擾部件"}))]);
+}
+
 /* 部件重組的題目：部件打亂成一塊一塊（拆不開的字這個目標不出，見 data.js 的 goalSkips） */
 const regroupHtml = c => shuffle([...(partsOf(c) || [])]).map(x => `<span class="ptile">${esc(x)}</span>`).join("");
 
@@ -228,7 +245,7 @@ function sessionText(lessons, bpmf){
   for(const k of lessons){
     const b = splitKey(k)[0];
     for(const c of charsOf(k)){
-      const [sound = "", shape = ""] = confOf(c, b) || [], opts = c + sound + shape + (state.goal === "R4" ? (partsOf(c) || []).join("") : "");
+      const [sound = "", shape = ""] = confOf(c, b) || [], opts = c + sound + shape + (state.goal === "R4" ? (partsOf(c) || []).join("") : state.goal === "R6" ? [c, ...shape].flatMap(x => partsOf(x) || []).join("") : "");
       if(bpmf) ruby += [...opts].map(x => Bpmf.char(x, b)).join(""); else kai += opts;   /* 加注音時選項只用注音字型 */
     }
   }
@@ -299,11 +316,11 @@ function startSession(){
     /* 每位學生這次的提示與答錯規則（進階設定的練習可以每人不同，見 data.js 的 kidCfg） */
     per: Object.fromEntries(list.map(k => { const p = kidCfg(c, k); return [k, {hints: p.hints, rule: p.rule || []}]; })),
     /* 版面：選項卡，或全課賓果卡（只在練習；正式評量、流暢性一律是選項卡，選項版面不能變） */
-    choices: bingoOK(c) ? 0 : +c.choices, layout: bingoOK(c) ? "bingo" : "cards", boards: {}, shared: bingoOK(c) && list.length > 1 && state.answer !== "qr",
+    choices: bingoOK(c) ? 0 : c.choices === "parts" ? PICK_MIN : +c.choices, layout: bingoOK(c) ? "bingo" : "cards", boards: {}, shared: bingoOK(c) && list.length > 1 && state.answer !== "qr",
     /* 主題（設定第 4 步學生點的，""＝不用主題）、要不要給貼紙；遊戲玩法（3-3 打怪獸：solo 自己打、coop 合作，""＝不玩） */
     theme: state.theme || "", rewards: useRewards(), game: "",
     /* 選項加注音（3-4）：只在練習，第 4 步決定；正式評量一律不加 */
-    bpmf: state.kind !== "formal" && !!settings.practiceBpmf,
+    bpmf: state.kind !== "formal" && !!settings.practiceBpmf && state.goal !== "R6",   /* 聽音選部件的選項是部件，不加注音 */
     /* 報讀提示：練習看第 4 步，正式評量看評量設定；部件重組（4-1）沒有題目讀音，報讀會念出答案，所以一律不開 */
     read: state.goal !== "R4" && state.kind !== "formal" && settings.practiceRead !== false,   /* 正式評量不報讀（A3-10） */
     tally: Object.fromEntries(list.map(k => [k, {n:0, first:0, passed:0, secs:[], wrong:0}])),
@@ -444,6 +461,7 @@ function bingoBoard(kid){
 /* 賓果卡上每個字和目標字的關係，用來記錄「錯誤類型」。
    老師專區錯誤類型的「亂猜會佔」也用它替舊紀錄的每個選項重新分類，那時用 goal 傳入紀錄當時的評量目標 */
 function optType(c, x, k, goal = G && G.goal){
+  if(goal === "R6") return (partsOf(c) || []).includes(x) ? "答案" : "干擾部件";   /* 聽音選部件：選項是部件，只分答案和干擾部件 */
   const b = splitKey(k)[0], [sound = "", shape = ""] = confOf(c, b) || [];
   if(x === c) return "答案";
   if(goal === "R4"){   /* 部件重組：沒有唸題目，只分形近、同部件 */
@@ -478,11 +496,14 @@ if(document.fonts && document.fonts.addEventListener) document.fonts.addEventLis
 function newItem(it){
   const b = splitKey(it.k)[0], board = G.layout === "bingo" ? bingoBoard(it.kid) : null;
   const regroup = G.goal === "R4";   /* 目標 4-1 部件重組：看部件選字，不唸題目 */
-  G.cur = {it, b, board, opts: board ? board.cells.map(ch => ({ch, type: optType(it.c, ch, it.k)})) : (regroup ? makePartsOptions : makeOptions)(it.c, it.k, G.choices),
-           wrong:0, firstPick:null, firstSec:null, shown:[], hintPos:0, teacher:0, reads:new Set(), t0:null, tShown:performance.now(), done:false};
+  const pickParts = G.goal === "R6";   /* 聽音選部件：聽音，選出全部部件（複選），按「送出」才算作答 */
+  G.cur = {it, b, board, opts: board ? board.cells.map(ch => ({ch, type: optType(it.c, ch, it.k)})) : pickParts ? makePartsPickOptions(it.c, it.k) : (regroup ? makePartsOptions : makeOptions)(it.c, it.k, G.choices),
+           wrong:0, firstPick:null, firstSec:null, shown:[], hintPos:0, teacher:0, reads:new Set(), t0:null, tShown:performance.now(), done:false,
+           sel:[], locked:new Set()};   /* 聽音選部件：sel＝正在選的卡（第幾張）、locked＝已經確定對的卡 */
   drawBar(it);
   const split = G.answer === "splitturn" && G.kids.length > 1;   /* 分區輪流：每區只有螢幕的 1/2～1/3 寬，選項一律 2 欄 */
-  const cols = board ? board.cols : split || G.choices === 4 ? 2 : 3, rows = board ? board.rows : Math.ceil(G.choices / cols);
+  const nOpts = G.cur.opts.length;
+  const cols = board ? board.cols : split || (!pickParts && G.choices === 4) ? 2 : 3, rows = board ? board.rows : Math.ceil(nOpts / cols);
   const stampOf = i => `<span class="stamp2" aria-hidden="true">${Rewards.avatarHtml(board.by[i] || it.kid)}</span>`;   /* 共用一張卡時，每一格蓋答對那位學生的頭像 */
   const cellClass = i => !board ? "" : board.marks.has(i) ? ` marked${[...board.done].some(L => board.lines[L].includes(i)) ? " win" : ""}` : "";
   const stageHtml = `<div class="stage">
@@ -490,7 +511,8 @@ function newItem(it){
         ${regroup ? `<div class="pieces big" aria-label="拆開的部件">${regroupHtml(it.c)}</div>
         <span class="note" style="margin:0">這些部件組成哪一個字？</span>`
         : `<button class="speaker" id="speaker" aria-label="再聽一次">${SPEAKER_SVG}</button>
-        <span class="note" style="margin:0">聽聽看，是哪一個字？</span>`}
+        <span class="note" style="margin:0">${pickParts ? "聽聽看，這個字有哪些部件？全部選出來，再按「送出」" : "聽聽看，是哪一個字？"}</span>
+        ${pickParts ? `<div class="submitrow"><button class="submit" id="submitParts" disabled>送出</button><span class="note" id="pickNote" style="margin:0" aria-live="polite"></span></div>` : ""}`}
         <div class="hintbox" id="hintbox" aria-live="polite"></div>
       </div>
       <div class="optsbox"><div class="opts ${board ? "bingo" : ""}" style="--cols:${cols};--rows:${rows}">
@@ -505,13 +527,14 @@ function newItem(it){
     const head = `<div class="zhead">${Rewards.avatarHtml(code)}<b>${esc(k ? kidShow(k) : code)}</b><span>${on ? `第 ${idx} / ${mine.length} 題` : `已做 ${idx} / ${mine.length} 題`}</span></div>`;
     if(on) return `<section class="zone on" aria-current="true">${head}${stageHtml}</section>`;
     return `<section class="zone wait">${head}<div class="stage"><div class="prompt"><span class="zwait">等一下</span></div>
-      <div class="optsbox ghostbox"><div class="opts" style="--cols:${cols};--rows:${rows}">${Array.from({length:G.choices}, () => `<span class="opt-ghost"></span>`).join("")}</div></div></div></section>`;
+      <div class="optsbox ghostbox"><div class="opts" style="--cols:${cols};--rows:${rows}">${Array.from({length:nOpts}, () => `<span class="opt-ghost"></span>`).join("")}</div></div></div></section>`;
   };
   const banner = sharedTurns() ? `<div class="turnbanner" role="status"><div class="who">${whoHtml(it.kid)}</div></div>` : "";
   $("#pBody").innerHTML = `${banner}${split ? `<div class="zones" style="--n:${G.kids.length}">${G.kids.map(zoneHtml).join("")}</div>` : stageHtml}
     ${G.mode === "flu" ? "" : `<div class="tbar" data-side="${settings.hintSide === "left" ? "left" : "right"}"><span>老師提示紀錄</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
   fitOpts();
-  $("#pBody").querySelectorAll(".opt-big").forEach(btn => btn.onclick = () => pick(+btn.dataset.i, btn));
+  $("#pBody").querySelectorAll(".opt-big").forEach(btn => btn.onclick = () => pickParts ? togglePart(+btn.dataset.i, btn) : pick(+btn.dataset.i, btn));
+  if(pickParts) $("#submitParts").onclick = submitParts;
   if(!regroup) $("#speaker").onclick = () => speak(promptOf(it));
   $("#pBody").querySelectorAll("[data-t]").forEach(btn => btn.onclick = () => {
     G.cur.teacher = Math.max(G.cur.teacher, +btn.dataset.t); btn.classList.add("on");
@@ -544,6 +567,46 @@ function pick(i, btn){
   btn.disabled = true;
   if(G.mode === "flu" || G.noHelp) return endItem(false, null);
   const act = G.per[cur.it.kid].rule[cur.wrong - 1] || "free";   /* 規則沒寫到的次數：不處理，讓學生自己點（答案選項一直都在） */
+  if(act === "next") showNextHint();
+  if(act === "reveal") reveal();
+}
+
+/* 聽音選部件（R6，2026-10-31）：點一下選取、再點一下取消；按「送出」才算作答；全部選對才算對（維護者 2026-10-31 決定）。
+   送出後：選對的卡鎖住（綠色）、選錯的卡（干擾部件，或同一個部件選太多張）打叉不能再選，學生繼續選剩下的再送出；答錯規則照現有的（提示、顯示答案）。
+   紀錄：第一次送出的結果記在 firstPick、firstCorrect、errorType（少選、選到干擾部件）；最後送出的選擇記在 pickSet，這題的答案記在 answerSet（見 endItem）。
+   聽音選部件先只開放練習（設定第 1 步擋住正式評量），所以一律有對錯回饋。 */
+const answerParts = () => G.cur.opts.filter(o => o.type === "答案").map(o => o.ch);
+function togglePart(i, btn){
+  const cur = G.cur;
+  if(!cur || cur.done || btn.disabled || cur.locked.has(i)) return;
+  const at = cur.sel.indexOf(i);
+  if(at >= 0){ cur.sel.splice(at, 1); btn.classList.remove("sel"); btn.setAttribute("aria-pressed", "false"); }
+  else { cur.sel.push(i); btn.classList.add("sel"); btn.setAttribute("aria-pressed", "true"); }
+  const go = $("#submitParts"); if(go) go.disabled = !cur.sel.length;
+}
+function submitParts(){
+  const cur = G.cur;
+  if(!cur || cur.done || !cur.sel.length) return;
+  const sec = Math.round((performance.now() - (cur.t0 || cur.tShown)) / 100) / 10;
+  const left = {};
+  answerParts().forEach(p => left[p] = (left[p] || 0) + 1);
+  cur.locked.forEach(i => left[cur.opts[i].ch]--);
+  const good = [], bad = [];
+  for(const i of cur.sel){ const p = cur.opts[i].ch; if(left[p] > 0){ left[p]--; good.push(i); } else bad.push(i); }
+  const miss = Object.values(left).reduce((a, n) => a + n, 0), ok = !bad.length && !miss;
+  const card = i => $(`#pBody .opt-big[data-i="${i}"]`);
+  cur.final = [...cur.locked, ...cur.sel];   /* 這次送出後，畫面上選的全部（記進 pickSet） */
+  if(cur.firstPick === null){ cur.firstPick = {ch: cur.sel.map(i => cur.opts[i].ch).join(""), type: ok ? "答案" : bad.length ? "選到干擾部件" : "少選"}; cur.firstSec = sec; }
+  good.forEach(i => { const b = card(i); b.classList.remove("sel"); b.classList.add("right", "fx"); b.disabled = true; cur.locked.add(i); });
+  cur.sel = [];
+  if(ok){ card(good[good.length - 1]).insertAdjacentHTML("beforeend", BURST); sfx.right(); return endItem(true, sec); }
+  cur.wrong++;
+  bad.forEach(i => { const b = card(i); b.classList.remove("sel"); b.classList.add("wrong", "fx", "shake"); b.disabled = true; });
+  sfx.wrong();
+  const go = $("#submitParts"); if(go) go.disabled = true;
+  const note = $("#pickNote"); if(note) note.textContent = bad.length ? "打叉的不是這個字的部件，再選選看" : `還有 ${miss} 個部件沒選到`;
+  if(G.mode === "flu" || G.noHelp) return endItem(false, null);
+  const act = G.per[cur.it.kid].rule[cur.wrong - 1] || "free";
   if(act === "next") showNextHint();
   if(act === "reveal") reveal();
 }
@@ -582,6 +645,12 @@ function showNextHint(){
 /* 顯示答案並唸一次，這題記為沒通過 */
 function reveal(){
   const cur = G.cur;
+  if(G.goal === "R6"){   /* 聽音選部件：全部答案部件都框起來 */
+    cur.final = cur.final || [...cur.locked, ...cur.sel];
+    cur.opts.forEach((o, i) => { if(o.type === "答案"){ const b = $(`#pBody .opt-big[data-i="${i}"]`); if(b) b.classList.add("show"); } });
+    speak(promptOf(cur.it));
+    return endItem(false, null, true);
+  }
   const i = cur.opts.findIndex(o => o.type === "答案");
   const btn = $(`#pBody .opt-big[data-i="${i}"]`); if(btn) btn.classList.add("show");
   speak(promptOf(cur.it));
@@ -616,6 +685,8 @@ function endItem(passed, correctSec, revealed){
     read: !!G.read, readUsed: [...cur.reads].map(id => ({word:"語詞", sent:"句子"})[id]).join("、"),   /* 報讀：這次有沒有開、這題按了哪幾種提示的喇叭 */
     fontScale: settings.fontScale, rate: settings.rate, sfx: settings.sfx,
     clock: !!G.clock,                      /* 作答時右上角有沒有顯示計時 */
+    /* 聽音選部件（R6，2026-10-31）：這題的答案部件、最後送出的選擇（部件，空格分開，重複照寫）、答案部件取自第幾層（部件資料之後會改，所以記當時的） */
+    ...(G.goal === "R6" ? {answerSet: answerParts().join(" "), pickSet: (cur.final || [...cur.locked, ...cur.sel]).map(i => cur.opts[i].ch).join(" "), partsLayer: (Parts.read(it.c, {from: 2}) || {}).layer || ""} : {}),
     ...G.ws[it.k]   /* 只考有教的字：ws＝第幾組（""＝整課，"p"＝練習自己點的）、wsChars＝這課考的字、wsAll＝整課幾個字 */
   };
   saveRecord(rec);

@@ -18,7 +18,8 @@ function partsOf(c){
 }
 /* 這個評量目標「不出題」的字（2026-10-31 維護者決定）：部件重組（R4）要有部件可以重組，拆不開的字（獨體字等）沒有部件，所以不出；其他目標都出。
    出題、算題數、設定畫面的提醒都用它（play.js 的 testChars、setup.js 的 lessonSize 和 extraNote） */
-const goalSkips = (c, goal = state.goal) => goal === "R4" && !partsOf(c);
+const R6_MAX_PARTS = 5;   /* 聽音選部件：部件超過 5 個的字不出（要選的部件太多，選項會擠不下；2026-10-31 課本生字有 36 個） */
+const goalSkips = (c, goal = state.goal) => goal === "R4" ? !partsOf(c) : goal === "R6" ? !partsOf(c) || partsOf(c).length > R6_MAX_PARTS : false;
 /* 部件提示對拆不開的字：黑圓圈遮住字的中心、只露出旁邊的樣子（2026-10-31，取代以前打亂旋轉的切塊；圓圈直徑約字寬的 0.5 倍，維護者 2026-10-31 看過 0.4、0.5、0.6 倍的截圖後選的）。
    蓋住中心後剩下的筆畫太少、認不出字形的字，不給這種提示，系統自動跳到下一個提示。
    用全字庫正楷體畫出 111 個拆不開的字，看截圖挑出認不出來的：一、入、人、八（「入」「人」「八」蓋住後都只剩兩撇，看起來一樣） */
@@ -37,7 +38,7 @@ const GOALS = [
   {id:"R3", group:"識字", name:"聽音選字",  what:"聽「努力的努」，從形近字、同音字、同詞字中選出目標字（形 ↔ 音）", img:"img/goal-3.jpg"},
   {id:"R4", group:"識字", name:"部件重組",  what:"看拆開的部件，選出組成的字", img:"img/goal-4-1.jpg"},
   {id:"R5", group:"識字", name:"聽音補部件", what:"聽音，畫面給一半部件，選出另一半（單選）", off:"準備中"},
-  {id:"R6", group:"識字", name:"聽音拼部件", what:"聽音，從一堆部件挑出全部組成部件（複選）", off:"準備中"},
+  {id:"R6", group:"識字", name:"聽音選部件", what:"聽音，從一堆部件中選出這個字的全部部件，再按「送出」（複選）", practiceOnly:"只有練習"},
   {id:"R7", group:"識字", name:"看句子選字", what:"看句子，選出適合的字；「念句子」放在提示", off:"準備中"},
   {id:"W1", group:"寫字", name:"看注音寫國字", what:"看注音寫出國字；紙筆作答、老師登錄", off:"準備中"},
   {id:"W2", group:"寫字", name:"聽音寫字",  what:"聽音寫出國字；紙筆作答、老師登錄", off:"準備中"},
@@ -61,7 +62,7 @@ const HINT_SIDES = [["right","右邊（預設）"],["left","左邊"]];
 const TURN_STYLES = [["chime","畫面＋提示音（預設）"],["voice","畫面＋唸出名字"],["both","畫面＋提示音＋唸出名字"],["silent","只有畫面"]];
 const LIMITS = [["30","30 秒"],["60","1 分鐘"],["120","2 分鐘"]];
 const CHOICES = [["3","3 個"],["4","4 個"],["6","6 個"]];
-const choiceText = c => c === "bingo" ? "生字賓果卡" : `${c} 個選項`;
+const choiceText = c => c === "bingo" ? "生字賓果卡" : c === "parts" ? "部件選項（至少 6 個，依這個字的部件數決定）" : `${c} 個選項`;
 /* 練習的玩法（第 4 步選）：一般、遊戲、賓果三個按鈕（2026-10-24 維護者決定）；正式評量看「評量設定」（遊戲開或關），生字賓果只在練習
    icon：第 4 步卡片上的小圖示（自己畫的 SVG，不用圖片檔）；desc：卡片上的一句話說明 */
 const ICON_LINE = `stroke="#1f3d36" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`;
@@ -97,7 +98,7 @@ const sharedBingo = () => coopPossible() && playNow() === "bingo";   /* 多位�
 function playWhy(id){
   if(id === "color") return "";
   if(state.mode === "flu") return "流暢性模式不能用";
-  if(id === "bingo") return state.answer === "splitturn" ? "分區輪流之後再支援賓果" : "";
+  if(id === "bingo") return state.goal === "R6" ? "聽音選部件的答案是部件，不能用賓果卡" : state.answer === "splitturn" ? "分區輪流之後再支援賓果" : "";
   return "";
 }
 /* 這次實際用的玩法：選的不能用時，改用第一個能用的 */
@@ -318,7 +319,8 @@ const selKids = () => [...state.kids].filter(kidBy);
 const HINT_UNFIT = {
   "R1":  {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"},
   "R2":  {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"},
-  "R4":  {parts:"題目本身就是部件", sound:"會唸出答案的讀音，部件重組不唸題目"}
+  "R4":  {parts:"題目本身就是部件", sound:"會唸出答案的讀音，部件重組不唸題目"},
+  "R6":  {parts:"答案就是部件"}
 };
 const unfitWhy = (goal, h) => (HINT_UNFIT[goal] || {})[h] || "";
 const fitHints = (goal, list) => list.filter(h => !unfitWhy(goal, h));
@@ -329,7 +331,7 @@ function current(){
   const noHelp = flu || formal;
   return {
     formal, flu, noHelp,
-    choices: formal || flu ? settings.choices : playNow() === "bingo" ? "bingo" : state.pChoices,
+    choices: state.goal === "R6" ? "parts" : formal || flu ? settings.choices : playNow() === "bingo" ? "bingo" : state.pChoices,   /* 聽音選部件的選項數由部件數決定 */
     hints: noHelp ? [] : fitHints(state.goal, HINT_ORDER.filter(h => state.pHints.has(h))),
     rule: noHelp ? null : state.pRule
   };

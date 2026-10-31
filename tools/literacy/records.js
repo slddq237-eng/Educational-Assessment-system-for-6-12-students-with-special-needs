@@ -105,7 +105,9 @@ const COLS = [
   /* 第 3 版（A8，2026-10-25）：研究計畫與研究時期（研究計畫做出來前是空白） */
   ["研究計畫代號", r => r.planId || ""], ["研究計畫版本", r => r.planVer || ""], ["研究時期", r => r.rphase || ""],
   /* 只考有教的字（wordsets.js）：以前的紀錄都是整課出題 */
-  ["只考有教的字", r => !r.wsChars ? "整課" : `${r.ws === "p" ? "練習自己點的" : `第 ${r.ws} 組`}：${[...r.wsChars].length}／${r.wsAll} 字（${r.wsChars}）`]
+  ["只考有教的字", r => !r.wsChars ? "整課" : `${r.ws === "p" ? "練習自己點的" : `第 ${r.ws} 組`}：${[...r.wsChars].length}／${r.wsAll} 字（${r.wsChars}）`],
+  /* 聽音選部件（R6，2026-10-31）：只加在最後面，舊紀錄沒有這些欄位（空白）；A8 第 24 點：只加欄位，紀錄格式不升版 */
+  ["聽音選部件：正確部件", r => r.answerSet || ""], ["聽音選部件：最後選的部件", r => r.pickSet || ""], ["部件取自第幾層", r => r.partsLayer ? `第 ${r.partsLayer} 層` : ""]
 ];
 const fileDate = t => { const d = new Date(t); return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}_${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}`; };
 /* Excel 元件按匯出時才載入（見 shared/common.js 的 loadXlsx） */
