@@ -219,6 +219,18 @@ const kids = load(KEYS.kids, [
   {code:"S01", name:"", grade:2, sy:SCHOOL_YEAR}, {code:"S02", name:"", grade:2, sy:SCHOOL_YEAR}
 ]);
 const saveKids = () => store(KEYS.kids, kids);
+/* 新學生的代號由系統產生隨機碼（2026-10-31 維護者決定，老師不用也不能自己取）：改名字、換人都不會撞到同一個代號；
+   不含容易看錯的字（0 o 1 l i）。舊的代號（例如 S01）照舊。 */
+const CODE_CHARS = "abcdefghjkmnpqrstuvwxyz23456789";
+function newKidCode(){
+  const taken = new Set(kids.map(k => k.code));
+  for(;;){
+    const b = new Uint8Array(6);
+    if(window.crypto && crypto.getRandomValues) crypto.getRandomValues(b); else b.forEach((_, i) => b[i] = Math.random() * 256);
+    const c = [...b].map(n => CODE_CHARS[n % CODE_CHARS.length]).join("");
+    if(!taken.has(c)) return c;
+  }
+}
 /* 學生分組（組名＋學生代號）：在「學生名單」編輯，教學日期、老師專區「多位學生」共用；
    存在老師專區的設定（KEYS.teacher 的 groups 欄，只存代號），不進作答紀錄 */
 const getGroups = () => (load(KEYS.teacher, {}).groups || []).filter(g => g && g.name && Array.isArray(g.kids));
@@ -238,7 +250,8 @@ const adjLevel = k => planOf(k).adjust ? planOf(k).level : null;
 const kidGrade = k => Math.min(6, k.grade + (SCHOOL_YEAR - (k.sy || SCHOOL_YEAR)));
 const kidBy = code => kids.find(k => k.code === code);
 /* 老師看的畫面：「姓名（代號）」；學生看的畫面（輪到誰、結果）：只顯示姓名，沒填姓名才顯示代號 */
-const kidLabel = k => k.name ? `${k.name}（${k.code}）` : k.code;
+/* 名字不重複就只顯示名字（代號是隨機碼，不給老師看）；同名或沒填名字才加上代號 */
+const kidLabel = k => !k.name ? k.code : kids.filter(o => o.name === k.name).length > 1 ? `${k.name}（${k.code}）` : k.name;
 const kidShow = k => k.name || k.code;
 /* 判斷時機用的「學習年級」：有課程調整就用調整後的年級 */
 const studyGrade = k => adjLevel(k) || kidGrade(k);
