@@ -108,10 +108,12 @@ function showGacha(item, done){
   let pulled = false;
   const finish = () => { box.remove(); done(); };
   $g(".gskip").onclick = () => { pulled = true; finish(); };
-  $g(".gq").onclick = e => { const o = $g(".godds"); o.hidden = !o.hidden; e.currentTarget.setAttribute("aria-expanded", !o.hidden); };
+  const closeOdds = () => { $g(".godds").hidden = true; $g(".gq").setAttribute("aria-expanded", "false"); box.classList.remove("oddsopen"); };
+  $g(".gq").onclick = e => { const o = $g(".godds"); o.hidden = !o.hidden; e.currentTarget.setAttribute("aria-expanded", !o.hidden); box.classList.toggle("oddsopen", !o.hidden); };   /* 面板排在版面裡，展開時扭蛋機縮小，不蓋住按鈕 */
   /* 拉拉桿：點一下，或按住往下拖都算 */
   const pull = () => {
     if(pulled) return; pulled = true;
+    closeOdds();   /* 拉桿時先收起抽中機會，扭蛋機才不會一邊縮放一邊動畫 */
     gachaSfx.pull();
     if(calmMotion()){ gachaSfx.open(st); return setTimeout(finish, 300); }
     const T = GACHA_T, at = (ms, f) => setTimeout(() => { if(box.isConnected) f(); }, ms);

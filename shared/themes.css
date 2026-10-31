@@ -84,7 +84,11 @@
 .gcap .gtop{transition:transform .45s,opacity .45s;transform-origin:50% 50%}
 .gfx{position:absolute;left:50%;top:83%;width:0;height:0}
 .gfx i{position:absolute;left:-5px;top:-7px;width:10px;height:14px;border-radius:3px;opacity:0}
-.godds{position:absolute;left:50%;bottom:76px;transform:translateX(-50%);width:min(600px,92vw);text-align:left;z-index:2}
+.godds{position:relative;width:min(600px,92vw);text-align:left;z-index:2}
+/* 展開「抽中機會」時：不再蓋住「跳過」「？抽中機會」按鈕（2026-10-31）。扭蛋機縮小讓出位置；很矮的螢幕連上面的說明也收起來 */
+.oddsopen .gstage{height:min(36vh,100vw)}
+.oddsopen .gsay{display:none}
+@media (max-height:560px){.oddsopen .who2{display:none}.oddsopen .gstage{height:min(30vh,100vw)}}
 .grain{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .grain i{position:absolute;top:-24px;width:8px;height:12px;border-radius:2px;opacity:0}
 .gcrank,.gballs,.gbub{transform-box:fill-box;transform-origin:50% 50%}
