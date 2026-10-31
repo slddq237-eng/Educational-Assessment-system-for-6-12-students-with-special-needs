@@ -7,7 +7,7 @@
   C：開源部件預設拆法          cjkvi-ids 原本的第一層拆法（沒經過人工修改）
 A、B 右邊各有一欄「人工手動」（綠色），老師覺得 A、B 不對時寫在這裡，程式不會動它。
 原本的欄位一個都不動；A、B、C 三欄每次執行都整欄重算（不要直接改這三欄，要改請寫在旁邊的人工手動欄）。
-平台（識字評量、備課分析）不讀這三欄，仍然用「人工 PARTS 優先，沒有才用 parts.js」。
+A、B、C 這三欄平台不讀；A、B 右邊的人工手動欄會在最後一步寫進 shared/lessons.js 的 PARTS_A、PARTS_B，平台依用途優先讀（見 shared/common.js 的 rawParts），沒填的字再用人工 PARTS、parts.js。
 
 什麼時候跑：make_parts.py 之後（新增課本、改了 shared/lessons.js 的 PARTS 之後）。
 
