@@ -56,7 +56,7 @@ function clearRecords(){
   try { recDb.transaction(REC_STORE, "readwrite").objectStore(REC_STORE).clear(); } catch(e){}
 }
 /* 平板作答（data.js 的 TABLET）不存進平板的資料庫：紀錄只放在記憶體、送到老師的 Google 表單（見 tablet.js） */
-(async () => { recDb = TABLET ? null : await openRecDb(); records = await loadRecords(); $("#dbWarn").hidden = !!recDb || !!TABLET; checkBackup(); })();
+(async () => { recDb = TABLET ? null : await openRecDb(); records = await loadRecords(); recordsLoaded = true; if(typeof renderTidyNote === "function") renderTidyNote(); $("#dbWarn").hidden = !!recDb || !!TABLET; checkBackup(); })();
 
 /* 備份提醒：有紀錄、而且超過 30 天沒下載備份檔（或從來沒備份過）時，設定畫面上方提醒一次 */
 const BACKUP_KEY = KEYS.lastBackup, BACKUP_DAYS = 30;

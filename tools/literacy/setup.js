@@ -448,6 +448,7 @@ function renderKids(){
   /* 人數上限不在這裡寫，第 3 步選作答方式時，人數不合的選項會寫原因 */
   $("#kidsHintQ").textContent = "點選要做的學生，可以選好幾位。";
   /* 選學生的按鈕只顯示頭像和名字（2026-10-25 維護者要求）；沒填名字顯示代號、同名的才加代號分辨 */
+  renderTidyNote();
   /* 名單是空的（第一次使用）：說明要先新增學生，按鈕直接打開學生名單 */
   if(!kids.length){ $("#kids").innerHTML = `<p class="note" style="margin:0">還沒有學生。請先新增學生，才能開始評量。 <button class="save" data-open="kids">新增學生</button></p>`; return; }
   $("#kids").innerHTML = kids.map(k => `<button class="chip kidchip ${state.kids.has(k.code)?"on":""}" data-k="${esc(k.code)}" aria-pressed="${state.kids.has(k.code)}">${Rewards.avatarHtml(k.code)}${esc(k.name && kids.filter(o => o.name === k.name).length === 1 ? k.name : kidLabel(k))}</button>`).join("");
@@ -496,15 +497,12 @@ function renderKidSheet(){
     });
     r.querySelector("[data-plan]").onclick = () => { openPlan = openPlan === k.code ? null : k.code; renderKidSheet(); };
     r.querySelector("[data-avopen]").onclick = () => { openAv = openAv === k.code ? null : k.code; renderKidSheet(); };
-    r.querySelector("[data-arch]").onclick = () => {   /* 封存：搬到封存名單，紀錄、貼紙、分組都不動（2026-10-31） */
-      if(openPlan === k.code) openPlan = null; if(openAv === k.code) openAv = null;
-      state.kids.delete(k.code); kids.splice(+r.dataset.i, 1); k.archivedAt = iso(new Date()); kidsArchived.push(k);
-      saveKids(); saveArchived(); renderKidSheet(); render();
-    };
+    r.querySelector("[data-arch]").onclick = () => { archiveKid(k); saveKids(); saveArchived(); renderKidSheet(); render(); renderTidyNote(); };
     r.querySelector("[data-del]").onclick = () => deleteKid(k);
   });
   bindAvatarPanel($("#kTable .avpick"), () => { renderKidSheet(); render(); });
   renderKidGroupSheet();
+  renderTidy();
   /* 封存區：取消封存時請老師確認年級（年級是用學年算的，隔很久才回來會一次補算好幾年；留級也要老師自己改） */
   $("#kArchSum").textContent = `封存區（${kidsArchived.length} 位）`;
   $("#kArchBody").innerHTML = kidsArchived.length ? kidsArchived.map((k, i) => `<div class="arow" data-i="${i}">
@@ -517,7 +515,7 @@ function renderKidSheet(){
     r.querySelector("[data-unarch]").onclick = () => {
       const dup = kids.find(x => x.name && x.name === k.name);
       if(dup){ alert(`現在名單裡已經有一位叫「${k.name}」的學生了，學生名字不能重複。\n\n請先把現在名單裡的那位改名（或把他封存），再取消封存。`); return; }
-      k.grade = +r.querySelector("[data-ug]").value; k.sy = SCHOOL_YEAR; delete k.archivedAt;
+      k.grade = +r.querySelector("[data-ug]").value; k.sy = SCHOOL_YEAR; delete k.archivedAt; k.since = iso(new Date());
       kidsArchived.splice(+r.dataset.i, 1); kids.push(k);
       saveKids(); saveArchived(); renderKidSheet(); render();
     };
@@ -535,6 +533,57 @@ function renderKidSheet(){
       saveKids(); renderKidSheet(); render();
     });
   });
+}
+/* 封存一位學生：搬到封存名單，紀錄、貼紙、分組都不動（2026-10-31）；呼叫的人負責存檔和重畫 */
+function archiveKid(k){
+  if(openPlan === k.code) openPlan = null; if(openAv === k.code) openAv = null;
+  state.kids.delete(k.code); kids.splice(kids.indexOf(k), 1); k.archivedAt = iso(new Date()); kidsArchived.push(k);
+}
+/* ---------- 新學期整理名單（2026-10-31 維護者決定）----------
+   換學期後提醒老師：上一學期完全沒有作答紀錄的學生可以封存。系統不自動封存，老師自己勾選。
+   k.since＝這位學生放進（或從封存區回到）現在名單的日期，這學期才加入或回來的人不列。 */
+const termLabel = (sy, term) => `${sy} 學年${term}學期`;
+/* 某學期的起訖日：8～1 月是上學期、2～7 月是下學期 */
+function termDates(sy, term){ const y = sy + 1911; return term === "上" ? [`${y}-08-01`, `${y+1}-01-31`] : [`${y+1}-02-01`, `${y+1}-07-31`]; }
+const prevTermOf = () => TERM === "上" ? {sy: SCHOOL_YEAR - 1, term: "下"} : {sy: SCHOOL_YEAR, term: "上"};
+let tidyDone = load(KEYS.kidsTerm, null), tidyShown = false;
+if(tidyDone === null){ tidyDone = PLAN_KEY; store(KEYS.kidsTerm, tidyDone); }   /* 第一次用或剛升級到有這個功能：不馬上提醒，下次換學期才提醒 */
+const tidyPending = () => tidyDone !== PLAN_KEY;
+function tidyDoneNow(){ tidyDone = PLAN_KEY; store(KEYS.kidsTerm, tidyDone); }
+function tidyCandidates(){
+  if(TABLET || !recordsLoaded) return [];   /* 紀錄還沒讀完時不判斷，不然每個人都會被當成沒紀錄 */
+  const p = prevTermOf(), [ps, pe] = termDates(p.sy, p.term), [cs] = termDates(SCHOOL_YEAR, TERM), seen = new Map();
+  for(const r of records){
+    const d = iso(new Date(r.at)), m = seen.get(r.kid) || {};
+    if(d < cs) m.before = true;
+    if(d >= ps && d <= pe) m.prev = true;
+    if(d >= cs) m.cur = true;
+    seen.set(r.kid, m);
+  }
+  return kids.filter(k => { const m = seen.get(k.code) || {}, since = k.since || "";
+    return since < cs && !m.prev && !m.cur && (m.before || since); });
+}
+/* 選學生那一步：換學期後提醒有幾位可以封存 */
+function renderTidyNote(){
+  const n = tidyPending() ? tidyCandidates().length : 0, el = $("#tidyNote");
+  if(!el) return;
+  el.hidden = !n; if(n) $("#tidyN").textContent = n;
+}
+/* 學生名單面板的「整理名單」：列出候選、勾選後一次封存 */
+function renderTidy(){
+  const list = tidyCandidates(), p = prevTermOf(), pend = tidyPending(), box = $("#kTidyBody");
+  $("#kTidySum").textContent = `整理名單：${termLabel(p.sy, p.term)}沒有作答紀錄的學生（${recordsLoaded ? list.length : "讀取中"}${recordsLoaded ? " 位" : ""}）${pend && list.length ? "・新學期提醒" : ""}`;
+  if(pend && list.length && !tidyShown){ $("#kTidy").open = true; tidyShown = true; }
+  box.innerHTML = (list.length ? `<div class="tlist">${list.map(k => `<label><input type="checkbox" data-tk="${esc(k.code)}"> ${esc(kidShow(k))} <small>（${esc(gradeText(k))}）</small></label>`).join("")}</div>
+      <div class="row"><button class="chip" id="tidyArch" disabled>封存勾選的學生</button></div>` : `<p class="note" style="margin:0">沒有符合的學生。</p>`)
+    + (pend ? `<p class="note" style="margin:6px 0 0"><button class="linkbtn" id="tidySkip">這學期不用提醒了</button></p>` : "");
+  const arch = $("#tidyArch");
+  box.querySelectorAll("[data-tk]").forEach(c => c.onchange = () => { const n = box.querySelectorAll("[data-tk]:checked").length; arch.disabled = !n; arch.textContent = n ? `封存勾選的 ${n} 位` : "封存勾選的學生"; });
+  if(arch) arch.onclick = () => {
+    const picked = [...box.querySelectorAll("[data-tk]:checked")].map(c => kidBy(c.dataset.tk)).filter(Boolean);
+    picked.forEach(archiveKid); tidyDoneNow(); saveKids(); saveArchived(); renderKidSheet(); render(); renderTidyNote();
+  };
+  if($("#tidySkip")) $("#tidySkip").onclick = () => { tidyDoneNow(); renderKidSheet(); renderTidyNote(); };
 }
 /* 刪除一位學生（2026-10-31 維護者決定）：連同作答紀錄、貼紙和頭像、分組、各課個別教學日期、個別提示全部刪掉，救不回來。
    現在名單和封存區的學生都用這個。不再上課但想留著紀錄，請用「封存」。
@@ -590,7 +639,7 @@ $("#addKid").onclick = () => {
   const other = nameTaken(name);
   if(other){ alert(nameClash(name, other)); return; }
   const code = newKidCode();
-  kids.push({code, name, grade:2, sy:SCHOOL_YEAR}); state.kids.add(code);
+  kids.push({code, name, grade:2, sy:SCHOOL_YEAR, since:iso(new Date())}); state.kids.add(code);
   $("#newKid").value = ""; saveKids(); renderKidSheet(); render();
 };
 $("#newKid").addEventListener("keydown", e => { if(e.key === "Enter") $("#addKid").click(); });
