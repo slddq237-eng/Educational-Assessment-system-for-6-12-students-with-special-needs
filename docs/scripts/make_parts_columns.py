@@ -170,10 +170,10 @@ yellow, green, none, red = (PatternFill('solid', fgColor='FBF1DC'), PatternFill(
 note = {'結構': '電腦從 cjkvi-ids 判斷第一層的排列方式；不對請寫在右邊「老師修正：結構」',
         '老師修正：結構': '老師填：從下拉選單選；有填就用這個。遮擋題會用結構決定遮哪一塊',
         '第一層（電腦）': '電腦自動：按結構拆成 2～3 個可讀出聲音的部件，黃色＝待老師確認；拆不出來的留空，需要檢查欄會寫原因',
-        '第一層（人工手動）': '老師填：部件用半形空格分開，順序照結構（左右＝左在前；上下＝上在前；包圍＝外層在前、裡面在後），例如「氵 青」。程式重算時不會動',
+        '第一層（人工手動）': '老師填：部件可以用空格、頓號或＋分開，也可以直接連寫（氵青），每個字元算一塊；順序照結構（左右＝左在前；上下＝上在前；包圍＝外層在前、裡面在後），例如「氵 青」。程式重算時不會動',
         '第一層狀態': '老師填（下拉選單）：已確認／待確認／待討論。人工手動欄有填、狀態空白當待確認；待討論不寫進平台',
         '第二層（電腦）': '電腦自動：可教學角度拆到最細（拆到部首就停，不拆成單一筆畫或罕用字），黃色＝待老師確認',
-        '第二層（人工手動）': '老師填：部件用半形空格分開，例如「足 耳 耳 耳」；想當成獨體字不拆就寫字自己。程式重算時不會動',
+        '第二層（人工手動）': '老師填：部件可以用空格、頓號或＋分開，也可以直接連寫，例如「足 耳 耳 耳」或「足耳耳耳」；想當成獨體字不拆就寫字自己。程式重算時不會動',
         '第二層狀態': '老師填（下拉選單）：已確認／待確認／待討論。康軒四上 86 字舊的人工部件已搬到這裡、標待確認',
         '第三層（開源最細）': '電腦自動：cjkvi-ids 一路拆到最底層，拼起來剛好是字，不含中間層（含單一筆畫）；不用修改',
         '正式評量遮第幾塊（電腦）': '電腦自動：左右、上下遮右邊、下面那塊；左中右、上中下遮最後一塊；各種包圍遮裡面（第 2 塊）；沒有規則的留空。按「第一層」的順序數',
@@ -187,7 +187,10 @@ for j, h in enumerate(H, 1):
     c = ws.cell(1, j); c.font, c.fill, c.alignment, c.border = copy.copy(last.font), copy.copy(last.fill), copy.copy(last.alignment), copy.copy(last.border)
     ws.column_dimensions[openpyxl.utils.get_column_letter(j)].width = WIDTH[h]
     if h in note: c.comment = Comment(note[h], 'Claude')
-def tokens(v): return [t for t in re.split(r'[\s＋+、,，]+', str(v).strip()) if t] if v not in (None, '') else []
+CJK = re.compile(r'[\u2E80-\u2FDF\u31C0-\u31EF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\U00020000-\U0003FFFF]')
+def tokens(v):   # 人工手動欄：每個字元算一塊，空格（半形、全形）、＋、頓號、逗號都略過，所以連寫也可以（氵青）；有字母、括號等不是部件的字元就回傳空（格式不對）
+    cs = chars_of(v) if v not in (None, '') else []
+    return cs if all(CJK.match(c) for c in cs) else []
 def status_of(cell, has): return (str(cell).strip() if cell not in (None, '') else '待確認') if has else (str(cell).strip() if cell else '')
 for r in range(2, ws.max_row + 1):
     c = ws.cell(r, 1).value
@@ -276,7 +279,7 @@ head = '''/* 部件三層資料（自動產生，請不要手改；老師改部�
    設計見 docs/design/parts-layers.md、parts-layers-impl.md。步驟 3a 起平台只透過 window.Parts 讀這個檔，現在平台還沒讀。
    每個字：s＝結構（老師修正優先）；1、2、3＝第一～第三層，a＝電腦拆法、m＝老師的人工手動拆法（只有狀態是已確認或待確認才寫進來）、
    t＝人工手動的狀態（已確認／待確認／待討論）；k＝正式評量遮第幾塊（按第一層的順序數，沒有規則的字沒有 k）。
-   部件用半形空格分開，同一部件出現幾次寫幾次；足、酋已當成一整塊。 */
+   部件用半形空格分開（這個檔裡），同一部件出現幾次寫幾次；足、酋已當成一整塊。 */
 '''
 body = 'const PARTS_LAYERS = {\n' + ',\n'.join(f'{json.dumps(c, ensure_ascii=False)}:{json.dumps(d, ensure_ascii=False, separators=(",", ":"))}' for c, d in sv.items()) + '\n};\n'
 open(OUT, 'w', encoding='utf8').write(head + body)
