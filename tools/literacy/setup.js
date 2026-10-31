@@ -462,8 +462,7 @@ function renderKidSheet(){
     const p = planOf(k), open = openPlan === k.code;
     return `<div class="krow" data-i="${i}">
     <button class="avedit" data-avopen aria-expanded="${openAv === k.code}" aria-label="更換${esc(kidShow(k))}的頭像">${Rewards.avatarHtml(k.code)}</button>
-    <input aria-label="代號" data-f="code" value="${esc(k.code)}" maxlength="8">
-    <input aria-label="名字" data-f="name" value="${esc(k.name||"")}" maxlength="10" placeholder="學生看到的名字">
+    <input aria-label="名字" data-f="name" value="${esc(k.name||"")}" maxlength="10" placeholder="${k.name ? "學生看到的名字" : `輸入名字（目前代號 ${esc(k.code)}）`}">
     <select aria-label="年級" data-f="grade">${GRADES.map((g,j) => `<option value="${j+1}" ${kidGrade(k)===j+1?"selected":""}>${g}年級</option>`).join("")}</select>
     <button class="chip ${adjLevel(k) || dosage(p) ? "on" : ""}" data-plan aria-expanded="${open}">本學期安排${adjLevel(k) || dosage(p) ? " ✓" : ""}</button>
     <button class="chip" data-del>刪除</button></div>
@@ -481,10 +480,10 @@ function renderKidSheet(){
     const k = kids[+r.dataset.i];
     r.querySelectorAll("[data-f]").forEach(f => f.onchange = () => {
       if(f.dataset.f === "grade"){ k.grade = +f.value; k.sy = SCHOOL_YEAR; }
-      else if(f.dataset.f === "code"){ const v = f.value.trim(); if(!v || kids.some(x => x !== k && x.code === v)){ f.value = k.code; return; }
-        if(state.kids.delete(k.code)) state.kids.add(v); if(openPlan === k.code) openPlan = v; if(openAv === k.code) openAv = v;
-        Rewards.rename(k.code, v); saveGroups(getGroups().map(g => ({...g, kids: g.kids.map(c => c === k.code ? v : c)}))); k.code = v; }
-      else k.name = f.value.trim();
+      else {   /* 名字：代號不會變，所以改名字＝同一位學生，紀錄、貼紙都沿用（2026-10-31）；原本有名字時先提醒 */
+        const v = f.value.trim(), old = k.name || "";
+        if(old && v !== old && !confirm(`改名字不會變成另一位學生：「${old}」的評量紀錄和貼紙，都會變成「${v || "（沒有名字）"}」的。\n\n如果是另一位學生，請按「取消」，改用下方「加入」新增學生。\n\n確定要改名字嗎？`)){ f.value = old; return; }
+        k.name = v; }
       saveKids(); render();
     });
     r.querySelector("[data-plan]").onclick = () => { openPlan = openPlan === k.code ? null : k.code; renderKidSheet(); };
@@ -493,6 +492,7 @@ function renderKidSheet(){
   });
   bindAvatarPanel($("#kTable .avpick"), () => { renderKidSheet(); render(); });
   renderKidGroupSheet();
+  $("#kCodeBody").innerHTML = kids.length ? `<table class="codemap"><thead><tr><th>名字</th><th>代號</th></tr></thead><tbody>${kids.map(k => `<tr><td>${esc(k.name || "（沒有名字）")}</td><td><code>${esc(k.code)}</code></td></tr>`).join("")}</tbody></table>` : `<p class="note" style="margin:0">還沒有學生。</p>`;
   $("#kTable").querySelectorAll(".plan").forEach(r => {
     const k = kids[+r.dataset.i];
     const plan = () => ((k.plans ||= {})[PLAN_KEY] ||= {});
@@ -529,9 +529,11 @@ $("#addGrp").onclick = () => {
 };
 $("#newGrp").addEventListener("keydown", e => { if(e.key === "Enter") $("#addGrp").click(); });
 $("#addKid").onclick = () => {
-  const v = $("#newKid").value.trim();
-  if(!v || kids.some(k => k.code === v)) return;
-  kids.push({code:v, name:"", grade:2, sy:SCHOOL_YEAR}); state.kids.add(v);
+  const name = $("#newKid").value.trim();
+  if(!name) return;
+  if(kids.some(k => k.name === name) && !confirm(`已經有一位叫「${name}」的學生了。\n\n要再新增另一位同名的學生嗎？（如果是同一位，請按「取消」，不用重複新增）`)) return;
+  const code = newKidCode();
+  kids.push({code, name, grade:2, sy:SCHOOL_YEAR}); state.kids.add(code);
   $("#newKid").value = ""; saveKids(); renderKidSheet(); render();
 };
 $("#newKid").addEventListener("keydown", e => { if(e.key === "Enter") $("#addKid").click(); });
