@@ -14,7 +14,7 @@
 | 整理（重構）程式 | `code/refactor.md`（規則與進度清單）、`code/architecture.md` |
 | 改設定畫面、選項之間的限制（玩法、作答方式、主題、題數） | `code/setup-flow-audit.md`（2026-10-26 全面檢查：每兩個選項怎麼互相限制、哪些悄悄改掉）、`design/game-design.md` 第 2 節 |
 | 改識字評量的功能、畫面、玩法 | `design/literacy-design.md`；賓果整合、增強系統、部件重組讀 `design/literacy-play.md`；`plans/roadmap.md`（確認屬於哪個階段） |
-| 改部件的拆法、各功能讀哪一層部件、部件相關新玩法（聽音選部件、聽音補部件、看部件寫字） | `design/parts-layers.md`（部件三層設計，2026-10-31 討論稿）、`materials/materials.md`「部件資料的狀況」；新玩法舊設計讀 `design/literacy-play.md` |
+| 改部件的拆法、各功能讀哪一層部件、部件相關新玩法（聽音選部件、聽音補部件、看部件寫字） | `design/parts-layers.md`（部件三層設計，2026-10-31 討論稿；資料檔、`Parts` 入口、實作順序在 `design/parts-layers-impl.md`）、`materials/materials.md`「部件資料的狀況」；新玩法舊設計讀 `design/literacy-play.md` |
 | 改貼紙、扭蛋、星等、進化、設定步驟、玩法設定表 | `design/game-design.md` |
 | 改老師專區、分析、報告、備課分析 | `design/analysis-design.md`、`design/records.md` |
 | 改作答紀錄格式、資料儲存、匯出入 | `design/records.md`、`design/a8-terms.md`（**改格式前一定要先讀，並先和維護者討論**） |
@@ -43,6 +43,7 @@
 | `design/game-design.md` | 遊戲與獎勵：貼紙代號、星等、扭蛋、進化、設定步驟與玩法設定表（2026-10-24 新增） | （新） |
 | `design/analysis-design.md` | 老師專區（分析）、研究方法分層、學扶前後測、分析教學、備課分析 | 3-2、3-4、3-3 的「學扶前後測」「分析教學」 |
 | `design/parts-layers.md` | 部件三層設計：第一～三層定義、六個功能各從哪層讀、聽音選部件／聽音補部件／看部件寫字、遮蔽做法、實作順序、待決（2026-10-31 新增，討論稿） | （新） |
+| `design/parts-layers-impl.md` | 部件三層設計的資料與程式介面（`shared/parts-layers.js`、`window.Parts` 入口）、實作順序（2026-10-31 從 `design/parts-layers.md` 拆出） | （新） |
 | `design/records.md` | 資料怎麼存、作答紀錄 | 4 |
 | `design/a8-terms.md` | A8 名詞與時期定義：前後測、研究時期、紀錄第 3 版欄位、實作待辦（2026-10-25 從 `design/records.md` 拆出） | 3-3 的「A8 名詞與時期定義」 |
 | `design/analysis-page-draft.md` | 老師專區「一位學生」簡潔畫面設計草稿：預設畫面、換字表、待決題號（2026-10-25 新增） | （新） |
