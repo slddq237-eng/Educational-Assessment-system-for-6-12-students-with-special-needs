@@ -1,0 +1,128 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>遮擋位置調整工具</title>
+<style>
+:root{--bg:#f6f7f9;--fg:#1c2330;--card:#fff;--line:#d5d9e0;--acc:#2563eb}
+@media (prefers-color-scheme:dark){:root{--bg:#161a22;--fg:#e8ebf0;--card:#222834;--line:#3a4252;--acc:#6ea0ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,"Noto Sans TC",sans-serif;display:flex;height:100vh}
+aside{width:240px;flex:none;overflow:auto;border-right:1px solid var(--line);padding:10px;background:var(--card)}
+aside h2{font-size:15px;margin:4px 0 8px}
+.g{display:flex;justify-content:space-between;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:14px}.g:hover{background:var(--bg)}.g.on{background:var(--acc);color:#fff}
+.g b{font-weight:600}.g small{opacity:.8}
+main{flex:1;overflow:auto;padding:12px 16px}
+.top{position:sticky;top:-12px;background:var(--bg);padding:8px 0;z-index:5;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid var(--line);margin-bottom:10px}
+button{font:inherit;padding:5px 12px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg);cursor:pointer}button:hover{border-color:var(--acc)}
+button.p{background:var(--acc);color:#fff;border-color:var(--acc)}
+.help{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:14px}
+.grid{display:flex;flex-wrap:wrap;gap:12px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:8px;padding:6px}.card.ed{border-color:#f59e0b}
+.card .t{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:4px}
+.card .t i{font-style:normal;background:#f59e0b;color:#000;border-radius:4px;padding:0 6px;font-size:12px}
+.cv{position:relative;margin-top:18px;background:#fff;outline:1px solid #bbb;touch-action:none;user-select:none}
+.cv img{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.bx{position:absolute;cursor:move;border:1.5px solid;}
+.bx.c0{background:rgba(30,90,255,.35);border-color:#1e5aff}.bx.c1{background:rgba(255,40,40,.38);border-color:#e02020}.bx.c2{background:rgba(0,170,60,.38);border-color:#0a9a3c}
+.bx span{position:absolute;left:2px;top:0;font-size:11px;color:#000;opacity:.7;pointer-events:none}
+.h{position:absolute;width:12px;height:12px;background:#fff;border:1.5px solid #333;border-radius:3px}
+.rot{position:absolute;left:calc(50% - 7px);top:-26px;width:14px;height:14px;border-radius:50%;background:#fde047;border:1.5px solid #333;cursor:grab}.rot:before{content:'';position:absolute;left:5px;top:12px;width:1.5px;height:12px;background:#333}
+.del{position:absolute;right:-4px;top:-4px;width:18px;height:18px;border-radius:50%;background:#dc2626;color:#fff;font-style:normal;font-size:14px;line-height:17px;text-align:center;cursor:pointer;z-index:3}
+.h[data-d=nw]{left:-6px;top:-6px;cursor:nwse-resize}.h[data-d=ne]{right:-6px;top:-6px;cursor:nesw-resize}.h[data-d=sw]{left:-6px;bottom:-6px;cursor:nesw-resize}.h[data-d=se]{right:-6px;bottom:-6px;cursor:nwse-resize}
+.h[data-d=n]{left:calc(50% - 6px);top:-6px;cursor:ns-resize}.h[data-d=s]{left:calc(50% - 6px);bottom:-6px;cursor:ns-resize}.h[data-d=w]{left:-6px;top:calc(50% - 6px);cursor:ew-resize}.h[data-d=e]{right:-6px;top:calc(50% - 6px);cursor:ew-resize}
+.acts{display:flex;gap:4px;margin-top:5px}.acts button{font-size:12px;padding:2px 6px}
+textarea{width:100%;height:120px;font:12px monospace}
+.note{font-size:13px;opacity:.8}
+</style></head><body>
+<aside><h2>分組（同組的字用同一個預設位置）</h2><div id="gl"></div></aside>
+<main>
+<div class="help"><b>怎麼用：</b>左邊選一組 → 直接用滑鼠拖曳色塊（藍＝第 1 塊、紅＝第 2 塊、綠＝第 3 塊）：<b>拖中間＝移動</b>，<b>拖白色小方塊＝放大縮小</b>，<b>拖上方黃色圓點＝旋轉</b>（預設每 5 度一格，按住 Alt 可以微調）。字型關係一塊蓋不住時，按卡片下方「<b>＋第N塊加色塊</b>」再加一個（可以各自移動、旋轉；紅色 × 刪除）。色塊要剛好蓋住「題目要選的那個部件」，又不要蓋到旁邊的部件。<br>
+一整組都不準：改好一個字，按「<b>套用到整組</b>」，同組所有字都換成這個位置。只有這個字特別：改好就好（橘框＝已改）。<br>
+改完按最上面的「<b>下載結果</b>」，把檔案傳給我。你的修改會自動存在這個瀏覽器，關掉再開還在（用同一台電腦、同一個瀏覽器）。一開始看到的是 repo 目前已經調好的結果（已改的字有橘框），可以接著改。</div>
+<div id="sync" class="help" hidden></div>
+<div class="top"><button class="p" id="dl">下載結果（.json）</button><button id="cp">複製結果文字</button><button id="im">匯入先前的結果</button><button id="rs0">重設為 repo 現有結果</button><input type="file" id="fi" accept=".json" hidden>
+<label>卡片大小 <input type="range" id="sz" min="100" max="260" value="170"></label><span id="stat" class="note"></span><span id="pg"></span></div>
+<div id="grid" class="grid"></div>
+</main>
+<script>
+const DATA=__DATA__;      /* [分組, 字, 結構, 第一層部件, 第幾塊, 這塊是, 左, 上, 右, 下] */
+const IMG=__IMG__;
+const BASE='__BASE__';   /* 這份 repo 結果的版本代號（docs/materials/mask-fix.json 內容的 sha1 前 10 碼） */
+const INIT=__INIT__;   /* repo 目前的結果（docs/materials/mask-fix.json）：這台電腦還沒有存過修改時，從這裡開始 */
+const groups={},chars={};
+DATA.forEach(r=>{const[g,c,st,ps,i,pn,...b]=r;(groups[g]=groups[g]||[]);if(!chars[c]){chars[c]={g,st,ps,boxes:{}};groups[g].push(c)}chars[c].boxes[i]={name:pn,def:[[...b,0]]}});
+let gOv={},cOv={},cur=null,page=0,SZ=170,PER=24;
+/* 每個部件的遮擋＝一串色塊，每塊 [左,上,右,下,旋轉角度]；舊格式（只有 4 個數字的一塊）自動轉換 */
+const norm=v=>!v?v:(typeof v[0]==='number'?[[...v,0]]:v.map(s=>s.length<5?[...s,0]:s));
+const normAll=o=>{const r={};Object.keys(o||{}).forEach(k=>{r[k]={};Object.keys(o[k]).forEach(i=>{r[k][i]=i==='ps'?o[k][i]:norm(o[k][i])})});return r};   /* ps＝調整當時的第一層部件（字串），不是色塊 */
+const hasEdit=o=>!!o&&Object.keys(o).some(k=>k!=='ps');
+/* 存檔（這台電腦的瀏覽器）：state＝目前的調整、base＝這份調整出發時 repo 的結果（用來和新版 repo 結果做三方合併）、baseId＝出發版本代號。
+   沒存過就從 repo 目前的結果（INIT，代號 BASE）開始。 */
+let saved=null,legacy=null;
+try{saved=JSON.parse(localStorage.getItem('mask-tool3')||'null')}catch(e){}
+if(!saved){try{legacy=JSON.parse(localStorage.getItem('mask-tool2')||'null')}catch(e){}}   /* 舊版工具存的修改（沒有出發版本，無法合併） */
+let baseSnap=saved?saved.base:INIT,baseId=saved?saved.baseId:(legacy?'?':BASE);
+{const s0=saved?saved.state:(legacy||INIT);gOv=normAll(s0.組規則);cOv=normAll(s0.個別字)}
+const save=()=>{try{localStorage.setItem('mask-tool3',JSON.stringify({state:out(),base:baseSnap,baseId}))}catch(e){}};
+const r2=x=>Math.round(x*100)/100;
+const eff=(c,i)=>(cOv[c]&&cOv[c][i])||(gOv[chars[c].g]&&gOv[chars[c].g][i])||chars[c].boxes[i].def;
+const own=(c,i)=>{cOv[c]=cOv[c]||{};if(!cOv[c].ps)cOv[c].ps=chars[c].ps;   /* 記下這次調整是照哪個第一層拆法調的：之後老師改了拆法，遊戲就不套用這個調整 */
+  if(!cOv[c][i])cOv[c][i]=eff(c,i).map(s=>[...s]);return cOv[c][i]};
+const isEd=c=>hasEdit(cOv[c]);
+function out(){Object.keys(cOv).forEach(c=>{if(!hasEdit(cOv[c]))delete cOv[c]});return{基於版本:baseId,說明:'遮擋位置調整結果。每個部件的遮擋是一串色塊，每塊 [左,上,右,下,旋轉角度]：前四個是占字格的比例（0～1），旋轉角度單位是度（順時針為正，繞色塊中心）；每個字的 ps 是調整當時的第一層部件；基於版本是這份調整從 repo 的哪一版出發（交給 AI 時用來分辨「你改的」和「別人後來改的」）',組規則:gOv,個別字:cOv}}
+
+/* repo 的結果比這台電腦存的新（有別人的調整）：提醒，並可以三方合併。
+   對每個字比較三份：base（我出發時的 repo 結果）、mine（我現在的）、theirs（新的 repo 結果）：只有我改→留我的；只有 repo 改→用 repo 的；兩邊都改且不同→衝突，留我的並列出來。 */
+const J=v=>JSON.stringify(v===undefined?null:v);
+function merge3(base,mine,theirs){
+  const conflicts=[],out={組規則:{},個別字:{}},B=normAll(base.組規則),Bc=normAll(base.個別字);
+  const T=normAll(theirs.組規則),Tc=normAll(theirs.個別字);
+  const pick=(b,m,t,name,res)=>{if(J(m)===J(t))return m;if(J(m)===J(b))return t;if(J(t)===J(b))return m;res.push(name);return m};
+  [['組規則',B,gOv,T],['個別字',Bc,cOv,Tc]].forEach(([k,b,m,t])=>{new Set([...Object.keys(b),...Object.keys(m),...Object.keys(t)]).forEach(x=>{const v=pick(b[x],m[x],t[x],x,conflicts);if(v!==undefined)out[k][x]=v})});
+  return{out,conflicts}}
+function syncBanner(){const el=document.getElementById('sync');
+  if(baseId==='?'){el.hidden=false;el.innerHTML='<b>這台電腦存的修改來自舊版工具</b>，沒有「出發版本」，無法判斷哪些是你改的、哪些是別人後來改的。建議：先按「下載結果」留一份，再把檔案交給 AI 比對；或按「重設為 repo 現有結果」（你的修改會消失）。';return}
+  if(baseId===BASE){el.hidden=true;return}
+  el.hidden=false;el.innerHTML='<b>repo 的結果比你這台電腦存的修改新</b>（有別人的調整已經合併）。按「合併」：只有你改的留你的、只有別人改的用新的；<b>同一個字兩邊都改過且不同</b>＝衝突，會留你的並列出來讓你決定。<button id="mg" class="p">合併</button>';
+  document.getElementById('mg').onclick=()=>{const{out:o,conflicts}=merge3(baseSnap,out(),INIT);gOv=normAll(o.組規則);cOv=normAll(o.個別字);baseSnap=INIT;baseId=BASE;save();syncBanner();list();draw();
+   alert(conflicts.length?`合併完成。有 ${conflicts.length} 個地方兩邊都改過、而且不同，已先留你的：\n${conflicts.join('、')}\n要用別人的，請在那個字按「還原」（還原成 repo 現在的版本）。`:'合併完成，沒有衝突。')}}
+function list(){const el=document.getElementById('gl');el.innerHTML='';
+ Object.keys(groups).sort((a,b)=>groups[b].length-groups[a].length).forEach(g=>{const n=groups[g].filter(isEd).length,gr=gOv[g]?'・組':'';
+  const d=document.createElement('div');d.className='g'+(g===cur?' on':'');d.innerHTML=`<b>${g}</b><small>${groups[g].length}字${n?'・改'+n:''}${gr}</small>`;d.onclick=()=>{cur=g;page=0;list();draw()};el.appendChild(d)})}
+function draw(){const G=document.getElementById('grid');G.innerHTML='';if(!cur){G.innerHTML='<p>← 請先從左邊選一組</p>';return}
+ const all=groups[cur],pages=Math.ceil(all.length/PER);page=Math.min(page,pages-1);
+ document.getElementById('pg').innerHTML=pages>1?` 第 ${page+1}／${pages} 頁 <button id="pv">上一頁</button><button id="nx">下一頁</button>`:'';
+ if(pages>1){document.getElementById('pv').onclick=()=>{page=Math.max(0,page-1);draw()};document.getElementById('nx').onclick=()=>{page=Math.min(pages-1,page+1);draw()}}
+ document.getElementById('stat').textContent=`${cur}：${all.length} 字，已改 ${all.filter(isEd).length} 字${gOv[cur]?'，已套用整組規則':''}`;
+ all.slice(page*PER,(page+1)*PER).forEach(c=>G.appendChild(card(c)))}
+function place(d,b){d.style.left=b[0]*100+'%';d.style.top=b[1]*100+'%';d.style.width=(b[2]-b[0])*100+'%';d.style.height=(b[3]-b[1])*100+'%';d.style.transform=b[4]?`rotate(${b[4]}deg)`:''}
+function card(c){const o=chars[c],el=document.createElement('div');el.className='card'+(isEd(c)?' ed':'');el.style.width=SZ+12+'px';
+ const ks=Object.keys(o.boxes);
+ el.innerHTML=`<div class="t"><span style="font-size:18px">${c}</span><span>${o.ps}${isEd(c)?' <i>已改</i>':''}</span></div><div class="cv" style="width:${SZ}px;height:${SZ}px"><img src="${IMG[c]}" style="mix-blend-mode:multiply"></div><div class="acts">${ks.map(k=>`<button data-a="add" data-k="${k}">＋第${k}塊加色塊</button>`).join('')}</div><div class="acts"><button data-a="rs" title="回到 repo 現在的版本（沒調整過的字就是預設位置）">還原</button><button data-a="gp">套用到整組</button></div>`;
+ const cv=el.querySelector('.cv'),mark=()=>{el.classList.add('ed');const t=el.querySelector('.t');if(!t.querySelector('i'))t.lastElementChild.insertAdjacentHTML('beforeend',' <i>已改</i>');list()};
+ ks.forEach(k=>eff(c,k).forEach((b0,si)=>{const d=document.createElement('div');d.className='bx c'+((k-1)%3);place(d,b0);
+  d.innerHTML=`<span>${k}${si?'-'+(si+1):''}</span><i class="rot" data-d="rot"></i>`+['nw','n','ne','e','se','s','sw','w'].map(x=>`<i class="h" data-d="${x}"></i>`).join('')+(si?'<i class="del" data-d="del">×</i>':'');
+  d.onpointerdown=e=>{const dir=e.target.dataset.d||'m';if(dir==='del'){const L=own(c,k);L.splice(si,1);save();mark();draw();return}
+   e.preventDefault();d.setPointerCapture(e.pointerId);const r=cv.getBoundingClientRect(),s=[...eff(c,k)[si]],rad=s[4]*Math.PI/180,co=Math.cos(rad),si_=Math.sin(rad);let mv=false;
+   const cx0=(s[0]+s[2])/2,cy0=(s[1]+s[3])/2,w0=s[2]-s[0],h0=s[3]-s[1];
+   const mvf=ev=>{const dx=(ev.clientX-e.clientX)/r.width,dy=(ev.clientY-e.clientY)/r.height;let cx=cx0,cy=cy0,w=w0,h=h0,rot=s[4];
+    if(dir==='m'){cx+=dx;cy+=dy}
+    else if(dir==='rot'){const px=(ev.clientX-r.left)/r.width-cx0,py=(ev.clientY-r.top)/r.height-cy0;rot=Math.round(Math.atan2(py,px)*180/Math.PI+90);if(!ev.altKey)rot=Math.round(rot/5)*5;rot=((rot+180)%360+360)%360-180}
+    else{const lx=dx*co+dy*si_,ly=-dx*si_+dy*co;let sx=0,sy=0;   /* 滑鼠移動換成色塊自己方向上的移動量 */
+     if(dir.includes('e')){w=Math.max(.06,w0+lx);sx=(w-w0)/2}if(dir.includes('w')){w=Math.max(.06,w0-lx);sx=-(w-w0)/2}
+     if(dir.includes('s')){h=Math.max(.06,h0+ly);sy=(h-h0)/2}if(dir.includes('n')){h=Math.max(.06,h0-ly);sy=-(h-h0)/2}
+     cx+=sx*co-sy*si_;cy+=sx*si_+sy*co}
+    mv=true;const nb=[r2(cx-w/2),r2(cy-h/2),r2(cx+w/2),r2(cy+h/2),rot];own(c,k)[si]=nb;place(d,nb)};
+   const up=()=>{d.removeEventListener('pointermove',mvf);d.removeEventListener('pointerup',up);if(mv){save();mark()}};
+   d.addEventListener('pointermove',mvf);d.addEventListener('pointerup',up)};
+  cv.appendChild(d)}));
+ el.querySelectorAll('[data-a=add]').forEach(bt=>bt.onclick=()=>{own(c,bt.dataset.k).push([.35,.35,.65,.65,0]);save();draw();list()});
+ el.querySelector('[data-a=rs]').onclick=()=>{delete cOv[c];const i=INIT.個別字[c];if(i)cOv[c]=normAll({x:i}).x;save();list();draw()};   /* 還原＝回到 repo 現在的版本（repo 沒有調整過這個字就是預設位置） */
+ el.querySelector('[data-a=gp]').onclick=()=>{if(!confirm(`把「${c}」現在的位置套用到「${o.g}」全部 ${groups[o.g].length} 個字？（包含新增的色塊和旋轉）`))return;
+  gOv[o.g]=gOv[o.g]||{};ks.forEach(k=>{gOv[o.g][k]=eff(c,k).map(s=>[...s]);groups[o.g].forEach(x=>{if(cOv[x]){delete cOv[x][k];if(!hasEdit(cOv[x]))delete cOv[x]}})});save();list();draw()};
+ return el}
+document.getElementById('sz').oninput=e=>{SZ=+e.target.value;draw()};
+document.getElementById('dl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(out(),null,1)],{type:'application/json'}));a.download='遮擋位置調整結果.json';a.click()};
+document.getElementById('cp').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify(out()));alert('已複製，貼給我就可以')}catch(e){prompt('請全選複製：',JSON.stringify(out()))}};
+document.getElementById('rs0').onclick=()=>{if(!confirm('把所有修改換回 repo 目前的結果？這台電腦上還沒下載的修改會消失。'))return;gOv=normAll(INIT.組規則);cOv=normAll(INIT.個別字);baseSnap=INIT;baseId=BASE;save();syncBanner();list();draw()};
+document.getElementById('im').onclick=()=>document.getElementById('fi').click();
+document.getElementById('fi').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const s=JSON.parse(t);gOv=normAll(s.組規則);cOv=normAll(s.個別字);baseId=s.基於版本||'?';if(baseId===BASE)baseSnap=INIT;save();syncBanner();list();draw()}catch(x){alert('檔案讀不了')}})};
+syncBanner();cur=Object.keys(groups).sort((a,b)=>groups[b].length-groups[a].length)[0];list();draw();
+</script></body></html>
