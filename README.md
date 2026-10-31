@@ -45,7 +45,7 @@
 └─ docs/             所有決定、規則、設計（唯一正確的版本）
     ├─ INDEX.md      索引（開工先讀）
     ├─ rules.md      合作規則、改完要更新哪些檔案（發 PR 前讀）
-    ├─ code/         程式地圖 architecture.md、整理程式的規則 refactor.md
+    ├─ code/         程式地圖 architecture.md（識字評量的部分在 architecture-literacy.md）、整理程式的規則 refactor.md
     ├─ design/       各功能的設計：識字評量、遊戲獎勵、分析、作答紀錄 records.md、研究方法
     ├─ materials/    教材、干擾字、讀音、資料來源，和給老師校對的 .xlsx 表格
     ├─ plans/        開發路線圖 roadmap.md、還沒決定的事 pending.md
