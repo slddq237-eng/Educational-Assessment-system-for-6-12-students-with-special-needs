@@ -25,6 +25,34 @@ const PAGES = [
   'tools/prep/index.html',
 ];
 
+/* 部件入口 window.Parts（shared/parts-api.js）：不用瀏覽器，直接載入資料檔檢查（2026-10-31 步驟 3a）。
+   只檢查規則（沒載入三層資料時回傳 null、起點層不會往回讀、遮第幾塊不超過第一層塊數…），不寫死某個字的拆法，老師改部件表不會讓它失敗 */
+function partsApiErrors(){
+  const errs = [];
+  const load = files => { const w = {}; new Function('window', files.map(f => f === 'lessons' ? require('./lessons-src.js')() : fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n')
+    + ';window.__layers = typeof PARTS_LAYERS !== "undefined" ? PARTS_LAYERS : null;')(w); return w; };
+  try {
+    const bare = load(['lessons', 'shared/parts.js', 'shared/parts-api.js']);
+    if (bare.Parts.read('清') !== null || bare.Parts.layer('清', 1) !== null || bare.Parts.struct('清') !== '' || bare.Parts.mask('清') !== 0)
+      errs.push('沒載入 parts-layers.js 時，Parts.read、layer 應該回傳 null、struct 回傳空字串、mask 回傳 0');
+    const w = load(['lessons', 'shared/parts.js', 'shared/parts-layers.js', 'shared/parts-api.js']), P = w.Parts, L = w.__layers;
+    for (const k of ['compat', 'compatManual', 'layer', 'read', 'struct', 'mask']) if (typeof P[k] !== 'function') errs.push(`Parts.${k} 不見了`);
+    let n = 0;
+    for (const [c, d] of Object.entries(L)) {
+      n++;
+      for (const k of [1, 2, 3]) if (!!P.layer(c, k) !== !!(d[k] && (d[k].m || d[k].a))) errs.push(`${c} 第 ${k} 層：Parts.layer 和資料檔不一致`);
+      const r1 = P.read(c, { from: 1 }), r2 = P.read(c, { from: 2 }), r3 = P.read(c, { from: 3 });
+      if (r2 && r2.layer < 2) errs.push(`${c}：從第 2 層開始讀卻回傳第 ${r2.layer} 層`);
+      if (r3 && r3.layer !== 3) errs.push(`${c}：從第 3 層開始讀卻回傳第 ${r3.layer} 層`);
+      if (r1 && (!r1.parts.length || !['manual', 'auto'].includes(r1.source))) errs.push(`${c}：Parts.read 的結果不完整`);
+      if (P.mask(c) && P.mask(c) > (P.layer(c, 1) ? P.layer(c, 1).parts.length : 0)) errs.push(`${c}：遮第 ${P.mask(c)} 塊，超過第一層的塊數`);
+      if (errs.length > 8) break;
+    }
+    if (n < 2000) errs.push(`parts-layers.js 只有 ${n} 個字，太少了`);
+  } catch (e) { errs.push(`載入失敗：${e.message.split('\n')[0]}`); }
+  return errs;
+}
+
 /* 1. 小網站：照路徑把 repo 裡的檔案送出去 */
 const server = http.createServer((req, res) => {
   const p = path.join(ROOT, decodeURIComponent(req.url.split(/[?#]/)[0]));
@@ -60,6 +88,7 @@ async function visit(browser, base, url, after){
   };
 
   for (const p of PAGES) report(p, await visit(browser, base, p));
+  report('shared/parts-api.js 部件入口（不用瀏覽器）', partsApiErrors());
 
   /* 3. 平板作答：在電腦版用產生 QR code 的同一個函數做出網址，再用新分頁打開 */
   let tabUrl = '';

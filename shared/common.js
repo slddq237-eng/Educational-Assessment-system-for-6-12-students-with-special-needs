@@ -26,28 +26,8 @@ const wordOf = (c, b) => fromEd(typeof WORDS_ED !== "undefined" ? WORDS_ED : und
 const sentOf = (c, b) => fromEd(typeof SENT_ED !== "undefined" ? SENT_ED : undefined, b, c) || SENT[c] || "";
 const confOf = (c, b) => fromEd(typeof CONF_ED !== "undefined" ? CONF_ED : undefined, b, c) || CONF[c];
 
-/* 部件：依用途優先讀老師的人工手動拆法（2026-10-28 維護者決定：人工拆法不蓋掉電腦資料，只是先讀；電腦自動拆法不刪不改）
-   kind＝"teach"（識字評量的部件提示、部件重組，備課分析「拆到最細」）：PARTS_B → PARTS → PARTS_AUTO
-   kind＝"first"（備課分析「第一層」）：PARTS_A → PARTS → PARTS_AUTO
-   不給 kind：PARTS → PARTS_AUTO（舊的查法）。PARTS_A、PARTS_B 在 lessons.js（從部件表 Excel 的人工手動欄寫入），PARTS 是更早的人工整理，PARTS_AUTO 在 parts.js。
+/* 部件：一律呼叫 shared/parts-api.js 的 window.Parts（2026-10-31 步驟 3a，原本的 rawParts、partsSource 搬進那裡）；
    各工具再依用途加規則：識字評量只把拆成 2 塊以上的當成「拆得開」，備課分析把同一部件的不同寫法合併計算。 */
-const manualPartsOf = (c, kind) => (kind === "first" ? (typeof PARTS_A !== "undefined" && PARTS_A[c])
-  : kind === "teach" ? (typeof PARTS_B !== "undefined" && PARTS_B[c]) : "") || "";
-/* 不再往下拆的部件（2026-10-29 維護者決定）：足、酋一律當成一整塊。電腦把足字旁拆成「口 止」的，讀的時候合回「足」
-   （parts.js 原始資料不改；make_parts_columns.py 的 KEEP_WHOLE 要和這裡一致） */
-const KEEP_WHOLE = new Set(["足", "酋"]);
-const keepWhole = v => v.replace(/^口 止(?= |$)/, "足");
-function pickParts(c, kind){
-  const m = manualPartsOf(c, kind);
-  if(m) return [m, "manual"];
-  if(KEEP_WHOLE.has(c)) return [c, "manual"];
-  if(typeof PARTS !== "undefined" && PARTS[c]) return [PARTS[c], "manual"];
-  if(typeof PARTS_AUTO !== "undefined" && PARTS_AUTO[c]) return [keepWhole(PARTS_AUTO[c]), "auto"];
-  return ["", ""];
-}
-/* 這個字的拆法從哪裡來：manual＝人工（老師人工手動欄或 lessons.js 的 PARTS）、auto＝電腦自動拆（parts.js，不一定適合教學，要人工檢查）、""＝沒有拆法 */
-const partsSource = (c, kind) => pickParts(c, kind)[1];
-const rawParts = (c, kind) => pickParts(c, kind)[0].split(/\s+/).filter(Boolean);
 
 /* 顯示一行提示：畫面已經換掉、找不到那個位置時就不顯示（匯出要等元件載入，這段時間老師可能已經切到別的畫面） */
 const setMsg = (sel, text) => { const el = document.querySelector(sel); if(el) el.textContent = text; };
