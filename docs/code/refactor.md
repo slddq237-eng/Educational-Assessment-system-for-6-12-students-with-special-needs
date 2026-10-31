@@ -28,7 +28,7 @@
 |---|---|---|---|---|
 | 作答紀錄只從 `records.js` 存取 | 已經是 | 守住（自動檢查規則 1） | — | ✅ 2026-10-23 確認 |
 | 其他資料只從入口存取 | 已經是（四個入口） | 守住（自動檢查規則 1） | — | ✅ 2026-10-23 確認 |
-| 部件資料只從 `Parts` 入口讀 | `shared/parts-api.js` 的 `window.Parts`；其他檔案直接讀 `PARTS`、`PARTS_A`、`PARTS_B`、`PARTS_AUTO`、`PARTS_LAYERS` 自動檢查報錯 | 步驟 3b：各功能改用新讀法（`read`、`layer`…）後，拿掉過渡讀法 `compat`、`lessons.js` 的 `PARTS*`、`make_parts_columns.py` 的過渡寫入（見 `design/parts-layers-impl.md`） | 部件三層設計步驟 3b | 🔶 3a ✅ 2026-10-31（#191），3b 待做 |
+| 部件資料只從 `Parts` 入口讀 | `shared/parts-api.js` 的 `window.Parts`；其他檔案直接讀 `PARTS`、`PARTS_A`、`PARTS_B`、`PARTS_AUTO`、`PARTS_LAYERS` 自動檢查報錯 | 3b 已拿掉過渡讀法 `compat`、`lessons.js` 的 `PARTS*`、`make_parts_columns.py` 的過渡寫入（見 `docs/design/parts-layers-impl.md`）；之後守住 | 部件三層設計步驟 3b | ✅ 3a 2026-10-31（#191）、3b 2026-10-31（#192） |
 | 儲存名稱集中 | 識字評量的儲存名稱都寫在 `data.js` 的 `KEYS`，各檔案用 `KEYS.settings` 這樣拿 | 守住（自動檢查：用了表裡沒有的 `KEYS.xxx` 報錯，自己打 `literacy-xxx` 提醒）；備課分析只有兩個名稱、本來就寫在 `prep.js` 一處，不動 | — | ✅ 2026-10-24 提前做（維護者決定不等改功能） |
 | 作答紀錄的「資料存取層」 | `records.js` 直接操作 IndexedDB | 把開資料庫、讀、寫包成一個入口（例如 `RecordStore`），之後換線上資料庫只換它；紀錄改存事實（見 `records.md`） | 和 A8 定案、紀錄格式第 3 版一起（要先討論） | 待做 |
 | 備課分析和識字評量各有一份 `load`／`store` | 兩份各 2 行，但不完全一樣：識字評量存的 0、false 會照讀、平板模式從網址讀；備課分析遇到這些值會改回預設值 | — | — | ❌ 2026-10-24 維護者決定不做：硬合成一份會改到其中一邊的行為，保留兩種寫法再合併只省 2 行 |

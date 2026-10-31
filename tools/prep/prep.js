@@ -19,16 +19,19 @@ const ALIAS = {"糸":"糹"};
 const LABEL = {"糹":"糹（糸）", "⺼":"⺼（肉）", "⺕":"⺕（彐）"};
 const label = p => LABEL[p] || p;
 
-/* 查一個字的第一層部件（老師的 A 人工手動拆法優先，再來是人工 PARTS，見 shared/parts-api.js 的 Parts.compat；2026-10-28）；備課分析把同一部件的不同寫法合併計算 */
-/* 拆法來源：獨體字（拆不開）不算自動拆，不用檢查 */
-const srcOf = c => partsOf(c).length ? Parts.compat(c, "first").source : "";
-const SRC_NAME = {manual:"人工", auto:"自動（請檢查）", "":"—"};
-const partsOf = c => Parts.compat(c, "first").parts.filter(p => p !== c).map(p => ALIAS[p] || p);
-/* 拆到最細：老師有寫 B 人工手動拆法的字直接用它（2026-10-28）；沒有就把部件一路往下拆，收集途中所有部件（不重複） */
+/* 部件三種看法（2026-10-31 步驟 3b，查法見 shared/parts-api.js 的 Parts）：從第幾層開始讀，每層「老師的人工手動拆法 → 電腦自動」，該層沒有就往下一層；
+   備課分析把同一部件的不同寫法合併計算 */
+const partsAt = (c, from) => { const r = Parts.read(c, {from}); return r ? r.parts.filter(p => p !== c).map(p => ALIAS[p] || p) : []; };
+const partsOf = c => partsAt(c, 1);   /* 第一層（生字一覽、「可拆開的字數」用） */
+/* 拆法來源：獨體字（拆不開）不算自動拆，不用檢查。manual＝老師確認過的人工拆法、pending＝人工拆法待確認、auto＝電腦自動拆（不一定適合教學） */
+const srcOf = c => { const r = partsOf(c).length && Parts.read(c, {from: 1}); return !r ? "" : r.source === "auto" ? "auto" : r.status === "已確認" ? "manual" : "pending"; };
+const SRC_NAME = {manual:"人工", pending:"人工（待確認）", auto:"自動（請檢查）", "":"—"};
+/* 拆到最細（含中間層）：老師「已確認」的第二層人工拆法直接用它（2026-10-28 維護者決定：老師寫的就是最細）；
+   沒有，或人工拆法還在「待確認」（例如康軒四上 86 字舊的人工部件）：從人工拆法（沒有就用電腦自動拆，Parts.sub）開始，把部件一路往下拆，收集途中所有部件（不重複） */
 function allParts(c, seen = new Set()){
-  const fine = Parts.compatManual(c, "teach");
-  if(fine.length){ for(const p of fine) if(p !== c) seen.add(ALIAS[p] || p); return seen; }
-  for(const p of partsOf(c)) if(!seen.has(p)){ seen.add(p); allParts(p, seen); }
+  const m = Parts.layer(c, 2), manual = m && m.source === "manual";
+  if(manual && m.status === "已確認"){ for(const p of m.parts) if(p !== c) seen.add(ALIAS[p] || p); return seen; }
+  for(const p of (manual ? m.parts : Parts.sub(c)).filter(x => x !== c).map(x => ALIAS[x] || x)) if(!seen.has(p)){ seen.add(p); allParts(p, seen); }
   return seen;
 }
 
@@ -59,7 +62,7 @@ function drawSetup(){
         `<button class="chip ${chosen(b).includes(n) ? "on" : ""}" data-b="${b}" data-n="${n}">${lessonName(b, n)}</button>`).join("")}</div></div>`).join("");
   $("#kinds").innerHTML = [["both","習寫字＋認讀字"],["write","只看習寫字"],["read","只看認讀字"]].map(([id, t]) =>
     `<button class="opt ${state.kind === id ? "on" : ""}" data-kind="${id}">${t}</button>`).join("");
-  $("#depth").innerHTML = [["first","第一層部件","字直接拆開"],["all","拆到最細","部件再往下拆"]].map(([id, t, s]) =>
+  $("#depth").innerHTML = [["first","第一層","按結構拆成 2～3 塊"],["second","第二層","可教學角度，拆到部首"],["all","拆到最細","部件再往下拆（含中間層）"]].map(([id, t, s]) =>
     `<button class="opt ${state.depth === id ? "on" : ""}" data-depth="${id}">${t}<small>${s}</small></button>`).join("");
   $("#savedList").innerHTML = ranges.map((r, i) =>
     `<span class="saved"><button data-load="${i}">${esc(r.name)}</button><button class="x" data-del="${i}" aria-label="刪除 ${esc(r.name)}">✕</button></span>`).join("");
@@ -136,7 +139,7 @@ function learnedBefore(inRange){
 function analyse(){
   const list = collect(), inRange = new Set(list.map(x => x.c));
   const hide = $("#hideStroke").checked, minN = Number($("#minN").value);
-  const partsFor = c => [...(state.depth === "all" ? allParts(c) : new Set(partsOf(c)))].filter(p => !(hide && STROKES.has(p)));
+  const partsFor = c => [...(state.depth === "all" ? allParts(c) : new Set(partsAt(c, state.depth === "second" ? 2 : 1)))].filter(p => !(hide && STROKES.has(p)));
   /* 部件 → 含這個部件的生字 */
   const byPart = new Map();
   for(const x of list) for(const p of partsFor(x.c)){
@@ -185,7 +188,7 @@ function drawResult(){
       : `<p class="note">沒有符合條件的部件。可以多勾幾課，或把「至少出現在」改小一點。</p>`;
   }
   else if(state.tab === "chars"){
-    /* 拆法來源（開發路線圖 B3）：電腦自動拆的字標黃色，方便老師檢查；拆得不適合教學的，在 shared/lessons.js 的 PARTS 補人工拆法 */
+    /* 拆法來源（開發路線圖 B3）：電腦自動拆的字標黃色，方便老師檢查；拆得不適合教學的，老師填在部件表（docs/materials/parts-table.xlsx）的人工手動欄 */
     const auto = R.list.filter(x => srcOf(x.c) === "auto"), rows = state.autoOnly ? auto : R.list;
     $("#table").innerHTML = R.list.length ? `<p class="note autonote">範圍內有 <b>${auto.length}</b> 個字的部件是電腦自動拆的（標黃色），不一定適合教學，例如「王＝一＋土」。發現拆得不好，跟 Claude 說「○ 改成怎麼拆」，或用部件拆解表修正。
       <label class="check"><input type="checkbox" id="autoOnly" ${state.autoOnly ? "checked" : ""}>只看自動拆的字</label></p>

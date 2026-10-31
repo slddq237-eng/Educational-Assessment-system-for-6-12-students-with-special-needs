@@ -1,12 +1,10 @@
 """
 部件三層資料（給 Claude 或熟悉程式的人執行，老師不用動）
 
-設計見 docs/design/parts-layers.md 與 parts-layers-impl.md。這支程式做三件事：
+設計見 docs/design/parts-layers.md 與 parts-layers-impl.md。這支程式做兩件事：
   1. 重算 docs/materials/parts-table.xlsx「生字部件」頁的電腦欄位（結構、第一～三層、正式評量遮第幾塊、需要檢查）；
      老師填的綠色欄位（老師修正：結構、各層人工手動與狀態、遮第幾塊人工手動、備註）一個字都不動。
-  2. 產生 shared/parts-layers.js（平台之後透過 window.Parts 讀這個檔；步驟 3a 之前平台還不讀）。
-  3. 過渡用：把狀態是「已確認」的人工手動拆法寫進 shared/lessons.js 的 PARTS_A、PARTS_B，讓平台目前的讀法不變
-     （步驟 3a 平台改讀 parts-layers.js 之後，這一步和 lessons.js 的 PARTS_A、PARTS_B 會一起拿掉）。
+  2. 產生 shared/parts-layers.js（平台透過 window.Parts 讀這個檔，見 shared/parts-api.js）。
 
 三層（2026-10-31 維護者決定）：
   第一層  按結構拆成 2～3 個「可讀出聲音」的部件（部件是一個字，或是部首變體，見「部首變體對照」頁）
@@ -34,7 +32,7 @@ from openpyxl.comments import Comment
 from openpyxl.worksheet.datavalidation import DataValidation
 
 IDS, PINYIN = sys.argv[1], sys.argv[2]
-TABLE, OUT, LES = 'docs/materials/parts-table.xlsx', 'shared/parts-layers.js', 'shared/lessons.js'
+TABLE, OUT = 'docs/materials/parts-table.xlsx', 'shared/parts-layers.js'
 SHEET, VSHEET = '生字部件', '部首變體對照'
 H = ['字', '出現課次', '結構', '老師修正：結構', '第一層（電腦）', '第一層（人工手動）', '第一層狀態', '第二層（電腦）', '第二層（人工手動）',
      '第二層狀態', '第三層（開源最細）', '正式評量遮第幾塊（電腦）', '正式評量遮第幾塊（人工手動）', '需要檢查', '備註']
@@ -179,7 +177,7 @@ note = {'結構': '電腦從 cjkvi-ids 判斷第一層的排列方式；不對�
         '正式評量遮第幾塊（電腦）': '電腦自動：左右、上下遮右邊、下面那塊；左中右、上中下遮最後一塊；各種包圍遮裡面（第 2 塊）；沒有規則的留空。按「第一層」的順序數',
         '正式評量遮第幾塊（人工手動）': '老師填 1～3：優先對照「第一層」（第 1 塊＝第一層的第一個部件，順序照結構）。筆順不是先左後右、先上後下的字，或想改遮另一塊時填。要先有第一層（電腦或人工手動）才能填，沒有第一層的字請先補第一層，不會退到第二層；程式重算時不會動',
         '需要檢查': '電腦自動：可能有問題的地方，建議優先看這些列'}
-sv = {}   # 字 → 資料
+sv, l3map = {}, {}   # 字 → 資料；字 → 第三層（只給部件表和下面的檢查用）
 bad, stat = [], {'第一層': 0, '第二層': 0, '第三層': 0, '遮': 0}
 unread, unread_ex = {}, {}
 last = ws.cell(1, 1)
@@ -225,8 +223,8 @@ for r in range(2, ws.max_row + 1):
         if st and (valid or st == '待討論'): d['t'] = st
         if d: layers[n] = d
         layers[(n, 'eff')] = t if valid else auto
-    if l3: layers[3] = {'a': ' '.join(l3)}
-    for n in (1, 2, 3):
+    if l3: l3map[c] = ' '.join(l3)   # 第三層不寫進 parts-layers.js（約 66KB），由 shared/parts-api.js 從 parts.js 算，下面會檢查兩邊一致
+    for n in (1, 2):
         if n in layers: data[str(n)] = layers[n]
     eff1 = layers[(1, 'eff')]
     mk_auto = mask_auto(struct, l1 or eff1) if (l1 or eff1) else None
@@ -276,26 +274,21 @@ if unread: print('第一層讀不出聲音的部件（要不要加進「部首�
 
 # 7. 產生 shared/parts-layers.js
 head = '''/* 部件三層資料（自動產生，請不要手改；老師改部件表 docs/materials/parts-table.xlsx 的綠色欄位，再由 docs/scripts/make_parts_columns.py 重新產生）。
-   設計見 docs/design/parts-layers.md、parts-layers-impl.md。步驟 3a 起平台只透過 window.Parts 讀這個檔，現在平台還沒讀。
-   每個字：s＝結構（老師修正優先）；1、2、3＝第一～第三層，a＝電腦拆法、m＝老師的人工手動拆法（只有狀態是已確認或待確認才寫進來）、
+   設計見 docs/design/parts-layers.md、parts-layers-impl.md。平台只透過 window.Parts（shared/parts-api.js）讀這個檔。
+   每個字：s＝結構（老師修正優先）；1、2＝第一、第二層，a＝電腦拆法、m＝老師的人工手動拆法（只有狀態是已確認或待確認才寫進來）、
    t＝人工手動的狀態（已確認／待確認／待討論）；k＝正式評量遮第幾塊（按第一層的順序數，沒有規則的字沒有 k）。
+   第三層（開源最底層）不存在這裡，shared/parts-api.js 從 parts.js 一路往下拆算出來（部件表的「第三層」欄是同一個結果）。
    部件用半形空格分開（這個檔裡），同一部件出現幾次寫幾次；足、酋已當成一整塊。 */
 '''
 body = 'const PARTS_LAYERS = {\n' + ',\n'.join(f'{json.dumps(c, ensure_ascii=False)}:{json.dumps(d, ensure_ascii=False, separators=(",", ":"))}' for c, d in sv.items()) + '\n};\n'
 open(OUT, 'w', encoding='utf8').write(head + body)
 print(OUT, len((head + body).encode('utf8')) // 1024, 'KB')
-
-# 8. 過渡：已確認的人工手動拆法寫進 lessons.js 的 PARTS_A、PARTS_B，平台目前的讀法不變
-bridge = {'PARTS_A': {}, 'PARTS_B': {}}
-for c, d in sv.items():
-    for n, name in ((1, 'PARTS_A'), (2, 'PARTS_B')):
-        x = d.get(str(n), {})
-        if x.get('t') == '已確認' and x.get('m'): bridge[name][c] = x['m']
-s = open(LES, encoding='utf8').read(); before = s
-for name, d in bridge.items():
-    line = f'const {name} = ' + json.dumps(d, ensure_ascii=False, separators=(',', ':')) + ';'
-    s, n = re.subn(rf'^const {name} = .*;$', lambda m: line, s, flags=re.M)
-    if n != 1: sys.exit(f'lessons.js 找不到 const {name} 那一行')
-if s != before: open(LES, 'w', encoding='utf8').write(s); print('lessons.js 已更新：PARTS_A', len(bridge['PARTS_A']), '字、PARTS_B', len(bridge['PARTS_B']), '字；記得跑 node docs/scripts/bump.js 換版本號')
-else: print('lessons.js 的 PARTS_A、PARTS_B 沒有變動：', len(bridge['PARTS_A']), '字、', len(bridge['PARTS_B']), '字')
+# 檢查：shared/parts-api.js 在程式裡算出的第三層，要和上面算進部件表的一樣（兩邊算法各寫一份，這裡擋住不一致）
+chk = subprocess.run(['node', '-e', '''const fs=require("fs");const w={};const exp=JSON.parse(fs.readFileSync(0,"utf8"));
+new Function("window",fs.readFileSync("shared/parts.js","utf8")+fs.readFileSync("shared/parts-api.js","utf8"))(w);
+const bad=[];for(const [c,v] of Object.entries(exp)){const r=w.Parts.layer(c,3);if((r?r.parts.join(" "):null)!==v)bad.push(c)}
+console.log(JSON.stringify({bad,n:Object.keys(exp).length}))'''], input=json.dumps(l3map, ensure_ascii=False), capture_output=True, text=True, check=True)
+r3 = json.loads(chk.stdout)
+if r3['bad']: sys.exit(f'第三層：parts-api.js 算的和部件表不一致（{len(r3["bad"])} 字，例：{"".join(r3["bad"][:10])}），兩邊的算法要一起改')
+print(f'第三層檢查：parts-api.js 算出的和部件表一致（{r3["n"]} 字）')
 for b in bad: print('格式不對、沒有寫進平台：', b)

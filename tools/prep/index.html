@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-31i">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-31k">
 <style>
 /* 版面：沿用識字評量的生字簿方格紙。
    上面選範圍與分析方式，下面是三個重點數字和結果表（部件排行／生字一覽／字頻）。 */
@@ -118,7 +118,7 @@ tr.auto td{background:var(--amber-bg)}
 
     <section class="panel">
       <h2><span class="num">2</span>分析方式</h2>
-      <p class="hint">「第一層」是字直接拆開的部件（清＝氵＋青）；「拆到最細」會再把部件往下拆（青＝龶＋月），找出更多共同部件。</p>
+      <p class="hint">「第一層」是按結構拆成 2～3 塊（清＝氵＋青）；「第二層」是可教學角度拆到部首（清＝氵＋龶＋月）；「拆到最細」會把部件一路往下拆、連中間層也算，找出更多共同部件。</p>
       <div class="row" id="depth"></div>
       <div class="row" style="margin-top:12px">
         <label class="check"><input type="checkbox" id="hideStroke" checked>隱藏單一筆畫（一、丨、丿、丶…）</label>
@@ -143,12 +143,13 @@ tr.auto td{background:var(--amber-bg)}
 </div>
 
 <!-- ?v=日期 是版本號：改了任何 .js 檔，就把這頁所有的 ?v= 一起改成當天日期（同一天改第二次加 b、c），老師的瀏覽器才會下載新檔案 -->
-<script src="../../shared/lessons.js?v=2026-10-31i"></script>
-<script src="../../shared/parts.js?v=2026-10-31i"></script>
-<script src="../../shared/parts-api.js?v=2026-10-31i"></script>
-<script src="../../shared/freq.js?v=2026-10-31i"></script>
+<script src="../../shared/lessons.js?v=2026-10-31k"></script>
+<script src="../../shared/parts.js?v=2026-10-31k"></script>
+<script src="../../shared/parts-layers.js?v=2026-10-31k"></script>
+<script src="../../shared/parts-api.js?v=2026-10-31k"></script>
+<script src="../../shared/freq.js?v=2026-10-31k"></script>
 <!-- 共用小工具（課本排序與名稱、語詞、部件查詢、按匯出時才載入 Excel 元件），識字評量與備課分析共用 -->
-<script src="../../shared/common.js?v=2026-10-31i"></script>
-<script src="prep.js?v=2026-10-31i"></script>
+<script src="../../shared/common.js?v=2026-10-31k"></script>
+<script src="prep.js?v=2026-10-31k"></script>
 </body>
 </html>

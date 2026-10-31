@@ -277,7 +277,7 @@ for (const f of files.filter(f => /^docs\/.+\.md$/.test(f) && !/^docs\/(history|
     warn(f, `超過 20KB（${Math.round(fs.statSync(path.join(ROOT, f)).size / 1024)}KB），請加進 CLAUDE.md「省 token」的 docs 大檔案清單`);
 
 /* ---------- 9. 楷書字型缺字 ----------
-   畫面文字（.html、tools/ 的 .js，不含註解）和教材（lessons.js、parts.js）的中文字，要在 shared/fonts/tw-kai.css 的範圍裡；
+   畫面文字（.html、tools/ 的 .js，不含註解）和教材（lessons.js、parts.js、parts-layers.js）的中文字，要在 shared/fonts/tw-kai.css 的範圍裡；
    沒有的字會變成電腦裡的別種字型。新增頁面文字、課本、部件後跑 make_kai.py 就好 */
 const KAI_NOT_IN_FONT = '龶冫勹龰亠龴龵龸龷龹';   /* 全字庫正楷體本來就沒有的部件符號，make_kai.py 會略過（2026-10-24 確認） */
 {
@@ -287,7 +287,7 @@ const KAI_NOT_IN_FONT = '龶冫勹龰亠龴龵龸龷龹';   /* 全字庫正楷�
     for (let c = a; c <= b; c++) have.add(c);
   }
   const text = files.filter(f => own(f) && (/\.html$/.test(f) || /^tools\/.*\.js$/.test(f))).map(f => stripComments(read(f))).join('')
-    + lessonsSrc() + read('shared/parts.js');
+    + lessonsSrc() + read('shared/parts.js') + read('shared/parts-layers.js');
   const miss = [...new Set([...text].filter(c => { const p = c.codePointAt(0); return (p >= 0x3400 && p <= 0x9FFF) && !have.has(p) && !KAI_NOT_IN_FONT.includes(c); }))];
   if (miss.length) warn('shared/fonts/tw-kai.css', `有 ${miss.length} 個字不在楷書字型裡（${miss.slice(0, 20).join('')}${miss.length > 20 ? '…' : ''}），請跑 docs/scripts/make_kai.py`);
 }
