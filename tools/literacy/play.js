@@ -554,7 +554,7 @@ function newItem(it){
   };
   const banner = sharedTurns() ? `<div class="turnbanner" role="status"><div class="who">${whoHtml(it.kid)}</div></div>` : "";
   $("#pBody").innerHTML = `${banner}${split ? `<div class="zones" style="--n:${G.kids.length}">${G.kids.map(zoneHtml).join("")}</div>` : stageHtml}
-    ${G.mode === "flu" ? "" : `<div class="tbar" data-side="${settings.hintSide === "left" ? "left" : "right"}"><span>老師提示紀錄</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
+    ${G.mode === "flu" || TABLET ? "" : `<div class="tbar" data-side="${settings.hintSide === "left" ? "left" : "right"}"><span>老師提示紀錄</span>${TEACHER_BTNS.map(([lv, t]) => `<button class="chip" data-t="${lv}">${t}</button>`).join("")}</div>`}`;
   fitOpts();
   if(pickParts){ fitPickGrid(); requestAnimationFrame(fitPickGrid); }
   $("#pBody").querySelectorAll(".opt-big").forEach(btn => btn.onclick = () => pickParts ? togglePart(+btn.dataset.i, btn) : pick(+btn.dataset.i, btn));

@@ -301,7 +301,7 @@ details.howto{margin:10px 0 0}
 
 /* ---------- 作答畫面（投影用，字要大） ---------- */
 /* 作答畫面固定一整頁高（不用捲動、不用縮小瀏覽器）；選項的大小跟著螢幕的寬和高自動算 */
-.play{height:100vh;height:100dvh;min-height:480px;display:flex;flex-direction:column;gap:12px;padding-block:14px 18px;
+.play{height:100vh;height:100dvh;min-height:min(480px,100vh);min-height:min(480px,100dvh);display:flex;flex-direction:column;gap:12px;padding-block:14px 18px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1600px;margin:0 auto}
 .pbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .who{display:flex;align-items:center;gap:10px;background:var(--ink);color:var(--paper);border-radius:999px;padding:8px 22px;font-size:clamp(22px,2.6vw,34px)}
@@ -311,7 +311,8 @@ details.howto{margin:10px 0 0}
 #pBody{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
 .stage{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:clamp(16px,3vw,40px);align-items:stretch}
 .prompt{display:grid;justify-items:center;align-content:center;gap:14px;text-align:center;min-height:0;overflow:auto}
-@media (max-width:760px){.play{height:auto;min-height:100dvh}.stage{grid-template-columns:minmax(0,1fr)}.optsbox{height:min(100vw - 32px,62dvh)}}
+/* 手機直放也一屏放得下（2026-10-31 維護者要求）：選項區吃掉剩下的高度（方格取寬高較小的邊），不用往下滑 */
+@media (max-width:760px){.play{height:100vh;height:100dvh;min-height:0}.stage{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}.optsbox{height:auto}}
 /* 大螢幕分區輪流（E14）：每位學生一區並排，大小固定；輪到的亮起，其他區變暗、選項只剩空框 */
 .zones{flex:1;min-height:0;display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:clamp(8px,1.5vw,20px)}
 .zone{min-height:0;min-width:0;display:flex;flex-direction:column;gap:8px;padding:10px;border:4px solid transparent;border-radius:24px}
@@ -452,6 +453,10 @@ details.howto{margin:10px 0 0}
 .turncard{flex:1;display:grid;place-items:center;align-content:center;text-align:center;gap:14px}
 .turncard h2{font-family:var(--kai);font-size:clamp(48px,8vw,104px);margin:0;line-height:1.1}
 .turnav .av{--s:min(34vh,240px);border-width:6px;box-shadow:0 0 0 4px var(--ink)}
+/* 手機橫放（高度不到 480px）：上下留白縮小 */
+@media (max-height:480px){.play{padding-block:6px 8px;gap:6px}.who{padding:4px 16px}#pScene{gap:4px}.scenecap{font-size:clamp(18px,2vw,26px)}}
+/* 矮螢幕：頭像和標題縮小，「開始」才不會被擠出螢幕（2026-10-31） */
+@media (max-height:720px){.turnav .av{--s:min(24vh,240px)}.ready{gap:8px}.ready h2,.turncard h2{font-size:clamp(28px,min(5vw,9vh),64px)}.turncard{gap:8px}}
 @media (prefers-reduced-motion:no-preference){.turncard{animation:turnin .45s cubic-bezier(.2,1.4,.4,1)}}
 @keyframes turnin{from{transform:scale(.8);opacity:0}}
 /* 全課賓果卡：答對的格子蓋章（學生頭像），連線的格子加金框 */
@@ -679,6 +684,9 @@ details.howto{margin:10px 0 0}
 /* 甜點店進度條：杯子蛋糕 */
 .dprog{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 6px;padding:8px 12px 6px;background:#fff5f8;border:3px solid #f3a3bd;border-radius:16px;max-width:calc(60vh * 560 / 360);box-sizing:border-box}
 .dprog:empty{display:none}
+/* 矮螢幕（手機橫放、矮筆電）場景圖縮小一點，下面的字才不會被擠出螢幕（2026-10-31） */
+@media (max-height:720px){.scn{max-width:calc(44vh * 560 / 360)}.dprog{max-width:calc(46vh * 560 / 360)}}
+@media (max-height:480px){.scn{max-width:calc(38vh * 560 / 360)}.dprog{max-width:calc(40vh * 560 / 360)}.turnav .av{--s:min(18vh,240px)}.ready h2,.turncard h2{font-size:clamp(24px,min(5vw,8vh),48px)}}
 .dprog .cup{width:clamp(24px,2.4vw,40px);display:block;transform-origin:50% 100%}
 .dprog .cup svg{width:100%;height:auto;display:block;overflow:visible}
 .dprog .liner{fill:#fff;stroke:#d9b3c0;stroke-dasharray:4 3}
@@ -717,6 +725,33 @@ details.howto{margin:10px 0 0}
 .rcard .cheer2{background:#fff6d6;border:2px dashed #e0b23a;border-radius:14px;padding:8px 12px;font-size:17px;color:#5a4410;margin-top:4px}
 .rcard .sticker{justify-self:center}
 .rbtns{justify-content:center;margin-top:22px}
+/* 結果畫面一屏放得下（2026-10-31 維護者要求）：平板上不用往下滑才按得到「再玩一次」「看貼紙簿」；
+   按鈕固定在畫面最下面，卡片多到放不下時只有卡片往下捲 */
+#result .rbtns{position:sticky;bottom:0;z-index:5;background:var(--paper);padding-block:8px 10px;margin-top:12px}
+@media (max-height:860px){
+  #result.wrap{padding-block:10px 4px}
+  #result .top{margin-bottom:6px}
+  #result .stamp{width:44px;height:44px;font-size:22px}
+  #result .hint{margin:2px 0 8px}
+  #result .tsend{margin-top:8px}
+  #result .rcard{padding:12px 12px;gap:4px}
+  #result .rcard .sticker{padding:6px 12px}
+  #result .rcard .sticker svg{width:52px;height:52px}
+}
+/* 很矮的螢幕（手機橫放、矮筆電）：卡片內容左右並排，高度減半 */
+@media (max-height:620px){
+  #result .res{grid-template-columns:repeat(auto-fill,minmax(min(100%,440px),1fr))}
+  #result .rcard{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 14px;padding:8px 12px}
+  #result .rcard .rname2{flex:1 1 100%;justify-content:center}
+  #result .rcard .rlabel{margin:0}
+  #result .rcard .big{font-size:30px}
+  #result .rcard .sticker svg{width:40px;height:40px}
+  #result .rcard .cheer2{margin:0;padding:4px 10px;font-size:15px}
+  #result.wrap{padding-block:6px 0}
+  #result .stamp{width:36px;height:36px;font-size:18px}
+  #result .top h1{font-size:26px}
+  #result .rbtns{margin-top:6px;padding-block:6px 8px}
+}
 /* 平板作答（tablet.js）：平板上不顯示設定畫面；QR code、點代號、送出狀態 */
 html.tablet #setup{display:none}
 .qrbox{display:flex;justify-content:center;background:#fff;padding:12px;border-radius:12px}
