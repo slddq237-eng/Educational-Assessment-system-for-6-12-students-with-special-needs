@@ -448,6 +448,8 @@ function renderKids(){
   /* 人數上限不在這裡寫，第 3 步選作答方式時，人數不合的選項會寫原因 */
   $("#kidsHintQ").textContent = "點選要做的學生，可以選好幾位。";
   /* 選學生的按鈕只顯示頭像和名字（2026-10-25 維護者要求）；沒填名字顯示代號、同名的才加代號分辨 */
+  /* 名單是空的（第一次使用）：說明要先新增學生，按鈕直接打開學生名單 */
+  if(!kids.length){ $("#kids").innerHTML = `<p class="note" style="margin:0">還沒有學生。請先新增學生，才能開始評量。 <button class="save" data-open="kids">新增學生</button></p>`; return; }
   $("#kids").innerHTML = kids.map(k => `<button class="chip kidchip ${state.kids.has(k.code)?"on":""}" data-k="${esc(k.code)}" aria-pressed="${state.kids.has(k.code)}">${Rewards.avatarHtml(k.code)}${esc(k.name && kids.filter(o => o.name === k.name).length === 1 ? k.name : kidLabel(k))}</button>`).join("");
   $("#kids").querySelectorAll("button").forEach(b => b.onclick = () => { const k = b.dataset.k; state.kids.has(k) ? state.kids.delete(k) : state.kids.add(k); render(); });
 }

@@ -252,7 +252,7 @@ async function restoreBackup(data){
   const have = new Set(records.map(recKey));
   const add = (data.records || []).filter(r => !have.has(recKey(r)));
   add.forEach(saveRecord);
-  /* 學生名單：沒有的加進來；這台電腦上同代號但還沒填名字的（例如第一次打開時的範例 S01、S02），用備份檔裡的取代 */
+  /* 學生名單：沒有的加進來；這台電腦上同代號但還沒填名字的（例如舊版第一次打開時放的範例 S01、S02；2026-10-31 起新的電腦不再放範例學生），用備份檔裡的取代 */
   /* 封存區：這台電腦已經封存的學生不會被備份檔「叫回」現在名單；備份檔裡封存的，這台沒有才加進封存區（同一位學生不會兩邊都有，2026-10-31） */
   const arch = archivedCodes();
   for(const k of data.kids || []){ if(arch.has(k.code)) continue; const i = kids.findIndex(x => x.code === k.code);

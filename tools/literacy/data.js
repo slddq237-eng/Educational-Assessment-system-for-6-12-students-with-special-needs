@@ -214,10 +214,9 @@ delete settings.practiceGame;
 const saveSettings = () => store(KEYS.settings, settings);
 
 /* 學生名單：年級記的是設定那一年的年級，之後每學年自動升級 */
-/* 第一次打開時先放兩個範例代號，老師可以在「學生名單」修改或刪除 */
-const kids = load(KEYS.kids, [
-  {code:"S01", name:"", grade:2, sy:SCHOOL_YEAR}, {code:"S02", name:"", grade:2, sy:SCHOOL_YEAR}
-]);
+/* 第一次打開時名單是空的，老師自己新增學生（2026-10-31 維護者決定：不再放範例的 S01、S02，
+   每個人第一位學生的代號不會一樣，換電腦還原備份也不會多出沒人認領的範例學生） */
+const kids = load(KEYS.kids, []);
 const saveKids = () => store(KEYS.kids, kids);
 /* 封存的學生（2026-10-31）：從「現在名單」搬到這份名單，遊玩頁、分析頁、平板都看不到（它們都只讀 kids）；
    作答紀錄、貼紙、頭像都不動，取消封存就搬回 kids。分析頁要用 archivedCodes() 把他們的紀錄排除（包括全班統計） */
