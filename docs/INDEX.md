@@ -12,6 +12,7 @@
 | 查合作規則、通知等級（①②③）、規格書怎麼用 | `rules.md` |
 | 改任何程式（新增、刪除、改名檔案，或改到別的檔案會用的東西） | `code/architecture.md`（程式地圖；改識字評量的檔案再讀 `code/architecture-literacy.md`：誰用誰、資料存哪裡、改這裡要一起檢查哪裡）、`code/architecture-notes.md`（注意事項：平板不載入哪些檔案等）、`code/refactor.md`（整理程式的規則：存資料走入口等） |
 | 整理（重構）程式 | `code/refactor.md`（規則與進度清單）、`code/architecture.md` |
+| 查或改「哪個評量目標能搭配哪些玩法、作答方式、練習或正式」 | `design/goal-compat.md`（相容表）；規則在 `data.js` 的 `GOAL_CAPS` |
 | 改設定畫面、選項之間的限制（玩法、作答方式、主題、題數） | `code/setup-flow-audit.md`（2026-10-26 全面檢查：每兩個選項怎麼互相限制、哪些悄悄改掉）、`design/game-design.md` 第 2 節 |
 | 改識字評量的功能、畫面、玩法 | `design/literacy-design.md`；賓果整合、增強系統、部件重組讀 `design/literacy-play.md`；`plans/roadmap.md`（確認屬於哪個階段） |
 | 改部件的拆法、各功能讀哪一層部件、部件相關新玩法（聽音選部件、聽音補部件、看部件寫字） | `design/parts-layers.md`（部件三層設計，2026-10-31 討論稿；資料檔、`Parts` 入口、實作順序在 `design/parts-layers-impl.md`）、`materials/materials.md`「部件資料的狀況」；新玩法舊設計讀 `design/literacy-play.md` |

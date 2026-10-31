@@ -33,7 +33,7 @@ const RANGES = [["term","本學期"],["last","上學期"],["all","全部"],["cus
 const KINDS_F = [["formal","正式評量"],["practice","練習"],["both","全部"]];
 const PHASE_ORDER = [...PREPOST, "未標記"];
 /* 聽音補部件（R5）、聽音選部件（R6）選的是部件，不是字：不納入以「字」為單位的搞混分析和亂猜比較 */
-const isPartsGoal = r => r.goal === "R5" || r.goal === "R6";
+const isPartsGoal = r => !!goalCaps(r.goal).partsAnswer;
 const ETYPES = ["同詞易混","同音","形近","同部件","課文字","其他字","少選","選到干擾部件"];   /* 同部件只出現在目標 4-1 部件重組 */
 const GAP_BUCKETS = {
   after: {name:"教學後天數", what:"該課教學結束到這次評量隔幾天", list:["教學結束前或沒填日期","0～6 天","7～13 天","14～29 天","30 天以上"]},
