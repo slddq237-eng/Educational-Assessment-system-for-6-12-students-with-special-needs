@@ -38,6 +38,13 @@
 /* 得到貼紙的大畫面接近滿版（2026-10-24 維護者要求） */
 .reveal .box{width:min(94vw,860px);min-height:min(88vh,920px);align-content:center}
 .reveal .box .go{font-size:24px;padding:14px 36px}
+/* 平板一屏放得下（2026-10-31 維護者要求）：圖、星星、名字依螢幕高度縮放，按鈕不用往下滑；
+   還是放不下時（例如手機橫放）框裡面可以捲動，不會把按鈕切掉 */
+.reveal .box{min-height:0;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;padding-block:14px 18px}
+.reveal .box > svg{width:min(62vw,36vh);max-height:36vh}
+.reveal .stars{font-size:clamp(28px,min(6vw,6.5vh),60px)}
+.reveal .rname{font-size:clamp(30px,min(6vw,8vh),68px);line-height:1.15}
+.reveal .box .go{padding:12px 36px}
 .reveal .who2{display:flex;align-items:center;gap:10px;font-size:24px}
 .reveal .who2 .av{--s:56px}
 .reveal .stars{font-size:clamp(40px,6vw,60px);color:#f5b400;letter-spacing:.12em;line-height:1}
