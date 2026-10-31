@@ -797,6 +797,21 @@ html.tabpre #tabPick[hidden]{display:block!important}
 /* 「是你嗎？」那一頁＝遊戲開始畫面（2026-10-24）：這次的主題圖和一句話 */
 .tpgame{display:grid;justify-items:center;gap:6px;font-size:clamp(18px,3vw,24px)}
 .tpgame .loadpic{width:clamp(110px,20vw,170px)}
+/* 點了名字後的「是你嗎？」一屏放得下，「是我，開始！」不用往下滑（2026-10-31 維護者要求）：
+   收起上方標題；大頭像、圖依螢幕高度縮小；寬度夠（平板）時左右兩欄——左邊大頭像和名字，右邊問句、遊戲圖、按鈕 */
+#tabPick.confirming > .top{display:none}
+#tabPick.confirming{padding-block:12px}
+.tpconfirm{margin-top:8px;gap:10px}
+.tpme{font-size:clamp(26px,min(6vw,7vh),60px)}
+.tpme .av{--s:min(clamp(120px,22vw,200px),26vh)}
+.tpgame .loadpic{width:min(clamp(110px,20vw,170px),20vh)}
+.tpask{font-size:clamp(22px,4vh,28px)}
+@media (min-width:700px){
+  .tpconfirm:not([hidden]){grid-template-columns:auto minmax(0,1fr);gap:10px 5vw;align-items:center;justify-content:center;justify-items:center}
+  .tpme{grid-column:1;grid-row:1 / span 3}
+  .tpme .av{--s:min(clamp(150px,24vw,260px),44vh)}
+  .tpask,.tpgame,.tpconfirm > .row{grid-column:2}
+}
 .loadsheet{width:min(460px,100%);margin-top:20vh;justify-items:center;text-align:center}
 .tsend{text-align:center;margin-top:16px;display:grid;gap:8px;justify-items:center}
 /* 練習的結果畫面：卡片一張一張彈出來（正式評量不用，見 docs/design/literacy-design.md） */

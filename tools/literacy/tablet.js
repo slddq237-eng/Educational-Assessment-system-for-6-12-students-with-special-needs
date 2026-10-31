@@ -178,7 +178,7 @@ function tabletStart(){
   loadFonts(faces, (n, all) => setBar("#tpBar", n, all)).then(ready);
 }
 /* 顯示名字清單（收起確認畫面） */
-function tpList(){ if($("#tpLoad").hidden){ $("#tpList").hidden = false; $("#tpConfirm").hidden = true; } }
+function tpList(){ if($("#tpLoad").hidden){ $("#tpList").hidden = false; $("#tpConfirm").hidden = true; $("#tabPick").classList.remove("confirming"); } }
 /* 平板沒有中文語音時，題目和喇叭都不會唸：點名字的畫面和結果畫面提醒怎麼裝
    （Android 的語音清單要過一下子才會出來，所以等 voiceschanged 或 2 秒後再判斷） */
 const VOICE_HELP = "這台平板找不到中文語音，題目和喇叭不會唸出來（作答還是可以進行）。"
@@ -201,7 +201,7 @@ function tabletKids(){
   $("#tpList").querySelectorAll("button").forEach(b => b.onclick = () => {
     const k = kidBy(b.dataset.k);
     $("#tpMe").innerHTML = `${Rewards.avatarHtml(k.code)}<span>${esc(b.lastChild.textContent)}</span>`;
-    $("#tpList").hidden = true; $("#tpConfirm").hidden = false;
+    $("#tpList").hidden = true; $("#tpConfirm").hidden = false; $("#tabPick").classList.add("confirming");   /* 「是你嗎？」那頁收起上方標題，一屏放得下（見 index.html 的 .confirming） */
     /* 這一頁也是遊戲開始畫面：這次的主題圖和一句話；按「是我，開始！」直接出第一題、馬上唸（play.js 的 sceneStart） */
     const t = Themes.THEMES[state.themePick], card = playNow() === "game" && gameCard(state.themePick);
     $("#tpGame").innerHTML = t ? `<div class="loadpic" aria-hidden="true">${loadPic(state.themePick)}</div><span>${esc(card ? `${t.name}・${card.act}：${t.line}` : `做完可以抽一張${t.name}的貼紙！`)}</span>` : "";
