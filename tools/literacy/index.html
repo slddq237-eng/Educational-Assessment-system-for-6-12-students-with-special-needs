@@ -717,6 +717,19 @@ details.howto{margin:10px 0 0}
 .rcard .cheer2{background:#fff6d6;border:2px dashed #e0b23a;border-radius:14px;padding:8px 12px;font-size:17px;color:#5a4410;margin-top:4px}
 .rcard .sticker{justify-self:center}
 .rbtns{justify-content:center;margin-top:22px}
+/* 結果畫面一屏放得下（2026-10-31 維護者要求）：平板上不用往下滑才按得到「再玩一次」「看貼紙簿」；
+   按鈕固定在畫面最下面，卡片多到放不下時只有卡片往下捲 */
+#result .rbtns{position:sticky;bottom:0;z-index:5;background:var(--paper);padding-block:8px 10px;margin-top:12px}
+@media (max-height:860px){
+  #result.wrap{padding-block:10px 4px}
+  #result .top{margin-bottom:6px}
+  #result .stamp{width:44px;height:44px;font-size:22px}
+  #result .hint{margin:2px 0 8px}
+  #result .tsend{margin-top:8px}
+  #result .rcard{padding:12px 12px;gap:4px}
+  #result .rcard .sticker{padding:6px 12px}
+  #result .rcard .sticker svg{width:52px;height:52px}
+}
 /* 平板作答（tablet.js）：平板上不顯示設定畫面；QR code、點代號、送出狀態 */
 html.tablet #setup{display:none}
 .qrbox{display:flex;justify-content:center;background:#fff;padding:12px;border-radius:12px}
