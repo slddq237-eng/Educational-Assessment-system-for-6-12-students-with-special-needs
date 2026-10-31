@@ -972,7 +972,7 @@ function finish(){
     }
     const avg = t.secs.length ? (t.secs.reduce((a, b) => a + b, 0) / t.secs.length).toFixed(1) : "—";
     return `${head}<span class="rlabel">你第一次就答對了</span><span class="big">${t.first} 題</span>
-      <div class="rrows"><div>這次一共做了 <b>${t.n}</b> 題</div>${t.secs.length ? `<div>答對一題，平均用 <b>${avg}</b> 秒</div>` : ""}${t.passed > t.first ? `<div>再試一次，又答對了 <b>${t.passed - t.first}</b> 題</div>` : ""}</div>
+      <div class="rrows"><div>這次一共做了 <b>${t.n}</b> 題</div>${t.secs.length ? `<div>答對一題，用了 <b>${avg}</b> 秒</div>` : ""}</div>
       ${cheer}</div>`;
   }).join("") || `<p class="note">這次沒有作答紀錄。</p>`;
   $("#rNote").textContent = (g.kind === "formal" ? "這次是正式評量，做完的結果會納入學習分析。" : "這次是練習，結果另外統計。")
