@@ -226,6 +226,9 @@ const saveArchived = () => store(KEYS.kidsArchived, kidsArchived);
 const archivedCodes = () => new Set(kidsArchived.map(k => k.code));
 /* 名單裡有這個代號嗎（現在名單或封存區）：匯入紀錄時用，封存學生的紀錄照收、不當成「不在名單」 */
 const knownKid = code => kids.some(k => k.code === code) || kidsArchived.some(k => k.code === code);
+/* 學生名字不能重複（2026-10-31 維護者決定，現在名單和封存區一起算）：回傳已經用這個名字的另一位學生，沒有就是 undefined */
+const nameTaken = (name, except) => name ? [...kids, ...kidsArchived].find(k => k !== except && k.name === name) : undefined;
+const nameClash = (name, other) => `已經有一位叫「${name}」的學生${kidsArchived.includes(other) ? "（在封存區）" : ""}了。\n\n學生名字不能重複，請換一個名字，例如加上姓氏、座號，或「${name}A」。`;
 /* 新學生的代號由系統產生隨機碼（2026-10-31 維護者決定，老師不用也不能自己取）：改名字、換人都不會撞到同一個代號；
    不含容易看錯的字（0 o 1 l i）。舊的代號（例如 S01）照舊。 */
 const CODE_CHARS = "abcdefghjkmnpqrstuvwxyz23456789";

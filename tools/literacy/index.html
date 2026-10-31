@@ -15,11 +15,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-31b">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-10-31c">
 <!-- 平台共用的主題外觀、頭像、貼紙樣式 -->
-<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-31b">
+<link rel="stylesheet" href="../../shared/themes.css?v=2026-10-31c">
 <!-- 注音字型（3-4）：語詞、句子提示和練習的選項加注音；畫面用到注音時才會下載 -->
-<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-31b">
+<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-10-31c">
 <style>
 /* 版面：沿用生字賓果的生字簿方格紙。
    設定畫面：左邊六個步驟，右邊固定的「本次評量」摘要；評量設定、教學日期、學生名單、作答紀錄放在彈出面板。
@@ -200,6 +200,7 @@ input[type=number]{width:80px;border:2px solid var(--ink);border-radius:10px;pad
 @media (max-width:620px){.drow{grid-template-columns:64px minmax(0,1fr)}.drow .ds{grid-column:1/-1}.drow.dkid{grid-template-columns:minmax(0,1fr)}.drow.dkid .dk{display:none}.dadd{padding-left:0}}
 .krow{display:grid;grid-template-columns:52px minmax(0,1fr) 110px 140px 76px 76px;gap:10px;align-items:center;border-top:1px solid var(--grid);padding-top:8px}
 .krow input,.krow select{border:2px solid var(--ink);border-radius:10px;padding:4px 8px;min-width:0;width:100%}
+.krow input.dup{border-color:#b3261e;background:#fdecea}
 .krow.head{border:none;padding:0;font-size:13px;color:var(--muted)}
 @media (max-width:620px){.krow{grid-template-columns:52px 1fr 1fr}.krow.head{display:none}}
 .arow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-top:1px solid var(--grid);padding-top:8px}.arow .an{flex:1 1 140px;font-weight:600}.arow small{font-weight:400;color:var(--muted)}.arow select{border:2px solid var(--ink);border-radius:10px;padding:4px 8px}
@@ -1025,8 +1026,9 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <div class="overlay" id="kidsSheet" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="kTitle">
     <header><h2 id="kTitle">學生名單</h2><button class="ghost" data-close>關閉</button></header>
-    <p class="hint" style="margin:0">年級填「今年」的年級，之後每年 8 月系統會自動升一個年級。學生作答時畫面會顯示名字。名字只存在這台電腦，不會上傳。代號由系統自動產生，老師不用管。<b>改名字不會變成另一位學生</b>，評量紀錄和貼紙都會沿用；要新增另一位學生，請用下方「加入」。「本學期安排」是選填，記錄原班、資源班、學習扶助的每週節數與開始日期。</p>
+    <p class="hint" style="margin:0">年級填「今年」的年級，之後每年 8 月系統會自動升一個年級。學生作答時畫面會顯示名字。名字只存在這台電腦，不會上傳。代號由系統自動產生，老師不用管。<b>學生名字不能重複</b>（現在名單和封存區都算）；<b>改名字不會變成另一位學生</b>，評量紀錄和貼紙都會沿用；要新增另一位學生，請用下方「加入」。「本學期安排」是選填，記錄原班、資源班、學習扶助的每週節數與開始日期。</p>
     <div class="krow head"><span>頭像</span><span>名字</span><span>年級</span><span></span><span></span><span></span></div>
+    <p id="kDup" class="note warn" role="alert" hidden style="margin:8px 0"></p>
     <div id="kTable" style="display:grid;gap:8px"></div>
     <div class="add"><input id="newKid" maxlength="10" placeholder="新增學生：輸入名字"><button class="chip" id="addKid">加入</button></div>
     <details id="kArchive" style="margin-top:10px"><summary id="kArchSum">封存區</summary>
@@ -1249,32 +1251,32 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <!-- 每個檔案後面的 ?v=日期 是版本號：改了任何 .js、.css 檔，就把這頁所有的 ?v= 一起改成當天日期（用「全部取代」；同一天改第二次就在日期後面加 b、c）。
      這樣老師的瀏覽器才會下載新檔案，不會新網頁配到舊程式（例如按「下一步」沒反應）。 -->
 <!-- 生字資料：平台共用的教材資料（shared/lessons.js） -->
-<script src="../../shared/lessons.js?v=2026-10-31b"></script>
+<script src="../../shared/lessons.js?v=2026-10-31c"></script>
 <!-- 注音讀音表（shared/bpmf.js）：語詞、例句裡的破音字該念哪一個音 -->
-<script src="../../shared/bpmf.js?v=2026-10-31b"></script>
+<script src="../../shared/bpmf.js?v=2026-10-31c"></script>
 <!-- 字頻：教育部字頻總表（shared/freq.js），練習的常用字、字頻優先、老師專區高字頻生字會用到 -->
-<script src="../../shared/freq.js?v=2026-10-31b"></script>
+<script src="../../shared/freq.js?v=2026-10-31c"></script>
 <!-- 自動部件拆解（shared/parts.js）：部件提示在 lessons.js 的 PARTS 沒有這個字時才用 -->
-<script src="../../shared/parts.js?v=2026-10-31b"></script>
+<script src="../../shared/parts.js?v=2026-10-31c"></script>
 <!-- 共用小工具（課本排序與名稱、語詞、部件查詢、按匯出時才載入 Excel 元件），識字評量與備課分析共用 -->
-<script src="../../shared/common.js?v=2026-10-31b"></script>
+<script src="../../shared/common.js?v=2026-10-31c"></script>
 <!-- 平台共用：主題與貼紙、每位學生的收藏與頭像 -->
-<script src="../../shared/sticker-art.js?v=2026-10-31b"></script>
-<script src="../../shared/themes.js?v=2026-10-31b"></script>
-<script src="../../shared/rewards.js?v=2026-10-31b"></script>
+<script src="../../shared/sticker-art.js?v=2026-10-31c"></script>
+<script src="../../shared/themes.js?v=2026-10-31c"></script>
+<script src="../../shared/rewards.js?v=2026-10-31c"></script>
 <!-- 程式本體：分成八個檔案，順序不能換（說明見 app.js 開頭） -->
-<script src="data.js?v=2026-10-31b"></script>
-<script src="setup.js?v=2026-10-31b"></script>
-<script src="records.js?v=2026-10-31b"></script>
-<script src="wordsets.js?v=2026-10-31b"></script>
-<script src="play.js?v=2026-10-31b"></script>
-<script src="collect.js?v=2026-10-31b"></script>
-<script src="gacha.js?v=2026-10-31b"></script>
-<script src="scenes.js?v=2026-10-31b"></script>
+<script src="data.js?v=2026-10-31c"></script>
+<script src="setup.js?v=2026-10-31c"></script>
+<script src="records.js?v=2026-10-31c"></script>
+<script src="wordsets.js?v=2026-10-31c"></script>
+<script src="play.js?v=2026-10-31c"></script>
+<script src="collect.js?v=2026-10-31c"></script>
+<script src="gacha.js?v=2026-10-31c"></script>
+<script src="scenes.js?v=2026-10-31c"></script>
 <!-- 老師專區、進階分析：平板作答（網址 #t）用不到，不下載，省約 30 KB（2026-10-24 R4a）。
      用 document.write 是為了讓電腦上的載入順序和以前完全一樣 -->
-<script>if(!/^#t/.test(location.hash)) document.write('<script src="teacher.js?v=2026-10-31b"><\/script><script src="pivot.js?v=2026-10-31b"><\/script>');</script>
-<script src="tablet.js?v=2026-10-31b"></script>
-<script src="app.js?v=2026-10-31b"></script>
+<script>if(!/^#t/.test(location.hash)) document.write('<script src="teacher.js?v=2026-10-31c"><\/script><script src="pivot.js?v=2026-10-31c"><\/script>');</script>
+<script src="tablet.js?v=2026-10-31c"></script>
+<script src="app.js?v=2026-10-31c"></script>
 </body>
 </html>

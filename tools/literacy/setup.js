@@ -458,11 +458,15 @@ function renderKids(){
 /* 學生名單面板 */
 let openPlan = null, openAv = null;   /* 目前展開的「本學期安排」「選頭像」是哪位學生 */
 function renderKidSheet(){
+  /* 以前留下的重複名字：標紅並提醒（之後不能再新增或改成重複的） */
+  const dupNames = [...new Set([...kids, ...kidsArchived].filter(k => k.name && nameTaken(k.name, k)).map(k => k.name))];
+  $("#kDup").hidden = !dupNames.length;
+  $("#kDup").innerHTML = dupNames.length ? `⚠ 有學生名字重複：<b>${dupNames.map(esc).join("、")}</b>。名字重複會分不出是誰（平板上點名字、分析頁都會搞混），請把其中一位改成不同的名字。` : "";
   $("#kTable").innerHTML = kids.map((k,i) => {
     const p = planOf(k), open = openPlan === k.code;
     return `<div class="krow" data-i="${i}">
     <button class="avedit" data-avopen aria-expanded="${openAv === k.code}" aria-label="更換${esc(kidShow(k))}的頭像">${Rewards.avatarHtml(k.code)}</button>
-    <input aria-label="名字" data-f="name" value="${esc(k.name||"")}" maxlength="10" placeholder="${k.name ? "學生看到的名字" : `輸入名字（目前代號 ${esc(k.code)}）`}">
+    <input aria-label="名字" data-f="name" class="${k.name && nameTaken(k.name, k) ? "dup" : ""}" value="${esc(k.name||"")}" maxlength="10" placeholder="${k.name ? "學生看到的名字" : `輸入名字（目前代號 ${esc(k.code)}）`}">
     <select aria-label="年級" data-f="grade">${GRADES.map((g,j) => `<option value="${j+1}" ${kidGrade(k)===j+1?"selected":""}>${g}年級</option>`).join("")}</select>
     <button class="chip ${adjLevel(k) || dosage(p) ? "on" : ""}" data-plan aria-expanded="${open}">本學期安排${adjLevel(k) || dosage(p) ? " ✓" : ""}</button>
     <button class="chip" data-arch title="不再上課時封存：紀錄和貼紙都保留，只是不在遊玩頁和分析頁出現">封存</button>
@@ -482,10 +486,11 @@ function renderKidSheet(){
     r.querySelectorAll("[data-f]").forEach(f => f.onchange = () => {
       if(f.dataset.f === "grade"){ k.grade = +f.value; k.sy = SCHOOL_YEAR; }
       else {   /* 名字：代號不會變，所以改名字＝同一位學生，紀錄、貼紙都沿用（2026-10-31）；原本有名字時先提醒 */
-        const v = f.value.trim(), old = k.name || "";
+        const v = f.value.trim(), old = k.name || "", other = nameTaken(v, k);
+        if(other){ alert(nameClash(v, other)); f.value = old; return; }
         if(old && v !== old && !confirm(`改名字不會變成另一位學生：「${old}」的評量紀錄和貼紙，都會變成「${v || "（沒有名字）"}」的。\n\n如果是另一位學生，請按「取消」，改用下方「加入」新增學生。\n\n確定要改名字嗎？`)){ f.value = old; return; }
         k.name = v; }
-      saveKids(); render();
+      saveKids(); renderKidSheet(); render();   /* 重畫名單，重複名字的提醒才會跟著更新 */
     });
     r.querySelector("[data-plan]").onclick = () => { openPlan = openPlan === k.code ? null : k.code; renderKidSheet(); };
     r.querySelector("[data-avopen]").onclick = () => { openAv = openAv === k.code ? null : k.code; renderKidSheet(); };
@@ -507,6 +512,8 @@ function renderKidSheet(){
   $("#kArchBody").querySelectorAll(".arow").forEach(r => {
     const k = kidsArchived[+r.dataset.i];
     r.querySelector("[data-unarch]").onclick = () => {
+      const dup = kids.find(x => x.name && x.name === k.name);
+      if(dup){ alert(`現在名單裡已經有一位叫「${k.name}」的學生了，學生名字不能重複。\n\n請先把現在名單裡的那位改名（或把他封存），再取消封存。`); return; }
       k.grade = +r.querySelector("[data-ug]").value; k.sy = SCHOOL_YEAR; delete k.archivedAt;
       kidsArchived.splice(+r.dataset.i, 1); kids.push(k);
       saveKids(); saveArchived(); renderKidSheet(); render();
@@ -551,7 +558,8 @@ $("#newGrp").addEventListener("keydown", e => { if(e.key === "Enter") $("#addGrp
 $("#addKid").onclick = () => {
   const name = $("#newKid").value.trim();
   if(!name) return;
-  if(kids.some(k => k.name === name) && !confirm(`已經有一位叫「${name}」的學生了。\n\n要再新增另一位同名的學生嗎？（如果是同一位，請按「取消」，不用重複新增）`)) return;
+  const other = nameTaken(name);
+  if(other){ alert(nameClash(name, other)); return; }
   const code = newKidCode();
   kids.push({code, name, grade:2, sy:SCHOOL_YEAR}); state.kids.add(code);
   $("#newKid").value = ""; saveKids(); renderKidSheet(); render();
