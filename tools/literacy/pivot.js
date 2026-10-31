@@ -94,7 +94,8 @@ const saveP = () => store(PIVOT_UI, P);
    22. 進階分析：篩選、分組、計算
    ========================================================= */
 function pivotRecords(){
-  let rs = records.filter(r => !r.quit && (P.kind === "both" || r.kind === P.kind)
+  const hid = archivedCodes();   /* 封存的學生不算進分析（2026-10-31） */
+  let rs = records.filter(r => !r.quit && !hid.has(r.kid) && (P.kind === "both" || r.kind === P.kind)
     && (!P.from || dayOf(r) >= P.from) && (!P.to || dayOf(r) <= P.to)
     && (!P.f1 || !P.v1 || DIMS[P.f1][1](r) === P.v1) && (!P.f2 || !P.v2 || DIMS[P.f2][1](r) === P.v2));
   /* 每位學生每個字只算第一次作答（例如看教學前的起點） */

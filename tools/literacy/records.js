@@ -172,7 +172,7 @@ $("#recXlsx").onclick = () => exportXlsx(records, `識字評量_全部紀錄_${f
 const BACKUP_PARTS = [];
 const addBackupPart = (key, save, restore) => BACKUP_PARTS.push({key, save, restore});
 $("#recBackup").onclick = async () => {
-  const data = {app:"literacy", kind:"backup", version:2, savedAt:new Date().toISOString(), settings, kids, teach, records: records.map(({id, ...r}) => r)};
+  const data = {app:"literacy", kind:"backup", version:2, savedAt:new Date().toISOString(), settings, kids, kidsArchived, teach, records: records.map(({id, ...r}) => r)};
   for(const p of BACKUP_PARTS){ try { data[p.key] = await p.save(); } catch(e){} }
   if(!downloadJson(data, `識字評量_備份_${fileDate(Date.now())}.json`)) return;
   $("#recMsg").textContent = "已下載備份檔，請存到隨身碟或雲端硬碟。";
@@ -223,7 +223,7 @@ $("#recRestore").onchange = async e => {
     doIt = () => { wsImport(plan); render(); return `已匯入 ${plan.ok.length} 課的字組${plan.skip.length ? `，${plan.skip.length} 課沒有換掉` : ""}。到第 2 步選課次就會看到。`; };
   } else if(kind === "tablet"){
     const have = new Set(records.map(recKey)), add = data.records.filter(r => !have.has(recKey(r)));
-    const unknown = [...new Set(data.records.map(r => r.kid))].filter(c => !kidBy(c));
+    const unknown = [...new Set(data.records.map(r => r.kid))].filter(c => !knownKid(c));
     text = `這是${data.sheet ? "從 Google 試算表下載的平板作答紀錄" : "平板上下載的紀錄檔（送不出去時用）"}：${data.sessions} 次練習、${data.records.length} 筆作答紀錄（其中 ${add.length} 筆是這台電腦還沒有的）。`
       + (data.missing ? `<br><span class="warn">有 ${data.missing} 次練習少了一部分資料（可能沒有送完），收到的部分照樣匯入。</span>` : "")
       + (unknown.length ? `<br><span class="warn">代號 ${esc(unknown.join("、"))} 不在這台電腦的學生名單裡，紀錄照樣匯入，請到「學生名單」加上這些代號。</span>` : "");
@@ -253,8 +253,12 @@ async function restoreBackup(data){
   const add = (data.records || []).filter(r => !have.has(recKey(r)));
   add.forEach(saveRecord);
   /* 學生名單：沒有的加進來；這台電腦上同代號但還沒填名字的（例如第一次打開時的範例 S01、S02），用備份檔裡的取代 */
-  for(const k of data.kids || []){ const i = kids.findIndex(x => x.code === k.code);
+  /* 封存區：這台電腦已經封存的學生不會被備份檔「叫回」現在名單；備份檔裡封存的，這台沒有才加進封存區（同一位學生不會兩邊都有，2026-10-31） */
+  const arch = archivedCodes();
+  for(const k of data.kids || []){ if(arch.has(k.code)) continue; const i = kids.findIndex(x => x.code === k.code);
     if(i < 0) kids.push(k); else if(!kids[i].name && k.name) kids[i] = k; }
+  for(const k of data.kidsArchived || []) if(!knownKid(k.code)) kidsArchived.push(k);
+  saveArchived();
   /* 教學日期：這台電腦沒有的課加進來；個別學生的設定也合併（這台電腦已有的不蓋掉） */
   for(const [k, v] of Object.entries(data.teach || {})){
     if(!teach[k]) teach[k] = v;

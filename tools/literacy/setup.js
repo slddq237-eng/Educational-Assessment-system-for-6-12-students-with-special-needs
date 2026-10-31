@@ -465,6 +465,7 @@ function renderKidSheet(){
     <input aria-label="名字" data-f="name" value="${esc(k.name||"")}" maxlength="10" placeholder="${k.name ? "學生看到的名字" : `輸入名字（目前代號 ${esc(k.code)}）`}">
     <select aria-label="年級" data-f="grade">${GRADES.map((g,j) => `<option value="${j+1}" ${kidGrade(k)===j+1?"selected":""}>${g}年級</option>`).join("")}</select>
     <button class="chip ${adjLevel(k) || dosage(p) ? "on" : ""}" data-plan aria-expanded="${open}">本學期安排${adjLevel(k) || dosage(p) ? " ✓" : ""}</button>
+    <button class="chip" data-arch title="不再上課時封存：紀錄和貼紙都保留，只是不在遊玩頁和分析頁出現">封存</button>
     <button class="chip" data-del>刪除</button></div>
     ${open ? `<div class="plan" data-i="${i}">
       <p class="note" style="margin:0">${SCHOOL_YEAR} 學年${TERM}學期・選填。每學期分開記錄，換學期時舊資料會保留，分析時用來比較不同安排的效果。</p>
@@ -488,11 +489,30 @@ function renderKidSheet(){
     });
     r.querySelector("[data-plan]").onclick = () => { openPlan = openPlan === k.code ? null : k.code; renderKidSheet(); };
     r.querySelector("[data-avopen]").onclick = () => { openAv = openAv === k.code ? null : k.code; renderKidSheet(); };
+    r.querySelector("[data-arch]").onclick = () => {   /* 封存：搬到封存名單，紀錄、貼紙、分組都不動（2026-10-31） */
+      if(openPlan === k.code) openPlan = null; if(openAv === k.code) openAv = null;
+      state.kids.delete(k.code); kids.splice(+r.dataset.i, 1); k.archivedAt = iso(new Date()); kidsArchived.push(k);
+      saveKids(); saveArchived(); renderKidSheet(); render();
+    };
     r.querySelector("[data-del]").onclick = () => { state.kids.delete(k.code); kids.splice(+r.dataset.i, 1); saveKids(); renderKidSheet(); render(); };
   });
   bindAvatarPanel($("#kTable .avpick"), () => { renderKidSheet(); render(); });
   renderKidGroupSheet();
-  $("#kCodeBody").innerHTML = kids.length ? `<table class="codemap"><thead><tr><th>名字</th><th>代號</th></tr></thead><tbody>${kids.map(k => `<tr><td>${esc(k.name || "（沒有名字）")}</td><td><code>${esc(k.code)}</code></td></tr>`).join("")}</tbody></table>` : `<p class="note" style="margin:0">還沒有學生。</p>`;
+  /* 封存區：取消封存時請老師確認年級（年級是用學年算的，隔很久才回來會一次補算好幾年；留級也要老師自己改） */
+  $("#kArchSum").textContent = `封存區（${kidsArchived.length} 位）`;
+  $("#kArchBody").innerHTML = kidsArchived.length ? kidsArchived.map((k, i) => `<div class="arow" data-i="${i}">
+    <span class="an">${esc(k.name || k.code)}${k.archivedAt ? `<small>（${esc(k.archivedAt)} 封存）</small>` : ""}</span>
+    <label>回來時的年級 <select data-ug aria-label="${esc(k.name || k.code)}取消封存後的年級">${GRADES.map((g, j) => `<option value="${j+1}" ${kidGrade(k) === j+1 ? "selected" : ""}>${g}年級</option>`).join("")}</select></label>
+    <button class="chip" data-unarch>取消封存</button></div>`).join("") : `<p class="note" style="margin:0">沒有封存的學生。</p>`;
+  $("#kArchBody").querySelectorAll(".arow").forEach(r => {
+    const k = kidsArchived[+r.dataset.i];
+    r.querySelector("[data-unarch]").onclick = () => {
+      k.grade = +r.querySelector("[data-ug]").value; k.sy = SCHOOL_YEAR; delete k.archivedAt;
+      kidsArchived.splice(+r.dataset.i, 1); kids.push(k);
+      saveKids(); saveArchived(); renderKidSheet(); render();
+    };
+  });
+  $("#kCodeBody").innerHTML = kids.length || kidsArchived.length ? `<table class="codemap"><thead><tr><th>名字</th><th>代號</th></tr></thead><tbody>${[...kids, ...kidsArchived].map(k => `<tr><td>${esc(k.name || "（沒有名字）")}</td><td><code>${esc(k.code)}</code></td></tr>`).join("")}</tbody></table>` : `<p class="note" style="margin:0">還沒有學生。</p>`;
   $("#kTable").querySelectorAll(".plan").forEach(r => {
     const k = kids[+r.dataset.i];
     const plan = () => ((k.plans ||= {})[PLAN_KEY] ||= {});

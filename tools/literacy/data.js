@@ -148,7 +148,7 @@ const md = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()}`;
    用了表裡沒有的名稱，自動檢查會報錯。新增名稱時也寫進 docs/code/architecture.md 第 6 節。
    作答紀錄的 IndexedDB 名稱在 records.js 的 REC_DB（只有它用）。 */
 const KEYS = Object.freeze({
-  settings:"literacy-settings", kids:"literacy-kids", teach:"literacy-teach", wordsets:"literacy-wordsets",
+  settings:"literacy-settings", kids:"literacy-kids", kidsArchived:"literacy-kids-archived", teach:"literacy-teach", wordsets:"literacy-wordsets",
   ui:"literacy-ui", preset:"literacy-preset", teacher:"literacy-teacher", pivot:"literacy-pivot", pivots:"literacy-pivots",
   lastBackup:"literacy-lastBackup",
   tablet:"literacy-tablet"   /* sessionStorage：平板作答這個分頁的練習設定 */
@@ -219,11 +219,18 @@ const kids = load(KEYS.kids, [
   {code:"S01", name:"", grade:2, sy:SCHOOL_YEAR}, {code:"S02", name:"", grade:2, sy:SCHOOL_YEAR}
 ]);
 const saveKids = () => store(KEYS.kids, kids);
+/* 封存的學生（2026-10-31）：從「現在名單」搬到這份名單，遊玩頁、分析頁、平板都看不到（它們都只讀 kids）；
+   作答紀錄、貼紙、頭像都不動，取消封存就搬回 kids。分析頁要用 archivedCodes() 把他們的紀錄排除（包括全班統計） */
+const kidsArchived = load(KEYS.kidsArchived, []);
+const saveArchived = () => store(KEYS.kidsArchived, kidsArchived);
+const archivedCodes = () => new Set(kidsArchived.map(k => k.code));
+/* 名單裡有這個代號嗎（現在名單或封存區）：匯入紀錄時用，封存學生的紀錄照收、不當成「不在名單」 */
+const knownKid = code => kids.some(k => k.code === code) || kidsArchived.some(k => k.code === code);
 /* 新學生的代號由系統產生隨機碼（2026-10-31 維護者決定，老師不用也不能自己取）：改名字、換人都不會撞到同一個代號；
    不含容易看錯的字（0 o 1 l i）。舊的代號（例如 S01）照舊。 */
 const CODE_CHARS = "abcdefghjkmnpqrstuvwxyz23456789";
 function newKidCode(){
-  const taken = new Set(kids.map(k => k.code));
+  const taken = new Set([...kids, ...kidsArchived].map(k => k.code));
   for(;;){
     const b = new Uint8Array(6);
     if(window.crypto && crypto.getRandomValues) crypto.getRandomValues(b); else b.forEach((_, i) => b[i] = Math.random() * 256);

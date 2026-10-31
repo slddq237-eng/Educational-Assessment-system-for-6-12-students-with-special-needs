@@ -27,7 +27,7 @@
 | PR | 內容 | 狀態 |
 |---|---|---|
 | 1 | 代號自動生成、拿掉代號編輯欄、改名提醒、隨機碼對照表 | ✅ 2026-10-31（程式：`data.js` 的 `newKidCode`、`kidLabel`；`setup.js` 學生名單；對照表放在學生名單面板底下可展開的一欄，不是「進階設定」模式裡；`Rewards.rename` 已沒有地方呼叫，留給之後用） |
-| 2 | 封存／取消封存、封存區（備份還原要包含封存名單；`privacy.html`、`architecture.md`） | ⏳ |
+| 2 | 封存／取消封存、封存區（備份還原要包含封存名單；`privacy.html`、`architecture.md`） | ✅ 2026-10-31（`data.js` 的 `kidsArchived`、`archivedCodes`、`knownKid`；`setup.js` 學生名單的「封存」按鈕與封存區；分析頁 `teacher.js` 的 `filtered`、`pivot.js` 的 `pivotRecords` 排除封存學生；備份檔加 `kidsArchived`，還原時同一位學生不會兩邊都有） |
 | 3 | 刪除單一學生（連同全部資料）、匯入規則 | ⏳ |
 | 4 | 重置全部貼紙按鈕 | ⏳ |
 | 5 | 新學期「整理名單」提醒 | ⏳ |
