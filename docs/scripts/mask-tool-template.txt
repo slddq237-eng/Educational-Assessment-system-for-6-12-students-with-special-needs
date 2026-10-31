@@ -36,6 +36,7 @@ textarea{width:100%;height:120px;font:12px monospace}
 <div class="help"><b>怎麼用：</b>左邊選一組 → 直接用滑鼠拖曳色塊（藍＝第 1 塊、紅＝第 2 塊、綠＝第 3 塊）：<b>拖中間＝移動</b>，<b>拖白色小方塊＝放大縮小</b>，<b>拖上方黃色圓點＝旋轉</b>（預設每 5 度一格，按住 Alt 可以微調）。字型關係一塊蓋不住時，按卡片下方「<b>＋第N塊加色塊</b>」再加一個（可以各自移動、旋轉；紅色 × 刪除）。色塊要剛好蓋住「題目要選的那個部件」，又不要蓋到旁邊的部件。<br>
 一整組都不準：改好一個字，按「<b>套用到整組</b>」，同組所有字都換成這個位置。只有這個字特別：改好就好（橘框＝已改）。<br>
 改完按最上面的「<b>下載結果</b>」，把檔案傳給我。你的修改會自動存在這個瀏覽器，關掉再開還在（用同一台電腦、同一個瀏覽器）。一開始看到的是 repo 目前已經調好的結果（已改的字有橘框），可以接著改。</div>
+<div id="sync" class="help" hidden></div>
 <div class="top"><button class="p" id="dl">下載結果（.json）</button><button id="cp">複製結果文字</button><button id="im">匯入先前的結果</button><button id="rs0">重設為 repo 現有結果</button><input type="file" id="fi" accept=".json" hidden>
 <label>卡片大小 <input type="range" id="sz" min="100" max="260" value="170"></label><span id="stat" class="note"></span><span id="pg"></span></div>
 <div id="grid" class="grid"></div>
@@ -43,21 +44,45 @@ textarea{width:100%;height:120px;font:12px monospace}
 <script>
 const DATA=__DATA__;      /* [分組, 字, 結構, 第一層部件, 第幾塊, 這塊是, 左, 上, 右, 下] */
 const IMG=__IMG__;
+const BASE='__BASE__';   /* 這份 repo 結果的版本代號（docs/materials/mask-fix.json 內容的 sha1 前 10 碼） */
 const INIT=__INIT__;   /* repo 目前的結果（docs/materials/mask-fix.json）：這台電腦還沒有存過修改時，從這裡開始 */
 const groups={},chars={};
 DATA.forEach(r=>{const[g,c,st,ps,i,pn,...b]=r;(groups[g]=groups[g]||[]);if(!chars[c]){chars[c]={g,st,ps,boxes:{}};groups[g].push(c)}chars[c].boxes[i]={name:pn,def:[[...b,0]]}});
 let gOv={},cOv={},cur=null,page=0,SZ=170,PER=24;
 /* 每個部件的遮擋＝一串色塊，每塊 [左,上,右,下,旋轉角度]；舊格式（只有 4 個數字的一塊）自動轉換 */
 const norm=v=>!v?v:(typeof v[0]==='number'?[[...v,0]]:v.map(s=>s.length<5?[...s,0]:s));
-const normAll=o=>{const r={};Object.keys(o||{}).forEach(k=>{r[k]={};Object.keys(o[k]).forEach(i=>r[k][i]=norm(o[k][i]))});return r};
-let saved=null;try{saved=JSON.parse(localStorage.getItem('mask-tool2')||'null')}catch(e){}
-const s0=saved||INIT;if(s0){gOv=normAll(s0.組規則);cOv=normAll(s0.個別字)}
-const save=()=>{try{localStorage.setItem('mask-tool2',JSON.stringify(out()))}catch(e){}};
+const normAll=o=>{const r={};Object.keys(o||{}).forEach(k=>{r[k]={};Object.keys(o[k]).forEach(i=>{r[k][i]=i==='ps'?o[k][i]:norm(o[k][i])})});return r};   /* ps＝調整當時的第一層部件（字串），不是色塊 */
+const hasEdit=o=>!!o&&Object.keys(o).some(k=>k!=='ps');
+/* 存檔（這台電腦的瀏覽器）：state＝目前的調整、base＝這份調整出發時 repo 的結果（用來和新版 repo 結果做三方合併）、baseId＝出發版本代號。
+   沒存過就從 repo 目前的結果（INIT，代號 BASE）開始。 */
+let saved=null,legacy=null;
+try{saved=JSON.parse(localStorage.getItem('mask-tool3')||'null')}catch(e){}
+if(!saved){try{legacy=JSON.parse(localStorage.getItem('mask-tool2')||'null')}catch(e){}}   /* 舊版工具存的修改（沒有出發版本，無法合併） */
+let baseSnap=saved?saved.base:INIT,baseId=saved?saved.baseId:(legacy?'?':BASE);
+{const s0=saved?saved.state:(legacy||INIT);gOv=normAll(s0.組規則);cOv=normAll(s0.個別字)}
+const save=()=>{try{localStorage.setItem('mask-tool3',JSON.stringify({state:out(),base:baseSnap,baseId}))}catch(e){}};
 const r2=x=>Math.round(x*100)/100;
 const eff=(c,i)=>(cOv[c]&&cOv[c][i])||(gOv[chars[c].g]&&gOv[chars[c].g][i])||chars[c].boxes[i].def;
-const own=(c,i)=>{cOv[c]=cOv[c]||{};if(!cOv[c][i])cOv[c][i]=eff(c,i).map(s=>[...s]);return cOv[c][i]};
-const isEd=c=>!!(cOv[c]&&Object.keys(cOv[c]).length);
-function out(){return{說明:'遮擋位置調整結果。每個部件的遮擋是一串色塊，每塊 [左,上,右,下,旋轉角度]：前四個是占字格的比例（0～1），旋轉角度單位是度（順時針為正，繞色塊中心）',組規則:gOv,個別字:cOv}}
+const own=(c,i)=>{cOv[c]=cOv[c]||{};if(!cOv[c].ps)cOv[c].ps=chars[c].ps;   /* 記下這次調整是照哪個第一層拆法調的：之後老師改了拆法，遊戲就不套用這個調整 */
+  if(!cOv[c][i])cOv[c][i]=eff(c,i).map(s=>[...s]);return cOv[c][i]};
+const isEd=c=>hasEdit(cOv[c]);
+function out(){Object.keys(cOv).forEach(c=>{if(!hasEdit(cOv[c]))delete cOv[c]});return{基於版本:baseId,說明:'遮擋位置調整結果。每個部件的遮擋是一串色塊，每塊 [左,上,右,下,旋轉角度]：前四個是占字格的比例（0～1），旋轉角度單位是度（順時針為正，繞色塊中心）；每個字的 ps 是調整當時的第一層部件；基於版本是這份調整從 repo 的哪一版出發（交給 AI 時用來分辨「你改的」和「別人後來改的」）',組規則:gOv,個別字:cOv}}
+
+/* repo 的結果比這台電腦存的新（有別人的調整）：提醒，並可以三方合併。
+   對每個字比較三份：base（我出發時的 repo 結果）、mine（我現在的）、theirs（新的 repo 結果）：只有我改→留我的；只有 repo 改→用 repo 的；兩邊都改且不同→衝突，留我的並列出來。 */
+const J=v=>JSON.stringify(v===undefined?null:v);
+function merge3(base,mine,theirs){
+  const conflicts=[],out={組規則:{},個別字:{}},B=normAll(base.組規則),Bc=normAll(base.個別字);
+  const T=normAll(theirs.組規則),Tc=normAll(theirs.個別字);
+  const pick=(b,m,t,name,res)=>{if(J(m)===J(t))return m;if(J(m)===J(b))return t;if(J(t)===J(b))return m;res.push(name);return m};
+  [['組規則',B,gOv,T],['個別字',Bc,cOv,Tc]].forEach(([k,b,m,t])=>{new Set([...Object.keys(b),...Object.keys(m),...Object.keys(t)]).forEach(x=>{const v=pick(b[x],m[x],t[x],x,conflicts);if(v!==undefined)out[k][x]=v})});
+  return{out,conflicts}}
+function syncBanner(){const el=document.getElementById('sync');
+  if(baseId==='?'){el.hidden=false;el.innerHTML='<b>這台電腦存的修改來自舊版工具</b>，沒有「出發版本」，無法判斷哪些是你改的、哪些是別人後來改的。建議：先按「下載結果」留一份，再把檔案交給 AI 比對；或按「重設為 repo 現有結果」（你的修改會消失）。';return}
+  if(baseId===BASE){el.hidden=true;return}
+  el.hidden=false;el.innerHTML='<b>repo 的結果比你這台電腦存的修改新</b>（有別人的調整已經合併）。按「合併」：只有你改的留你的、只有別人改的用新的；<b>同一個字兩邊都改過且不同</b>＝衝突，會留你的並列出來讓你決定。<button id="mg" class="p">合併</button>';
+  document.getElementById('mg').onclick=()=>{const{out:o,conflicts}=merge3(baseSnap,out(),INIT);gOv=normAll(o.組規則);cOv=normAll(o.個別字);baseSnap=INIT;baseId=BASE;save();syncBanner();list();draw();
+   alert(conflicts.length?`合併完成。有 ${conflicts.length} 個地方兩邊都改過、而且不同，已先留你的：\n${conflicts.join('、')}\n要用別人的，請在那個字按「還原」（還原成 repo 現在的版本）。`:'合併完成，沒有衝突。')}}
 function list(){const el=document.getElementById('gl');el.innerHTML='';
  Object.keys(groups).sort((a,b)=>groups[b].length-groups[a].length).forEach(g=>{const n=groups[g].filter(isEd).length,gr=gOv[g]?'・組':'';
   const d=document.createElement('div');d.className='g'+(g===cur?' on':'');d.innerHTML=`<b>${g}</b><small>${groups[g].length}字${n?'・改'+n:''}${gr}</small>`;d.onclick=()=>{cur=g;page=0;list();draw()};el.appendChild(d)})}
@@ -70,7 +95,7 @@ function draw(){const G=document.getElementById('grid');G.innerHTML='';if(!cur){
 function place(d,b){d.style.left=b[0]*100+'%';d.style.top=b[1]*100+'%';d.style.width=(b[2]-b[0])*100+'%';d.style.height=(b[3]-b[1])*100+'%';d.style.transform=b[4]?`rotate(${b[4]}deg)`:''}
 function card(c){const o=chars[c],el=document.createElement('div');el.className='card'+(isEd(c)?' ed':'');el.style.width=SZ+12+'px';
  const ks=Object.keys(o.boxes);
- el.innerHTML=`<div class="t"><span style="font-size:18px">${c}</span><span>${o.ps}${isEd(c)?' <i>已改</i>':''}</span></div><div class="cv" style="width:${SZ}px;height:${SZ}px"><img src="${IMG[c]}" style="mix-blend-mode:multiply"></div><div class="acts">${ks.map(k=>`<button data-a="add" data-k="${k}">＋第${k}塊加色塊</button>`).join('')}</div><div class="acts"><button data-a="rs">還原</button><button data-a="gp">套用到整組</button></div>`;
+ el.innerHTML=`<div class="t"><span style="font-size:18px">${c}</span><span>${o.ps}${isEd(c)?' <i>已改</i>':''}</span></div><div class="cv" style="width:${SZ}px;height:${SZ}px"><img src="${IMG[c]}" style="mix-blend-mode:multiply"></div><div class="acts">${ks.map(k=>`<button data-a="add" data-k="${k}">＋第${k}塊加色塊</button>`).join('')}</div><div class="acts"><button data-a="rs" title="回到 repo 現在的版本（沒調整過的字就是預設位置）">還原</button><button data-a="gp">套用到整組</button></div>`;
  const cv=el.querySelector('.cv'),mark=()=>{el.classList.add('ed');const t=el.querySelector('.t');if(!t.querySelector('i'))t.lastElementChild.insertAdjacentHTML('beforeend',' <i>已改</i>');list()};
  ks.forEach(k=>eff(c,k).forEach((b0,si)=>{const d=document.createElement('div');d.className='bx c'+((k-1)%3);place(d,b0);
   d.innerHTML=`<span>${k}${si?'-'+(si+1):''}</span><i class="rot" data-d="rot"></i>`+['nw','n','ne','e','se','s','sw','w'].map(x=>`<i class="h" data-d="${x}"></i>`).join('')+(si?'<i class="del" data-d="del">×</i>':'');
@@ -89,15 +114,15 @@ function card(c){const o=chars[c],el=document.createElement('div');el.className=
    d.addEventListener('pointermove',mvf);d.addEventListener('pointerup',up)};
   cv.appendChild(d)}));
  el.querySelectorAll('[data-a=add]').forEach(bt=>bt.onclick=()=>{own(c,bt.dataset.k).push([.35,.35,.65,.65,0]);save();draw();list()});
- el.querySelector('[data-a=rs]').onclick=()=>{delete cOv[c];save();list();draw()};
+ el.querySelector('[data-a=rs]').onclick=()=>{delete cOv[c];const i=INIT.個別字[c];if(i)cOv[c]=normAll({x:i}).x;save();list();draw()};   /* 還原＝回到 repo 現在的版本（repo 沒有調整過這個字就是預設位置） */
  el.querySelector('[data-a=gp]').onclick=()=>{if(!confirm(`把「${c}」現在的位置套用到「${o.g}」全部 ${groups[o.g].length} 個字？（包含新增的色塊和旋轉）`))return;
-  gOv[o.g]=gOv[o.g]||{};ks.forEach(k=>{gOv[o.g][k]=eff(c,k).map(s=>[...s]);groups[o.g].forEach(x=>{if(cOv[x]){delete cOv[x][k];if(!Object.keys(cOv[x]).length)delete cOv[x]}})});save();list();draw()};
+  gOv[o.g]=gOv[o.g]||{};ks.forEach(k=>{gOv[o.g][k]=eff(c,k).map(s=>[...s]);groups[o.g].forEach(x=>{if(cOv[x]){delete cOv[x][k];if(!hasEdit(cOv[x]))delete cOv[x]}})});save();list();draw()};
  return el}
 document.getElementById('sz').oninput=e=>{SZ=+e.target.value;draw()};
 document.getElementById('dl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(out(),null,1)],{type:'application/json'}));a.download='遮擋位置調整結果.json';a.click()};
 document.getElementById('cp').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify(out()));alert('已複製，貼給我就可以')}catch(e){prompt('請全選複製：',JSON.stringify(out()))}};
-document.getElementById('rs0').onclick=()=>{if(!confirm('把所有修改換回 repo 目前的結果？這台電腦上還沒下載的修改會消失。'))return;gOv=normAll(INIT.組規則);cOv=normAll(INIT.個別字);save();list();draw()};
+document.getElementById('rs0').onclick=()=>{if(!confirm('把所有修改換回 repo 目前的結果？這台電腦上還沒下載的修改會消失。'))return;gOv=normAll(INIT.組規則);cOv=normAll(INIT.個別字);baseSnap=INIT;baseId=BASE;save();syncBanner();list();draw()};
 document.getElementById('im').onclick=()=>document.getElementById('fi').click();
-document.getElementById('fi').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const s=JSON.parse(t);gOv=normAll(s.組規則);cOv=normAll(s.個別字);save();list();draw()}catch(x){alert('檔案讀不了')}})};
-cur=Object.keys(groups).sort((a,b)=>groups[b].length-groups[a].length)[0];list();draw();
+document.getElementById('fi').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const s=JSON.parse(t);gOv=normAll(s.組規則);cOv=normAll(s.個別字);baseId=s.基於版本||'?';if(baseId===BASE)baseSnap=INIT;save();syncBanner();list();draw()}catch(x){alert('檔案讀不了')}})};
+syncBanner();cur=Object.keys(groups).sort((a,b)=>groups[b].length-groups[a].length)[0];list();draw();
 </script></body></html>

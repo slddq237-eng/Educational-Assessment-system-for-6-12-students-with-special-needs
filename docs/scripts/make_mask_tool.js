@@ -86,9 +86,10 @@ const server = http.createServer((q, r) => {
   await browser.close(); server.close();
 
   /* 3. 組成 HTML */
-  const init = JSON.parse(fs.readFileSync(path.join(ROOT, 'docs/materials/mask-fix.json'), 'utf8'));
+  const initText = fs.readFileSync(path.join(ROOT, 'docs/materials/mask-fix.json'), 'utf8'), init = JSON.parse(initText);
+  const baseId = require('crypto').createHash('sha1').update(initText).digest('hex').slice(0, 10);   /* 版本代號：交給 AI 時，用它從 git 歷史找出「這份調整是從哪一版出發的」 */
   const tpl = fs.readFileSync(path.join(__dirname, 'mask-tool-template.txt'), 'utf8');
-  const html = tpl.replace('__DATA__', () => JSON.stringify(rows)).replace('__IMG__', () => JSON.stringify(img)).replace('__INIT__', () => JSON.stringify(init));
+  const html = tpl.replace('__DATA__', () => JSON.stringify(rows)).replace('__IMG__', () => JSON.stringify(img)).replace('__INIT__', () => JSON.stringify(init)).replace('__BASE__', baseId);
   fs.writeFileSync(OUT, html);
-  console.log(`完成：${chars.length} 個字、${rows.length} 個可遮的塊，${Math.round(Buffer.byteLength(html) / 1e5) / 10}MB → ${OUT}\n這個檔案不要放進 repo（已列在 .gitignore）。`);
+  console.log(`完成：${chars.length} 個字、${rows.length} 個可遮的塊，起始版本 ${baseId}，${Math.round(Buffer.byteLength(html) / 1e5) / 10}MB → ${OUT}\n這個檔案不要放進 repo（已列在 .gitignore）。`);
 })().catch(e => { console.error('失敗：' + e.message); process.exit(1); });
