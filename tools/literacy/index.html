@@ -15,11 +15,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-01b">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-01c">
 <!-- 平台共用的主題外觀、頭像、貼紙樣式 -->
-<link rel="stylesheet" href="../../shared/themes.css?v=2026-11-01b">
+<link rel="stylesheet" href="../../shared/themes.css?v=2026-11-01c">
 <!-- 注音字型（3-4）：語詞、句子提示和練習的選項加注音；畫面用到注音時才會下載 -->
-<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-11-01b">
+<link rel="stylesheet" href="../../shared/fonts/bpmf-kai.css?v=2026-11-01c">
 <style>
 /* 版面：沿用生字賓果的生字簿方格紙。
    設定畫面：左邊六個步驟，右邊固定的「本次評量」摘要；評量設定、教學日期、學生名單、作答紀錄放在彈出面板。
@@ -766,8 +766,14 @@ details.howto{margin:10px 0 0}
   #result .rbtns{margin-top:6px;padding-block:6px 8px}
 }
 /* 平板新手教學的圖解（tablet.js 的 tabletGuide） */
-.gsteps{margin:0;padding-left:22px;display:grid;gap:16px}
-.gimg{display:block;max-width:100%;height:auto;margin-top:8px;border:1px solid #cfd8e3;border-radius:8px}
+.gsteps{margin:0;padding-left:0;list-style:none;counter-reset:gs;display:grid;gap:0}
+.gsteps>li{counter-increment:gs;padding:16px 0 16px 38px;border-top:2px solid #cfd8e3;position:relative}
+.gsteps>li:first-child{border-top:0;padding-top:4px}
+.gsteps>li::before{content:counter(gs);position:absolute;left:0;top:14px;width:28px;height:28px;border-radius:50%;background:var(--green,#2f7a5f);color:#fff;font-weight:700;text-align:center;line-height:28px}
+.gsteps>li:first-child::before{top:2px}
+.gimg{display:block;max-width:100%;height:auto;margin-top:10px;border:2px solid #5b6b7b;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.18)}
+.gpair{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
+.gpair .gimg{flex:1 1 260px;min-width:0;width:calc(50% - 5px)}
 /* 平板作答（tablet.js）：平板上不顯示設定畫面；QR code、點代號、送出狀態 */
 html.tablet #setup{display:none}
 .qrbox{display:flex;justify-content:center;background:#fff;padding:12px;border-radius:12px}
@@ -1153,24 +1159,21 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <div class="overlay" id="guideSheet" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
     <header><h2 id="guideTitle">第一次用平板：先接上你的 Google 表單</h2><button class="ghost" data-close>關閉</button></header>
-    <p class="hint" style="margin:0">學生在平板做完，紀錄會自動送到<b>你自己的 Google 表單</b>。這件事<b>只要做一次</b>。已經有表單連結的話，直接貼在下面；還沒有，照下面 9 步做（約 5 分鐘）。</p>
+    <p class="hint" style="margin:0">學生在平板做完，紀錄會自動送到<b>你自己的 Google 表單</b>。這件事<b>只要做一次</b>。已經有表單連結的話，直接貼在下面；還沒有，照下面 7 步做（約 5 分鐘）。</p>
     <input id="guideForm" style="width:100%" aria-label="Google 表單的預先填寫連結" placeholder="在這裡貼上表單連結（https://docs.google.com/forms/d/e/…entry.數字=…）" autocomplete="off">
     <p class="note" id="guideMsg" style="margin:0" role="status">貼上後會自動存起來。</p>
     <ol class="gsteps">
-      <li><b>打開 Google 表單</b>：先登入 Google 帳號。在 Google 首頁按右上角的九宮格，往下捲，點「Google 表單」；找不到就直接在網址列打 <code>forms.google.com</code>。<img class="gimg" src="img/guide/g1.png" alt="Google 九宮格選單，紅框標出 Google 表單" loading="lazy"></li>
-      <li><b>建立空白表單</b>：按左上角彩色的「＋」。<img class="gimg" src="img/guide/g2.png" alt="Google 表單首頁，紅框標出彩色的＋" loading="lazy"></li>
+      <li><b>打開 Google 表單，建立空白表單</b>：先登入 Google 帳號。在 Google 首頁按右上角的九宮格，往下捲，點「Google 表單」；找不到就直接在網址列打 <code>forms.google.com</code>。進去後按左上角彩色的「＋」。<img class="gimg" src="img/guide/g1.png" alt="Google 九宮格選單，紅框標出 Google 表單" loading="lazy"><img class="gimg" src="img/guide/g2.png" alt="Google 表單首頁，紅框標出彩色的＋" loading="lazy"></li>
       <li><b>設定題目</b>：表單名稱、題目都可以自己取名（例如「識字評量紀錄回傳」「回傳」）。右邊的類型選「<b>詳答</b>」。表單<b>只放這一題</b>就好。<img class="gimg" src="img/guide/g3.png" alt="表單編輯畫面，紅框標出名稱、題目、詳答類型" loading="lazy"></li>
       <li><b>設定回覆</b>：上方按「設定」，在「回覆」區（沒展開就按右邊小箭頭）確認「收集電子郵件地址」是「不收集」、「僅限回覆 1 次」是<b>關</b>的（所有學生共用一個連結，開了第二位學生就送不出去）。學校帳號如果看到「只有本校使用者可以回覆」，也要關掉。<img class="gimg" src="img/guide/g5.png" alt="設定畫面，紅框標出收集電子郵件地址：不收集" loading="lazy"></li>
-      <li><b>連到試算表</b>：上方按「回覆」，按「連結至試算表」。<img class="gimg" src="img/guide/g4.png" alt="回覆分頁，紅框標出連結至試算表" loading="lazy">
-        選「建立新試算表」，按「建立」。<img class="gimg" src="img/guide/g6.png" alt="選取回應目標位置視窗，紅框標出建立新試算表與建立按鈕" loading="lazy">
+      <li><b>連到試算表</b>：上方按「回覆」，按「連結至試算表」，在跳出的視窗選「建立新試算表」，按「建立」。<div class="gpair"><img class="gimg" src="img/guide/g4.png" alt="回覆分頁，紅框標出連結至試算表" loading="lazy"><img class="gimg" src="img/guide/g6.png" alt="選取回應目標位置視窗，紅框標出建立新試算表與建立按鈕" loading="lazy"></div>
         會開出一個新分頁（像下圖），<b>先留著</b>，之後匯入作答紀錄要從這裡下載 Excel。回到表單的分頁繼續。<img class="gimg" src="img/guide/g11.png" alt="建立好的 Google 試算表，第一列有時間戳記和題目" loading="lazy"></li>
-      <li><b>發布</b>：按右上角紫色「發布」，在視窗裡確認作答者是「知道連結的使用者」（不是這個就按「管理」改），再按「發布」。沒發布，學生送出的紀錄收不到。<img class="gimg" src="img/guide/g7.png" alt="表單右上角，紅框標出發布按鈕" loading="lazy"><img class="gimg" src="img/guide/g8.png" alt="發布表單視窗，作答者為知道連結的使用者" loading="lazy"></li>
-      <li><b>找「預先填寫表單」</b>：按右上角的「⋮」，選「預先填寫表單」（上方的按鈕顯示「已發布」，代表發布成功）。<img class="gimg" src="img/guide/g9.png" alt="三個點的選單，紅框標出預先填寫表單" loading="lazy"></li>
-      <li><b>複製連結</b>：會開新分頁。①在欄位隨便打一個字（例如 1）→ ②按「取得連結」→ ③<b>馬上</b>按左下角黑色提示條的「複製連結」（提示條幾秒就消失，來不及就再按一次「取得連結」）。回到這裡，貼在最上面的欄位。<img class="gimg" src="img/guide/g10.png" alt="預先填寫的表單，紅框 1 欄位、2 取得連結、3 複製連結" loading="lazy"></li>
+      <li><b>發布</b>：按右上角紫色「發布」，在視窗裡確認作答者是「知道連結的使用者」（不是這個就按「管理」改），再按「發布」。沒發布，學生送出的紀錄收不到。<div class="gpair"><img class="gimg" src="img/guide/g7.png" alt="表單右上角，紅框標出發布按鈕" loading="lazy"><img class="gimg" src="img/guide/g8.png" alt="發布表單視窗，作答者為知道連結的使用者" loading="lazy"></div></li>
+      <li><b>預先填寫表單，複製連結</b>：按右上角的「⋮」，選「預先填寫表單」（上方的按鈕顯示「已發布」，代表發布成功）。<img class="gimg" src="img/guide/g9.png" alt="三個點的選單，紅框標出預先填寫表單" loading="lazy">
+        會開新分頁。①在欄位隨便打一個字（例如 1）→ ②按「取得連結」→ ③<b>馬上</b>按左下角黑色提示條的「複製連結」（提示條幾秒就消失，來不及就再按一次「取得連結」）。回到這裡，貼在最上面的欄位。<img class="gimg" src="img/guide/g10.png" alt="預先填寫的表單，紅框 1 欄位、2 取得連結、3 複製連結" loading="lazy"></li>
       <li><b>測試一下</b>：貼好連結後，到「⚙ 細部設定 → 練習與遊戲」按「送一筆測試」。<img class="gimg" src="img/guide/g12.png" alt="細部設定的表單欄位，紅框標出送一筆測試按鈕" loading="lazy">
-        再回到表單的「回覆」分頁，會看到「1 則回應」，內容是「測試，匯入時會略過」<img class="gimg" src="img/guide/g14.png" alt="表單回覆分頁，顯示 1 則回應與測試內容" loading="lazy">
-        試算表也會多一列。<img class="gimg" src="img/guide/g13.png" alt="試算表第 2 列出現時間戳記與測試內容" loading="lazy">
-        有看到就代表接好了；沒有的話，回頭檢查第 4、6 步（回覆設定、發布）。這筆測試列匯入作答紀錄時會自動略過，不用刪。</li>
+        再回到表單的「回覆」分頁會看到「1 則回應」（內容是「測試，匯入時會略過」），試算表也會多一列。<div class="gpair"><img class="gimg" src="img/guide/g14.png" alt="表單回覆分頁，顯示 1 則回應與測試內容" loading="lazy"><img class="gimg" src="img/guide/g13.png" alt="試算表第 2 列出現時間戳記與測試內容" loading="lazy"></div>
+        有看到就代表接好了；沒有的話，回頭檢查第 3、5 步（回覆設定、發布）。這筆測試列匯入作答紀錄時會自動略過，不用刪。</li>
     </ol>
     <p class="note" style="margin:0">圖是 Google 表單的畫面截圖，紅框是要點的地方。Google 改版時按鈕位置可能略有不同。表單和紀錄裡只有學生代號，沒有名字。</p>
   </div>
@@ -1379,36 +1382,36 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <!-- 每個檔案後面的 ?v=日期 是版本號：改了任何 .js、.css 檔，就把這頁所有的 ?v= 一起改成當天日期（用「全部取代」；同一天改第二次就在日期後面加 b、c）。
      這樣老師的瀏覽器才會下載新檔案，不會新網頁配到舊程式（例如按「下一步」沒反應）。 -->
 <!-- 生字資料：平台共用的教材資料（shared/lessons.js） -->
-<script src="../../shared/lessons.js?v=2026-11-01b"></script>
+<script src="../../shared/lessons.js?v=2026-11-01c"></script>
 <!-- 注音讀音表（shared/bpmf.js）：語詞、例句裡的破音字該念哪一個音 -->
-<script src="../../shared/bpmf.js?v=2026-11-01b"></script>
+<script src="../../shared/bpmf.js?v=2026-11-01c"></script>
 <!-- 字頻：教育部字頻總表（shared/freq.js），練習的常用字、字頻優先、老師專區高字頻生字會用到 -->
-<script src="../../shared/freq.js?v=2026-11-01b"></script>
+<script src="../../shared/freq.js?v=2026-11-01c"></script>
 <!-- 自動部件拆解（shared/parts.js）：備課分析「拆到最細」往下拆時用（Parts.sub） -->
-<script src="../../shared/parts.js?v=2026-11-01b"></script>
+<script src="../../shared/parts.js?v=2026-11-01c"></script>
 <!-- 部件三層資料（shared/parts-layers.js）：部件提示、部件重組從第二層開始讀（見 shared/parts-api.js 的 Parts） -->
-<script src="../../shared/parts-layers.js?v=2026-11-01b"></script>
+<script src="../../shared/parts-layers.js?v=2026-11-01c"></script>
 <!-- 部件資料入口 window.Parts（shared/parts-api.js）：部件提示、部件重組用；其他檔案不直接讀 PARTS、PARTS_AUTO -->
-<script src="../../shared/parts-api.js?v=2026-11-01b"></script>
+<script src="../../shared/parts-api.js?v=2026-11-01c"></script>
 <!-- 共用小工具（課本排序與名稱、語詞、部件查詢、按匯出時才載入 Excel 元件），識字評量與備課分析共用 -->
-<script src="../../shared/common.js?v=2026-11-01b"></script>
+<script src="../../shared/common.js?v=2026-11-01c"></script>
 <!-- 平台共用：主題與貼紙、每位學生的收藏與頭像 -->
-<script src="../../shared/sticker-art.js?v=2026-11-01b"></script>
-<script src="../../shared/themes.js?v=2026-11-01b"></script>
-<script src="../../shared/rewards.js?v=2026-11-01b"></script>
+<script src="../../shared/sticker-art.js?v=2026-11-01c"></script>
+<script src="../../shared/themes.js?v=2026-11-01c"></script>
+<script src="../../shared/rewards.js?v=2026-11-01c"></script>
 <!-- 程式本體：分成八個檔案，順序不能換（說明見 app.js 開頭） -->
-<script src="data.js?v=2026-11-01b"></script>
-<script src="setup.js?v=2026-11-01b"></script>
-<script src="records.js?v=2026-11-01b"></script>
-<script src="wordsets.js?v=2026-11-01b"></script>
-<script src="play.js?v=2026-11-01b"></script>
-<script src="collect.js?v=2026-11-01b"></script>
-<script src="gacha.js?v=2026-11-01b"></script>
-<script src="scenes.js?v=2026-11-01b"></script>
+<script src="data.js?v=2026-11-01c"></script>
+<script src="setup.js?v=2026-11-01c"></script>
+<script src="records.js?v=2026-11-01c"></script>
+<script src="wordsets.js?v=2026-11-01c"></script>
+<script src="play.js?v=2026-11-01c"></script>
+<script src="collect.js?v=2026-11-01c"></script>
+<script src="gacha.js?v=2026-11-01c"></script>
+<script src="scenes.js?v=2026-11-01c"></script>
 <!-- 老師專區、進階分析：平板作答（網址 #t）用不到，不下載，省約 30 KB（2026-10-24 R4a）。
      用 document.write 是為了讓電腦上的載入順序和以前完全一樣 -->
-<script>if(!/^#t/.test(location.hash)) document.write('<script src="teacher.js?v=2026-11-01b"><\/script><script src="pivot.js?v=2026-11-01b"><\/script>');</script>
-<script src="tablet.js?v=2026-11-01b"></script>
-<script src="app.js?v=2026-11-01b"></script>
+<script>if(!/^#t/.test(location.hash)) document.write('<script src="teacher.js?v=2026-11-01c"><\/script><script src="pivot.js?v=2026-11-01c"><\/script>');</script>
+<script src="tablet.js?v=2026-11-01c"></script>
+<script src="app.js?v=2026-11-01c"></script>
 </body>
 </html>
