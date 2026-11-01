@@ -350,7 +350,7 @@ function startSession(){
   /* 打怪獸的戰利品（大魚、恐龍等）開始前就決定好，打敗怪獸後就是這次的貼紙 */
   if(G.game) G.prize = Themes.drawSticker(G.theme);
   $("#play").dataset.multi = list.length > 1 ? "1" : "";   /* 多位學生：「輪到誰」放大放中間（CSS 的 data-multi） */
-  G.coopSame = settings.coopSame !== false;   /* 合作時全組同一張貼紙（細部設定，預設是）；開始時記下來，玩到一半改設定不影響這一次 */
+  G.coopSame = !!settings.coopSame;   /* 合作時全組同一張貼紙（細部設定，預設否＝各抽各的）；開始時記下來，玩到一半改設定不影響這一次 */
   applySkin(G.theme, G.kind !== "formal");
   $("#pScene").hidden = true; $("#pScene").innerHTML = ""; $("#pBody").hidden = false;
   startClockShow();
