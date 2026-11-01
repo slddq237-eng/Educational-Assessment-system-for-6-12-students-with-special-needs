@@ -32,7 +32,7 @@ function tabletUnpack(head, row){
   r.kidName = ""; r.crossed = r.wrongCount; r.bookName = r.book ? bookName(r.book) : "";
   return r;
 }
-/* 老師貼上的網址要有表單代碼（/forms/d/e/代碼）和題目編號（entry.數字）；「取得預先填入的連結」兩個都有 */
+/* 老師貼上的網址要有表單代碼（/forms/d/e/代碼）和題目編號（entry.數字）；「預先填寫表單 → 取得連結」的連結兩個都有 */
 function parseFormUrl(s){
   const id = (s.match(/\/forms\/d\/e\/([\w-]+)/) || [])[1], entry = (s.match(/entry\.(\d+)/) || [])[1];
   return id && entry ? {id, entry} : null;
@@ -59,7 +59,7 @@ function saveFormUrl(v){
   v = v.trim();
   if(v){
     const f = parseFormUrl(v);
-    if(!f) return "看不懂這個網址：要貼「取得預先填入的連結」，網址裡要有 /forms/d/e/ 和 entry.數字。";
+    if(!f) return "看不懂這個網址：要貼「預先填寫表單」的「取得連結」，網址裡要有 /forms/d/e/ 和 entry.數字。";
     settings.tabletForm = {...f, url:v};
   } else delete settings.tabletForm;
   saveSettings();
@@ -74,17 +74,18 @@ $("#tabFormTest").onclick = () => {
     .then(() => renderTabForm("已送出一筆測試。請到 Google 試算表看有沒有多一列（匯入時會自動略過這一列）。"),
           () => renderTabForm("送不出去，請檢查網路。"));
 };
+$("#guideOpen").onclick = () => tabletGuide(false);   /* 細部設定裡的「看圖解教學」：貼好只存起來，不接著產生 QR code */
 renderTabForm();
 
 /* 第一次用平板、還沒貼表單網址：按「產生 QR code」跳出貼網址的欄位和點選步驟示範，貼對了就直接接著產生 QR code */
-function tabletGuide(){
+function tabletGuide(goQr = true){
   const inp = $("#guideForm"), msg = $("#guideMsg");
-  inp.value = ""; msg.textContent = "貼上後會自動接著產生 QR code。"; msg.className = "note";
+  inp.value = ""; msg.textContent = goQr ? "貼上後會自動接著產生 QR code。" : "貼上後會自動存起來。"; msg.className = "note";
   const check = () => {
     const v = inp.value.trim(); if(!v) return;
     const err = saveFormUrl(v);
     if(err){ msg.textContent = err; msg.className = "note warn"; return; }
-    renderTabForm(); render(); closeSheets(); tabletQr();
+    renderTabForm(); render(); closeSheets(); if(goQr) tabletQr();
   };
   inp.oninput = inp.onchange = check;
   openSheet("#guideSheet"); inp.focus();
