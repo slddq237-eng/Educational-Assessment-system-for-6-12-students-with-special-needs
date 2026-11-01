@@ -765,6 +765,23 @@ details.howto{margin:10px 0 0}
   #result .top h1{font-size:26px}
   #result .rbtns{margin-top:6px;padding-block:6px 8px}
 }
+/* 平板新手教學的點選示意圖（tablet.js 的 tabletGuide） */
+.gsteps{margin:0;padding-left:22px;display:grid;gap:12px}
+.gmock{margin-top:6px;padding:10px;border:1px dashed #b9c4d0;border-radius:10px;background:#f7f9fb;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:.9rem}
+.gmock .gpt{outline:3px solid #e03131;outline-offset:2px;border-radius:6px}
+.gtile{background:#fff;border:1px solid #cfd8e3;border-radius:8px;padding:8px 18px;text-align:center}
+.gplus{display:inline-block;font-size:1.6rem;line-height:1;padding:0 8px}
+.garrow{color:#e03131;font-weight:700}
+.gq{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid #cfd8e3;border-radius:8px;padding:8px 12px}
+.gtitle{font-weight:700}.gans{border-bottom:2px solid #7c5cbf;padding:0 14px;color:#444}
+.gtype{background:#eef1f5;border-radius:6px;padding:2px 10px}
+.gtabs{display:flex;gap:2px}.gtabs span{padding:4px 12px;border-bottom:3px solid transparent}
+.gtog{display:flex;align-items:center;gap:8px}.gtog small{color:#e03131;font-weight:700}
+.gtog i{display:inline-block;width:34px;height:18px;border-radius:9px;background:#b9c4d0;position:relative}
+.gtog i::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff}
+.gdots{font-size:1.3rem;padding:0 10px;background:#fff}
+.gmenu{background:#fff;border:1px solid #cfd8e3;border-radius:8px;padding:6px 12px;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.gbtn{background:#7c5cbf;color:#fff;border-radius:6px;padding:4px 14px}
 /* 平板作答（tablet.js）：平板上不顯示設定畫面；QR code、點代號、送出狀態 */
 html.tablet #setup{display:none}
 .qrbox{display:flex;justify-content:center;background:#fff;padding:12px;border-radius:12px}
@@ -1146,6 +1163,28 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
   </div>
 </div>
 
+<!-- 第一次用平板、還沒有 Google 表單網址：貼網址的欄位直接跳出來，下面有點選步驟示範（tablet.js 的 tabletGuide） -->
+<div class="overlay" id="guideSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+    <header><h2 id="guideTitle">第一次用平板：先接上你的 Google 表單</h2><button class="ghost" data-close>關閉</button></header>
+    <p class="hint" style="margin:0">學生在平板做完，紀錄會自動送到<b>你自己的 Google 表單</b>。這件事<b>只要做一次</b>。已經有表單連結的話，直接貼在下面；還沒有，照下面 5 步做（約 3 分鐘）。</p>
+    <input id="guideForm" style="width:100%" aria-label="Google 表單的預先填入連結" placeholder="在這裡貼上「預先填入的連結」（https://docs.google.com/forms/d/e/…）" autocomplete="off">
+    <p class="note" id="guideMsg" style="margin:0" role="status">貼上後會自動接著產生 QR code。</p>
+    <ol class="gsteps">
+      <li><b>建立空白表單</b>：用 Google 帳號登入，打開 <code>forms.google.com</code>，按「空白表單」。
+        <div class="gmock"><div class="gtile"><span class="gplus gpt">＋</span><br>空白表單</div><span class="garrow">← 點這裡</span></div></li>
+      <li><b>第一題</b>：題目欄填 <code>data</code>（英文小寫），右邊的類型選「詳答」（不是「簡答」）。
+        <div class="gmock"><div class="gq"><span class="gtitle">data</span><span class="gtype gpt">詳答 ▾</span></div></div></li>
+      <li><b>設定回覆</b>：上方「設定」→「回覆」。<b>不要</b>收集電子郵件、<b>關閉</b>「限制只能回覆 1 次」；學校帳號還要關閉「只有本校使用者可以回覆」。
+        <div class="gmock"><div class="gtabs"><span>問題</span><span>回覆</span><span class="gpt">設定</span></div><div class="gtog"><i class="off"></i> 限制只能回覆 1 次　<small>← 要是關的</small></div></div></li>
+      <li><b>連到試算表</b>：上方「回覆」分頁 → 「連結至試算表」→ 建立新試算表。右上角有「發布」就按下去。
+        <div class="gmock"><div class="gtabs"><span>問題</span><span class="gpt">回覆</span><span>設定</span></div><div class="gtog"><span class="gpt">連結至試算表</span></div></div></li>
+      <li><b>複製預先填入的連結</b>：回到表單編輯頁，右上角「⋮」→「取得預先填入的連結」→ 在 data 欄打 <code>test</code> → 按最下面「取得連結」→ 按「複製連結」，回到這裡貼在最上面的欄位。
+        <div class="gmock"><span class="gdots gpt">⋮</span><div class="gmenu"><div>取得預先填入的連結</div></div><div class="gq"><span class="gtitle">data</span><span class="gans">test</span></div><span class="gbtn gpt">取得連結</span></div></li>
+    </ol>
+    <p class="note" style="margin:0">紅框是要點的地方。示意圖是簡化畫的，Google 改版時按鈕位置可能略有不同，名稱不變。表單和紀錄裡只有學生代號，沒有名字。</p>
+  </div>
+</div>
 <!-- 平板作答的 QR code（tablet.js） -->
 <div class="overlay" id="qrSheet" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="qrTitle">

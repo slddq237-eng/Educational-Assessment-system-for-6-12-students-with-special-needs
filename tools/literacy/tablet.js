@@ -54,15 +54,18 @@ function renderTabForm(msg){
   $("#tabFormTest").disabled = !f;
   $("#tabFormMsg").textContent = msg || (f ? "已設定。可以按「送一筆測試」，再到 Google 試算表看有沒有多一列。" : "還沒設定。");
 }
-$("#tabForm").onchange = e => {
-  const v = e.target.value.trim();
+/* 存表單網址；回傳 null＝成功，否則是錯誤說明（細部設定的欄位和第一次使用的教學共用） */
+function saveFormUrl(v){
+  v = v.trim();
   if(v){
     const f = parseFormUrl(v);
-    if(!f) return renderTabForm("看不懂這個網址：要貼「取得預先填入的連結」，網址裡要有 /forms/d/e/ 和 entry.數字。");
+    if(!f) return "看不懂這個網址：要貼「取得預先填入的連結」，網址裡要有 /forms/d/e/ 和 entry.數字。";
     settings.tabletForm = {...f, url:v};
   } else delete settings.tabletForm;
-  saveSettings(); renderTabForm(); render();
-};
+  saveSettings();
+  return null;
+}
+$("#tabForm").onchange = e => { const err = saveFormUrl(e.target.value); renderTabForm(err); if(!err) render(); };
 $("#tabFormTest").onclick = () => {
   if(!settings.tabletForm) return;
   renderTabForm("送出中…");
@@ -72,6 +75,20 @@ $("#tabFormTest").onclick = () => {
           () => renderTabForm("送不出去，請檢查網路。"));
 };
 renderTabForm();
+
+/* 第一次用平板、還沒貼表單網址：按「產生 QR code」跳出貼網址的欄位和點選步驟示範，貼對了就直接接著產生 QR code */
+function tabletGuide(){
+  const inp = $("#guideForm"), msg = $("#guideMsg");
+  inp.value = ""; msg.textContent = "貼上後會自動接著產生 QR code。"; msg.className = "note";
+  const check = () => {
+    const v = inp.value.trim(); if(!v) return;
+    const err = saveFormUrl(v);
+    if(err){ msg.textContent = err; msg.className = "note warn"; return; }
+    renderTabForm(); render(); closeSheets(); tabletQr();
+  };
+  inp.oninput = inp.onchange = check;
+  openSheet("#guideSheet"); inp.focus();
+}
 
 /* =========================================================
    老師電腦：產生 QR code
