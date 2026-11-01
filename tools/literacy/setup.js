@@ -681,14 +681,14 @@ function renderSummary(){
       ["今天做什麼", `${p.name}（${g.name}）`],
       ...(p.id === "test" ? [["前後測", state.prepost || "不標"]] : []),
       ["學生", n && n <= a.max ? selKids().map(c => esc(kidLabel(kidBy(c)))).join("、") : null, n ? `一次最多 ${a.max} 位學生` : "還沒選"],
-      ...(qrOn() ? [["作答方式", "平板掃 QR code"], ["回傳表單", settings.tabletForm ? "你自己的 Google 表單" : null, "請到「⚙ 細部設定 → 練習與遊戲」貼上 Google 表單網址"]] : []),
+      ...(qrOn() ? [["作答方式", "平板掃 QR code"], ["回傳表單", settings.tabletForm ? "你自己的 Google 表單" : null, "按「產生 QR code」後會一步步教你設定"]] : []),
       ["課次", state.lessons.length ? esc(lessonsText()) : null],
       ["時間", !state.lessons.length ? null : c.flu ? `每位學生 ${LIMITS.find(l => l[0]===state.limit)[1]}` : `${q.count} 題，${minutes(q.sec)}`],
       ["玩法", playText()],
       ...(useRewards() ? [["主題", themeText(), "請學生點一個主題"]] : [])
     ];
     $("#sum").innerHTML = rows.map(([t,v,miss]) => `<div><dt>${t}</dt><dd class="${v?"":"miss"}">${v || miss || "還沒選"}</dd></div>`).join("");
-    $("#go").disabled = rows.some(r => !r[1]);
+    $("#go").disabled = rows.some(r => !r[1] && r[0] !== "回傳表單");   /* 還沒貼表單網址不擋：按下去會跳出教學 */
     $("#go").textContent = qrOn() ? "產生 QR code" : "開始";
     return;
   }
@@ -710,15 +710,15 @@ function renderSummary(){
     ["題目", quizText],
     ...(c.formal ? [["前後測", state.prepost || "不標"]] : []),
     ["作答模式", a.name],
-    ...(qrOn() ? [["回傳表單", settings.tabletForm ? "你自己的 Google 表單" : null, "請到「⚙ 細部設定 → 練習與遊戲」貼上 Google 表單網址"]] : []),
+    ...(qrOn() ? [["回傳表單", settings.tabletForm ? "你自己的 Google 表單" : null, "按「產生 QR code」後會一步步教你設定"]] : []),
     ["學生", n ? (kidsOk ? `${selKids().map(c => esc(kidLabel(kidBy(c)))).join("、")}（${n} 位）` : null) : null, n ? `「${a.name}」需要 ${a.min}～${a.max} 位，目前 ${n} 位` : "還沒選"]
   ];
   $("#sum").innerHTML = rows.map(([t,v,miss]) => `<div><dt>${t}</dt><dd class="${v?"":"miss"}">${v || miss || "還沒選"}</dd></div>`).join("");
-  $("#go").disabled = rows.some(r => !r[1]);
+  $("#go").disabled = rows.some(r => !r[1] && r[0] !== "回傳表單");
   if(qrOn()) $("#go").textContent = "產生 QR code";
 }
 /* 先選主題（見 collect.js），再開始；平板作答改成顯示 QR code（見 tablet.js） */
-$("#go").onclick = () => { if(qrOn()) return tabletQr(); unlockSpeech(); chooseTheme(); };
+$("#go").onclick = () => { if(qrOn()) return settings.tabletForm ? tabletQr() : tabletGuide(); unlockSpeech(); chooseTheme(); };   /* 還沒貼表單網址：跳出新手教學，貼完直接產生 QR code（tablet.js） */
 
 /* 教學日期管理面板：每一課一列「全班」，下面可以加「個別學生不同」的列（A8：同一課學生進度不同） */
 /* 教學狀態選單＋日期欄＋目前判斷結果（全班列和個別學生列共用） */
@@ -853,7 +853,10 @@ $("#sClock").onchange = e => { settings.clockFormal = e.target.checked; saveSett
 
 let lastFocus = null;
 function openSheet(id){ lastFocus = document.activeElement; $(id).hidden = false; $(id).querySelector("[data-close]").focus(); }
-function closeSheets(){ document.querySelectorAll(".overlay").forEach(o => o.hidden = true); if(lastFocus) lastFocus.focus(); }
+function closeSheets(){
+  /* 教學視窗疊在細部設定上面時，只關教學、回到細部設定 */
+  if(!$("#guideSheet").hidden && !$("#setSheet").hidden){ $("#guideSheet").hidden = true; $("#guideOpen").focus(); return; }
+  document.querySelectorAll(".overlay").forEach(o => o.hidden = true); if(lastFocus) lastFocus.focus(); }
 function openDates(b){ dBook = b || dBook; renderDates(); openSheet("#datesSheet"); }
 /* ⚙ 細部設定：三個分頁（評量設定、練習與遊戲、畫面與聲音）；從「到評量設定修改」打開時直接到評量設定 */
 let detailTab = "view";
