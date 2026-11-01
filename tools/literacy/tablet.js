@@ -82,6 +82,7 @@ function tabletGuide(goQr = true){
   const inp = $("#guideForm"), msg = $("#guideMsg");
   inp.value = ""; msg.textContent = goQr ? "貼上後會自動接著產生 QR code。" : "貼上後會自動存起來。"; msg.className = "note";
   const check = () => {
+    if($("#guideSheet").hidden) return;   /* 貼上會連續觸發 input 和 change，教學已關就不要再處理 */
     const v = inp.value.trim(); if(!v) return;
     const err = saveFormUrl(v);
     if(err){ msg.textContent = err; msg.className = "note warn"; return; }

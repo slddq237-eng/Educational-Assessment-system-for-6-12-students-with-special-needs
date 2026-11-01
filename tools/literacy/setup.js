@@ -853,7 +853,10 @@ $("#sClock").onchange = e => { settings.clockFormal = e.target.checked; saveSett
 
 let lastFocus = null;
 function openSheet(id){ lastFocus = document.activeElement; $(id).hidden = false; $(id).querySelector("[data-close]").focus(); }
-function closeSheets(){ document.querySelectorAll(".overlay").forEach(o => o.hidden = true); if(lastFocus) lastFocus.focus(); }
+function closeSheets(){
+  /* 教學視窗疊在細部設定上面時，只關教學、回到細部設定 */
+  if(!$("#guideSheet").hidden && !$("#setSheet").hidden){ $("#guideSheet").hidden = true; $("#guideOpen").focus(); return; }
+  document.querySelectorAll(".overlay").forEach(o => o.hidden = true); if(lastFocus) lastFocus.focus(); }
 function openDates(b){ dBook = b || dBook; renderDates(); openSheet("#datesSheet"); }
 /* ⚙ 細部設定：三個分頁（評量設定、練習與遊戲、畫面與聲音）；從「到評量設定修改」打開時直接到評量設定 */
 let detailTab = "view";
