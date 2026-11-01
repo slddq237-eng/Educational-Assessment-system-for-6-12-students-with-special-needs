@@ -513,7 +513,6 @@ function renderKidSheet(){
   bindAvatarPanel($("#kTable .avpick"), () => { renderKidSheet(); render(); });
   renderKidGroupSheet();
   renderTidy();
-  renderResetList();
   /* 封存區：取消封存時請老師確認年級（年級是用學年算的，隔很久才回來會一次補算好幾年；留級也要老師自己改） */
   $("#kArchSum").textContent = `封存區（${kidsArchived.length} 位）`;
   $("#kArchBody").innerHTML = kidsArchived.length ? kidsArchived.map((k, i) => `<div class="arow" data-i="${i}">
@@ -826,7 +825,7 @@ function renderPractice(){
   $("#pEvery").querySelectorAll("[data-every]").forEach(b => b.onclick = () => { settings.sceneEvery = b.dataset.every; saveSettings(); renderPractice(); });
   $("#vClock").checked = settings.clockPractice !== false;
   $("#vPartner").checked = !!settings.partner;
-  $("#vCoopSame").checked = settings.coopSame !== false;
+  $("#vCoopSame").checked = !!settings.coopSame;
 }
 /* 把字的大小、畫面大小套到整個網頁（CSS 變數 --fs、--uiz） */
 function applyDisplay(){
@@ -864,7 +863,7 @@ function showDetailTab(tab){
   document.querySelectorAll("#setSheet [data-pane]").forEach(p => p.hidden = p.dataset.pane !== tab);
 }
 document.querySelectorAll("#setSheet [data-tab]").forEach(b => b.onclick = () => showDetailTab(b.dataset.tab));
-function openDetail(tab){ renderSettings(); renderPractice(); renderView(); showDetailTab(tab || detailTab); openSheet("#setSheet"); }
+function openDetail(tab){ renderSettings(); renderPractice(); renderView(); renderResetList(); showDetailTab(tab || detailTab); openSheet("#setSheet"); }
 function openSettings(){ openDetail("formal"); }
 $("#openDatesTop").onclick = () => openDates(state.book);
 $("#openKids").onclick = () => { renderKidSheet(); openSheet("#kidsSheet"); };

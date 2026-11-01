@@ -1127,10 +1127,6 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
     <details id="kArchive" style="margin-top:10px"><summary id="kArchSum">封存區</summary>
       <p class="hint" style="margin:6px 0">封存的學生不會出現在遊玩頁和分析頁（包括全班統計），作答紀錄、貼紙都保留。要查看或再上課，按「取消封存」就會回到學生名單；年級是用學年自動算的，請確認一下。</p>
       <div id="kArchBody" style="display:grid;gap:8px"></div></details>
-    <details id="kReset" style="margin-top:10px"><summary>貼紙：清空學生的貼紙（老師專用）</summary>
-      <p class="hint" style="margin:6px 0">勾選要清空貼紙的學生（含封存區），例如新學期、某位學生要重新開始。想全部清空就按「全選」。頭像和作答紀錄都不動。清空後救不回來；清空之前的舊平板紀錄再匯入，也不會補發貼紙；比清空更早的備份檔還原時，不會把貼紙叫回來。</p>
-      <div id="resetList" class="rlist"></div>
-      <button class="chip" id="resetStickers" disabled>清空勾選學生的貼紙</button> <span class="note" id="resetMsg" style="margin:0"></span></details>
     <details id="kCodeMap" style="margin-top:10px"><summary>學生隨機碼對照表（匯出的 Excel、平板表單只有代號，用這張對照）</summary>
       <div id="kCodeBody" style="margin-top:6px"></div></details>
     <h3 style="margin:14px 0 4px">分組</h3>
@@ -1192,7 +1188,12 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
       <p class="note" style="margin:0">預設每 3 題：每題都跳動畫會打斷學生的注意力。這幾題第一次就答對幾題就前進幾格（例如疊幾層蛋糕），都沒答對就播「再加油」；最後一律完成、拿到貼紙。多位學生合作時，算全隊輪流的題數。</p>
       <label class="group"><input type="checkbox" id="vPartner" style="width:20px;height:20px;accent-color:var(--green)"> 貼紙夥伴出場（太空、恐龍）</label>
       <label class="group"><input type="checkbox" id="vCoopSame" style="width:20px;height:20px;accent-color:var(--green)"> 合作時全組得到同一張貼紙</label>
-      <p class="note" style="margin:0">取消勾選＝合作時每位學生各抽各的（可能抽到不同星等）。只影響多位學生一起玩遊戲，一個人玩不受影響。</p>
+      <p class="note" style="margin:0">預設不勾＝合作時每位學生各抽各的（可能抽到不同星等）。勾選＝全組拿到同一張。只影響多位學生一起玩遊戲，一個人玩不受影響。</p>
+      <h3>貼紙</h3>
+      <details id="kReset" style="margin-top:6px"><summary>貼紙：清空學生的貼紙（老師專用）</summary>
+      <p class="hint" style="margin:6px 0">勾選要清空貼紙的學生（含封存區），例如新學期、某位學生要重新開始。想全部清空就按「全選」。頭像和作答紀錄都不動。清空後救不回來；清空之前的舊平板紀錄再匯入，也不會補發貼紙；比清空更早的備份檔還原時，不會把貼紙叫回來。</p>
+      <div id="resetList" class="rlist"></div>
+      <button class="chip" id="resetStickers" disabled>清空勾選學生的貼紙</button> <span class="note" id="resetMsg" style="margin:0"></span></details>
       <h3>計時</h3>
       <label class="group"><input type="checkbox" id="vClock" style="width:20px;height:20px;accent-color:var(--green)"> 練習時在右上角顯示計時</label>
       <p class="note" style="margin:0">正式評量要不要顯示計時，在「評量設定」調整（預設不顯示）。</p>
