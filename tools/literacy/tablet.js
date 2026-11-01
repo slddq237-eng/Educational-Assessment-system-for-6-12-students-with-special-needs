@@ -66,29 +66,38 @@ function saveFormUrl(v){
   return null;
 }
 $("#tabForm").onchange = e => { const err = saveFormUrl(e.target.value); renderTabForm(err); if(!err) render(); };
-$("#tabFormTest").onclick = () => {
+/* 送一筆測試（測試列 kind＝tablet-test，匯入時會自動略過）；細部設定的按鈕和教學視窗的按鈕共用 */
+function sendFormTest(say){
   if(!settings.tabletForm) return;
-  renderTabForm("送出中…");
-  /* 測試列（kind＝tablet-test）匯入時會自動略過 */
+  say("送出中…");
   postForm(settings.tabletForm, JSON.stringify({app:"literacy", kind:"tablet-test", savedAt:new Date().toISOString(), note:"測試，匯入時會略過"}))
-    .then(() => renderTabForm("已送出一筆測試。請到 Google 試算表看有沒有多一列（匯入時會自動略過這一列）。"),
-          () => renderTabForm("送不出去，請檢查網路。"));
-};
+    .then(() => say("已送出一筆測試。請到表單的「回覆」分頁看有沒有「1 則回應」，Google 試算表也會多一列（匯入時會自動略過這一列）。"),
+          () => say("送不出去，請檢查網路。"));
+}
+$("#tabFormTest").onclick = () => sendFormTest(renderTabForm);
 $("#guideOpen").onclick = () => tabletGuide(false);   /* 細部設定裡的「看圖解教學」：貼好只存起來，不接著產生 QR code */
 renderTabForm();
 
-/* 第一次用平板、還沒貼表單網址：按「產生 QR code」跳出貼網址的欄位和點選步驟示範，貼對了就直接接著產生 QR code */
+/* 第一次用平板、還沒貼表單網址：按「產生 QR code」跳出大大的貼網址欄位和圖解步驟。
+   貼對了先存起來、顯示「已存好」，老師可以在這裡按「送一筆測試」，再按「完成」（goQr 時接著產生 QR code） */
 function tabletGuide(goQr = true){
-  const inp = $("#guideForm"), msg = $("#guideMsg");
-  inp.value = ""; msg.textContent = goQr ? "貼上後會自動接著產生 QR code。" : "貼上後會自動存起來。"; msg.className = "note";
+  const inp = $("#guideForm"), msg = $("#guideMsg"), test = $("#guideTest"), done = $("#guideDone");
+  const say = (text, warn) => { msg.textContent = text; msg.className = warn ? "note warn" : "note"; };
+  const ready = ok => { test.disabled = done.disabled = !ok; };
+  inp.value = settings.tabletForm ? settings.tabletForm.url : "";
+  done.textContent = goQr ? "完成，產生 QR code" : "完成";
+  if(settings.tabletForm){ say("已存好。可以按「送一筆測試」確認接好了，再按「完成」。"); ready(true); }
+  else { say(goQr ? "把複製好的連結貼在上面的欄位。" : "把複製好的連結貼在上面的欄位，會自動存起來。"); ready(false); }
   const check = () => {
-    if($("#guideSheet").hidden) return;   /* 貼上會連續觸發 input 和 change，教學已關就不要再處理 */
-    const v = inp.value.trim(); if(!v) return;
+    const v = inp.value.trim(); if(!v){ ready(false); return; }
     const err = saveFormUrl(v);
-    if(err){ msg.textContent = err; msg.className = "note warn"; return; }
-    renderTabForm(); render(); closeSheets(); if(goQr) tabletQr();
+    if(err){ say(err, true); ready(false); return; }
+    renderTabForm(); render(); ready(true);
+    say("✔ 已存好。可以按「送一筆測試」確認接好了，再按「完成」。");
   };
   inp.oninput = inp.onchange = check;
+  test.onclick = () => sendFormTest(say);
+  done.onclick = () => { closeSheets(); if(goQr) tabletQr(); };
   openSheet("#guideSheet"); inp.focus();
 }
 
