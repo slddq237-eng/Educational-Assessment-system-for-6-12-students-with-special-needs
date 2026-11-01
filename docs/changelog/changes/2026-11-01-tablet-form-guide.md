@@ -1,5 +1,5 @@
 # 第一次用平板：沒有表單網址時跳出圖解新手教學
 - 日期：2026-11-01
-- 動到哪裡：識字評量（`tools/literacy/tablet.js`、`setup.js`、`index.html`、新增 `tools/literacy/img/guide/` 11 張圖）、文件（`docs/design/records.md`、`docs/materials/data-sources.md`）、檢查程式 `docs/scripts/check.js`（圖片放行清單逐檔加入這 11 張，維護者 2026-11-01 決定）
-- 改了什麼：作答方式選「平板掃 QR code」但還沒貼 Google 表單網址時，「產生 QR code」不再被擋住；按下去會跳出視窗，最上面就是貼網址的欄位，下面是 8 步圖解（Google 表單的真實截圖，紅框標出要點的地方，已遮掉帳號頭像）。貼上正確的網址後自動存起來並接著產生 QR code。細部設定的說明改成同樣的步驟，並加「看圖解教學」按鈕（貼好只存起來）
+- 動到哪裡：識字評量（`tools/literacy/tablet.js`、`setup.js`、`index.html`、新增 `tools/literacy/img/guide/` 14 張圖）、文件（`docs/design/records.md`、`docs/materials/data-sources.md`）、檢查程式 `docs/scripts/check.js`（圖片放行清單逐檔加入這 14 張，維護者 2026-11-01 決定）
+- 改了什麼：作答方式選「平板掃 QR code」但還沒貼 Google 表單網址時，「產生 QR code」不再被擋住；按下去會跳出視窗，最上面就是貼網址的欄位，下面是 9 步圖解（最後一步「送一筆測試」，確認表單接好了）（Google 表單的真實截圖，紅框標出要點的地方，已遮掉帳號頭像）。貼上正確的網址後自動存起來並接著產生 QR code。細部設定的說明改成同樣的步驟，並加「看圖解教學」按鈕（貼好只存起來）
 - 想法或決定的變化：Google 把選單項目改名了，「取得預先填入的連結」現在叫「預先填寫表單」，全部改掉；題目文字、表單名稱程式不看，隨便取（不再要求填 `data`），只要只有一題、類型是詳答；新增「發布，作答者選知道連結的使用者」一步。作答紀錄格式沒變
