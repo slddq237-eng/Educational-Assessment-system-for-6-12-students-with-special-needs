@@ -525,13 +525,13 @@ function fitPrompt(){
   document.querySelectorAll("#pBody .prompt").forEach(pr => {
     const st = pr.parentElement, canWiden = !pr.closest(".zones") && !matchMedia("(max-width:760px)").matches;
     st.style.removeProperty("--pw"); pr.classList.remove("wide"); pr.style.height = "";
-    const fits = f => { pr.style.setProperty("--fit", f); return pr.scrollHeight <= pr.clientHeight; };
+    const fits = f => { pr.style.setProperty("--fit", f); return pr.scrollHeight <= pr.clientHeight && pr.scrollWidth <= pr.clientWidth; };   /* 高和寬都要放得下（並排的喇叭和字太寬也算放不下） */
     if(fits(1)) return;
     if(canWiden){
       const max = Math.max(PW_MIN, Math.floor(st.clientWidth / 2));
       pr.classList.add("wide");
       let ok = false;
-      for(let w = PW_MIN; ; w = Math.min(max, w + PW_STEP)){
+      for(let w = Math.min(max, PW_MIN + PW_STEP); ; w = Math.min(max, w + PW_STEP)){
         st.style.setProperty("--pw", w + "px");
         if((ok = fits(1)) || w >= max) break;
       }
