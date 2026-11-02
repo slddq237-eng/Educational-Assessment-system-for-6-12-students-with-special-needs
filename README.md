@@ -51,7 +51,7 @@
     ├─ plans/        開發路線圖 roadmap.md、還沒決定的事 pending.md
     ├─ decisions/    決策紀錄：每個決定一則，為什麼這樣決定、以前怎麼想（索引在 README.md）
     ├─ history/      舊的說法、已完成的細節（存檔；精簡文件時不刪，搬到這裡）
-    ├─ changelog/    變更紀錄：每個 PR 改了什麼（changes/ 一個 PR 一個小檔）
+    ├─ changelog/    變更紀錄：每個 PR 改了什麼（changes/ 是 10/24～11/02 每個 PR 一個的小檔，之後不再加，由 PR 標題產生）
     └─ scripts/      自動檢查 check.js、產生部件／注音／字型的程式
 ```
 
