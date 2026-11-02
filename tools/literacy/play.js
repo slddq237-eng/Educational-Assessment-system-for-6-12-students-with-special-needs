@@ -739,29 +739,15 @@ function charPop(c){
   if(!CHARPOP_GOALS.includes(G.goal) || G.kind === "formal" || G.mode === "flu") return false;
   const pr = $("#pBody .zone.on .prompt") || $("#pBody .prompt"); if(!pr) return false;
   const mc = G.goal === "R5" && pr.querySelector(".maskedchar");
-  if(mc){
-    mc.classList.add("revealed"); mc.setAttribute("aria-label", `答對了，是「${c}」`);
-    /* 分區輪流的字太小：揭開後再從原位放大 */
-    if(pr.closest(".zones")){ const cur = G.cur; setTimeout(() => { if(G && G.cur === cur) charCard(pr, c, mc); }, 450); }
-    return true;
-  }
-  charCard(pr, c);
-  return true;
-}
-/* 字卡蓋在題目欄上（分區輪流蓋住整區）；from＝揭開後的字，字卡從它的位置放大出來 */
-function charCard(pr, c, from){
+  if(mc){ mc.classList.add("revealed"); mc.setAttribute("aria-label", `答對了，是「${c}」`); return true; }
+  /* 字卡蓋在題目欄上（分區輪流的題目欄太矮，蓋住整區） */
   const st = pr.parentElement, box = pr.closest(".zones") ? st : pr, w = box.offsetWidth, h = box.offsetHeight;
-  const left = box === st ? 0 : pr.offsetLeft, top = box === st ? 0 : pr.offsetTop, ps = Math.max(80, Math.min(w, h) * (box === st ? 0.85 : 0.62));
   const el = document.createElement("div");
-  el.className = `charpop${from ? " grow" : ""}`; el.setAttribute("role", "status"); el.setAttribute("aria-label", `答對了，是「${c}」`);
-  el.style.cssText = `left:${left}px;top:${top}px;width:${w}px;height:${h}px;--ps:${ps}px`;
+  el.className = "charpop"; el.setAttribute("role", "status"); el.setAttribute("aria-label", `答對了，是「${c}」`);
+  el.style.cssText = `left:${box === st ? 0 : pr.offsetLeft}px;top:${box === st ? 0 : pr.offsetTop}px;width:${w}px;height:${h}px;--ps:${Math.max(80, Math.min(w, h) * 0.62)}px`;
   el.innerHTML = `<span class="pch">${esc(c)}</span>`;
   st.appendChild(el);
-  if(!from) return;
-  const a = from.getBoundingClientRect(), b = st.getBoundingClientRect();
-  const dx = a.left + a.width / 2 - (b.left + left + w / 2), dy = a.top + a.height / 2 - (b.top + top + h / 2);
-  const card = el.firstChild; card.style.transform = `translate(${dx}px,${dy}px) scale(${a.width / ps})`;
-  void card.offsetWidth; card.style.transform = "";
+  return true;
 }
 
 /* 一題結束：存紀錄，然後進下一題 */
