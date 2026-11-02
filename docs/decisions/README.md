@@ -53,7 +53,7 @@ Claude 從 `docs/history/`、`docs/changelog/`、`docs/plans/pending.md` 整理�
 - `2026-10-25-a8-merge-formal-card.md`（2026-10-25，有效）：「學扶前後測」和「小考檢測」合併成一張「正式評量」卡片
 - `2026-10-25-a8-add-fields-no-version.md`（2026-10-25，有效）：只加新欄位、不改舊欄位的意思，就不升紀錄格式版本
 - `2026-10-25-a3-tablet-formal.md`（2026-10-25，有效）：平板作答納入正式評量，用 device 欄區分
-- `2026-10-25-a3-no-fluency-target.md`（2026-10-25，AI 整理，待確認）：流暢性目標值整個取消
+- `2026-10-25-a3-no-fluency-target.md`（2026-10-25，有效）：流暢性目標值整個取消
 - `2026-10-25-a3-formal-no-hint-no-feedback.md`（2026-10-25，有效）：正式評量所有模式、所有目標都完全不提示、不回饋對錯、無對錯音效、不報讀
 - `2026-10-25-a3-fixed-distractors.md`（2026-10-25，有效）：正式評量用固定干擾字表，4 個選項，分四類（尚未實作）
 
