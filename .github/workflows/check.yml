@@ -24,5 +24,16 @@ jobs:
       - run: node docs/scripts/check.js
       # 網頁打得開測試：裝 Playwright（自動操作瀏覽器的工具）和瀏覽器，再打開每一頁（2026-10-24 加）
       # 2026-11-02：版本固定在 package.json／package-lock.json（npm ci 照鎖定的版本裝），要升版就改 package.json 再執行 npm install
-      - run: npm ci && npx playwright install --with-deps chromium
+      - run: npm ci
+      # 瀏覽器快取（2026-11-02 加）：瀏覽器檔案存起來，版本沒變就不用重新下載（以前偶爾卡在下載這步）。
+      # 命中快取時只裝系統需要的函式庫（install-deps）；沒命中（第一次、或升 Playwright 版本後）才完整下載
+      - id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
       - run: node docs/scripts/smoke.js
