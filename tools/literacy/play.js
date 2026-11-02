@@ -515,15 +515,29 @@ if(document.fonts && document.fonts.addEventListener) document.fonts.addEventLis
   o.style.display = "none"; void o.offsetHeight; o.style.display = "";
 });
 /* 題目欄（部件重組的部件、喇叭、累積的提示）一律放得下、不用捲動（2026-11-02 維護者要求）：
-   內容比題目欄高時，把題目欄裡的東西一起縮小（CSS 的 zoom，index.html 的 --fit），找出放得下的最大比例；最小縮到 0.35 倍，再放不下才捲動。
-   出新提示、換題、視窗大小改變、字型下載完都重算一次。
+   1. 內容比題目欄高時，先把題目欄加寬（300px 起每次加 60px，最多到作答區寬度的一半；選項區跟著變小），
+      加寬時提示可以並排、喇叭和字並排（index.html 的 .prompt.wide）。手機直放、分區輪流只有一欄，不加寬。
+   2. 加寬到最大還放不下，再把題目欄裡的東西一起縮小（CSS 的 zoom，--fit），找出放得下的最大比例；最小縮到 0.35 倍，再放不下才捲動。
+   出新提示、換題、視窗大小改變、字型下載完都重算一次（先回到 300px、不縮小，再重新找）。
    手機直放、分區輪流的題目欄高度會跟著內容變（縮小內容欄位也變矮），所以找比例時先把欄高固定在原本分到的高度 */
-const FIT_MIN = 0.35;
+const FIT_MIN = 0.35, PW_MIN = 300, PW_STEP = 60;
 function fitPrompt(){
   document.querySelectorAll("#pBody .prompt").forEach(pr => {
-    pr.style.height = "";
+    const st = pr.parentElement, canWiden = !pr.closest(".zones") && !matchMedia("(max-width:760px)").matches;
+    st.style.removeProperty("--pw"); pr.classList.remove("wide"); pr.style.height = "";
     const fits = f => { pr.style.setProperty("--fit", f); return pr.scrollHeight <= pr.clientHeight; };
     if(fits(1)) return;
+    if(canWiden){
+      const max = Math.max(PW_MIN, Math.floor(st.clientWidth / 2));
+      pr.classList.add("wide");
+      let ok = false;
+      for(let w = PW_MIN; ; w = Math.min(max, w + PW_STEP)){
+        st.style.setProperty("--pw", w + "px");
+        if((ok = fits(1)) || w >= max) break;
+      }
+      fitOpts(); if(G && G.goal === "R6") fitPickGrid();   /* 選項區變小了，選項重新排 */
+      if(ok) return;
+    }
     pr.style.height = pr.clientHeight + "px";
     let lo = FIT_MIN, hi = 1;
     for(let n = 0; n < 7; n++){ const mid = (lo + hi) / 2; if(fits(mid)) lo = mid; else hi = mid; }
