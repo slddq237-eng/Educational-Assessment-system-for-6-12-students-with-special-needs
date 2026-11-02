@@ -83,12 +83,12 @@ const R6_MAX_PARTS = 5;   /* 聽音選部件：部件超過 5 個的字不出（
    loadMaskFix：要先載入遮擋調整資料 mask-fix.js（loadMaskFix()）；
    hintUnfit：不適合的提示和原因（開發路線圖 A2，規格書「提示和題目的適配性」表裡的 ✗；△ 提示很強的還是可用，等維護者討論） */
 const GOAL_CAPS = {
-  R1: {hintUnfit: {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"}},
-  R2: {hintUnfit: {pic:"答案就是圖片", mask:"會直接看到字", shape:"會直接看到字"}},
+  R1: {hintUnfit: {pic:"答案就是圖片", mask:"會直接看到字"}},
+  R2: {hintUnfit: {pic:"答案就是圖片", mask:"會直接看到字"}},
   R3: {},
-  R4: {skip: c => !partsOf(c), hintUnfit: {parts:"題目本身就是部件", sound:"會唸出答案的讀音，部件重組不唸題目"}},
+  R4: {skip: c => !partsOf(c), hintUnfit: {parts:"題目本身就是部件"}},
   R5: {loadMaskFix:true, formal:false, flu:false, noBingo:"答案是部件，不能用賓果卡", partsAnswer:true, skip: c => !maskIdxs(c).length,
-       hintUnfit: {parts:"答案就是部件之一", mask:"畫面已經是遮住的字", shape:"畫面已經有這個字"}},
+       hintUnfit: {parts:"答案就是部件之一", mask:"畫面已經是遮住的字"}},
   R6: {formal:false, flu:false, noBingo:"答案是部件，不能用賓果卡", partsAnswer:true, skip: c => !partsOf(c) || partsOf(c).length > R6_MAX_PARTS,
        hintUnfit: {parts:"答案就是部件"}},
   R7: {}, W1: {}, W2: {}, W3: {}
@@ -186,12 +186,15 @@ const ROW_ICONS = {
 /* 提示層級草案：0 無提示；1–3 系統給；4–7 老師給（作答畫面上的按鈕） */
 const LEVELS = [
   {n:1, who:"系統", items:[["word","語詞挖空（○瓜的○）"],["sent","句子"]]},
-  {n:2, who:"系統", items:[["pic","圖片"],["sound","聲音"]]},
-  {n:3, who:"系統", items:[["parts","部件"],["mask","遮擋字"],["shape","字形"]]}
+  {n:2, who:"系統", items:[["pic","圖片"]]},
+  {n:3, who:"系統", items:[["parts","部件"],["mask","遮擋字"]]}
 ];
+/* 已刪除的提示（2026-11-02 維護者決定刪除「聲音」再慢慢唸一次、「字形」淡淡的字形）：設定畫面不再出現、作答時不再給；
+   舊的作答紀錄、老師存的設定裡還有這兩個代號，顯示名稱時用這裡的（設定裡的會被 HINT_ORDER 自動濾掉） */
+const RETIRED_HINTS = {sound:"聲音（已刪除）", shape:"字形（已刪除）"};
 const TEACHER = "口語提示、示範、肢體提示、完全提示";
 const HINT_ORDER = LEVELS.flatMap(l => l.items.map(i => i[0]));
-const hintName = id => LEVELS.flatMap(l => l.items).find(i => i[0] === id)[1];
+const hintName = id => (LEVELS.flatMap(l => l.items).find(i => i[0] === id) || [id, RETIRED_HINTS[id] || id])[1];
 const REACT = {remove:"選錯的選項打叉", next:"出現下一個提示", free:"沒有提示，也不顯示答案，讓學生自己點", reveal:"顯示答案並唸一次，進入下一題"};   /* 選錯的選項每次都會停用，remove 只是舊紀錄的說法 */
 const ANSWERS = [
   {id:"turn",    name:"大螢幕・輪流",   desc:"1～4 人輪流在同一個螢幕作答", min:1, max:4},

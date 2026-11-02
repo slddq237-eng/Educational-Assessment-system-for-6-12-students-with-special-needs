@@ -208,7 +208,7 @@ function renderHints(){
     area.innerHTML = `<div class="locked"><span class="lock">固定</span><span>無提示・答錯就記錯，進入下一題</span></div>`;
     return;
   }
-  /* 這個評量目標會跳過哪些提示（例如部件重組不用部件、聲音提示） */
+  /* 這個評量目標會跳過哪些提示（例如部件重組不用部件提示） */
   const skipped = LEVELS.flatMap(l => l.items).filter(([id]) => unfitWhy(state.goal, id));
   const skipNote = skipped.length ? `<p class="note" style="margin:8px 0 0">這個評量目標不用：${skipped.map(([id, t]) => `${t}（${unfitWhy(state.goal, id)}）`).join("、")}，系統會自動跳過。</p>` : "";
   if(c.formal || isQuick()){

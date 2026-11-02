@@ -146,7 +146,7 @@ const maskedCharHtml = (c, idx) => { const sh = maskShapes(c, idx);
 const regroupHtml = c => shuffle([...(partsOf(c) || [])]).map(x => `<span class="ptile">${esc(x)}</span>`).join("");
 
 /* 提示畫面；沒有資料的提示回傳空字串，系統會自動跳到下一個提示 */
-const HINT_LEVEL = {word:1, sent:1, pic:2, sound:2, parts:3, mask:3, shape:3};
+const HINT_LEVEL = {word:1, sent:1, pic:2, parts:3, mask:3};
 const TEACHER_BTNS = [[4,"口語提示"],[5,"示範"],[6,"肢體提示"],[7,"完全提示"]];
 function hintHtml(id, c, b){
   /* 語詞、句子提示加注音（3-4）：目標字挖空，不會看到它的注音；破音字依 shared/bpmf.js 的讀音 */
@@ -156,7 +156,6 @@ function hintHtml(id, c, b){
   if(id === "word"){ const w = wordOf(c, b); return w ? `<div class="h bpmf${spk}">${esc(Bpmf.blank(w, c, "○"))}的○${read}</div>` : ""; }
   if(id === "sent"){ const t = sentOf(c, b); return t ? `<div class="h sent bpmf${spk}">${esc(Bpmf.blank(t, c, "（　）"))}${read}</div>` : ""; }
   if(id === "pic") return PICS[c] ? `<div class="pic" role="img" aria-label="圖片提示">${PICS[c]}</div>` : "";
-  if(id === "sound") return `<div class="h">再慢慢唸一次</div>`;
   if(id === "parts"){
     /* 部件（來源與規則見 data.js 的 partsOf）；拆不開的字用黑圓圈遮住字的中心（筆畫太少的字不給，見 HOLE_SKIP），不直接顯示答案。部件重組的題目本身就是部件，不再重複提示 */
     if(G && G.goal === "R4") return "";
@@ -165,7 +164,6 @@ function hintHtml(id, c, b){
     return HOLE_SKIP.has(c) ? "" : `<div class="holech" aria-label="遮住中心的字">${esc(c)}</div>`;
   }
   if(id === "mask") return `<div class="maskch" aria-label="遮住一半的字">${esc(c)}</div>`;
-  if(id === "shape") return `<div class="ghostch" aria-label="淡淡的字形">${esc(c)}</div>`;
   return "";
 }
 
@@ -715,7 +713,6 @@ function showNextHint(){
       if(cur.done) return;
       cur.reads.add(id); speak(id === "word" ? sayOf(cur.it.c, cur.b) : Bpmf.sayText(sentOf(cur.it.c, cur.b)));
     });
-    if(id === "sound") speak(promptOf(cur.it), null, Math.max(0.5, settings.rate - 0.25));
     fitPrompt();   /* 提示多了也放得下，不用捲動 */
     return;
   }
