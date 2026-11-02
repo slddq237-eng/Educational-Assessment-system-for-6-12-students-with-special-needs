@@ -23,7 +23,7 @@
 | 改教材資料、語詞、干擾字、部件、讀音、注音 | `materials/materials.md`；干擾字讀 `materials/distractors.md`；讀音、注音、破音字讀 `materials/pronunciation.md`；`materials/data-sources.md` |
 | 維護者上傳教材檔案、課本改版 | `materials/data-sources.md`「上傳教材檔案、課本改版時」、`materials/materials.md` |
 | 加入新的外部資料（課本、字頻、圖片、聲音、字型、程式元件） | `materials/data-sources.md`（同步更新「關於我們」頁 `about.html`） |
-| 有人提出新想法、要排優先順序 | `plans/roadmap.md`、`plans/pending.md`；還沒做的計畫細節在 `plans/roadmap-plans.md` |
+| 有人提出新想法、要排優先順序 | `plans/roadmap.md`、`plans/idea-triage.md`、`plans/pending.md`；還沒做的計畫細節在 `plans/roadmap-plans.md` |
 | 要討論、還沒決定的事 | `plans/pending.md`；A3 正式評量條件讀 `plans/a3-conditions.md`；老師專區簡潔畫面讀 `design/analysis-page-draft.md` |
 | 查「當初為什麼這樣決定」、已完成的實作細節 | `decisions/README.md`（2026-11-02 起的決策紀錄索引）；舊的在 `history/history.md`（2026-10-24 起的新歷史在 `history/history-2026-10-24.md`；A8 原文在 `history/history-2026-10-25.md` 和 `history-2026-10-25-a8-2.md`；2026-10-25 已刪除或取消的舊設計在 `history-2026-10-25-old-design.md`、老師專區簡潔畫面第一版草稿在 `history-2026-10-25-teacher-draft.md`、教學日期／平板正式評量／分區輪流改掉的舊說法在 `history-2026-10-25-later.md`）；教材、讀音的歷史在 `history/history-materials.md`；路線圖已完成項目做了什麼在 `history/history-roadmap.md` |
 | 研究方法（單一受試、介入設計） | `design/research-method-spec.md` |
@@ -57,6 +57,7 @@
 | `materials/parts-table-google-sheet.md` | 部件表上傳 Google 試算表給老師共編的操作清單：上傳、鎖欄位、分享分工、老師怎麼填、下載回來怎麼驗證（2026-10-31 新增） | （新） |
 | `materials/distractors.md` | 干擾字：跟著版本還是固定、怎麼分配、形音都像、老師選干擾字類型（2026-10-24 從 `materials/materials.md` 拆出） | 4-1 |
 | `materials/pronunciation.md` | 讀音與注音：破音字、以課本為主、老師怎麼回報讀音、人名地名的特殊讀音（2026-10-24 從 `materials/materials.md` 拆出） | 4-1 |
+| `plans/idea-triage.md` | 想法的輕重緩急：一個問題、「難改／好改／不急」判斷表、想法太多時怎麼辦（2026-11-02 新增） | （新） |
 | `plans/a3-conditions.md` | A3 正式評量標準條件表（草案）：已定案項目、待決項目與 Claude 的建議，回答用題號（2026-10-25 新增） | （新） |
 | `plans/pending.md` | 所有待決問題的總清單（每題一行，依誰決定分組，細節在各主題檔案） | 6 |
 | `decisions/README.md` | 決策紀錄：每個決定一則短檔案（為什麼這樣決定、以前怎麼想），只在做決定時寫；含格式、索引（2026-11-02 新增）。查「當初為什麼」先看這裡的索引，需要才打開單則 | （新） |
