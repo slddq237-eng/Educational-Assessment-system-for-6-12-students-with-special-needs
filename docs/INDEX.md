@@ -25,7 +25,7 @@
 | 加入新的外部資料（課本、字頻、圖片、聲音、字型、程式元件） | `materials/data-sources.md`（同步更新「關於我們」頁 `about.html`） |
 | 有人提出新想法、要排優先順序 | `plans/roadmap.md`、`plans/pending.md`；還沒做的計畫細節在 `plans/roadmap-plans.md` |
 | 要討論、還沒決定的事 | `plans/pending.md`；A3 正式評量條件讀 `plans/a3-conditions.md`；老師專區簡潔畫面讀 `design/analysis-page-draft.md` |
-| 查「當初為什麼這樣決定」、已完成的實作細節 | `history/history.md`（2026-10-24 起的新歷史在 `history/history-2026-10-24.md`；A8 原文在 `history/history-2026-10-25.md` 和 `history-2026-10-25-a8-2.md`；2026-10-25 已刪除或取消的舊設計在 `history-2026-10-25-old-design.md`、老師專區簡潔畫面第一版草稿在 `history-2026-10-25-teacher-draft.md`、教學日期／平板正式評量／分區輪流改掉的舊說法在 `history-2026-10-25-later.md`）；教材、讀音的歷史在 `history/history-materials.md`；路線圖已完成項目做了什麼在 `history/history-roadmap.md` |
+| 查「當初為什麼這樣決定」、已完成的實作細節 | `decisions/README.md`（2026-11-02 起的決策紀錄索引）；舊的在 `history/history.md`（2026-10-24 起的新歷史在 `history/history-2026-10-24.md`；A8 原文在 `history/history-2026-10-25.md` 和 `history-2026-10-25-a8-2.md`；2026-10-25 已刪除或取消的舊設計在 `history-2026-10-25-old-design.md`、老師專區簡潔畫面第一版草稿在 `history-2026-10-25-teacher-draft.md`、教學日期／平板正式評量／分區輪流改掉的舊說法在 `history-2026-10-25-later.md`）；教材、讀音的歷史在 `history/history-materials.md`；路線圖已完成項目做了什麼在 `history/history-roadmap.md` |
 | 研究方法（單一受試、介入設計） | `design/research-method-spec.md` |
 
 ## 每個檔案放什麼（新決定記在對應的檔案，同一件事只記一個地方）
@@ -59,7 +59,8 @@
 | `materials/pronunciation.md` | 讀音與注音：破音字、以課本為主、老師怎麼回報讀音、人名地名的特殊讀音（2026-10-24 從 `materials/materials.md` 拆出） | 4-1 |
 | `plans/a3-conditions.md` | A3 正式評量標準條件表（草案）：已定案項目、待決項目與 Claude 的建議，回答用題號（2026-10-25 新增） | （新） |
 | `plans/pending.md` | 所有待決問題的總清單（每題一行，依誰決定分組，細節在各主題檔案） | 6 |
-| `history/history.md` | 決策歷史：整合的分階段計畫、已完成的實作細節、全面檢查 | 原開頭、3-3 主段與實作細節、5-1 |
+| `decisions/README.md` | 決策紀錄：每個決定一則短檔案（為什麼這樣決定、以前怎麼想），只在做決定時寫；含格式、索引（2026-11-02 新增）。查「當初為什麼」先看這裡的索引，需要才打開單則 | （新） |
+| `history/history.md` | 決策歷史（2026-11-02 起只當存檔，新決定寫進 `decisions/`）：整合的分階段計畫、已完成的實作細節、全面檢查 | 原開頭、3-3 主段與實作細節、5-1 |
 | `history/history-2026-10-24.md` | 2026-10-24 起的決策歷史（`history/history.md` 滿了，依時間切開；之後快到 1 萬字就再開新檔，檔名用新檔第一天的日期） | （新） |
 | `history/history-2026-10-25.md`、`history-2026-10-25-a8-2.md`、`history-2026-10-25-old-design.md`、`history-2026-10-25-teacher-draft.md`、`history-2026-10-25-later.md` | 2026-10-25 起的決策歷史（原本一個檔案 3.8 萬字，同日拆成五個）：A8 整節原文（拆成 `design/a8-terms.md` 前）、已刪除或取消的舊設計、老師專區簡潔畫面第一版草稿、教學日期放回選單／平板納入正式評量／分區輪流的舊說法 | （新） |
 | `history/history-2026-10-31.md` | 2026-10-31 起的決策歷史（`history-2026-10-24.md` 超過 1 萬字，新的寫這裡）：結果卡片舊說法 | （新） |
