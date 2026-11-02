@@ -742,15 +742,30 @@ function charPop(c){
   const pr = $("#pBody .zone.on .prompt") || $("#pBody .prompt"); if(!pr) return false;
   /* 聽音補部件：不跳字卡，直接把黑色遮擋淡出、露出原本的字（學生看到部件補回原位；2026-11-02 維護者決定） */
   const mc = G.goal === "R5" && pr.querySelector(".maskedchar");
-  if(mc){ mc.classList.add("revealed"); mc.setAttribute("aria-label", `答對了，是「${c}」`); return true; }
-  /* 分區輪流的題目欄很矮，字卡會太小：改成蓋住輪到的那一區（題目＋選項，這題已經作答完）（2026-11-02 截圖檢查後改） */
+  if(mc){
+    mc.classList.add("revealed"); mc.setAttribute("aria-label", `答對了，是「${c}」`);
+    /* 分區輪流的字太小（題目欄最高 45% 螢幕、會被裁切）：遮擋淡出後，字再從原位放大、蓋住輪到的那一區（維護者 2026-11-02 要求） */
+    if(pr.closest(".zones")){ const cur = G.cur; setTimeout(() => { if(G && G.cur === cur) charCard(pr, c, mc); }, 450); }
+    return true;
+  }
+  charCard(pr, c);
+  return true;
+}
+/* 跳出的字卡。分區輪流的題目欄很矮，字卡會太小：改成蓋住輪到的那一區（題目＋選項，這題已經作答完）（2026-11-02 截圖檢查後改）。
+   from＝聽音補部件揭開後的字：字卡從那個字的位置、大小放大出來 */
+function charCard(pr, c, from){
   const st = pr.parentElement, box = pr.closest(".zones") ? st : pr, w = box.offsetWidth, h = box.offsetHeight;
+  const left = box === st ? 0 : pr.offsetLeft, top = box === st ? 0 : pr.offsetTop, ps = Math.max(80, Math.min(w, h) * (box === st ? 0.85 : 0.62));   /* 分區輪流佔區寬的 85%（維護者 2026-11-02 要再大一點） */
   const el = document.createElement("div");
-  el.className = "charpop"; el.setAttribute("role", "status"); el.setAttribute("aria-label", `答對了，是「${c}」`);
-  el.style.cssText = `left:${box === st ? 0 : pr.offsetLeft}px;top:${box === st ? 0 : pr.offsetTop}px;width:${w}px;height:${h}px;--ps:${Math.max(80, Math.min(w, h) * 0.62)}px`;
+  el.className = `charpop${from ? " grow" : ""}`; el.setAttribute("role", "status"); el.setAttribute("aria-label", `答對了，是「${c}」`);
+  el.style.cssText = `left:${left}px;top:${top}px;width:${w}px;height:${h}px;--ps:${ps}px`;
   el.innerHTML = `<span class="pch">${esc(c)}</span>`;
   st.appendChild(el);
-  return true;
+  if(!from) return;
+  const a = from.getBoundingClientRect(), b = st.getBoundingClientRect();
+  const dx = a.left + a.width / 2 - (b.left + left + w / 2), dy = a.top + a.height / 2 - (b.top + top + h / 2);
+  const card = el.firstChild; card.style.transform = `translate(${dx}px,${dy}px) scale(${a.width / ps})`;
+  void card.offsetWidth; card.style.transform = "";   /* 下一格畫面開始放大（CSS 的 transition） */
 }
 
 /* 一題結束：存紀錄，然後進下一題 */
