@@ -521,7 +521,7 @@ if(document.fonts && document.fonts.addEventListener) document.fonts.addEventLis
 const FIT_MIN = 0.35, PW_MIN = 300, PW_STEP = 60;
 function fitPrompt(){
   document.querySelectorAll("#pBody .prompt").forEach(pr => {
-    const st = pr.parentElement, canWiden = !pr.closest(".zones") && !matchMedia("(max-width:760px)").matches;
+    const st = pr.parentElement, canWiden = !pr.closest(".zones") && !matchMedia("(max-width:760px),(orientation:portrait) and (max-width:1100px)").matches;
     st.style.removeProperty("--pw"); pr.classList.remove("wide"); pr.style.height = "";
     const fits = f => { pr.style.setProperty("--fit", f); return pr.scrollHeight <= pr.clientHeight && pr.scrollWidth <= pr.clientWidth; };   /* 高和寬都要放得下（並排的喇叭和字太寬也算放不下） */
     if(fits(1)) return;
