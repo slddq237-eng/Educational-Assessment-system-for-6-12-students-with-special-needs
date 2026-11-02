@@ -4,6 +4,17 @@
 
 網站：https://slddq237-eng.github.io/Educational-Assessment-system-for-6-12-students-with-special-needs/
 
+## 給老師的 5 分鐘導覽
+
+- **這是什麼**：給 6～12 歲特殊需求學生用的線上識字評量和備課分析，部署在 GitHub Pages，不用安裝、沒有後端。
+- **現在做到哪**：試用階段。識字評量已可用（聽音選字、部件重組等，大螢幕輪流作答，或平板掃 QR code 作答），老師專區看作答紀錄並匯出 Excel；備課分析可依課次統計部件和字頻。進度表在 [`docs/plans/roadmap.md`](docs/plans/roadmap.md)。
+- **怎麼試用**：打開上面的網站，從「識字評量」進去，跟著「快速開始」走。**請只用假代號，不要輸入學生真實姓名。** 資料只存在你自己的瀏覽器，換電腦前先備份。
+- **練習 vs 正式評量**：練習可以玩遊戲、調設定；正式評量條件固定、不提示，結果才用於分析。
+- **看不懂代號（A3、A8、R3…）**：查 [`docs/glossary.md`](docs/glossary.md) 詞彙表。
+- **想知道某件事為什麼這樣決定**：看 [`docs/decisions/README.md`](docs/decisions/README.md) 決策紀錄的索引（2026-11-02 起；更早的在 `docs/history/`）。
+- **有新想法**：告訴維護者或 AI，會先評估可行性和急迫性，記進 [`docs/plans/roadmap.md`](docs/plans/roadmap.md)「新想法怎麼排」適合的階段，再決定現在做還是之後做。
+- **誰負責什麼**：兩位維護者各管一個工具（識字評量、備課分析），共用檔案要先告知對方，repo 擁有者同意才合併；對照表在 [`docs/INDEX.md`](docs/INDEX.md)「專案在做什麼、工具與負責人」。
+
 ## 目前的工具
 
 | 工具 | 資料夾 | 狀態 |
