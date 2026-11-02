@@ -740,8 +740,8 @@ function charPop(c){
   const pr = $("#pBody .zone.on .prompt") || $("#pBody .prompt"); if(!pr) return false;
   const mc = G.goal === "R5" && pr.querySelector(".maskedchar");
   if(mc){ mc.classList.add("revealed"); mc.setAttribute("aria-label", `答對了，是「${c}」`); return true; }
-  /* 字卡蓋在題目欄上（分區輪流的題目欄太矮，蓋住整區） */
-  const st = pr.parentElement, box = pr.closest(".zones") ? st : pr, w = box.offsetWidth, h = box.offsetHeight;
+  /* 字卡蓋在題目欄上；分區輪流、上下排（手機、平板直放）的題目欄太矮，蓋住整個作答區 */
+  const st = pr.parentElement, box = pr.closest(".zones") || getComputedStyle(st).gridTemplateColumns.split(" ").length < 2 ? st : pr, w = box.offsetWidth, h = box.offsetHeight;
   const el = document.createElement("div");
   el.className = "charpop"; el.setAttribute("role", "status"); el.setAttribute("aria-label", `答對了，是「${c}」`);
   el.style.cssText = `left:${box === st ? 0 : pr.offsetLeft}px;top:${box === st ? 0 : pr.offsetTop}px;width:${w}px;height:${h}px;--ps:${Math.max(80, Math.min(w, h) * 0.62)}px`;
