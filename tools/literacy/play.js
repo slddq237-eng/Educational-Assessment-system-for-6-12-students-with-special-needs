@@ -733,13 +733,16 @@ function reveal(){
   endItem(false, null, true);
 }
 
-/* 答對時在題目欄跳出正確的生字（部件重組 R4、聽音補部件 R5、聽音選部件 R6；2026-11-02 維護者決定），停 2 秒再出下一題，給學生視覺回饋。
+/* 答對時在題目欄跳出正確的生字（部件重組 R4、聽音選部件 R6；聽音補部件 R5 改成揭開遮擋、露出原本的字；2026-11-02 維護者決定），停 2 秒再出下一題，給學生視覺回饋。
    只在練習的正確率模式：正式評量不回饋對錯（A3-7、A3-8）；流暢性要連續快點，停 2 秒會讓答題數變少。
    作答秒數在點選當下就算好了，停的這 2 秒不算進紀錄。字卡蓋在題目欄上（位置照題目欄量，手機直放也一樣；分區輪流蓋住輪到的那一區） */
 const CHARPOP_GOALS = ["R4", "R5", "R6"], CHARPOP_MS = 2000;
 function charPop(c){
   if(!CHARPOP_GOALS.includes(G.goal) || G.kind === "formal" || G.mode === "flu") return false;
   const pr = $("#pBody .zone.on .prompt") || $("#pBody .prompt"); if(!pr) return false;
+  /* 聽音補部件：不跳字卡，直接把黑色遮擋淡出、露出原本的字（學生看到部件補回原位；2026-11-02 維護者決定） */
+  const mc = G.goal === "R5" && pr.querySelector(".maskedchar");
+  if(mc){ mc.classList.add("revealed"); mc.setAttribute("aria-label", `答對了，是「${c}」`); return true; }
   /* 分區輪流的題目欄很矮，字卡會太小：改成蓋住輪到的那一區（題目＋選項，這題已經作答完）（2026-11-02 截圖檢查後改） */
   const st = pr.parentElement, box = pr.closest(".zones") ? st : pr, w = box.offsetWidth, h = box.offsetHeight;
   const el = document.createElement("div");
