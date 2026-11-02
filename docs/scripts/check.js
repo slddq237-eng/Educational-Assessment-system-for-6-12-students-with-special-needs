@@ -241,12 +241,15 @@ if (files.includes('tools/literacy/data.js')) {
    （2026-10-24 維護者要求：路線圖和文件改了很多次，確定讀的時候不會漏掉）。
    檔名沒寫資料夾時，先找同一個資料夾，再找 docs/、repo 最上層。寫「原列」（已刪掉的舊位置）或「例如」（還沒做的計畫）的那一行不檢查。 */
 const findDoc = (from, p) => {
-  if (p.includes('/')) return [p, path.posix.join(path.posix.dirname(from), p)].find(x => files.includes(x));
+  /* 寫了資料夾但沒寫 docs/（例如 history/history-2026-10-24.md、design/records.md）也算找得到（2026-11-02 加：之前會誤報） */
+  if (p.includes('/')) return [p, path.posix.join(path.posix.dirname(from), p), 'docs/' + p].find(x => files.includes(x));
   return [path.posix.join(path.posix.dirname(from), p), 'docs/' + p, p].find(x => files.includes(x)) || files.find(x => x.endsWith('/' + p));
 };
-for (const f of files.filter(f => /^(docs\/.+|CLAUDE)\.md$/.test(f))) {
+/* docs/history/ 是舊說法的存檔，裡面寫到已刪掉的檔案（tour.js、guide.html…）和已刪掉的小節是正常的，不檢查（2026-11-02 加）；
+   還在用的文件指向 history 的連結照常檢查 */
+for (const f of files.filter(f => /^(docs\/.+|CLAUDE)\.md$/.test(f) && !f.startsWith('docs/history/'))) {
   read(f).split('\n').forEach((line, i) => {
-    if (/原列|例如/.test(line)) return;
+    if (/原列|例如|刪除/.test(line)) return;   /* 「刪除 ○○」說的就是已經不存在的檔案，不用報（2026-11-02 加） */
     const at = `${f} 第 ${i + 1} 行`;
     for (const m of line.matchAll(/`((?:[\w.-]+\/)*[\w.-]+\.(?:md|js|html|py|xlsx|yml|css))`/g))
       if (!/○|\*/.test(m[1]) && !findDoc(f, m[1])) warn(at, `寫到的檔案「${m[1]}」找不到（改名或刪掉了？）`);
