@@ -16,4 +16,4 @@
 | `make_kai.py` | `shared/fonts/tw-kai*` | 新增課本、部件，或改了頁面文字後 |
 | `make_conf_candidates.py` | `docs/materials/material-review.xlsx` 的「干擾字候選」頁 | 要請老師挑干擾字時 |
 | `bump.js` | 改所有網頁的版本號 `?v=`（今天的日期，同一天第二次起加 b、c…）（2026-10-24 加） | 改了網頁會載入的 js、css 後 |
-| `changelog.js` | 不產生檔案；把舊的變更紀錄表和 `docs/changelog/changes/` 的小檔案合成一張表印出來，從 git 找 PR 編號；可以加關鍵字只印相關的列（2026-10-24 加） | 要追某件事的變化時 |
+| `changelog.js` | 不產生檔案；把舊的變更紀錄表、`docs/changelog/changes/` 的小檔案（2026-11-02 起不再新增）和沒有小檔案的 PR（從 git 合併紀錄產生）合成一張表印出來，從 git 找 PR 編號；可以加關鍵字只印相關的列（2026-10-24 加） | 要追某件事的變化時 |
