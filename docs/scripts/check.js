@@ -2,7 +2,7 @@
 自動檢查（GitHub Actions 每次發 PR、改 main 都會跑；本機也可以跑：在 repo 最上層執行 node docs/scripts/check.js）
 不用安裝任何套件，只要 Node.js。
 
-檢查十三件事：
+檢查十四件事：
   1. 程式語法：所有 .js 檔和 HTML 裡的 <script>，有沒有打錯字、少括號（有的話網頁會整個壞掉）
   2. 教材資料（shared/lessons.js 和各本課本檔 lessons-代號.js）：BOOK_FILES、ALL_LESSON_CHARS 要是最新的（make_lessons.js）；語詞裡有沒有這個字、干擾字有沒有包含答案本身等；
      語詞、例句裡有語音替換詞（shared/bpmf.js 的 BPMF_SAY）但還沒確認過的，提醒確認讀音
@@ -19,6 +19,7 @@
   11. 對外連線：程式裡新的外部網址要寫進 docs/code/architecture.md 第 7 節（也要更新 privacy.html）
   12. 變更紀錄：docs/changelog/changes/ 的小檔案要有「日期」「動到哪裡」「改了什麼」（只提醒；2026-11-02 起不再新增小檔，只檢查舊檔）
   13. 網頁打得開測試的清單：每個網頁（.html）都要寫在 docs/scripts/smoke.js 的 PAGES，漏了是錯誤
+  14. 紀錄匯出欄位：records.js 的 COLS 要和 docs/scripts/records-columns.txt 一致（刪欄位、改名、換順序是錯誤；最後面新增欄位只提醒）
   8～12 都只提醒（2026-10-24 維護者要求加）
      只有入口檔案可以直接存取 localStorage、indexedDB（其他檔案直接用是錯誤，見 docs/code/refactor.md 規則 1）
 
@@ -379,6 +380,23 @@ for (const f of files.filter(f => /^docs\/changelog\/changes\/\d{4}-\d{2}-\d{2}.
     if (miss.length) warn(f, `決策紀錄少了「${miss.join('」「')}」：照 docs/decisions/README.md 的模板，每一欄一行`);
     else if (!DEC_STATUS.test(s)) warn(f, '決策紀錄的「狀態」只能寫「有效」「已被 ○○ 取代」「AI 整理，待確認」');
     if (!idx.includes(name)) warn(f, '這則決策紀錄沒列進 docs/decisions/README.md 的索引，請加一行（最新的放最上面）');
+  }
+}
+
+/* ---------- 14. 紀錄匯出欄位 ----------
+   匯出 Excel 的欄位（records.js 的 COLS）一旦給老師用，欄位名稱和順序就不能偷偷變（新欄位一律加最後面）。
+   docs/scripts/records-columns.txt 是已定案的清單：刪掉、改名、換順序是錯誤；最後面多出新欄位只提醒（2026-11-02 維護者決定加） */
+{
+  const src = read('tools/literacy/records.js'), a = src.indexOf('const COLS = ['), b = a < 0 ? -1 : src.indexOf('\n];', a);
+  if (b < 0) err('tools/literacy/records.js', '找不到 const COLS = [...]，檢查不了匯出欄位（改了 COLS 的寫法？請一起改 docs/scripts/check.js 第 14 項）');
+  else {
+    const cur = [...src.slice(a, b).matchAll(/\[\s*"([^"]+)"\s*,\s*r\s*=>/g)].map(m => m[1]);
+    const saved = read('docs/scripts/records-columns.txt').split('\n').filter(l => l.trim() && !l.startsWith('#'));
+    const rec = 'docs/scripts/records-columns.txt', fix = '真的要改，先討論（docs/design/records.md），同一個 PR 一起改 ' + rec;
+    const i = saved.findIndex((n, k) => cur[k] !== n);
+    if (cur.length < saved.length && i < 0) err('tools/literacy/records.js', `匯出欄位少了「${saved.slice(cur.length).join('」「')}」：舊的欄位不能刪（老師手上的 Excel 會對不上）。${fix}`);
+    else if (i >= 0) err('tools/literacy/records.js', `匯出欄位第 ${i + 1} 欄應該是「${saved[i]}」，現在是「${cur[i] || '（沒有）'}」：欄位不能改名或換順序，新欄位只能加在最後面。${fix}`);
+    else if (cur.length > saved.length) warn('tools/literacy/records.js', `匯出欄位多了 ${cur.length - saved.length} 個新欄位（${cur.slice(saved.length).join('、')}）：把名稱依序加到 ${rec} 最後面`);
   }
 }
 
