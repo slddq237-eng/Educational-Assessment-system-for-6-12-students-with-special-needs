@@ -730,20 +730,16 @@ details.howto{margin:10px 0 0}
 .bbanner{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);z-index:30;background:#f5b400;color:#3a2f12;font-family:var(--kai);font-weight:700;
   font-size:clamp(48px,8vw,110px);padding:10px 48px;border-radius:28px;border:5px solid #3a2f12;pointer-events:none}
 @media (prefers-reduced-motion:no-preference){.bbanner{animation:bpop 1.7s ease-out forwards}}
-/* 答對跳出正確的生字（部件重組、聽音補部件、聽音選部件的練習；play.js 的 charPop）：蓋在題目欄上，停 2 秒後跟著換題消失 */
-.charpop{position:absolute;z-index:5;display:grid;place-items:center;pointer-events:none;background:rgba(255,255,255,.8);border-radius:24px}   /* 半透明底：底下的題目淡掉，字卡比較清楚 */
+/* 部件題答對的字卡、聽音補部件揭開遮擋（play.js 的 charPop，見 literacy-play.md） */
+.charpop{position:absolute;z-index:5;display:grid;place-items:center;pointer-events:none;background:rgba(255,255,255,.8);border-radius:24px}
 .charpop .pch{display:grid;place-items:center;font-family:var(--kai);font-size:calc(var(--ps) * .78);line-height:1;width:var(--ps);height:var(--ps);
   background:var(--cardbg,var(--card));color:var(--cardink,var(--ink));border:6px solid var(--green);border-radius:28px;box-shadow:0 8px 0 #1c5246,0 10px 28px rgba(0,0,0,.25)}
-@media (prefers-reduced-motion:no-preference){.charpop .pch{animation:charpopin .45s cubic-bezier(.2,1.6,.4,1)}}
-@keyframes charpopin{0%{transform:scale(.2);opacity:0}100%{transform:none;opacity:1}}
-/* 聽音補部件答對：黑色遮擋淡出、露出原本的字，字框變綠並放大一下（play.js 的 charPop） */
-.maskedchar.revealed{border-color:var(--green);background:#e6f4ee}   /* 不用外圍光暈：題目欄會裁掉超出的部分（手機、分區輪流） */
+.charpop.grow .pch,.maskedchar.revealed{background:#e6f4ee;color:#1f3d36;border-color:var(--green)}
 .maskedchar.revealed .mholes{opacity:0}
-/* 分區輪流：揭開後的字從原位放大成大字卡（play.js 的 charCard，from 參數），外觀和揭開的字一樣（綠框、淡綠底） */
-.charpop.grow .pch{background:#e6f4ee;color:#1f3d36;animation:none}
-@media (prefers-reduced-motion:no-preference){.charpop.grow{animation:growbg .4s ease-out}.charpop.grow .pch{transition:transform .45s cubic-bezier(.2,1.3,.4,1)}}
+@media (prefers-reduced-motion:no-preference){.charpop .pch{animation:charpopin .45s cubic-bezier(.2,1.6,.4,1)}.charpop.grow{animation:growbg .4s}.charpop.grow .pch{animation:none;transition:transform .45s cubic-bezier(.2,1.3,.4,1)}
+  .maskedchar .mholes{transition:opacity .4s}.maskedchar.revealed{animation:yay .6s cubic-bezier(.2,1.6,.4,1) .15s}}
+@keyframes charpopin{0%{transform:scale(.2);opacity:0}}
 @keyframes growbg{from{background:transparent}}
-@media (prefers-reduced-motion:no-preference){.maskedchar .mholes{transition:opacity .4s ease-out}.maskedchar.revealed{animation:yay .6s cubic-bezier(.2,1.6,.4,1) .15s}}
 @keyframes bpop{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}15%{transform:translate(-50%,-50%) scale(1.1);opacity:1}25%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0}}
 /* ---------- 結果與紀錄 ---------- */
 /* 結果畫面：每人一格、左右並列（放不下自動換行，手機上一人一列） */

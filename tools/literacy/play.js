@@ -733,29 +733,25 @@ function reveal(){
   endItem(false, null, true);
 }
 
-/* 答對時在題目欄跳出正確的生字（部件重組 R4、聽音選部件 R6；聽音補部件 R5 改成揭開遮擋、露出原本的字；2026-11-02 維護者決定），停 2 秒再出下一題，給學生視覺回饋。
-   只在練習的正確率模式：正式評量不回饋對錯（A3-7、A3-8）；流暢性要連續快點，停 2 秒會讓答題數變少。
-   作答秒數在點選當下就算好了，停的這 2 秒不算進紀錄。字卡蓋在題目欄上（位置照題目欄量，手機直放也一樣；分區輪流蓋住輪到的那一區） */
+/* 部件題答對：R4、R6 跳出生字卡，R5 揭開遮擋；停 2 秒，只在練習的正確率模式（規則見 literacy-play.md「部件題答對跳出正確的生字」） */
 const CHARPOP_GOALS = ["R4", "R5", "R6"], CHARPOP_MS = 2000;
 function charPop(c){
   if(!CHARPOP_GOALS.includes(G.goal) || G.kind === "formal" || G.mode === "flu") return false;
   const pr = $("#pBody .zone.on .prompt") || $("#pBody .prompt"); if(!pr) return false;
-  /* 聽音補部件：不跳字卡，直接把黑色遮擋淡出、露出原本的字（學生看到部件補回原位；2026-11-02 維護者決定） */
   const mc = G.goal === "R5" && pr.querySelector(".maskedchar");
   if(mc){
     mc.classList.add("revealed"); mc.setAttribute("aria-label", `答對了，是「${c}」`);
-    /* 分區輪流的字太小（題目欄最高 45% 螢幕、會被裁切）：遮擋淡出後，字再從原位放大、蓋住輪到的那一區（維護者 2026-11-02 要求） */
+    /* 分區輪流的字太小：揭開後再從原位放大 */
     if(pr.closest(".zones")){ const cur = G.cur; setTimeout(() => { if(G && G.cur === cur) charCard(pr, c, mc); }, 450); }
     return true;
   }
   charCard(pr, c);
   return true;
 }
-/* 跳出的字卡。分區輪流的題目欄很矮，字卡會太小：改成蓋住輪到的那一區（題目＋選項，這題已經作答完）（2026-11-02 截圖檢查後改）。
-   from＝聽音補部件揭開後的字：字卡從那個字的位置、大小放大出來 */
+/* 字卡蓋在題目欄上（分區輪流蓋住整區）；from＝揭開後的字，字卡從它的位置放大出來 */
 function charCard(pr, c, from){
   const st = pr.parentElement, box = pr.closest(".zones") ? st : pr, w = box.offsetWidth, h = box.offsetHeight;
-  const left = box === st ? 0 : pr.offsetLeft, top = box === st ? 0 : pr.offsetTop, ps = Math.max(80, Math.min(w, h) * (box === st ? 0.85 : 0.62));   /* 分區輪流佔區寬的 85%（維護者 2026-11-02 要再大一點） */
+  const left = box === st ? 0 : pr.offsetLeft, top = box === st ? 0 : pr.offsetTop, ps = Math.max(80, Math.min(w, h) * (box === st ? 0.85 : 0.62));
   const el = document.createElement("div");
   el.className = `charpop${from ? " grow" : ""}`; el.setAttribute("role", "status"); el.setAttribute("aria-label", `答對了，是「${c}」`);
   el.style.cssText = `left:${left}px;top:${top}px;width:${w}px;height:${h}px;--ps:${ps}px`;
@@ -765,7 +761,7 @@ function charCard(pr, c, from){
   const a = from.getBoundingClientRect(), b = st.getBoundingClientRect();
   const dx = a.left + a.width / 2 - (b.left + left + w / 2), dy = a.top + a.height / 2 - (b.top + top + h / 2);
   const card = el.firstChild; card.style.transform = `translate(${dx}px,${dy}px) scale(${a.width / ps})`;
-  void card.offsetWidth; card.style.transform = "";   /* 下一格畫面開始放大（CSS 的 transition） */
+  void card.offsetWidth; card.style.transform = "";
 }
 
 /* 一題結束：存紀錄，然後進下一題 */
