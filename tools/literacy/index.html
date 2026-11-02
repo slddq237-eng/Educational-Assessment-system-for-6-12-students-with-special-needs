@@ -318,7 +318,7 @@ details.howto{margin:10px 0 0}
 .zones .prompt{max-height:45vh}   /* 分區輪流、手機直放的題目欄高度跟著內容長：最多佔 45% 螢幕高，超過就縮小內容，選項區才不會被擠掉 */
 @media (max-width:760px),(orientation:portrait) and (max-width:1100px){.prompt{max-height:45vh}}
 /* 手機、平板直放（2026-11-02 加平板：左右排時選項比手機還小）題目在上、選項在下，一屏放得下（2026-10-31 維護者要求）：選項區吃掉剩下的高度（方格取寬高較小的邊），不用往下滑 */
-@media (max-width:760px),(orientation:portrait) and (max-width:1100px){.play{height:100vh;height:100dvh;min-height:0}.stage{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,auto) minmax(55%,1fr)}.optsbox{height:auto;padding-inline:14px}}   /* 左右留一點，選項右上角的勾叉才不會超出螢幕 */
+@media (max-width:760px),(orientation:portrait) and (max-width:1100px){.play{height:100vh;height:100dvh;min-height:0}.stage{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,auto) minmax(55%,1fr)}.optsbox{height:auto}#pBody > .stage:has(.prompt.pick) .optsbox{padding-inline:14px}}   /* 聽音選部件的選項排滿整個寬度：左右留一點，右上角的勾叉才不會超出螢幕 */
 /* 大螢幕分區輪流（E14）：每位學生一區並排，大小固定；輪到的亮起，其他區變暗、選項只剩空框 */
 .zones{flex:1;min-height:0;display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:clamp(8px,1.5vw,20px)}
 .zone{min-height:0;min-width:0;display:flex;flex-direction:column;gap:8px;padding:10px;border:4px solid transparent;border-radius:24px}
