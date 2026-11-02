@@ -8,6 +8,7 @@
 | 要做的工作 | 讀這些檔案 |
 |---|---|
 | 任何工作 | 這一頁、`CLAUDE.md`（每次自動載入） |
+| 看不懂文件裡的代號或名詞（A3、A8、R3、E17…） | `glossary.md` |
 | 做完任何改動、發 PR 前 | `rules.md`「改完要更新哪些檔案」 |
 | 查合作規則、通知等級（①②③）、規格書怎麼用 | `rules.md` |
 | 改任何程式（新增、刪除、改名檔案，或改到別的檔案會用的東西） | `code/architecture.md`（程式地圖；改識字評量的檔案再讀 `code/architecture-literacy.md`：誰用誰、資料存哪裡、改這裡要一起檢查哪裡）、`code/architecture-notes.md`（注意事項：平板不載入哪些檔案等）、`code/refactor.md`（整理程式的規則：存資料走入口等） |
@@ -25,7 +26,8 @@
 | 加入新的外部資料（課本、字頻、圖片、聲音、字型、程式元件） | `materials/data-sources.md`（同步更新「關於我們」頁 `about.html`） |
 | 有人提出新想法、要排優先順序 | `plans/roadmap.md`、`plans/idea-triage.md`、`plans/pending.md`；還沒做的計畫細節在 `plans/roadmap-plans.md` |
 | 要討論、還沒決定的事 | `plans/pending.md`；A3 正式評量條件讀 `plans/a3-conditions.md`；老師專區簡潔畫面讀 `design/analysis-page-draft.md` |
-| 查「當初為什麼這樣決定」、已完成的實作細節 | `decisions/README.md`（2026-11-02 起的決策紀錄索引）；舊的在 `history/history.md`（2026-10-24 起的新歷史在 `history/history-2026-10-24.md`；A8 原文在 `history/history-2026-10-25.md` 和 `history-2026-10-25-a8-2.md`；2026-10-25 已刪除或取消的舊設計在 `history-2026-10-25-old-design.md`、老師專區簡潔畫面第一版草稿在 `history-2026-10-25-teacher-draft.md`、教學日期／平板正式評量／分區輪流改掉的舊說法在 `history-2026-10-25-later.md`）；教材、讀音的歷史在 `history/history-materials.md`；路線圖已完成項目做了什麼在 `history/history-roadmap.md` |
+| 查「當初為什麼這樣決定」、已完成的實作細節 | `glossary.md` | 詞彙表：A1～A9、B*、C*、D*、E*、R*、W* 代號和常見名詞的白話解釋（2026-11-02 新增） | （新） |
+| `decisions/README.md`（2026-11-02 起的決策紀錄索引）；舊的在 `history/history.md`（2026-10-24 起的新歷史在 `history/history-2026-10-24.md`；A8 原文在 `history/history-2026-10-25.md` 和 `history-2026-10-25-a8-2.md`；2026-10-25 已刪除或取消的舊設計在 `history-2026-10-25-old-design.md`、老師專區簡潔畫面第一版草稿在 `history-2026-10-25-teacher-draft.md`、教學日期／平板正式評量／分區輪流改掉的舊說法在 `history-2026-10-25-later.md`）；教材、讀音的歷史在 `history/history-materials.md`；路線圖已完成項目做了什麼在 `history/history-roadmap.md` |
 | 研究方法（單一受試、介入設計） | `design/research-method-spec.md` |
 
 ## 每個檔案放什麼（新決定記在對應的檔案，同一件事只記一個地方）
