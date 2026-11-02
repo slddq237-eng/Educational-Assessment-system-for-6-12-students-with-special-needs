@@ -733,9 +733,26 @@ function reveal(){
   endItem(false, null, true);
 }
 
+/* 答對時在題目欄跳出正確的生字（部件重組 R4、聽音補部件 R5、聽音選部件 R6；2026-11-02 維護者決定），停 2 秒再出下一題，給學生視覺回饋。
+   只在練習的正確率模式：正式評量不回饋對錯（A3-7、A3-8）；流暢性要連續快點，停 2 秒會讓答題數變少。
+   作答秒數在點選當下就算好了，停的這 2 秒不算進紀錄。字卡蓋在題目欄上（位置照題目欄量，分區輪流、手機直放也一樣） */
+const CHARPOP_GOALS = ["R4", "R5", "R6"], CHARPOP_MS = 2000;
+function charPop(c){
+  if(!CHARPOP_GOALS.includes(G.goal) || G.kind === "formal" || G.mode === "flu") return false;
+  const pr = $("#pBody .zone.on .prompt") || $("#pBody .prompt"); if(!pr) return false;
+  const st = pr.parentElement, w = pr.offsetWidth, h = pr.offsetHeight;
+  const el = document.createElement("div");
+  el.className = "charpop"; el.setAttribute("role", "status"); el.setAttribute("aria-label", `答對了，是「${c}」`);
+  el.style.cssText = `left:${pr.offsetLeft}px;top:${pr.offsetTop}px;width:${w}px;height:${h}px;--ps:${Math.max(80, Math.min(w, h) * 0.62)}px`;
+  el.innerHTML = `<span class="pch">${esc(c)}</span>`;
+  st.appendChild(el);
+  return true;
+}
+
 /* 一題結束：存紀錄，然後進下一題 */
 function endItem(passed, correctSec, revealed){
   const cur = G.cur; cur.done = true;
+  const popped = passed && charPop(cur.it.c);   /* 答對跳出正確的生字（見上方 charPop） */
   $("#pBody").querySelectorAll(".opt-big").forEach(b => b.disabled = true);
   const it = cur.it, [b, n] = splitKey(it.k), k = kidBy(it.kid) || {};
   const sysLevel = Math.max(0, ...cur.shown.map(id => HINT_LEVEL[id]));
@@ -783,7 +800,7 @@ function endItem(passed, correctSec, revealed){
   G.pos++;
   const g = G;
   setTimeout(() => { if(G !== g || g.over) return; if(g.game && g.pos < g.queue.length && g.doneN % sceneEvery() === 0) sceneBeat(it.kid, nextItem); else nextItem(); },
-    passed ? (cur.line ? 1800 : 900) : revealed ? 2200 : 1000);
+    passed ? Math.max(cur.line ? 1800 : 900, popped ? CHARPOP_MS : 0) : revealed ? 2200 : 1000);
 }
 
 /* ---------- 3-3 打怪獸 ----------
