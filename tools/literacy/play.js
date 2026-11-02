@@ -733,9 +733,27 @@ function reveal(){
   endItem(false, null, true);
 }
 
+/* 部件題答對：R4、R6 跳出生字卡，R5 揭開遮擋；停 2 秒，只在練習的正確率模式（規則見 literacy-play.md「部件題答對跳出正確的生字」） */
+const CHARPOP_GOALS = ["R4", "R5", "R6"], CHARPOP_MS = 2000;
+function charPop(c){
+  if(!CHARPOP_GOALS.includes(G.goal) || G.kind === "formal" || G.mode === "flu") return false;
+  const pr = $("#pBody .zone.on .prompt") || $("#pBody .prompt"); if(!pr) return false;
+  const mc = G.goal === "R5" && pr.querySelector(".maskedchar");
+  if(mc){ mc.classList.add("revealed"); mc.setAttribute("aria-label", `答對了，是「${c}」`); return true; }
+  /* 字卡蓋在題目欄上；分區輪流、上下排（手機、平板直放）的題目欄太矮，蓋住整個作答區 */
+  const st = pr.parentElement, box = pr.closest(".zones") || getComputedStyle(st).gridTemplateColumns.split(" ").length < 2 ? st : pr, w = box.offsetWidth, h = box.offsetHeight;
+  const el = document.createElement("div");
+  el.className = "charpop"; el.setAttribute("role", "status"); el.setAttribute("aria-label", `答對了，是「${c}」`);
+  el.style.cssText = `left:${box === st ? 0 : pr.offsetLeft}px;top:${box === st ? 0 : pr.offsetTop}px;width:${w}px;height:${h}px;--ps:${Math.max(80, Math.min(w, h) * 0.62)}px`;
+  el.innerHTML = `<span class="pch">${esc(c)}</span>`;
+  st.appendChild(el);
+  return true;
+}
+
 /* 一題結束：存紀錄，然後進下一題 */
 function endItem(passed, correctSec, revealed){
   const cur = G.cur; cur.done = true;
+  const popped = passed && charPop(cur.it.c);   /* 答對跳出正確的生字（見上方 charPop） */
   $("#pBody").querySelectorAll(".opt-big").forEach(b => b.disabled = true);
   const it = cur.it, [b, n] = splitKey(it.k), k = kidBy(it.kid) || {};
   const sysLevel = Math.max(0, ...cur.shown.map(id => HINT_LEVEL[id]));
@@ -783,7 +801,7 @@ function endItem(passed, correctSec, revealed){
   G.pos++;
   const g = G;
   setTimeout(() => { if(G !== g || g.over) return; if(g.game && g.pos < g.queue.length && g.doneN % sceneEvery() === 0) sceneBeat(it.kid, nextItem); else nextItem(); },
-    passed ? (cur.line ? 1800 : 900) : revealed ? 2200 : 1000);
+    passed ? Math.max(cur.line ? 1800 : 900, popped ? CHARPOP_MS : 0) : revealed ? 2200 : 1000);
 }
 
 /* ---------- 3-3 打怪獸 ----------
