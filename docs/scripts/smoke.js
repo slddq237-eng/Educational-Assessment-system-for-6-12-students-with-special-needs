@@ -2,7 +2,7 @@
    網頁打得開測試（docs/scripts/smoke.js，2026-10-24 加）
    用法：在 repo 最上層執行  node docs/scripts/smoke.js
      要先有 Playwright（自動操作瀏覽器的工具）：GitHub 的自動檢查會自己裝；本機沒有就執行
-     npm install --no-save playwright && npx playwright install chromium
+     npm ci && npx playwright install chromium     （版本固定在 package.json；2026-11-02 起可用 npm run smoke）
    做什麼：在自己電腦開一個小網站，用瀏覽器一頁一頁打開，畫面出現程式錯誤、或網站裡的檔案載入失敗，就算不通過。
      也會打開識字評量的「平板作答」網址（用電腦版產生 QR code 的同一個函數做出網址），確認平板模式能進到作答前的畫面。
    為什麼：check.js 只看語法和資料，不會真的打開網頁。識字評量的檔案靠共用名稱互相呼叫，

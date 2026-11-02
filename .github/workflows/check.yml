@@ -23,5 +23,6 @@ jobs:
           node-version: 20
       - run: node docs/scripts/check.js
       # 網頁打得開測試：裝 Playwright（自動操作瀏覽器的工具）和瀏覽器，再打開每一頁（2026-10-24 加）
-      - run: npm install --no-save playwright@1.63.0 && npx playwright install --with-deps chromium
+      # 2026-11-02：版本固定在 package.json／package-lock.json（npm ci 照鎖定的版本裝），要升版就改 package.json 再執行 npm install
+      - run: npm ci && npx playwright install --with-deps chromium
       - run: node docs/scripts/smoke.js

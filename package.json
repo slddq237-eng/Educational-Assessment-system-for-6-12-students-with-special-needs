@@ -1,0 +1,18 @@
+{
+  "name": "educational-assessment-platform",
+  "version": "0.0.0",
+  "private": true,
+  "description": "特教識字評量平台（純前端，沒有打包工具）。這個檔案只用來固定自動檢查的工具版本和提供短指令，網站本身不需要它。",
+  "scripts": {
+    "check": "node docs/scripts/check.js",
+    "smoke": "node docs/scripts/smoke.js",
+    "changelog": "node docs/scripts/changelog.js",
+    "bump": "node docs/scripts/bump.js"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

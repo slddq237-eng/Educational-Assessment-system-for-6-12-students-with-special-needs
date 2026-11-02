@@ -163,7 +163,8 @@ try {
 } catch (e) { /* 沒有 git 或沒有 origin/main：不比 */ }
 
 /* ---------- 4. 學生資料 ---------- */
-const ALLOW_DATA = ['docs/materials/material-review.xlsx', 'docs/materials/parts-table.xlsx', 'docs/materials/mask-fix.json'];   /* 教材資料，沒有學生資料 */
+const ALLOW_DATA = ['docs/materials/material-review.xlsx', 'docs/materials/parts-table.xlsx', 'docs/materials/mask-fix.json',
+  'package.json', 'package-lock.json'];   /* 教材資料，沒有學生資料 */
 const ALLOW_IMAGES = ['tools/literacy/img/goal-3.jpg', 'tools/literacy/img/goal-4-1.jpg',
   ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14].map(n => `tools/literacy/img/guide/g${n}.png`)];   /* 平板教學的 Google 表單操作截圖（2026-11-01 維護者決定放真截圖）；已遮掉帳號頭像、沒有學生資料，逐檔放行 */   /* 選評量目標畫面的遊戲截圖（2026-10-25 維護者要求）；用假資料截的、不套主題背景，已裁掉學生代號和頭像 */
 for (const f of files) {
