@@ -17,7 +17,7 @@
   9. 楷書字型缺字：畫面文字、教材裡的字要在楷書字型裡，沒有就提醒跑 make_kai.py
   10. 網頁下載量：每個頁面一打開要下載的程式和樣式（不含字型）超過上限就提醒，避免越來越慢
   11. 對外連線：程式裡新的外部網址要寫進 docs/code/architecture.md 第 7 節（也要更新 privacy.html）
-  12. 變更紀錄：docs/changelog/changes/ 的小檔案要有「日期」「動到哪裡」「改了什麼」（只提醒）
+  12. 變更紀錄：docs/changelog/changes/ 的小檔案要有「日期」「動到哪裡」「改了什麼」（只提醒；2026-11-02 起不再新增小檔，只檢查舊檔）
   13. 網頁打得開測試的清單：每個網頁（.html）都要寫在 docs/scripts/smoke.js 的 PAGES，漏了是錯誤
   8～12 都只提醒（2026-10-24 維護者要求加）
      只有入口檔案可以直接存取 localStorage、indexedDB（其他檔案直接用是錯誤，見 docs/code/refactor.md 規則 1）
@@ -241,12 +241,15 @@ if (files.includes('tools/literacy/data.js')) {
    （2026-10-24 維護者要求：路線圖和文件改了很多次，確定讀的時候不會漏掉）。
    檔名沒寫資料夾時，先找同一個資料夾，再找 docs/、repo 最上層。寫「原列」（已刪掉的舊位置）或「例如」（還沒做的計畫）的那一行不檢查。 */
 const findDoc = (from, p) => {
-  if (p.includes('/')) return [p, path.posix.join(path.posix.dirname(from), p)].find(x => files.includes(x));
+  /* 寫了資料夾但沒寫 docs/（例如 history/history-2026-10-24.md、design/records.md）也算找得到（2026-11-02 加：之前會誤報） */
+  if (p.includes('/')) return [p, path.posix.join(path.posix.dirname(from), p), 'docs/' + p].find(x => files.includes(x));
   return [path.posix.join(path.posix.dirname(from), p), 'docs/' + p, p].find(x => files.includes(x)) || files.find(x => x.endsWith('/' + p));
 };
-for (const f of files.filter(f => /^(docs\/.+|CLAUDE)\.md$/.test(f))) {
+/* docs/history/ 是舊說法的存檔，裡面寫到已刪掉的檔案（tour.js、guide.html…）和已刪掉的小節是正常的，不檢查（2026-11-02 加）；
+   還在用的文件指向 history 的連結照常檢查 */
+for (const f of files.filter(f => /^(docs\/.+|CLAUDE)\.md$/.test(f) && !f.startsWith('docs/history/'))) {
   read(f).split('\n').forEach((line, i) => {
-    if (/原列|例如/.test(line)) return;
+    if (/原列|例如|刪除/.test(line)) return;   /* 「刪除 ○○」說的就是已經不存在的檔案，不用報（2026-11-02 加） */
     const at = `${f} 第 ${i + 1} 行`;
     for (const m of line.matchAll(/`((?:[\w.-]+\/)*[\w.-]+\.(?:md|js|html|py|xlsx|yml|css))`/g))
       if (!/○|\*/.test(m[1]) && !findDoc(f, m[1])) warn(at, `寫到的檔案「${m[1]}」找不到（改名或刪掉了？）`);
@@ -357,10 +360,26 @@ for (const f of files.filter(f => own(f) && f.endsWith('.html'))) {
 }
 
 /* ---------- 12. 變更紀錄 ----------
-   2026-10-24 起每個 PR 在 docs/changelog/changes/ 加一個小檔案（見 docs/changelog/changelog.md「怎麼寫」），這裡檢查有沒有該有的欄位 */
+   2026-10-24～2026-11-02 每個 PR 在 docs/changelog/changes/ 加一個小檔案；2026-11-02 起不再新增（PR 標題就是紀錄，見 docs/changelog/changelog.md「怎麼寫」），這裡只檢查舊檔有沒有該有的欄位 */
 for (const f of files.filter(f => /^docs\/changelog\/changes\/\d{4}-\d{2}-\d{2}.*\.md$/.test(f))) {
   const s = read(f), miss = ['日期', '動到哪裡', '改了什麼'].filter(k => !new RegExp(`^- ${k}：\\S`, 'm').test(s));
   if (miss.length) warn(f, `變更紀錄少了「${miss.join('」「')}」：照 docs/changelog/changelog.md「怎麼寫」的格式，每一欄一行，例如「- 日期：2026-10-25」`);
+}
+
+/* ---------- 12-2. 決策紀錄 ----------
+   2026-11-02 起每個決定一則 docs/decisions/日期-英文短名.md（見 docs/decisions/README.md）；只提醒，不擋 PR */
+{
+  const DEC_FIELDS = ['日期', '狀態', '決定', '為什麼', '以前怎麼想', '影響範圍', '來源'];
+  const DEC_STATUS = /^- 狀態：(有效|已被 .+ 取代|AI 整理，待確認)\s*$/m;
+  const idx = files.includes('docs/decisions/README.md') ? read('docs/decisions/README.md') : '';
+  for (const f of files.filter(f => /^docs\/decisions\/.+\.md$/.test(f) && f !== 'docs/decisions/README.md')) {
+    const s = read(f), name = path.basename(f);
+    if (!/^\d{4}-\d{2}-\d{2}-[a-z0-9-]+\.md$/.test(name)) warn(f, '決策紀錄檔名要是「日期-英文短名.md」，例如 2026-11-02-example-name.md');
+    const miss = DEC_FIELDS.filter(k => !new RegExp(`^- ${k}：\\S`, 'm').test(s));
+    if (miss.length) warn(f, `決策紀錄少了「${miss.join('」「')}」：照 docs/decisions/README.md 的模板，每一欄一行`);
+    else if (!DEC_STATUS.test(s)) warn(f, '決策紀錄的「狀態」只能寫「有效」「已被 ○○ 取代」「AI 整理，待確認」');
+    if (!idx.includes(name)) warn(f, '這則決策紀錄沒列進 docs/decisions/README.md 的索引，請加一行（最新的放最上面）');
+  }
 }
 
 /* ---------- 13. 網頁打得開測試的清單 ----------
