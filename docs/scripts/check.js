@@ -363,6 +363,22 @@ for (const f of files.filter(f => /^docs\/changelog\/changes\/\d{4}-\d{2}-\d{2}.
   if (miss.length) warn(f, `變更紀錄少了「${miss.join('」「')}」：照 docs/changelog/changelog.md「怎麼寫」的格式，每一欄一行，例如「- 日期：2026-10-25」`);
 }
 
+/* ---------- 12-2. 決策紀錄 ----------
+   2026-11-02 起每個決定一則 docs/decisions/日期-英文短名.md（見 docs/decisions/README.md）；只提醒，不擋 PR */
+{
+  const DEC_FIELDS = ['日期', '狀態', '決定', '為什麼', '以前怎麼想', '影響範圍', '來源'];
+  const DEC_STATUS = /^- 狀態：(有效|已被 .+ 取代|AI 整理，待確認)\s*$/m;
+  const idx = files.includes('docs/decisions/README.md') ? read('docs/decisions/README.md') : '';
+  for (const f of files.filter(f => /^docs\/decisions\/.+\.md$/.test(f) && f !== 'docs/decisions/README.md')) {
+    const s = read(f), name = path.basename(f);
+    if (!/^\d{4}-\d{2}-\d{2}-[a-z0-9-]+\.md$/.test(name)) warn(f, '決策紀錄檔名要是「日期-英文短名.md」，例如 2026-11-02-example-name.md');
+    const miss = DEC_FIELDS.filter(k => !new RegExp(`^- ${k}：\\S`, 'm').test(s));
+    if (miss.length) warn(f, `決策紀錄少了「${miss.join('」「')}」：照 docs/decisions/README.md 的模板，每一欄一行`);
+    else if (!DEC_STATUS.test(s)) warn(f, '決策紀錄的「狀態」只能寫「有效」「已被 ○○ 取代」「AI 整理，待確認」');
+    if (!idx.includes(name)) warn(f, '這則決策紀錄沒列進 docs/decisions/README.md 的索引，請加一行（最新的放最上面）');
+  }
+}
+
 /* ---------- 13. 網頁打得開測試的清單 ----------
    smoke.js 只打開 PAGES 裡的頁面；加了新網頁忘了加，那一頁壞掉也不會被抓到（2026-10-24 維護者要求改成自動擋） */
 {

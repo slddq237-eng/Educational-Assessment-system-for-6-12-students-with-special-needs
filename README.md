@@ -49,7 +49,8 @@
     ├─ design/       各功能的設計：識字評量、遊戲獎勵、分析、作答紀錄 records.md、研究方法
     ├─ materials/    教材、干擾字、讀音、資料來源，和給老師校對的 .xlsx 表格
     ├─ plans/        開發路線圖 roadmap.md、還沒決定的事 pending.md
-    ├─ history/      舊的說法、已完成的細節（精簡文件時不刪，搬到這裡）
+    ├─ decisions/    決策紀錄：每個決定一則，為什麼這樣決定、以前怎麼想（索引在 README.md）
+    ├─ history/      舊的說法、已完成的細節（存檔；精簡文件時不刪，搬到這裡）
     ├─ changelog/    變更紀錄：每個 PR 改了什麼（changes/ 一個 PR 一個小檔）
     └─ scripts/      自動檢查 check.js、產生部件／注音／字型的程式
 ```
