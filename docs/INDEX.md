@@ -59,6 +59,7 @@
 | `materials/parts-table-google-sheet.md` | 部件表上傳 Google 試算表給老師共編的操作清單：上傳、鎖欄位、分享分工、老師怎麼填、下載回來怎麼驗證（2026-10-31 新增） | （新） |
 | `materials/distractors.md` | 干擾字：跟著版本還是固定、怎麼分配、形音都像、老師選干擾字類型（2026-10-24 從 `materials/materials.md` 拆出） | 4-1 |
 | `materials/pronunciation.md` | 讀音與注音：破音字、以課本為主、老師怎麼回報讀音、人名地名的特殊讀音（2026-10-24 從 `materials/materials.md` 拆出） | 4-1 |
+| `plans/process-simplify.md` | 簡化合作流程提案：5 個項目各有選項與建議，請夥伴選字母（2026-11-02，① 級，還沒決定） | （新） |
 | `plans/idea-triage.md` | 想法的輕重緩急：一個問題、「難改／好改／不急」判斷表、想法太多時怎麼辦（2026-11-02 新增） | （新） |
 | `plans/a3-conditions.md` | A3 正式評量標準條件表（草案）：已定案項目、待決項目與 Claude 的建議，回答用題號（2026-10-25 新增） | （新） |
 | `plans/pending.md` | 所有待決問題的總清單（每題一行，依誰決定分組，細節在各主題檔案） | 6 |
