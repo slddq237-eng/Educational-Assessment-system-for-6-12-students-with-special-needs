@@ -836,7 +836,7 @@ function multiLine(series, o){
     slots.forEach((sl, i) => { if(i === slots.length - 1 || slots[i + 1].phase !== sl.phase){
       const a = X(from - 0.5), b = X(i + 0.5);
       g += `<rect class="band ${phaseCls(sl.phase)}" x="${a.toFixed(1)}" y="${Tp}" width="${(b - a).toFixed(1)}" height="${ih}"><title>${esc(sl.phase)}</title></rect>`;
-      if(from) g += `<line class="phaseline" x1="${a}" x2="${a}" y1="${Tp}" y2="${Tp + ih}"/>`;
+      if(from && sl.phase !== "練習") g += `<line class="phaseline" x1="${a}" x2="${a}" y1="${Tp}" y2="${Tp + ih}"/>`;
       from = i + 1; } });
   }
   g += ticks.map(t => `<line class="grid" x1="${L}" x2="${SVGW - R}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${L - 8}" y="${Y(t) + 4}" text-anchor="end">${t}${unit}</text>`).join("");
@@ -852,7 +852,7 @@ function multiLine(series, o){
   });
   let lastX = -1e9;   /* 橫軸標籤：和前一個標籤至少隔 48 像素 */
   g += Object.keys(o.at).map(Number).sort((a, b) => a - b).map(x => { const px = X(x); if(px - lastX < 48) return ""; lastX = px; return `<text class="ax" x="${px}" y="${H - 14}" text-anchor="middle">${esc(o.at[x])}</text>`; }).join("");
-  const legend = `<div class="legend" style="display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 6px">${series.map(s => `<span><i style="display:inline-block;width:18px;height:4px;border-radius:2px;background:${s.color};vertical-align:middle"></i> ${esc(s.name)}</span>`).join("")}${o.legendExtra || ""}</div>`;
+  const legend = `<div class="legend" style="display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 6px">${series.filter(s => !s.noLegend).map(s => `<span><i style="display:inline-block;width:18px;height:4px;border-radius:2px;background:${s.color};vertical-align:middle"></i> ${esc(s.name)}</span>`).join("")}${o.legendExtra || ""}</div>`;
   return `${legend}<div class="chartbox"><svg viewBox="0 0 ${SVGW} ${H}" data-multi="1" role="img" aria-label="折線圖，每位學生一條線，數字請看下方明細表">${g}<line class="cross" y1="${Tp}" y2="${Tp + ih}" hidden/></svg><div class="ttip" hidden></div></div>`;
 }
 const classDetail = (cols, rows) => `<details class="why"><summary>看明細表</summary>${detailTable(cols, rows)}</details>`;
@@ -867,35 +867,46 @@ function classDaily(kidList, rs, metric, empty){
     return {x, ...v, label: `${kidLabel(k)}｜${shortDay(d)}`}; })}));
   return `<div class="tchart">${multiLine(series, {metric, at})}</div>` + classDetail([["學生", r => r.name], ["日期", r => r.day], [metric === "acc" ? "正確率" : metric === "sec" ? "平均反應時間" : "每分鐘", r => r.v], [unitN(metric), r => r.n]], rows);
 }
-/* 各課前後測正確率：只算標了前測、後測的正式評量，空心＝前測、實心＝後測；上面的課次按鈕選看哪一課（預設全部課合計） */
+/* 各課前後測正確率（多位學生）：顏色分學生（維護者 2026-11-03：不改），空心圓＝前測、實心圓＝後測，練習是同色空心菱形、不連線；
+   上面的課次按鈕選看哪一課（預設全部課合計）。全部課合計時每位學生「每課一條線」：同一位學生不同課的點不連在一起；一次評量考了好幾課就依課拆開 */
+const PP_RANK = {"前測": 0, "練習": 1, "後測": 2};
 function classPrePost(kidList, rs){
-  const tagged = rs.filter(r => r.kind === "formal" && r.prepost);
-  if(!tagged.length) return `<p class="note" style="margin:0">還沒有標「前測」或「後測」的正式評量。</p>`;
-  const ks = [...new Set(tagged.map(r => key(r.book, r.lesson)))].sort(lessonOrder), many = new Set(ks.map(k => splitKey(k)[0])).size > 1;
-  const sel = ks.includes(T.classLesson) ? T.classLesson : "";
-  const src = tagged.filter(r => !sel || key(r.book, r.lesson) === sel), first = [...new Set(src.map(dayOf))].sort()[0], at = {}, rows = [];
-  const byKid = kidList.map(k => groupBy(src.filter(r => r.kid === k.code), r => dayOf(r) + "|" + r.prepost));
-  /* 自動判斷評量日期對不對得上：每次「日期＋前測／後測」算一格，平均有六成以上的學生有那一格，就當作大家一起評量（只是有人缺），
-     橫軸改成每次評量一格、畫前測／後測背景；有教學結束日、而且大家一樣時，再畫教學結束後的時間線 */
-  const slotKeys = [...new Set(byKid.flatMap(m => [...m.keys()]))].sort();   /* 日期由早到晚，同一天前測在後測前面 */
-  const aligned = slotKeys.length > 0 && byKid.reduce((n, m) => n + m.size, 0) / (slotKeys.length * kidList.length) >= 0.6;
+  const tagged = rs.filter(r => r.kind === "formal" && r.prepost), prac = rs.filter(r => r.kind !== "formal");
+  if(!tagged.length && !prac.length) return `<p class="note" style="margin:0">還沒有前測、後測或練習的紀錄。</p>`;
+  const ks = [...new Set([...tagged, ...prac].map(r => key(r.book, r.lesson)))].sort(lessonOrder), many = new Set(ks.map(k => splitKey(k)[0])).size > 1;
+  const sel = ks.includes(T.classLesson) ? T.classLesson : "", lname = k => many ? lessonLabel(k) : lessonName(...splitKey(k));
+  const src = [...tagged, ...prac].filter(r => !sel || key(r.book, r.lesson) === sel), first = [...new Set(src.map(dayOf))].sort()[0], at = {}, rows = [];
+  /* 每一格＝「日期＋前測／練習／後測」（同一天的練習合成一格）；排序：日期由早到晚，同一天前測、練習、後測 */
+  const pk = r => dayOf(r) + "|" + (r.kind === "formal" ? r.prepost : "練習");
+  const order = (a, b) => { const [da, pa] = a.split("|"), [db, pb] = b.split("|"); return da < db ? -1 : da > db ? 1 : PP_RANK[pa] - PP_RANK[pb]; };
+  const byKid = kidList.map(k => groupBy(src.filter(r => r.kid === k.code), pk));
+  /* 自動判斷評量日期對不對得上（只看前測、後測）：每次「日期＋前測／後測」算一格，平均有六成以上的學生有那一格，就當作大家一起評量（只是有人缺），
+     橫軸改成每次評量一格（練習的日期也各占一格）、畫前測／後測背景；有教學結束日、而且大家一樣時，再畫教學結束後的時間線 */
+  const formalKeys = [...new Set(byKid.flatMap(m => [...m.keys()].filter(k => !k.endsWith("|練習"))))];
+  const aligned = formalKeys.length > 0 && byKid.reduce((n, m) => n + [...m.keys()].filter(k => !k.endsWith("|練習")).length, 0) / (formalKeys.length * kidList.length) >= 0.6;
+  const slotKeys = [...new Set(byKid.flatMap(m => [...m.keys()]))].sort(order);
   const slots = aligned ? slotKeys.map(k => ({day: k.split("|")[0], phase: k.split("|")[1]})) : null;
+  const perDay = {}; if(aligned) slots.forEach(sl => perDay[sl.day] = (perDay[sl.day] || 0) + 1);
+  const dayGroups = Object.keys(perDay).filter(d => perDay[d] > 1).map(d => { const xs = slots.map((sl, i) => sl.day === d ? i : -1).filter(i => i >= 0); return {from: Math.min(...xs), to: Math.max(...xs), label: shortDay(d)}; });
   let events = [];
   if(aligned && sel){
     const ends = new Set(kidList.map(k => teachFor(sel, k.code)).filter(t => t.type === "dates" && t.end).map(t => t.end));
     if(ends.size === 1) events = afterEvents([...ends][0], slots.map(s => s.day));
   }
-  const series = kidList.map((k, i) => ({name: kidLabel(k), color: SERIES_COLORS[i], pts: [...byKid[i]].sort((a, b) => a[0] < b[0] ? -1 : 1).map(([dk, list]) => {
-    const [d, pp] = dk.split("|"), x = aligned ? slotKeys.indexOf(dk) : daysBetween(first, d), v = accOf(list);
-    if(!aligned || !slots[x - 1] || slots[x - 1].day !== d) at[x] = shortDay(d);
-    rows.push({name: kidLabel(k), day: d, pp, v: fmt("acc", v.v), n: v.n});
-    return {x, ...v, hollow: pp === "前測", label: `${kidLabel(k)}｜${shortDay(d)}｜${pp}`}; })}));
-  if(series.every(s => !s.pts.length)) return `<p class="note" style="margin:0">這一課，選到的學生沒有前測、後測。</p>`;
-  const chips = chipRow([["", "全部課合計"], ...ks.map(k => [k, esc(many ? lessonLabel(k) : lessonName(...splitKey(k)))])], sel, "tcl");
-  const extra = `<span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="vertical-align:-2px"><circle cx="7" cy="7" r="5" fill="#fff" stroke="#555" stroke-width="2"/></svg> 空心＝前測</span><span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="vertical-align:-2px"><circle cx="7" cy="7" r="5" fill="#555"/></svg> 實心＝後測</span>`;
-  return `<div class="trow"><span class="tl">看哪一課</span>${chips}</div><div class="tchart">${multiLine(series, {metric: "acc", at, legendExtra: extra, slots, events})}</div>`
-    + classDetail([["學生", r => r.name], ["日期", r => r.day], ["前後測", r => r.pp], ["正確率", r => r.v], ["題", r => r.n]], rows)
-    + `<p class="note">每個點是那一天、那一種（前測或後測）的正式評量，正確率＝第一次就答對的比例。${aligned ? `大家的評量日期大致對得上，所以每次評量一格，灰色背景是前測、藍色是後測${events.length ? "，直立虛線是教學結束後的時間" : sel ? "（要畫教學結束後的時間線，需要大家這一課的教學結束日一樣）" : "（選單一課，才會畫教學結束後的時間線）"}。` : "選到的學生評量日期對不上，所以橫軸依日期排，不畫背景和教學結束後的時間線。"}</p>`;
+  /* 每位學生 × 每課一條線（顏色跟著學生）；圖例每位學生只列一次 */
+  const series = kidList.flatMap((k, i) => (sel ? [sel] : ks).map((lk, j) => ({name: kidLabel(k), color: SERIES_COLORS[i % SERIES_COLORS.length], noLegend: j > 0,
+    pts: [...byKid[i]].sort((a, b) => order(a[0], b[0])).flatMap(([dk, list]) => {
+      const lr = list.filter(r => key(r.book, r.lesson) === lk); if(!lr.length) return [];
+      const [d, pp] = dk.split("|"), x = aligned ? slotKeys.indexOf(dk) : daysBetween(first, d), v = accOf(lr);
+      if(!aligned || perDay[d] === 1) at[x] = shortDay(d);
+      rows.push({name: kidLabel(k), lesson: lname(lk), day: d, pp, v: fmt("acc", v.v), n: v.n});
+      return [{x, ...v, prac: pp === "練習", hollow: pp === "前測", label: `${kidLabel(k)}｜${lname(lk)}｜${shortDay(d)}｜${pp}`}]; })})));
+  if(series.every(s => !s.pts.length)) return `<p class="note" style="margin:0">這一課，選到的學生沒有前測、後測或練習。</p>`;
+  const chips = chipRow([["", "全部課合計"], ...ks.map(k => [k, esc(lname(k))])], sel, "tcl");
+  const extra = `<span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="vertical-align:-2px"><circle cx="7" cy="7" r="5" fill="#fff" stroke="#555" stroke-width="2"/></svg> 空心圓＝前測</span><span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="vertical-align:-2px"><circle cx="7" cy="7" r="5" fill="#555"/></svg> 實心圓＝後測</span><span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="vertical-align:-3px"><path d="M8 1L15 8L8 15L1 8Z" fill="#fff" stroke="#555" stroke-width="2.5"/></svg> 練習（不連線）</span>`;
+  return `<div class="trow"><span class="tl">看哪一課</span>${chips}</div><div class="tchart">${multiLine(series, {metric: "acc", at, legendExtra: extra, slots, events, dayGroups})}</div>`
+    + classDetail([["學生", r => r.name], ["課", r => r.lesson], ["日期", r => r.day], ["前後測", r => r.pp], ["正確率", r => r.v], ["題", r => r.n]], rows)
+    + `<p class="note">每個點是那一天、那一種（前測、後測或練習）的評量，正確率＝第一次就答對的比例；顏色分學生，前測、後測連成線，練習是同顏色的空心菱形、不連線（同一天的練習合成一個點）。${sel ? "" : "全部課合計時，同一位學生每課各一條線（不同課不連在一起），一次評量考了好幾課會自動依課拆開，各課只算自己那幾題；滑鼠移到點上看是哪一課。"}${aligned ? `大家的評量日期大致對得上，所以每次評量一格，灰色背景是前測、藍色是後測（練習那幾格不塗色），同一天好幾格用橫軸下面的括號框起來${events.length ? "，直立虛線是教學結束後的時間" : sel ? "（要畫教學結束後的時間線，需要大家這一課的教學結束日一樣）" : "（選單一課，才會畫教學結束後的時間線）"}。` : "選到的學生評量日期對不上，所以橫軸依日期排，不畫背景和教學結束後的時間線。"}</p>`;
 }
 const classWrong = (k, rs) => [...groupBy(rs, r => r.char)].map(([c, l]) => ({c, n: l.length, w: l.filter(r => !r.firstCorrect).length})).filter(x => x.w)
   .sort((a, b) => b.w - a.w || a.n - b.n).slice(0, CLASS_TOP).map(x => `${charLink(x.c, k.code)}<small> 錯 ${x.w} 次・${pct(x.n - x.w, x.n)}%</small>`).join("　");
