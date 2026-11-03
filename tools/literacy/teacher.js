@@ -246,13 +246,14 @@ function afterEvents(end, days){
   return [...byIdx].map(([i, names]) => ({x: i - 0.5, cls: "after", label: [...names.filter(n => n === "教學結束"), ...(names.some(n => n !== "教學結束") ? ["教學後 " + names.filter(n => n !== "教學結束").join("・")] : [])].join("・")}));
 }
 function lessonPrePost(all){
-  const formal = all.filter(r => r.kind === "formal"), tagged = formal.filter(r => r.prepost);
-  if(!tagged.length) return `<p class="note" style="margin:0">還沒有標「前測」或「後測」的正式評量。做評量時選「正式評量」，再按「前測」或「後測」，就會出現在這裡。</p>`;
-  const ks = [...new Set(tagged.map(r => key(r.book, r.lesson)))].sort(lessonOrder), many = new Set(ks.map(k => splitKey(k)[0])).size > 1;
+  const formal = all.filter(r => r.kind === "formal"), tagged = formal.filter(r => r.prepost), prac = all.filter(r => r.kind !== "formal");
+  /* 還沒有前測、後測時，練習照樣畫（維護者 2026-11-03）：每次練習一格，不會因為沒有前後測就全部疊在同一個位置 */
+  if(!tagged.length && !prac.length) return `<p class="note" style="margin:0">還沒有前測、後測或練習的紀錄。做評量時選「正式評量」，再按「前測」或「後測」，就會出現在這裡；練習也會用橘色空心標記畫在這裡。</p>`;
+  const ks = [...new Set([...tagged, ...prac].map(r => key(r.book, r.lesson)))].sort(lessonOrder), many = new Set(ks.map(k => splitKey(k)[0])).size > 1;
   const sel = ks.includes(T.simpleLesson) ? T.simpleLesson : "";
   const inLesson = r => !sel || key(r.book, r.lesson) === sel;
   /* 這一課（或全部課）所有「標了前測、後測的正式評量」和「練習」，依時間排成一排，每次評量一格 */
-  const sess = sessionsOf([...tagged, ...all.filter(r => r.kind !== "formal")].filter(inLesson).map(r => r)).map(s => ({...s, prac: s.rs[0].kind !== "formal"}));
+  const sess = sessionsOf([...tagged, ...prac].filter(inLesson)).map(s => ({...s, prac: s.rs[0].kind !== "formal"}));
   const perDay = {}; sess.forEach((s, i) => { s.x = i; s.nth = perDay[s.day] = (perDay[s.day] || 0) + 1; });
   const lab = s => perDay[s.day] > 1 ? `${shortDay(s.day)} 第 ${s.nth} 次` : shortDay(s.day);
   const pts = sess.filter(s => !s.prac).map(s => ({x: s.x, day: s.day, nth: s.nth, rs: s.rs, phase: s.rs[0].prepost, label: lab(s), ...accOf(s.rs)}));
@@ -263,8 +264,8 @@ function lessonPrePost(all){
   const chips = chipRow([["", "全部課合計"], ...ks.map(k => [k, esc(many ? lessonLabel(k) : lessonName(...splitKey(k)))])], sel, "tlsn");
   const legend = phaseLegend(pts).replace(/<\/div>$/, `<span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="vertical-align:-3px"><path d="M8 1L15 8L8 15L1 8Z" fill="#fff" stroke="#d98a1a" stroke-width="2.5"/></svg>練習（橘色空心標記，不分前後測）</span></div>`);
   return `<div class="trow"><span class="tl">看哪一課</span>${chips}</div>
-    <div class="tchart">${legend}${lineChart(pts, {metric: "acc", extra, xLabel: x => at[x] || "", xName: "每次評量一格（前測、後測、練習）", events})}</div>
-    <p class="note">正確率＝第一次就答對的比例。圓點連成的線是正式評量的前測、後測（灰色背景是前測、藍色是後測）；橘色空心標記是練習，不連線、不分前後測。點上面的課次，可以只看那一課。${events.length ? "直立線是這課教學結束後的時間：畫在「教學結束、滿 1 週、滿 2 週、滿 1 個月」之後的第一次評量前面（那段時間沒有評量就不畫）。" : ""}</p>`;
+    <div class="tchart">${legend}${lineChart(pts, {metric: "acc", extra, axisPts: sess, xLabel: x => at[x] || "", xName: "每次評量一格（前測、後測、練習）", events})}</div>
+    <p class="note">正確率＝第一次就答對的比例。圓點連成的線是正式評量的前測、後測（灰色背景是前測、藍色是後測）；橘色空心標記是練習，不連線、不分前後測，還沒有前測、後測時也會畫出來。同一天做好幾次，每次各占一格，日期只寫在當天第一格，滑鼠移上去會寫「第幾次」。${pts.length ? "" : "這裡還沒有前測、後測，目前只有練習。"}點上面的課次，可以只看那一課。${events.length ? "直立線是這課教學結束後的時間：畫在「教學結束、滿 1 週、滿 2 週、滿 1 個月」之後的第一次評量前面（那段時間沒有評量就不畫）。" : ""}</p>`;
 }
 function renderSimple(){
   const box = $("#tSimple"), side = $("#tSide"), withData = kidsWithData();
@@ -598,11 +599,12 @@ function niceTicks(v){
 const shortAxis = s => { s = String(s); let m = s.match(/^\d{4}-(\d{2})-(\d{2})/); if(m) return `${+m[1]}/${+m[2]}`; m = s.match(/^\d{4}-(\d{2})$/); return m ? `${+m[1]} 月` : s.slice(0, 8); };
 function lineChart(pts, o){
   const H = o.compact ? (o.xName ? 214 : 204) : 300, L = 52, R = 20, Tp = o.compact ? 28 : 22, B = o.compact ? (o.xName ? 42 : 32) : 38, iw = SVGW - L - R, ih = H - Tp - B;
-  const ys = pts.map(p => p.v).filter(v => v != null);
+  const ys = pts.map(p => p.v).filter(v => v != null).concat((o.extra || []).map(p => p.v).filter(v => v != null));
   const ticks = o.metric === "acc" ? [0, 25, 50, 75, 100] : niceTicks((o.ymax != null ? o.ymax : Math.max(...ys)) * 1.05), max = ticks[4];
   const xs = pts.map(p => p.x).concat((o.events || []).map(e => e.x), (o.extra || []).map(p => p.x));
-  const [x0, x1] = o.domain || [Math.min(...xs), Math.max(...xs)], span = x1 - x0 || 1;
-  const X = x => !o.domain && pts.length === 1 && !(o.events || []).length ? L + iw / 2 : L + (x - x0) / span * iw, Y = v => Tp + ih - v / max * ih;
+  const edge = (o.extra || []).length ? 0.5 : 0;   /* 有練習點（每次評量一格）時左右各留半格，頭尾的點不會貼在邊框上 */
+  const [x0, x1] = o.domain || [Math.min(...xs) - edge, Math.max(...xs) + edge], span = x1 - x0 || 1;
+  const X = x => !o.domain && new Set(xs).size === 1 ? L + iw / 2 : L + (x - x0) / span * iw, Y = v => Tp + ih - v / max * ih;
   const unit = o.metric === "acc" ? "%" : o.metric === "sec" ? " 秒" : "";
   /* 時期：背景色塊（先畫，在格線和線的下面）＋改變處的虛線；第一段和最後一段在點的外面留半格，碰到圖的邊就到邊 */
   let g = "", lines = "";
