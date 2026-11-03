@@ -258,14 +258,28 @@ function lessonPrePost(all){
   const lab = s => perDay[s.day] > 1 ? `${shortDay(s.day)} 第 ${s.nth} 次` : shortDay(s.day);
   const pts = sess.filter(s => !s.prac).map(s => ({x: s.x, day: s.day, nth: s.nth, rs: s.rs, phase: s.rs[0].prepost, label: lab(s), ...accOf(s.rs)}));
   const extra = sess.filter(s => s.prac).map(s => { const a = accOf(s.rs); return {x: s.x, v: a.v, tip: `${lab(s)}｜練習｜${a.v}%（${a.n} 題）`}; });
-  const at = Object.fromEntries(sess.map(s => [s.x, s.nth === 1 ? shortDay(s.day) : ""]));
+  /* 同一天做好幾次：這幾格用細線框成一組，日期寫在這組的中間（維護者 2026-11-03） */
+  const dayGroups = Object.keys(perDay).filter(d => perDay[d] > 1).map(d => { const xs = sess.filter(s => s.day === d).map(s => s.x); return {from: Math.min(...xs), to: Math.max(...xs), label: shortDay(d)}; });
+  const at = Object.fromEntries(sess.map(s => [s.x, s.nth === 1 && perDay[s.day] === 1 ? shortDay(s.day) : ""]));
   /* 只看一課、而且這位學生這課有教學結束日時，在教學結束、1 週、2 週、1 個月後的第一次評量前面畫直立線（維護者 2026-10-25）；只是看圖的輔助，不影響前測、後測的標記 */
   const tEnd = sel ? teachFor(sel, T.kid) : {}, events = tEnd.type === "dates" && tEnd.end ? afterEvents(tEnd.end, sess.map(s => s.day)) : [];
   const chips = chipRow([["", "全部課合計"], ...ks.map(k => [k, esc(many ? lessonLabel(k) : lessonName(...splitKey(k)))])], sel, "tlsn");
+  const note = `點上面的課次，可以只看那一課。一次評量考了好幾課時，會自動依課拆開，各課只算自己那幾題。`;
+  if(!sel){
+    /* 全部課合計（維護者 2026-11-03）：每課一條線（顏色分課），同一課的前測、後測連在一起；一次評量有好幾課就依課拆開，同一格裡各課各一個點 */
+    const series = ks.map((k, i) => { const name = many ? lessonLabel(k) : lessonName(...splitKey(k));
+      return {name, color: SERIES_COLORS[i % SERIES_COLORS.length], pts: sess.flatMap(s => { const lr = s.rs.filter(r => key(r.book, r.lesson) === k);
+        if(!lr.length) return []; const phase = s.prac ? "練習" : s.rs[0].prepost;
+        return [{x: s.x, ...accOf(lr), prac: s.prac, hollow: phase === "前測", label: `${name}｜${lab(s)}｜${phase}`}]; })}; });
+    const key2 = `<span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="vertical-align:-2px"><circle cx="7" cy="7" r="5" fill="#fff" stroke="var(--muted)" stroke-width="2"/></svg> 前測</span><span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="vertical-align:-2px"><circle cx="7" cy="7" r="5" fill="var(--muted)"/></svg> 後測</span><span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="vertical-align:-3px"><path d="M8 1L15 8L8 15L1 8Z" fill="#fff" stroke="var(--muted)" stroke-width="2.5"/></svg> 練習（不連線）</span>`;
+    return `<div class="trow"><span class="tl">看哪一課</span>${chips}</div>
+    <div class="tchart">${multiLine(series, {metric: "acc", at, cells: sess.length, dayGroups, legendExtra: key2})}</div>
+    <p class="note">正確率＝第一次就答對的比例。每次評量一格；顏色分課，同一課的前測（空心圓）、後測（實心圓）連成一條線，練習是同顏色的空心菱形、不連線。各課的前測、後測時間不一樣，所以這張圖不塗背景。同一天做好幾次，用橫軸下面的括號框起來。${note}</p>`;
+  }
   const legend = phaseLegend(pts).replace(/<\/div>$/, `<span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="vertical-align:-3px"><path d="M8 1L15 8L8 15L1 8Z" fill="#fff" stroke="#d98a1a" stroke-width="2.5"/></svg>練習（橘色空心標記，不分前後測）</span></div>`);
   return `<div class="trow"><span class="tl">看哪一課</span>${chips}</div>
-    <div class="tchart">${legend}${lineChart(pts, {metric: "acc", extra, axisPts: sess, xLabel: x => at[x] || "", xName: "每次評量一格（前測、後測、練習）", events})}</div>
-    <p class="note">正確率＝第一次就答對的比例。圓點連成的線是正式評量的前測、後測（灰色背景是前測、藍色是後測）；橘色空心標記是練習，不連線、不分前後測，還沒有前測、後測時也會畫出來。同一天做好幾次，每次各占一格，日期只寫在當天第一格，滑鼠移上去會寫「第幾次」。${pts.length ? "" : "這裡還沒有前測、後測，目前只有練習。"}點上面的課次，可以只看那一課。${events.length ? "直立線是這課教學結束後的時間：畫在「教學結束、滿 1 週、滿 2 週、滿 1 個月」之後的第一次評量前面（那段時間沒有評量就不畫）。" : ""}</p>`;
+    <div class="tchart">${legend}${lineChart(pts, {metric: "acc", extra, axisPts: sess, dayGroups, slotBands: true, xLabel: x => at[x] || "", xName: "每次評量一格（前測、後測、練習）", events})}</div>
+    <p class="note">正確率＝第一次就答對的比例。圓點連成的線是正式評量的前測、後測（灰色背景是前測、藍色是後測）；橘色空心標記是練習，不連線、不分前後測，還沒有前測、後測時也會畫出來。背景只蓋前測、後測那幾格，中間的練習不塗色。同一天做好幾次，每次各占一格，用橫軸下面的括號框起來。${pts.length ? "" : "這裡還沒有前測、後測，目前只有練習。"}${note}${events.length ? "直立線是這課教學結束後的時間：畫在「教學結束、滿 1 週、滿 2 週、滿 1 個月」之後的第一次評量前面（那段時間沒有評量就不畫）。" : ""}</p>`;
 }
 function renderSimple(){
   const box = $("#tSimple"), side = $("#tSide"), withData = kidsWithData();
@@ -576,6 +590,9 @@ function lessonPanels(src, xOf, fn, info, o, all, total){
     lineChart(l.pts, {...o, ...own(l), ymax, axisPts: l.pts, title:l.name, compact:true, xName: i === lessons.length - 1 ? o.xName : ""})).join("");
   return {chart, groups: lessons.flatMap(l => l.pts).sort((a, b) => a.x - b.x)};
 }
+/* 同一天做好幾次：橫軸下面一條細括號把這幾格框起來，日期寫在括號中間（維護者 2026-11-03 選的做法） */
+const dayBraces = (groups, X, y, H) => (groups || []).map(d => { const a = X(d.from) - 10, b = X(d.to) + 10;
+  return `<path class="daybrace" d="M${a} ${y + 6}V${y + 10}H${b}V${y + 6}"/><text class="ax" x="${(a + b) / 2}" y="${H - 14}" text-anchor="middle">${esc(d.label)}</text>`; }).join("");
 /* 時期的背景色（淺色，靠圖例和虛線輔助，不只靠顏色分辨）；未標記不塗色 */
 const phaseCls = p => `ph${p === "前測" ? 0 : p === "後測" ? 1 : 4}`;   /* 前測灰、後測藍、未標記不塗色（CSS 的 ph0、ph1、ph4） */
 function phaseLegend(pts){
@@ -612,14 +629,16 @@ function lineChart(pts, o){
   const pad = pts.length > 1 ? Math.min(24, (X(pts[1].x) - X(pts[0].x)) / 2) : 24;
   if(!o.noPhase) segs.forEach((s, i) => {
     const first = pts[s.from], lastP = pts[s.to];
-    const a = i ? (X(pts[s.from - 1].x) + X(first.x)) / 2 : (first.x <= x0 ? L : Math.max(L, X(first.x) - pad));
-    const b = i < segs.length - 1 ? (X(lastP.x) + X(pts[s.to + 1].x)) / 2 : (lastP.x >= x1 ? SVGW - R : Math.min(SVGW - R, X(lastP.x) + pad));
+    /* slotBands（每次評量一格、中間夾練習時）：背景只從這個時期的第一格蓋到最後一格，夾在前測和後測中間的練習不塗色（維護者 2026-11-03） */
+    const a = o.slotBands ? Math.max(L, X(first.x - 0.5)) : i ? (X(pts[s.from - 1].x) + X(first.x)) / 2 : (first.x <= x0 ? L : Math.max(L, X(first.x) - pad));
+    const b = o.slotBands ? Math.min(SVGW - R, X(lastP.x + 0.5)) : i < segs.length - 1 ? (X(lastP.x) + X(pts[s.to + 1].x)) / 2 : (lastP.x >= x1 ? SVGW - R : Math.min(SVGW - R, X(lastP.x) + pad));
     g += `<rect class="band ${phaseCls(s.phase)}" x="${a.toFixed(1)}" y="${Tp}" width="${Math.max(0, b - a).toFixed(1)}" height="${ih}"><title>${esc(s.phase)}</title></rect>`;
     if(i) lines += `<line class="phaseline" x1="${a}" x2="${a}" y1="${Tp}" y2="${Tp + ih}"/>`;
   });
   g += ticks.map(t => `<line class="grid" x1="${L}" x2="${SVGW - R}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${L - 8}" y="${Y(t) + 4}" text-anchor="end">${t}${unit}</text>`).join("") + lines;
   if(o.title) g += `<text class="paneltitle" x="${L}" y="${Tp - 9}">${esc(o.title)}</text>`;
   (o.events || []).forEach(e => { const x = X(e.x); g += `<line class="event ${e.cls || ""}" x1="${x}" x2="${x}" y1="${Tp}" y2="${Tp + ih}"/><text class="eventname ${e.cls || ""}" x="${x + 4}" y="${Tp + ih - 6}">${esc(e.label)}</text>`; });
+  g += dayBraces(o.dayGroups, X, Tp + ih, H);
   /* 線與點（數值是空的點不畫） */
   const ok = pts.filter(p => p.v != null);
   const path = ok.map((p, i) => `${i ? "L" : "M"}${X(p.x).toFixed(1)} ${Y(p.v).toFixed(1)}`).join(" ");
@@ -807,7 +826,7 @@ function multiLine(series, o){
   const H = 300, L = 52, R = 20, Tp = 22, B = 38, iw = SVGW - L - R, ih = H - Tp - B;
   const all = series.flatMap(s => s.pts).filter(p => p.v != null);
   const ticks = o.metric === "acc" ? [0, 25, 50, 75, 100] : niceTicks(Math.max(...all.map(p => p.v)) * 1.05), max = ticks[4];
-  const slots = o.slots, xs = all.map(p => p.x), x0 = slots ? -0.5 : Math.min(...xs), x1 = slots ? slots.length - 0.5 : Math.max(...xs), span = x1 - x0 || 1;
+  const slots = o.slots, cells = slots ? slots.length : o.cells, xs = all.map(p => p.x), x0 = cells ? -0.5 : Math.min(...xs), x1 = cells ? cells - 0.5 : Math.max(...xs), span = x1 - x0 || 1;
   const X = x => x0 === x1 ? L + iw / 2 : L + (x - x0) / span * iw, Y = v => Tp + ih - v / max * ih;
   const unit = o.metric === "acc" ? "%" : o.metric === "sec" ? " 秒" : "";
   let g = "";
@@ -822,8 +841,12 @@ function multiLine(series, o){
   }
   g += ticks.map(t => `<line class="grid" x1="${L}" x2="${SVGW - R}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${L - 8}" y="${Y(t) + 4}" text-anchor="end">${t}${unit}</text>`).join("");
   (o.events || []).forEach(e => { const x = X(e.x); g += `<line class="event ${e.cls || ""}" x1="${x}" x2="${x}" y1="${Tp}" y2="${Tp + ih}"/><text class="eventname ${e.cls || ""}" x="${x + 4}" y="${Tp + ih - 6}">${esc(e.label)}</text>`; });
+  g += dayBraces(o.dayGroups, X, Tp + ih, H);
   series.forEach(s => {
-    const ok = s.pts.filter(p => p.v != null);
+    /* p.prac＝練習：同顏色的空心菱形，不連線（各課前後測圖的「全部課合計」用） */
+    s.pts.filter(p => p.prac && p.v != null).forEach(p => { const cx = X(p.x), cy = Y(p.v);
+      g += `<path class="pdot" style="stroke:${s.color}" d="M${cx} ${cy - 7}L${cx + 7} ${cy}L${cx} ${cy + 7}L${cx - 7} ${cy}Z" tabindex="0" data-tip="${esc(`${p.label}｜${fmt(o.metric, p.v)}（${p.n} ${unitN(o.metric)}）`)}"/>`; });
+    const ok = s.pts.filter(p => p.v != null && !p.prac);
     g += `<path class="line" style="stroke:${s.color}" d="${ok.map((p, i) => `${i ? "L" : "M"}${X(p.x).toFixed(1)} ${Y(p.v).toFixed(1)}`).join(" ")}"/>`;
     g += ok.map(p => `<circle class="dot" style="${p.hollow ? `fill:#fff;stroke:${s.color}` : `fill:${s.color}`}" cx="${X(p.x)}" cy="${Y(p.v)}" r="5" tabindex="0" data-tip="${esc(`${p.label}｜${fmt(o.metric, p.v)}（${p.n} ${unitN(o.metric)}）`)}"/>`).join("");
   });
