@@ -47,7 +47,7 @@
 | `design/literacy-play.md` | 賓果整合與增強系統、部件重組（2026-10-24 從 `design/literacy-design.md` 拆出） | 3-1、3-3 的「目標 4-1」 |
 | `design/game-design.md` | 遊戲與獎勵：貼紙代號、星等、扭蛋、進化、設定步驟與玩法設定表（2026-10-24 新增） | （新） |
 | `design/analysis-design.md` | 老師專區（分析）、研究方法分層、學扶前後測、分析教學、備課分析 | 3-2、3-4、3-3 的「學扶前後測」「分析教學」 |
-| `design/parts-layers.md` | 部件三層設計：第一～三層定義、六個功能各從哪層讀、聽音選部件／聽音補部件／看部件寫字、遮蔽做法、實作順序、待決（2026-10-31 新增，討論稿） | （新） |
+| `design/parts-layers.md` | 部件三層設計：第一～三層定義、六個功能各從哪層讀、聽音選部件／聽音補部件／看部件寫字、遮蔽做法、實作順序、待決、無編碼部件的代號草案（第 7 節，2026-11-05）（2026-10-31 新增，討論稿） | （新） |
 | `design/parts-layers-impl.md` | 部件三層設計的資料與程式介面（`shared/parts-layers.js`、`window.Parts` 入口）、實作順序（2026-10-31 從 `design/parts-layers.md` 拆出） | （新） |
 | `design/parts-strokes.md` | 部件依筆畫切分（E17）：用教育部筆畫畫部件、本機試驗結果、要先取得教育部改作授權、拿到同意後可做的事（2026-11-02 新增，討論稿） | （新） |
 | `design/kid-roster.md` | 學生名單管理：代號自動生成、封存、刪除、重置貼紙、新學期整理名單，分五個 PR（2026-10-31 新增） | （新） |
@@ -72,7 +72,7 @@
 | `changelog/changelog.md`、`changelog/changelog-年-月-日.md` | 變更紀錄：每個 PR 改了什麼、想法怎麼變（2026-10-24 新增）。**平常不用讀**，要追某件事的變化時才讀，或執行 `node docs/scripts/changelog.js` 印出整張表；2026-11-02 起發 PR 不用另外寫變更紀錄，PR 標題就是紀錄（見 `changelog/changelog.md`「怎麼寫」） | （新） |
 | `history/history-roadmap.md` | 路線圖已完成項目做了什麼（2026-10-23 整理 `plans/roadmap.md` 時原文搬來） | 2-1、「開放給其他老師前的準備」的已完成部分 |
 
-其他：`design/research-method-spec.md` 研究方法規格；`scripts/` 產生資料、自動檢查的程式；`materials/material-review.xlsx`、`materials/parts-table.xlsx` 給老師確認的教材清單。
+其他：`design/research-method-spec.md` 研究方法規格；`scripts/` 產生資料、自動檢查的程式；`materials/material-review.xlsx`、`materials/parts-table.xlsx`、`materials/custom-parts-draft.xlsx`（無編碼部件的建議代號，2026-11-05 草案） 給老師確認的教材清單。
 人看的文件（claude.ai 文件，需擁有者分享才能開）：識字評量規格書（2026-10-23 起只用來討論，最新決定以 `docs/` 為準）、GitHub 新手使用說明。
 
 ## 寫文件的規則
