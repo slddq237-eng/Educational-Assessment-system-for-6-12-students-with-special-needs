@@ -48,7 +48,7 @@ let ranges = load(RANGES, []);
 let current = null;  /* 最近一次分析結果，匯出 Excel 用 */
 
 /* 每本課本選了哪些課：沒設定過就是全選 */
-const chosen = b => state.lessons[b] || lessonKeys(b);
+const chosen = b => (state.lessons[b] || lessonKeys(b)).filter(n => BOOKS[b].lessons[n]);   /* 存著的課次已經不在課本資料裡就略過（2026-11-06 健檢） */
 
 /* =========================================================
    3. 選範圍的畫面

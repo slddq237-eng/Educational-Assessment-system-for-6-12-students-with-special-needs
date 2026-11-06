@@ -975,8 +975,10 @@ function startRound(){
 /* 流暢性模式的下一題：從所選課次隨機抽，不連續出同一個字 */
 function nextFluItem(){
   const pool = G.lessons.flatMap(k => testChars(k).map(c => ({c, k})));
-  let it;
-  do { it = pool[Math.floor(Math.random() * pool.length)]; } while(pool.length > 1 && G.round.last && it.c === G.round.last);
+  /* 只能從「不是上一題那個字」的裡面抽；全部都是同一個字（例如兩課都只考「麗」）就照抽，
+     以前用「抽到同一個字就重抽」，這種情況會一直重抽、網頁卡死（2026-11-06 健檢） */
+  const other = pool.filter(x => x.c !== G.round.last), from = other.length ? other : pool;
+  const it = from[Math.floor(Math.random() * from.length)];
   G.round.last = G.lastFluChar = it.c;   /* 換人時，下一位的第一題也不重複上一位最後一題 */
   return {...it, kid: G.round.kid};
 }

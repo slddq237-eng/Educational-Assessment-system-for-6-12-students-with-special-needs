@@ -90,6 +90,8 @@ function oceanScene(el, goal, prize){
   let raf;
   function wave(t){ let d=`M0 ${SURF}`; for(let x=0;x<=560;x+=16) d+=` L${x} ${(SURF+Math.sin(x/28+t*1.8)*2.5).toFixed(1)}`; return d+" L560 360 L0 360Z"; }
   function frame(now){
+    /* 場景藏起來（學生在作答）時不用算，等下次出現再接著動（2026-11-06 健檢：以前整場都在算，舊平板比較耗電） */
+    if(el.closest("[hidden]")){ raf=requestAnimationFrame(frame); return; }
     const t=now/1000;
     if(REDUCE){ S.y=S.ty; } else { S.vy += (S.ty-S.y)*0.05; S.vy *= 0.82; S.y += S.vy; }
     S.ten += ((S.win?1:0.3)-S.ten)*0.035; S.wob += ((S.win?6:3)-S.wob)*0.03; S.lift += ((S.win?1:0)-S.lift)*0.06;
