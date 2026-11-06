@@ -356,11 +356,20 @@ function startSession(){
   /* 正確率模式：每位學生各抽一份題目，再交錯排成輪流順序 */
   /* 賓果卡整次只有一張、最多 36 格、一個字只有一格：同一個字出現在好幾課時只問一次（否則第二次那一格已蓋章點不了），
      每位學生最多出 36 題（否則多出來的字不在卡上） */
+  /* 接力（E19，2026-11-06 維護者決定）：先抽一份題目，每位學生做一樣的字、各自重新打亂順序；
+     「常錯優先」要看每位學生自己的紀錄，所以仍是各抽各的 */
+  const relay = G.answer === "oneround" && q.method !== "weak" ? pickItems(list[0], q) : null;
   const lists = list.map(code => {
-    const items = pickItems(code, q), seen = new Set();
+    const items = relay ? shuffle([...relay]) : pickItems(code, q), seen = new Set();
     return (G.layout === "bingo" ? items.filter(it => !seen.has(it.c) && seen.add(it.c)).slice(0, 36) : items).map(it => ({...it, kid:code}));
   });
-  G.queue = G.shared ? (q.method === "weak" ? sharedBingoQueue(lists) : sharedBingoDraw(list, q)) : interleaveLists(lists);
+  /* 接力（一人一輪，E19）：每人的題目照順序接起來（S01 全部、S02 全部…），換人時照樣出現換人畫面；
+     下一位的第一題不要和上一位的最後一題同一個字（剛看到答案），能換就和他自己後面的題目對調 */
+  if(G.answer === "oneround") lists.forEach((l, n) => {
+    const last = n && lists[n - 1][lists[n - 1].length - 1], at = last ? l.findIndex(it => it.c !== last.c) : 0;
+    if(at > 0) [l[0], l[at]] = [l[at], l[0]];
+  });
+  G.queue = G.shared ? (q.method === "weak" ? sharedBingoQueue(lists) : sharedBingoDraw(list, q)) : G.answer === "oneround" ? lists.flat() : interleaveLists(lists);
   G.pos = 0;
   showScreen("#play");
   if(G.game) return partnerOn(G) ? pickPartners(() => { G.started = performance.now(); sceneStart(nextItem); })   /* 選夥伴的時間不算進右上角的計時 */ : sceneStart(nextItem);

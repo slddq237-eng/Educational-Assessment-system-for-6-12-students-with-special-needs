@@ -41,7 +41,7 @@ function applyPreset(id){
   Object.assign(state, {qCount:null, qMethod:"even"});   /* 評量目標沿用第 1 步選的 */
   PRESETS.find(p => p.id === id).apply();
   /* 作答方式：快速開始只有大螢幕輪流、平板掃 QR code 兩種（2026-10-25 起平板也能用在正式評量，A3-18） */
-  if(state.answer !== "qr" && state.answer !== "splitturn") state.answer = "turn";
+  if(state.answer !== "qr" && state.answer !== "splitturn" && state.answer !== "oneround") state.answer = "turn";
 }
 function setUi(mode){
   ui = mode; store(KEYS.ui, ui);
@@ -108,12 +108,16 @@ function step3Miss(){
   /* 分區輪流先只開放練習的正確率模式（E14；正式評量等 A3，流暢性是一人一回合，版面不同） */
   if(a.id === "splitturn" && state.kind === "formal") return `「${a.name}」先只能用在練習，正式評量請改選「大螢幕・輪流」`;
   if(a.id === "splitturn" && state.mode === "flu") return `「${a.name}」還不能用在流暢性模式，請改選「大螢幕・輪流」`;
+  /* 接力（一人一輪，E19）先只開放練習的正確率模式：後面的學生看過前一位作答，不適合正式評量；流暢性本來就是一人一回合 */
+  if(a.id === "oneround" && state.kind === "formal") return `「${a.name}」先只能用在練習，正式評量請改選「大螢幕・輪流」`;
+  if(a.id === "oneround" && state.mode === "flu") return `流暢性模式本來就是一人做完一回合再換人，請改選「大螢幕・輪流」`;
   return "";
 }
 /* 能選的作答方式（快速開始只列大螢幕輪流、分區輪流、平板掃 QR code） */
 /* 只選一位學生時不列分區輪流（沒有別人的區可以分，2026-10-25 維護者要求） */
-const answerList = () => ANSWERS.filter(a => (!isQuick() || a.id === "turn" || a.id === "splitturn" || a.id === "qr") && (a.id !== "splitturn" || selKids().length > 1));
-const isTurnLike = id => id === "turn" || id === "splitturn";   /* 大螢幕輪流（全螢幕或分區） */
+/* 接力（一人一輪，E19）也是只有 2 位以上才列 */
+const answerList = () => ANSWERS.filter(a => (!isQuick() || a.id === "turn" || a.id === "splitturn" || a.id === "oneround" || a.id === "qr") && (a.id !== "splitturn" && a.id !== "oneround" || selKids().length > 1));
+const isTurnLike = id => id === "turn" || id === "splitturn" || id === "oneround";   /* 大螢幕輪流（全螢幕、分區、接力） */
 const answerOff = a => a.off || "";
 /* 第 3 步可以跳過嗎：作答方式只有一個能選 */
 const skip3 = () => answerList().filter(a => !answerOff(a)).length === 1 && !step3Miss();
@@ -342,7 +346,7 @@ const METHODS = [
   {id:"freq",  name:"字頻優先", desc:"先出常用字", need:"需要匯入字頻資料", ok:() => typeof FREQ !== "undefined",
    okText:"所選課次中，依教育部字頻總表排名最常用的字先出，出題順序打散"}
 ];
-const SEC_PER_ITEM = {turn:8, splitturn:8, split:8, present:15};
+const SEC_PER_ITEM = {turn:8, splitturn:8, oneround:8, split:8, present:15};
 const FREQ_SHARE = 0.2; /* 平均隨機中先出常用字的比例 */
 /* 練習的預設題數：一課的字數每課不同，多位學生輪流時會玩很久，所以練習預設一次 10 個字（2026-10-21 維護者決定）。
    正式評量仍是一課的量，成績才能代表整課的程度。 */
@@ -878,4 +882,4 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets()
 document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); if(t && t.dataset.open === "kids"){ renderKidSheet(); openSheet("#kidsSheet"); } });
 $("#openRecords").onclick = () => { renderRecSheet(); openSheet("#recSheet"); };
 
-function render(){ if(state.answer === "splitturn" && selKids().length < 2){ state.answer = "turn"; flowNote("只剩 1 位學生，沒有別人的區可以分，作答方式已改回「大螢幕・輪流」。"); } renderPresets(); renderPrepost(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }
+function render(){ if(state.answer === "splitturn" && selKids().length < 2){ state.answer = "turn"; flowNote("只剩 1 位學生，沒有別人的區可以分，作答方式已改回「大螢幕・輪流」。"); } if(state.answer === "oneround" && selKids().length < 2){ state.answer = "turn"; flowNote("只剩 1 位學生，不用接力，作答方式已改回「大螢幕・輪流」。"); } renderPresets(); renderPrepost(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }
