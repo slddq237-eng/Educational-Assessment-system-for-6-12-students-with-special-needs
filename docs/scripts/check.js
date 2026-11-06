@@ -74,7 +74,7 @@ const KNOWN_WARN = [
   {has: ['shared/lessons.js：242 個字的干擾字少於 2 個'], why: '等老師在 material-review.xlsx「干擾字候選」頁挑干擾字（pending.md「老師確認」）', since: '2026-11-06'},
   {has: ['docs/history/history-2026-10-24.md：文件有 14071 字'], why: '已封存的歷史檔，新的歷史寫在 history-2026-10-31.md，平常不讀', since: '2026-11-06'},
   {has: ['shared/fonts/tw-kai.css：有 2 個字不在楷書字型裡（戳菱）'], why: '只在老師畫面，缺字時改用電腦的標楷體；重跑 make_kai.py 會讓 33 個字型檔全部重排（約 4MB，老師都要重新下載），等下次新增課本時一起跑', since: '2026-11-06'},
-  {has: ['tools/literacy/index.html：打開時要下載 1029KB'], why: '要把部分程式改成用到才載入，屬整理程式（docs/code/refactor.md），還沒排時間', since: '2026-11-06'},
+  {has: ['tools/literacy/index.html：打開時要下載 1031KB'], why: '要把部分程式改成用到才載入，屬整理程式（docs/code/refactor.md），還沒排時間', since: '2026-11-06'},
 ];
 
 /* repo 裡所有檔案（略過 .git） */

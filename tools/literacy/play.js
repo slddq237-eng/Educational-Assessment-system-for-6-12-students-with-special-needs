@@ -360,7 +360,8 @@ function startSession(){
     const items = pickItems(code, q), seen = new Set();
     return (G.layout === "bingo" ? items.filter(it => !seen.has(it.c) && seen.add(it.c)).slice(0, 36) : items).map(it => ({...it, kid:code}));
   });
-  G.queue = G.shared ? (q.method === "weak" ? sharedBingoQueue(lists) : sharedBingoDraw(list, q)) : interleaveLists(lists);
+  /* 一人一輪（E19）：每人的題目照順序接起來（S01 全部、S02 全部…），換人時照樣出現換人畫面 */
+  G.queue = G.shared ? (q.method === "weak" ? sharedBingoQueue(lists) : sharedBingoDraw(list, q)) : G.answer === "oneround" ? lists.flat() : interleaveLists(lists);
   G.pos = 0;
   showScreen("#play");
   if(G.game) return partnerOn(G) ? pickPartners(() => { G.started = performance.now(); sceneStart(nextItem); })   /* 選夥伴的時間不算進右上角的計時 */ : sceneStart(nextItem);

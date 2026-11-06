@@ -166,13 +166,15 @@ const gameCard = theme => GAME_CARDS.find(c => c.theme === theme);
 /* 個人或合作（2026-10-26 起不再讓老師選，跟著玩法走）：多位學生在大螢幕輪流的練習才有「合作」，
    選「遊戲」或「賓果」就是大家合作（遊戲＝同一隻怪獸，賓果＝共用一張卡），只有「一般」是各玩各的。
    平板（每人一台）、正式評量（每位學生獨立作答，2026-10-24 決定）、流暢性、只有一位學生都是個人 */
-const coopPossible = () => state.kind !== "formal" && state.answer !== "qr" && state.mode !== "flu" && selKids().length > 1;
+const coopPossible = () => state.kind !== "formal" && state.answer !== "qr" && state.answer !== "oneround" && state.mode !== "flu" && selKids().length > 1;
 const team = () => coopPossible() && (playNow() === "game" || playNow() === "bingo") ? "coop" : "solo";
 const sharedBingo = () => coopPossible() && playNow() === "bingo";   /* 多位學生共用一張賓果卡（E15）；平板、一位學生仍是一人一張 */
 /* 某個玩法這次能不能用；不能用時回傳原因（設定畫面把卡片變灰並寫出來），能用回傳空字串 */
 function playWhy(id){
   if(id === "color") return "";
   if(state.mode === "flu") return "流暢性模式不能用";
+  /* 一人一輪（E19，2026-11-06 維護者決定）：一人做完才換人，合作打怪獸、共用賓果卡不成立，先停用 */
+  if(state.answer === "oneround" && selKids().length > 1) return "一人一輪先不能用";
   if(id === "bingo") return goalCaps().noBingo ? goalCaps().noBingo : state.answer === "splitturn" ? "分區輪流之後再支援賓果" : "";
   return "";
 }
@@ -197,7 +199,10 @@ const HINT_ORDER = LEVELS.flatMap(l => l.items.map(i => i[0]));
 const hintName = id => (LEVELS.flatMap(l => l.items).find(i => i[0] === id) || [id, RETIRED_HINTS[id] || id])[1];
 const REACT = {remove:"選錯的選項打叉", next:"出現下一個提示", free:"沒有提示，也不顯示答案，讓學生自己點", reveal:"顯示答案並唸一次，進入下一題"};   /* 選錯的選項每次都會停用，remove 只是舊紀錄的說法 */
 const ANSWERS = [
-  {id:"turn",    name:"大螢幕・輪流",   desc:"1～4 人輪流在同一個螢幕作答", min:1, max:4},
+  {id:"turn",    name:"大螢幕・輪流",   desc:"1～4 人輪流在同一個螢幕作答，每題換人", min:1, max:4},
+  /* 一人一輪（E19，2026-11-06 維護者決定）：一位學生做完自己全部的題目才換下一位；先只開放練習、正確率，遊戲和賓果先停用（playWhy）；
+     作答模式記在紀錄的 answer 欄（oneround），不加新欄位 */
+  {id:"oneround", name:"大螢幕・一人一輪", desc:"2～4 人在同一個螢幕，一人做完全部題目再換下一位（目前只能練習）", min:2, max:4},
   /* 分區輪流（E14，2026-10-25 維護者決定）：版面同時顯示所有人，輪到的人那一區亮起；一次仍只有一人作答。
      最多 3 位；先只開放練習、正確率模式（setup.js 的 step3Miss 寫原因）；作答模式記在紀錄的 answer 欄，不加新欄位 */
   {id:"splitturn", name:"大螢幕・分區輪流", desc:"2～3 人輪流，每人一區同時顯示在畫面上，輪到的人那一區亮起（目前只能練習）", min:2, max:3},
