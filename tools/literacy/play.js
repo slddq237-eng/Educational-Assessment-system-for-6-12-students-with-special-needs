@@ -25,15 +25,19 @@ function pickItems(code, q){
   const pool = state.lessons.flatMap(k => testChars(k).map(c => ({c, k})));
   if(q.method === "all") return shuffle(pool);
   if(q.method === "weak"){
-    /* 常錯優先：依這位學生過去的紀錄，錯得多、反應慢的字先出；沒考過的字排中間 */
-    const score = it => {
-      const rs = records.filter(r => r.kid === code && r.char === it.c && r.goal === state.goal && !r.quit);
-      if(!rs.length) return 0.5;
+    /* 常錯優先：依這位學生過去的紀錄，錯得多、反應慢的字先出；沒考過的字排中間。
+       全部紀錄只掃一次、每個字的分數先算好（2026-11-06：以前排序時每比較一次就重掃全部紀錄，紀錄多了按「開始」會卡） */
+    const byChar = new Map();
+    for(const r of records) if(r.kid === code && r.goal === state.goal && !r.quit){ if(!byChar.has(r.char)) byChar.set(r.char, []); byChar.get(r.char).push(r); }
+    const scoreOf = c => {
+      const rs = byChar.get(c);
+      if(!rs) return 0.5;
       const wrong = rs.filter(r => !r.firstCorrect).length / rs.length;
       const sec = rs.reduce((s, r) => s + Math.min(r.correctSec ?? 10, 10), 0) / rs.length;
       return wrong + sec / 20;
     };
-    return shuffle(shuffle(pool).sort((a, b) => score(b) - score(a)).slice(0, q.count));
+    const score = new Map(pool.map(it => [it.c, scoreOf(it.c)]));
+    return shuffle(shuffle(pool).sort((a, b) => score.get(b.c) - score.get(a.c)).slice(0, q.count));
   }
   /* 依字頻排名排序（shared/freq.js）：常用的在前；查不到排名的字放最後，維持原本的隨機順序 */
   const rank = it => (typeof FREQ !== "undefined" && FREQ[it.c]) || Infinity;
