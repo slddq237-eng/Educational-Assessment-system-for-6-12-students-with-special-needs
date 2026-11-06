@@ -2,7 +2,7 @@
 自動檢查（GitHub Actions 每次發 PR、改 main 都會跑；本機也可以跑：在 repo 最上層執行 node docs/scripts/check.js）
 不用安裝任何套件，只要 Node.js。
 
-檢查十四件事：
+檢查十五件事：
   1. 程式語法：所有 .js 檔和 HTML 裡的 <script>，有沒有打錯字、少括號（有的話網頁會整個壞掉）
   2. 教材資料（shared/lessons.js 和各本課本檔 lessons-代號.js）：BOOK_FILES、ALL_LESSON_CHARS 要是最新的（make_lessons.js）；語詞裡有沒有這個字、干擾字有沒有包含答案本身等；
      語詞、例句裡有語音替換詞（shared/bpmf.js 的 BPMF_SAY）但還沒確認過的，提醒確認讀音
@@ -20,6 +20,7 @@
   12. 變更紀錄：docs/changelog/changes/ 的小檔案要有「日期」「動到哪裡」「改了什麼」（只提醒；2026-11-02 起不再新增小檔，只檢查舊檔）
   13. 網頁打得開測試的清單：每個網頁（.html）都要寫在 docs/scripts/smoke.js 的 PAGES，漏了是錯誤
   14. 紀錄匯出欄位：records.js 的 COLS 要和 docs/scripts/records-columns.txt 一致（刪欄位、改名、換順序是錯誤；最後面新增欄位只提醒）
+  15. 相容表：docs/design/goal-compat.md 的四張表要和程式的規則一致（data.js 的 GOALS、GOAL_CAPS、ANSWERS、playWhy，play.js 的 PICK_MIN），不一致是錯誤
   8～12 都只提醒（2026-10-24 維護者要求加）
      只有入口檔案可以直接存取 localStorage、indexedDB（其他檔案直接用是錯誤，見 docs/code/refactor.md 規則 1）
 
@@ -411,6 +412,93 @@ for (const f of files.filter(f => /^docs\/changelog\/changes\/\d{4}-\d{2}-\d{2}.
     err(f, '沒寫在 docs/scripts/smoke.js 的 PAGES，網頁打得開測試不會打開它；請在 PAGES 加一行');
   for (const p of pages.filter(p => !files.includes(p)))
     err('docs/scripts/smoke.js', `PAGES 裡的「${p}」找不到這個檔案，改名或刪掉了請一起改`);
+}
+
+/* ---------- 15. 評量目標相容表和程式一致 ----------
+   docs/design/goal-compat.md 是給人看的表，規則真正生效的地方是程式（2026-11-06 維護者要求加，免得兩邊各改各的）。
+   從程式讀出規則，和表格逐格比對：改了程式忘了改表，或改了表忘了改程式，都會在這裡抓到。 */
+{
+  const DOC = 'docs/design/goal-compat.md', data = read('tools/literacy/data.js');
+  const fix = `請把 ${DOC} 和程式改成一致（想改規則先在 ${DOC} 討論，見該檔第 5 節）`;
+  const grab = (src, re, what) => { const m = src.match(re); if (!m) err('tools/literacy/data.js', `找不到 ${what}，檢查不了相容表`); return m; };
+  const run = (code, ctx = {}) => vm.runInNewContext(code, ctx);
+  try {
+    const mG = grab(data, /const GOALS = (\[[\s\S]*?\n\]);/, 'const GOALS = [...]');
+    const mC = grab(data, /const GOAL_CAPS = (\{[\s\S]*?\n\});/, 'const GOAL_CAPS = {...}');
+    const mA = grab(data, /const ANSWERS = (\[[\s\S]*?\n\]);/, 'const ANSWERS = [...]');
+    const mMax = grab(data, /const R6_MAX_PARTS = (\d+)/, 'R6_MAX_PARTS');
+    const mFlu = grab(data, /function playWhy[\s\S]*?state\.mode === "flu"\) return "([^"]+)"/, 'playWhy 的流暢性原因');
+    const mPick = read('tools/literacy/play.js').match(/const PICK_MIN = (\d+)/);
+    if (!mPick) err('tools/literacy/play.js', '找不到 PICK_MIN，檢查不了相容表');
+    if (mG && mC && mA && mMax && mFlu && mPick) {
+      const GOALS = run(mG[1]), CAPS = run(`(${mC[1]})`, {partsOf: () => null, maskIdxs: () => [], R6_MAX_PARTS: +mMax[1]}), ANS = run(mA[1]);
+      const cap = id => CAPS[id] || {};
+      /* 表格：依「## N.」分節，每節取第一張表（略過標題列和 |---| 那一列） */
+      const sec = n => {
+        const m = read(DOC).match(new RegExp(`\\n## ${n}\\.[^\\n]*\\n([\\s\\S]*?)(?=\\n## |$)`));
+        if (!m) { err(DOC, `找不到「## ${n}.」這一節`); return []; }
+        return m[1].split('\n').filter(l => l.startsWith('|')).slice(2).map(l => l.split('|').slice(1, -1).map(x => x.trim()));
+      };
+      const bad = (where, msg) => err(DOC, `第 ${where} 張表：${msg}。${fix}`);
+      const no = cell => cell.startsWith('❌');
+      const why = cell => (cell.match(/（(.+)）/) || [])[1] || '';
+      const idsOf = cell => { const r = cell.match(/^([RW])(\d+)～[RW](\d+)/); if (r) { const out = []; for (let i = +r[2]; i <= +r[3]; i++) out.push(r[1] + i); return out; } return cell.match(/[RW]\d+/g) || []; };
+      const one = cell => { const ids = idsOf(cell); return ids.length === 1 ? GOALS.find(g => g.id === ids[0]) : null; };
+
+      /* 第 1 張：目標 × 練習／正式／流暢性 */
+      const t1 = sec(1), listed = new Set(t1.flatMap(r => idsOf(r[0])));
+      for (const g of GOALS) if (!listed.has(g.id)) bad(1, `沒有 ${g.id}「${g.name}」這個評量目標`);
+      for (const r of t1) {
+        const g = one(r[0]); if (!g) continue;
+        const c = cap(g.id), off = !!g.off;
+        if ((r[1] === '🔜') !== off) bad(1, `${g.id} 的狀態寫「${r[1]}」，程式裡是${off ? `還沒開放（${g.off}）` : '已開放'}`);
+        if (off) continue;
+        const want = [true, c.flu !== false, c.formal !== false, c.formal !== false && c.flu !== false];
+        ['練習・正確率', '練習・流暢性', '正式・正確率', '正式・流暢性'].forEach((name, i) => {
+          if (no(r[i + 2]) === want[i]) bad(1, `${g.id} 的「${name}」寫「${r[i + 2]}」，程式裡是${want[i] ? '可以' : '不行'}`);
+        });
+        if (r[6].includes('部件') !== !!c.partsAnswer) bad(1, `${g.id} 的「答案是」寫「${r[6]}」，程式裡答案${c.partsAnswer ? '是部件' : '不是部件'}（partsAnswer）`);
+      }
+
+      /* 第 2 張：不適用的提示、聽音選部件的數字 */
+      const HINT = {parts: '部件', mask: '遮字', pic: '圖片', word: '語詞', sent: '句子'};
+      for (const r of sec(2)) {
+        const g = one(r[0]); if (!g || g.off) continue;
+        const doc = r[3] === '無' ? [] : r[3].split('、').map(x => x.replace(/（.*$/, '').trim());
+        const code = Object.keys(cap(g.id).hintUnfit || {}).map(k => HINT[k] || k);
+        if (doc.slice().sort().join() !== code.slice().sort().join()) bad(2, `${g.id} 不適用的提示寫「${doc.join('、') || '無'}」，程式裡（GOAL_CAPS 的 hintUnfit）是「${code.join('、') || '無'}」`);
+        if (g.id === 'R6') {
+          const mx = r[1].match(/超過 (\d+) 個/), mn = r[2].match(/至少 (\d+) 個/);
+          if (!mx || +mx[1] !== +mMax[1]) bad(2, `R6 不出題的部件數寫「${r[1]}」，程式裡是超過 ${mMax[1]} 個（data.js 的 R6_MAX_PARTS）`);
+          if (!mn || +mn[1] !== +mPick[1]) bad(2, `R6 的選項寫「${r[2]}」，程式裡是至少 ${mPick[1]} 個（play.js 的 PICK_MIN）`);
+        }
+      }
+
+      /* 第 3 張：目標 × 玩法（賓果的限制、流暢性的原因） */
+      for (const r of sec(3)) {
+        const g = one(r[0]);
+        if (g && !g.off) {
+          const nb = cap(g.id).noBingo || '';
+          if (no(r[3]) !== !!nb) bad(3, `${g.id} 的賓果寫「${r[3]}」，程式裡${nb ? `不行（${nb}）` : '可以'}`);
+          else if (nb && why(r[3]) !== nb) bad(3, `${g.id} 不能玩賓果的原因寫「${why(r[3])}」，畫面上寫的是「${nb}」`);
+        }
+        if (r[0].includes('流暢性')) for (const i of [2, 3])
+          if (!no(r[i]) || why(r[i]) !== mFlu[1]) bad(3, `流暢性那一列寫「${r[i]}」，程式裡是不行（${mFlu[1]}）`);
+      }
+
+      /* 第 4 張：作答方式的人數、有沒有開放 */
+      const t4 = sec(4);
+      for (const a of ANS) {
+        const r = t4.find(x => x[0] === a.name);
+        if (!r) { bad(4, `沒有「${a.name}」這個作答方式`); continue; }
+        const range = r[1].match(/(\d+)～(\d+) 位/), atLeast = r[1].match(/(\d+) 位以上/);
+        const okN = range ? +range[1] === a.min && +range[2] === a.max : atLeast ? +atLeast[1] === a.min : false;
+        if (!okN) bad(4, `「${a.name}」的人數寫「${r[1]}」，程式裡是 ${a.min}～${a.max} 位`);
+        if (r.slice(2).every(x => x === '🔜') !== !!a.off) bad(4, `「${a.name}」寫${a.off ? '已開放' : '還沒開放'}，程式裡是${a.off ? `還沒開放（${a.off}）` : '已開放'}`);
+      }
+      for (const r of t4) if (!ANS.some(a => a.name === r[0])) bad(4, `「${r[0]}」在程式的 ANSWERS 裡找不到（改名或拿掉了嗎？）`);
+    }
+  } catch (e) { err(DOC, `比對相容表時程式出錯：${e.message}`); }
 }
 
 /* ---------- 結果 ---------- */

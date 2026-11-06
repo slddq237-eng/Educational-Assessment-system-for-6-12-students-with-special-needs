@@ -1,7 +1,7 @@
 # 評量目標 × 玩法 × 作答方式 相容表（2026-10-31 建立）
 
 用途：一眼看出「哪個評量目標能搭配哪些條件」，方便維護者和老師檢查、修正、討論。
-**表格是從程式現況整理出來的**（資料來源：`tools/literacy/data.js` 的 `GOAL_CAPS`、`playWhy`；`setup.js` 的 `step1Miss`、`step3Miss`）。改程式的規則時要同步改這份；想改規則時，先在這份討論，定案後再請 Claude 改 `GOAL_CAPS` 等。`docs/scripts/combo.js` 會把能選的組合真的跑一遍，確認不卡住。
+**表格是從程式現況整理出來的**（資料來源：`tools/literacy/data.js` 的 `GOAL_CAPS`、`playWhy`；`setup.js` 的 `step1Miss`、`step3Miss`）。改程式的規則時要同步改這份（`docs/scripts/check.js` 第 15 項會逐格比對這四張表和程式，不一致是錯誤；2026-11-06 加）；想改規則時，先在這份討論，定案後再請 Claude 改 `GOAL_CAPS` 等。`docs/scripts/combo.js` 會把能選的組合真的跑一遍，確認不卡住。
 符號：✅ 可以　❌ 不行（括號是畫面上寫的原因）　🔜 還沒開放（準備中）　💬 待討論
 
 ## 1. 評量目標 × 練習／正式／流暢性
@@ -57,7 +57,8 @@
 
 1. 在這份寫下想改什麼、為什麼（正式評量條件有改動要同步 `docs/plans/a3-conditions.md`；會動到作答紀錄格式要先看 `a8-terms.md`）。
 2. 定案後請 Claude 改 `data.js` 的 `GOAL_CAPS`（目標的特性）或 `playWhy`／`step3Miss`（玩法、作答方式的限制），並更新這份。
-3. 跑 `node docs/scripts/smoke.js`，組合測試會確認每個能選的組合不卡住。
+3. 跑 `node docs/scripts/check.js`，確認這份和程式一致；表格的欄位、符號（✅❌🔜）、提示名稱（部件、遮字、圖片…）要照現在的寫法，檢查才讀得懂。
+4. 跑 `node docs/scripts/smoke.js`，組合測試會確認每個能選的組合不卡住。
 
 ## 6. 待討論
 
