@@ -26,6 +26,7 @@
 
 「錯誤」會讓檢查失敗（紅叉），要修好才合併；「提醒」只列出來，不會失敗。
 已知、等維護者決定的問題放在 KNOWN，寫明原因；修好後從 KNOWN 拿掉。
+已知、先不處理的「提醒」放在 KNOWN_WARN（2026-11-06 加）：只顯示一行總數，免得每次都是同樣幾個提醒、新的提醒混在裡面沒人注意。
 */
 const fs = require('fs'), path = require('path'), vm = require('vm'), { execSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -61,7 +62,21 @@ const SAY_OK = new Set([   /* 2026-10-23 確認：都是同一個意思、同一
   '年糕裹上麵粉後油炸，就成為美味可口的點心。',
   '重地街亭失守後，讓諸葛亮陣營元氣大傷。',
   '諸葛亮是三國故事中的傳奇人物，他足智多謀、忠心耿耿，受到後人的景仰。',
+  /* 2026-11-06「領子」的領（ㄌㄧㄥˇ）換成「嶺」（ㄌㄧㄥˇ）、「曲項」的曲（ㄑㄩ，彎曲）換成「驅」（ㄑㄩ），讀音一樣 */
+  '我的新衣服領子上，有一個可愛的兔子圖樣。',
+  '白鵝曲項的姿態真優美。',
 ]);
+
+/* 已知、先不處理的提醒（2026-11-06 加）：has 裡的文字都出現在提醒裡才算，一定要寫 why（為什麼先不處理）。
+   數字寫進 has（字數、KB、字數）：數字變了提醒就會再出現，檔案越來越大才會被注意到；這時更新數字或處理掉。
+   清單裡的提醒已經不會出現（修好了或數字變了），會另外提醒從這裡拿掉。 */
+const KNOWN_WARN = [
+  {has: ['shared/lessons.js：242 個字的干擾字少於 2 個'], why: '等老師在 material-review.xlsx「干擾字候選」頁挑干擾字（pending.md「老師確認」）', since: '2026-11-06'},
+  {has: ['docs/history/history-2026-10-24.md：文件有 14071 字'], why: '已封存的歷史檔，新的歷史寫在 history-2026-10-31.md，平常不讀', since: '2026-11-06'},
+  {has: ['docs/plans/roadmap.md：文件有 10175 字'], why: '要搬走一段才降得到 1 萬字以下，搬哪一段等維護者決定', since: '2026-11-06'},
+  {has: ['shared/fonts/tw-kai.css：有 2 個字不在楷書字型裡（戳菱）'], why: '只在老師畫面，缺字時改用電腦的標楷體；重跑 make_kai.py 會讓 33 個字型檔全部重排（約 4MB，老師都要重新下載），等下次新增課本時一起跑', since: '2026-11-06'},
+  {has: ['tools/literacy/index.html：打開時要下載 1029KB'], why: '要把部分程式改成用到才載入，屬整理程式（docs/code/refactor.md），還沒排時間', since: '2026-11-06'},
+];
 
 /* repo 裡所有檔案（略過 .git） */
 function walk(dir, out = []) {
@@ -503,7 +518,15 @@ for (const f of files.filter(f => /^docs\/changelog\/changes\/\d{4}-\d{2}-\d{2}.
 
 /* ---------- 結果 ---------- */
 const gh = !!process.env.GITHUB_ACTIONS;   /* 在 GitHub 上跑時，用 GitHub 看得懂的格式標出來 */
-for (const w of warns) console.log(gh ? `::warning::${w}` : `提醒　${w}`);
+const knownOf = w => KNOWN_WARN.find(k => k.has.every(t => w.includes(t)));
+const quiet = warns.filter(knownOf), shown = warns.filter(w => !knownOf(w));
+/* 清單本身的檢查放在分類之後：這些提醒裡引用了清單的文字，不能被清單自己藏起來 */
+for (const k of KNOWN_WARN) {
+  if (!k.why) err('docs/scripts/check.js', `KNOWN_WARN 的「${k.has[0]}」沒寫 why（為什麼先不處理）`);
+  if (!quiet.some(w => k.has.every(t => w.includes(t)))) shown.push(`docs/scripts/check.js：KNOWN_WARN 的「${k.has[0]}」已經不會出現了（修好了或數字變了），從 KNOWN_WARN 拿掉，或更新數字`);
+}
+for (const w of shown) console.log(gh ? `::warning::${w}` : `提醒　${w}`);
 for (const e of errors) console.log(gh ? `::error::${e}` : `錯誤　${e}`);
-console.log(`\n檢查完成：錯誤 ${errors.length} 個、提醒 ${warns.length} 個（檢查了 ${files.length} 個檔案）`);
+console.log(`\n檢查完成：錯誤 ${errors.length} 個、提醒 ${shown.length} 個（檢查了 ${files.length} 個檔案）`);
+if (quiet.length) console.log(`另有 ${quiet.length} 個已知、先不處理的提醒沒有列出（原因寫在 docs/scripts/check.js 的 KNOWN_WARN）`);
 process.exit(errors.length ? 1 : 0);
