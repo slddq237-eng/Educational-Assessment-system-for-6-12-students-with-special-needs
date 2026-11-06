@@ -376,7 +376,7 @@ function renderRangeMenu(){
     <div class="trow"><span class="tl">課次</span>
       <select id="tBook" aria-label="課本"><option value="">全部課本</option>${books.map(b => `<option value="${b}" ${T.book === b ? "selected" : ""}>${esc(bookName(b))}</option>`).join("")}</select>
       ${T.book ? `<select id="tLesson" aria-label="課次"><option value="">全部課次</option>${Object.keys(BOOKS[T.book].lessons).map(n => `<option value="${n}" ${T.lesson === n ? "selected" : ""}>${esc(lessonName(T.book, n))}</option>`).join("")}</select>` : ""}
-      ${goals.length > 1 ? `<select id="tGoal" aria-label="評量目標"><option value="">全部目標</option>${goals.map(g => `<option value="${g}" ${T.goal === g ? "selected" : ""}>${goalName(g)}</option>`).join("")}</select>` : ""}</div>`;
+      ${goals.length > 1 ? `<select id="tGoal" aria-label="評量目標"><option value="">全部目標</option>${goals.map(g => `<option value="${esc(g)}" ${T.goal === g ? "selected" : ""}>${esc(goalName(g))}</option>`).join("")}</select>` : ""}</div>`;
   const re = () => { saveT(); renderTeacher(); };
   $("#tRange").querySelectorAll("[data-trange]").forEach(b => b.onclick = () => { T.range = b.dataset.trange; re(); });
   $("#tRange").querySelectorAll("[data-tkind]").forEach(b => b.onclick = () => { T.kind = b.dataset.tkind; re(); });

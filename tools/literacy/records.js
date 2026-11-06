@@ -239,7 +239,7 @@ $("#recRestore").onchange = async e => {
   if(kind === "backup" || kind === "archive"){
     const have = new Set(records.map(recKey)), recs = data.records || [];
     const add = recs.filter(r => !have.has(recKey(r))).length, wsN = Object.keys(data.wordsets || {}).length;
-    text = `這是 ${savedDay(data)}下載的${kind === "archive" ? ` ${data.archive} 學年封存檔` : "備份檔"}，有 ${recs.length} 筆作答紀錄（其中 ${add} 筆是這台電腦還沒有的）、${(data.kids || []).length} 位學生${wsN ? `、${wsN} 課的字組` : ""}。
+    text = `這是 ${savedDay(data)}下載的${kind === "archive" ? ` ${esc(data.archive)} 學年封存檔` : "備份檔"}，有 ${recs.length} 筆作答紀錄（其中 ${add} 筆是這台電腦還沒有的）、${(data.kids || []).length} 位學生${wsN ? `、${wsN} 課的字組` : ""}。
       ${kind === "archive" ? "封存檔只加回作答紀錄，現在的評量設定不會動。" : "匯入後，評量設定（正式評量的條件）也會換成檔案裡的。"}<br><span class="warn">這個檔案有學生資料，請不要寄給不相關的人。</span>`;
     doIt = () => restoreBackup(data);
   } else if(kind === "wordsets"){
@@ -253,8 +253,8 @@ $("#recRestore").onchange = async e => {
     /* 名單裡沒有的代號不收進來（2026-10-31 維護者決定）：可能是已經刪除的學生，或是別台電腦的學生；封存的學生算有 */
     const add = fresh.filter(r => knownKid(r.kid)), skipped = fresh.length - add.length;
     const unknown = [...new Set(fresh.filter(r => !knownKid(r.kid)).map(r => r.kid))];
-    text = `這是${data.sheet ? "從 Google 試算表下載的平板作答紀錄" : "平板上下載的紀錄檔（送不出去時用）"}：${data.sessions} 次練習、${data.records.length} 筆作答紀錄（其中 ${add.length} 筆是這台電腦還沒有、而且學生在名單裡的）。`
-      + (data.missing ? `<br><span class="warn">有 ${data.missing} 次練習少了一部分資料（可能沒有送完），收到的部分照樣匯入。</span>` : "")
+    text = `這是${data.sheet ? "從 Google 試算表下載的平板作答紀錄" : "平板上下載的紀錄檔（送不出去時用）"}：${esc(data.sessions)} 次練習、${data.records.length} 筆作答紀錄（其中 ${add.length} 筆是這台電腦還沒有、而且學生在名單裡的）。`
+      + (data.missing ? `<br><span class="warn">有 ${esc(data.missing)} 次練習少了一部分資料（可能沒有送完），收到的部分照樣匯入。</span>` : "")
       + (skipped ? `<br><span class="warn">有 ${skipped} 筆紀錄不會匯入：代號 ${esc(unknown.join("、"))} 不在這台電腦的學生名單裡（可能是已經刪除的學生，或是別台電腦的學生）。</span>` : "");
     doIt = () => {
       /* 平板沒有學生名字，用這台電腦的學生名單補上 */
@@ -298,7 +298,9 @@ async function restoreBackup(data){
   const FORMAL_KEYS = ["choices", "formalTheme", "clockFormal"];   /* A3-6、A3-10（2026-10-25）：正式評量不提示、不報讀，提示與報讀不再是設定 */
   /* 封存檔是舊學年的資料，不動現在的設定（2026-10-25 維護者決定）；備份檔才還原設定 */
   const isArchive = fileKind(data) === "archive";
-  if(!isArchive && data.settings) FORMAL_KEYS.forEach(k => { if(data.settings[k] !== undefined) settings[k] = data.settings[k]; });
+  /* 檔案裡的值先檢查（2026-11-06）：選項數只收 3、4、6，開關只收是／否；不合規定的值不換，免得被改過的檔案弄壞正式評量的條件 */
+  const FORMAL_OK = {choices: v => CHOICES.some(c => c[0] === v), formalTheme: v => typeof v === "boolean", clockFormal: v => typeof v === "boolean"};
+  if(!isArchive && data.settings) FORMAL_KEYS.forEach(k => { if(data.settings[k] !== undefined && FORMAL_OK[k](data.settings[k])) settings[k] = data.settings[k]; });
   if(!isArchive) saveSettings();
   for(const p of BACKUP_PARTS) if(data[p.key]) await p.restore(data[p.key]);
   render();
