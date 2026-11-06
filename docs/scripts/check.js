@@ -68,13 +68,15 @@ const SAY_OK = new Set([   /* 2026-10-23 確認：都是同一個意思、同一
 ]);
 
 /* 已知、先不處理的提醒（2026-11-06 加）：has 裡的文字都出現在提醒裡才算，一定要寫 why（為什麼先不處理）。
-   數字寫進 has（字數、KB、字數）：數字變了提醒就會再出現，檔案越來越大才會被注意到；這時更新數字或處理掉。
-   清單裡的提醒已經不會出現（修好了或數字變了），會另外提醒從這裡拿掉。 */
+   會跟著程式一直變的數字（KB、字數）不要寫進 has，改用 max（上限，2026-11-06 改）：has 只寫數字前面的文字，
+   提醒裡緊接在 has 第一段文字後面的數字不超過 max 就不顯示；超過了會再跳出來，這時處理掉或討論後提高 max。
+   （以前把數字寫進 has，程式多一行數字就變，每個 PR 都要改這裡，兩個 PR 一定衝突。）
+   清單裡的提醒已經不會出現（修好了），會另外提醒從這裡拿掉。 */
 const KNOWN_WARN = [
-  {has: ['shared/lessons.js：242 個字的干擾字少於 2 個'], why: '等老師在 material-review.xlsx「干擾字候選」頁挑干擾字（pending.md「老師確認」）', since: '2026-11-06'},
+  {has: ['shared/lessons.js：', '個字的干擾字少於 2 個'], max: 242, why: '等老師在 material-review.xlsx「干擾字候選」頁挑干擾字（pending.md「老師確認」）', since: '2026-11-06'},
   {has: ['docs/history/history-2026-10-24.md：文件有 14071 字'], why: '已封存的歷史檔，新的歷史寫在 history-2026-10-31.md，平常不讀', since: '2026-11-06'},
   {has: ['shared/fonts/tw-kai.css：有 2 個字不在楷書字型裡（戳菱）'], why: '只在老師畫面，缺字時改用電腦的標楷體；重跑 make_kai.py 會讓 33 個字型檔全部重排（約 4MB，老師都要重新下載），等下次新增課本時一起跑', since: '2026-11-06'},
-  {has: ['tools/literacy/index.html：打開時要下載 1033KB'], why: '要把部分程式改成用到才載入，屬整理程式（docs/code/refactor.md），還沒排時間', since: '2026-11-06'},
+  {has: ['tools/literacy/index.html：打開時要下載'], max: 1100, why: '要把部分程式改成用到才載入，屬整理程式（docs/code/refactor.md），還沒排時間', since: '2026-11-06'},
 ];
 
 /* repo 裡所有檔案（略過 .git） */
@@ -517,12 +519,17 @@ for (const f of files.filter(f => /^docs\/changelog\/changes\/\d{4}-\d{2}-\d{2}.
 
 /* ---------- 結果 ---------- */
 const gh = !!process.env.GITHUB_ACTIONS;   /* 在 GitHub 上跑時，用 GitHub 看得懂的格式標出來 */
-const knownOf = w => KNOWN_WARN.find(k => k.has.every(t => w.includes(t)));
+/* 提醒裡緊接在 has 第一段文字後面的數字（例如「打開時要下載 1033KB」的 1033）；找不到回傳 null */
+const numAfter = (w, t) => { const i = w.indexOf(t), m = i < 0 ? null : w.slice(i + t.length).match(/^\s*(\d+)/); return m ? +m[1] : null; };
+const textOf = (k, w) => k.has.every(t => w.includes(t));
+const knownOf = w => KNOWN_WARN.find(k => textOf(k, w) && (k.max === undefined || (numAfter(w, k.has[0]) ?? Infinity) <= k.max));
 const quiet = warns.filter(knownOf), shown = warns.filter(w => !knownOf(w));
 /* 清單本身的檢查放在分類之後：這些提醒裡引用了清單的文字，不能被清單自己藏起來 */
 for (const k of KNOWN_WARN) {
   if (!k.why) err('docs/scripts/check.js', `KNOWN_WARN 的「${k.has[0]}」沒寫 why（為什麼先不處理）`);
-  if (!quiet.some(w => k.has.every(t => w.includes(t)))) shown.push(`docs/scripts/check.js：KNOWN_WARN 的「${k.has[0]}」已經不會出現了（修好了或數字變了），從 KNOWN_WARN 拿掉，或更新數字`);
+  const over = k.max !== undefined && warns.filter(w => textOf(k, w) && !knownOf(w)).map(w => numAfter(w, k.has[0]));
+  if (over && over.length) shown.push(`docs/scripts/check.js：KNOWN_WARN 的「${k.has.join('…')}」已經是 ${over.join('、')}，超過上限 max: ${k.max}，請處理，或討論後提高 max`);
+  else if (!quiet.some(w => textOf(k, w))) shown.push(`docs/scripts/check.js：KNOWN_WARN 的「${k.has.join('…')}」已經不會出現了（修好了），從 KNOWN_WARN 拿掉`);
 }
 for (const w of shown) console.log(gh ? `::warning::${w}` : `提醒　${w}`);
 for (const e of errors) console.log(gh ? `::error::${e}` : `錯誤　${e}`);
