@@ -9,7 +9,8 @@
    ========================================================= */
 /* 課本排序與名稱（BOOK_ORDER、bookName、lessonName）、語詞（wordOf、sentOf）、干擾字（confOf）、esc 都在 shared/common.js */
 /* 一排可以點選的小按鈕：list＝[[值, 顯示文字]…]，cur＝目前選的值，key＝data-○○ 的名字（設定畫面、老師專區都用；2026-10-24 從 teacher.js 搬來，因為平板不載入 teacher.js） */
-const chipRow = (list, cur, key, extra = () => "") => list.map(([v, t]) => `<button class="chip ${cur === v ? "on" : ""}" data-${key}="${v}" aria-pressed="${cur === v}" ${extra(v)}>${t}</button>`).join("");
+/* 按鈕的值（v）可能來自作答紀錄（例如課次代號），一律先經過 esc；顯示文字（t）由呼叫的地方負責 esc（有些是刻意放的 HTML） */
+const chipRow = (list, cur, key, extra = () => "") => list.map(([v, t]) => `<button class="chip ${cur === v ? "on" : ""}" data-${key}="${esc(v)}" aria-pressed="${cur === v}" ${extra(v)}>${t}</button>`).join("");
 /* 部件（查法見 shared/parts-api.js 的 Parts.read；2026-10-31 起從第二層開始讀：老師的人工手動拆法 → 電腦自動，沒有再讀第三層）：拆成 2 個以上、而且不含字本身才算「拆得開」；
    拆不開（獨體字、只拆出一塊、人工手動寫成字自己）回傳 null：部件提示改用黑圓圈遮住字的中心（見 play.js 的 hintHtml），部件重組不出這些字（見 goalSkips），都不會直接顯示答案 */
 function partsOf(c){

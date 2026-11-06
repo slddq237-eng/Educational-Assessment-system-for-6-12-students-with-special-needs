@@ -124,7 +124,7 @@ function computePivot(){
 /* =========================================================
    23. 進階分析：畫面
    ========================================================= */
-const opt = (list, cur, blank) => (blank ? `<option value="">${blank}</option>` : "") + list.map(([v, t]) => `<option value="${v}" ${cur === v ? "selected" : ""}>${esc(t)}</option>`).join("");
+const opt = (list, cur, blank) => (blank ? `<option value="">${blank}</option>` : "") + list.map(([v, t]) => `<option value="${esc(v)}" ${cur === v ? "selected" : ""}>${esc(t)}</option>`).join("");
 function renderPivot(){
   const dims = dimList().map(([k, d]) => [k, d[0]]);
   if(!DIMS[P.row] || (P.row === "freq" && !hasFreq())) P.row = "prepost";

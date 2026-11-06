@@ -150,7 +150,9 @@ addBackupPart("wordsets", () => wordSets, data => {
   for(const [k, v] of Object.entries(data)){
     if(!v || typeof v.chars !== "string" || !lessonChars(k).length) continue;
     const s = wordSets[k];
-    if(!s || (!s.locked && (v.locked || v.ver >= s.ver))) wordSets[k] = {...v};
+    /* 只收認得的欄位、轉成正確的型別（2026-11-06）：被改過的檔案不會把奇怪的值放進畫面 */
+    const ver = Math.max(1, parseInt(v.ver, 10) || 1);
+    if(!s || (!s.locked && (v.locked || ver >= s.ver))) wordSets[k] = {chars: v.chars, ver, locked: !!v.locked, ...(typeof v.pchars === "string" ? {pchars: v.pchars} : {})};
   }
   saveWordSets();
 });

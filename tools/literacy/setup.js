@@ -492,8 +492,8 @@ function renderKidSheet(){
       <p class="note" style="margin:0">${SCHOOL_YEAR} 學年${TERM}學期・選填。每學期分開記錄，換學期時舊資料會保留，分析時用來比較不同安排的效果。</p>
       <label><input type="checkbox" data-adj ${p.adjust?"checked":""}> 課程有調整（重整）到其他年級${p.adjust ? `：<select data-p="level" aria-label="調整到幾年級">${GRADES.map((g,j) => `<option value="${j+1}" ${(p.level||kidGrade(k))===j+1?"selected":""}>${g}年級</option>`).join("")}</select>` : ""}</label>
       ${SERVICES.map(v => `<div class="svc"><b>${v.name}</b>
-        <span class="n">${v.parts.map(([id,t]) => `<label>${t} <input type="number" min="0" max="40" data-p="${id}" value="${p[id] ?? ""}" placeholder="0" aria-label="${v.name}${t}節數"> 節</label>`).join("")}</span>
-        <label class="start">開始日期（選填）<input type="date" data-d="${v.id}Start" value="${p[v.id+"Start"] || ""}" aria-label="${v.name}開始日期"></label></div>`).join("")}
+        <span class="n">${v.parts.map(([id,t]) => `<label>${t} <input type="number" min="0" max="40" data-p="${id}" value="${esc(p[id] ?? "")}" placeholder="0" aria-label="${v.name}${t}節數"> 節</label>`).join("")}</span>
+        <label class="start">開始日期（選填）<input type="date" data-d="${v.id}Start" value="${esc(p[v.id+"Start"] || "")}" aria-label="${v.name}開始日期"></label></div>`).join("")}
       <p class="note" style="margin:0">開始日期留空，代表本學期一開始就有上。學期中才加入的課程請填日期，分析時可以比較加入前後的差異。</p>
     </div>` : ""}
     ${openAv === k.code ? avatarPanel(k) : ""}`;
@@ -737,7 +737,7 @@ function dateNote(t){
 }
 function dateCtl(t, label){
   return `<select data-type aria-label="${esc(label)}教學狀態">${TAUGHT.map(([v,x]) => `<option value="${v}" ${(t.type||"")===v?"selected":""}>${x}</option>`).join("")}</select>
-    <div class="ds">${t.type === "dates" ? `<input type="date" aria-label="${esc(label)}開始日" data-s value="${t.start||""}"><span>到</span><input type="date" aria-label="${esc(label)}結束日" data-e value="${t.end||""}">` : ""}
+    <div class="ds">${t.type === "dates" ? `<input type="date" aria-label="${esc(label)}開始日" data-s value="${esc(t.start||"")}"><span>到</span><input type="date" aria-label="${esc(label)}結束日" data-e value="${esc(t.end||"")}">` : ""}
     <span class="ph">${esc(dateNote(t))}</span></div>`;
 }
 /* 這位學生在這一課的個別設定如果是用「一組」加的，記著組名（entry.grp）；組別已刪掉就當個別學生顯示 */
