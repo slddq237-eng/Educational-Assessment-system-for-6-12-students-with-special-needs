@@ -139,13 +139,13 @@ const TURN_STYLES = [["chime","畫面＋提示音（預設）"],["voice","畫面
 const LIMITS = [["30","30 秒"],["60","1 分鐘"],["120","2 分鐘"]];
 const CHOICES = [["3","3 個"],["4","4 個"],["6","6 個"]];
 const choiceText = c => c === "bingo" ? "生字賓果卡" : c === "parts" ? "部件選項（至少 6 個，依這個字的部件數決定）" : `${c} 個選項`;
-/* 練習的玩法（第 4 步選）：一般、遊戲、賓果三個按鈕（2026-10-24 維護者決定）；正式評量看「評量設定」（遊戲開或關），生字賓果只在練習
+/* 練習的玩法（第 4 步選）：一般、主題遊戲、生字賓果三個按鈕（2026-10-24 維護者決定；2026-11-06 B13 從「一般模式」「遊戲」改名，代號不變）；正式評量看「評量設定」（遊戲開或關），生字賓果只在練習
    icon：第 4 步卡片上的小圖示（自己畫的 SVG，不用圖片檔）；desc：卡片上的一句話說明 */
 const ICON_LINE = `stroke="#1f3d36" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"`;
 const PLAYS = [
-  {id:"color",   name:"一般模式", desc:"沒有遊戲。作答畫面換成主題的顏色，做完拿貼紙",
+  {id:"color",   name:"一般", desc:"沒有遊戲。作答畫面換成主題的顏色，做完拿貼紙",
    icon:`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 7C18 7 7 17 7 31c0 13 10 24 22 24 4 0 6-2 6-5 0-2-1-3-1-5 0-3 2-5 5-5h6c8 0 13-6 13-13C58 16 47 7 32 7z" fill="#f6dfb4" ${ICON_LINE}/><circle cx="20" cy="27" r="5" fill="#d64534"/><circle cx="31" cy="17" r="5" fill="#2a78d6"/><circle cx="44" cy="21" r="5" fill="#2c7a69"/><circle cx="21" cy="41" r="5" fill="#e0a21b"/></svg>`},
-  {id:"game",    name:"遊戲",     desc:"下面選一張遊戲卡片：打外星人、釣大魚、孵恐龍蛋、做蛋糕",
+  {id:"game",    name:"主題遊戲",  desc:"下面選一張遊戲卡片：打外星人、釣大魚、孵恐龍蛋、做蛋糕",
    icon:`<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M19 22l-5-11M45 22l5-11" ${ICON_LINE}/><ellipse cx="32" cy="38" rx="23" ry="20" fill="#8fd16a" ${ICON_LINE}/><circle cx="32" cy="32" r="8" fill="#fff" ${ICON_LINE}/><circle cx="33" cy="33" r="3.5" fill="#1f3d36"/><path d="M21 45q11 9 22 0z" fill="#fff" ${ICON_LINE}/><path d="M27 47l2 4 2-4M33 47l2 4 2-4" fill="none" stroke="#1f3d36" stroke-width="2"/></svg>`},
   {id:"bingo",   name:"生字賓果", desc:"生字排成賓果卡，聽到哪個字就點哪個，連成一線有慶祝",
    icon:`<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="7" y="7" width="50" height="50" rx="8" fill="#fff" ${ICON_LINE}/><path d="M23.7 7v50M40.3 7v50M7 23.7h50M7 40.3h50" stroke="#1f3d36" stroke-width="2"/><circle cx="15.3" cy="15.3" r="5.5" fill="#d64534"/><circle cx="32" cy="32" r="5.5" fill="#d64534"/><circle cx="48.7" cy="48.7" r="5.5" fill="#d64534"/><path d="M11 11l42 42" stroke="#e0a21b" stroke-width="3" stroke-linecap="round" opacity=".85"/></svg>`}
@@ -208,7 +208,7 @@ const ANSWERS = [
      最多 3 位；先只開放練習、正確率模式（setup.js 的 step3Miss 寫原因）；作答模式記在紀錄的 answer 欄，不加新欄位 */
   {id:"splitturn", name:"大螢幕・分區輪流", desc:"2～3 人輪流，每人一區同時顯示在畫面上，輪到的人那一區亮起（目前只能練習）", min:2, max:3},
   {id:"split",   name:"大螢幕・同時",   desc:"螢幕分成 2～4 區，各自作答（需支援多點觸控）", min:2, max:4, off:"準備中"},
-  {id:"present", name:"呈現模式・紙筆", desc:"螢幕只出題，學生寫在紙上，老師改完再登錄", min:1, max:99, off:"準備中"},
+  {id:"present", name:"大螢幕・紙筆作答", desc:"螢幕只出題，學生寫在紙上，老師改完再登錄", min:1, max:99, off:"準備中"},
   /* 平板作答（tablet.js）：一個 QR code 可以給幾位學生，每位在自己的平板點自己的代號；練習和正式評量都能用（2026-10-25 起，A3-18） */
   {id:"qr",      name:"平板掃 QR code", desc:"學生用自己的平板掃描作答，做完傳回老師的 Google 表單", min:1, max:12}
 ];

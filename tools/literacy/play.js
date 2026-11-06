@@ -865,7 +865,7 @@ function pickPartners(then){
     const own = [...new Set(Rewards.owned(code, th))].sort((a, b) => Themes.stars(th, b) - Themes.stars(th, a) || a - b);
     const w = $("#pWho"); w.hidden = false; w.innerHTML = whoHtml(code);   /* 上方和下面都標出輪到誰，不然不知道換誰選 */
     $("#pProg").textContent = "";
-    $("#pBody").innerHTML = `<div class="ready"><div class="turnav">${Rewards.avatarHtml(code)}</div><h2>${esc(k ? kidShow(k) : code)}，選一個夥伴一起打怪獸！</h2>
+    $("#pBody").innerHTML = `<div class="ready"><div class="turnav">${Rewards.avatarHtml(code)}</div><h2>${esc(k ? kidShow(k) : code)}，選一個夥伴一起挑戰！</h2>
       <div class="pickrow">${own.map(i => `<button class="pickp" data-i="${i}">${Themes.stickerSvg(th, i)}<span>${esc(Themes.THEMES[th].stickers[i][1])}</span><b>${"★".repeat(Themes.stars(th, i))}</b></button>`).join("")}</div></div>`;
     $("#pBody").querySelectorAll(".pickp").forEach(b => b.onclick = () => { g.partner[code] = +b.dataset.i; next(); });
   };
