@@ -173,8 +173,8 @@ const sharedBingo = () => coopPossible() && playNow() === "bingo";   /* 多位�
 function playWhy(id){
   if(id === "color") return "";
   if(state.mode === "flu") return "流暢性模式不能用";
-  /* 一人一輪（E19，2026-11-06 維護者決定）：一人做完才換人，合作打怪獸、共用賓果卡不成立，先停用 */
-  if(state.answer === "oneround" && selKids().length > 1) return "一人一輪先不能用";
+  /* 接力（一人一輪，E19，2026-11-06 維護者決定）：一人做完才換人，合作打怪獸、共用賓果卡不成立，先停用 */
+  if(state.answer === "oneround" && selKids().length > 1) return "接力先不能用";
   if(id === "bingo") return goalCaps().noBingo ? goalCaps().noBingo : state.answer === "splitturn" ? "分區輪流之後再支援賓果" : "";
   return "";
 }
@@ -200,9 +200,9 @@ const hintName = id => (LEVELS.flatMap(l => l.items).find(i => i[0] === id) || [
 const REACT = {remove:"選錯的選項打叉", next:"出現下一個提示", free:"沒有提示，也不顯示答案，讓學生自己點", reveal:"顯示答案並唸一次，進入下一題"};   /* 選錯的選項每次都會停用，remove 只是舊紀錄的說法 */
 const ANSWERS = [
   {id:"turn",    name:"大螢幕・輪流",   desc:"1～4 人輪流在同一個螢幕作答，每題換人", min:1, max:4},
-  /* 一人一輪（E19，2026-11-06 維護者決定）：一位學生做完自己全部的題目才換下一位；先只開放練習、正確率，遊戲和賓果先停用（playWhy）；
+  /* 接力＝一人一輪（E19，2026-11-06 維護者決定；名稱同日從「一人一輪」改成「接力」）：一位學生做完自己全部的題目才換下一位；先只開放練習、正確率，遊戲和賓果先停用（playWhy）；
      作答模式記在紀錄的 answer 欄（oneround），不加新欄位 */
-  {id:"oneround", name:"大螢幕・一人一輪", desc:"2～4 人在同一個螢幕，一人做完全部題目再換下一位（目前只能練習）", min:2, max:4},
+  {id:"oneround", name:"大螢幕・接力", desc:"一人一輪：2～4 人在同一個螢幕，一位學生把題目全部做完，再換下一位；每人做的字一樣、順序各自打亂（目前只能練習）", min:2, max:4},
   /* 分區輪流（E14，2026-10-25 維護者決定）：版面同時顯示所有人，輪到的人那一區亮起；一次仍只有一人作答。
      最多 3 位；先只開放練習、正確率模式（setup.js 的 step3Miss 寫原因）；作答模式記在紀錄的 answer 欄，不加新欄位 */
   {id:"splitturn", name:"大螢幕・分區輪流", desc:"2～3 人輪流，每人一區同時顯示在畫面上，輪到的人那一區亮起（目前只能練習）", min:2, max:3},

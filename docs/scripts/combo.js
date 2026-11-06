@@ -1,6 +1,6 @@
 /* =========================================================
    識字評量「組合測試」（docs/scripts/combo.js，2026-10-31 B12 加；smoke.js 會呼叫）
-   做什麼：評量目標 × 練習／正式 × 正確率／流暢性 × 玩法（一般、遊戲、賓果）× 作答方式（輪流、分區輪流、一人一輪），
+   做什麼：評量目標 × 練習／正式 × 正確率／流暢性 × 玩法（一般、遊戲、賓果）× 作答方式（輪流、分區輪流、接力），
      每一種組合真的開始作答、答第一題（練習先故意答錯一次再答對；複選的部件題選對再送出），
      確認畫面不出程式錯誤、沒有卡住（答完那題學生的作答數有增加）。
    哪些組合算「本來就不能選」：照設定畫面自己的判斷（step1Miss、step2Miss、step3Miss、playWhy），不能選的略過並計數，
@@ -27,7 +27,7 @@ const IN_PAGE = async ({goal, kind, mode, play, answer}) => {
   const snd = {right:0, wrong:0};   /* 數對錯音效被叫了幾次（A3-8）；音效關著時 sfx 也會被呼叫，所以設定怎麼開都數得到 */
   if(formal) for (const k of ["right", "wrong"]){ const f = sfx[k]; sfx[k] = (...a) => { snd[k]++; return f(...a); }; }
   try { startSession(); } catch(e) { return {err: `startSession 出錯：${e.stack.split('\n').slice(0,3).join(' | ')}`}; }
-  await wait(play === "game" ? SCENE_MS + 500 : answer === "oneround" ? TURN_MS + 700 : 700);   /* 一人一輪有兩位學生，開頭先出現 1.6 秒的「先從 ○○ 開始」 */
+  await wait(play === "game" ? SCENE_MS + 500 : answer === "oneround" ? TURN_MS + 700 : 700);   /* 接力有兩位學生，開頭先出現 1.6 秒的「先從 ○○ 開始」 */
   if(G.mode === "flu"){ const go = document.querySelector("#roundGo"); if(!go) return {err: "流暢性沒有「開始」按鈕"}; go.click(); await wait(300); }
   const cur = () => G && G.cur;
   if(!cur()) return {err: "開始後沒有出題（G.cur 不見）"};
@@ -107,7 +107,7 @@ module.exports = async function comboErrors(browser, base) {
         if (r.skip) skipped++;
         else { ran++; if (kind === 'formal') formalRan++;
           if (kind === 'formal' && answer === 'splitturn') errs.push(`${name}：A3-19 分區輪流不能選正式評量，卻可以開始`);
-          if (answer === 'oneround' && (kind === 'formal' || mode === 'flu' || play !== 'color')) errs.push(`${name}：E19 一人一輪只開放練習・正確率・一般，卻可以開始`);
+          if (answer === 'oneround' && (kind === 'formal' || mode === 'flu' || play !== 'color')) errs.push(`${name}：E19 接力只開放練習・正確率・一般，卻可以開始`);
           for (const b of r.bad || []) errs.push(`${name}：${b}`);
           if (r.err) errs.push(`${name}：${r.err}`);
           else if (!r.n && !r.over) errs.push(`${name}：答了第一題但作答數沒增加（可能卡住）`);
