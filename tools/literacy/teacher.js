@@ -368,6 +368,7 @@ function renderTabHelp(){
 function renderRangeMenu(){
   const books = [...new Set(records.map(r => r.book))].filter(b => BOOKS[b]).sort((a, b) => BOOK_ORDER.indexOf(a) - BOOK_ORDER.indexOf(b));
   const goals = [...new Set(records.map(r => r.goal))].sort();
+  if(T.book && !BOOKS[T.book]){ T.book = ""; T.lesson = ""; }   /* 存著的課本已經不在資料裡（改代號、拿掉）：回到全部課本，不然整頁會壞（2026-11-06 健檢） */
   $("#tRange").innerHTML = `
     <div class="trow"><span class="tl">日期</span>${chipRow(RANGES, T.range, "trange")}
       ${T.range === "custom" ? `<label>從 <input type="date" id="tFrom" value="${T.from}"></label><label>到 <input type="date" id="tTo" value="${T.to}"></label>` : ""}

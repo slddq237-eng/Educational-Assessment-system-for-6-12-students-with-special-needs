@@ -105,7 +105,8 @@ function showGacha(item, done){
   const $g = s => box.querySelector(s), lever = $g(".glever");
   lever.focus();
   let pulled = false;
-  const finish = () => { box.remove(); done(); };
+  let finished = false;   /* 只揭曉一次（減少動態效果時，0.3 秒內又按「跳過」會跑兩次，2026-11-06 健檢） */
+  const finish = () => { if(finished) return; finished = true; box.remove(); done(); };
   $g(".gskip").onclick = () => { pulled = true; finish(); };
   /* 拉拉桿：點一下，或按住往下拖都算 */
   const pull = () => {
