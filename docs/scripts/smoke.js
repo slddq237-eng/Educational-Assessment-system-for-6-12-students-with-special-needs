@@ -96,7 +96,8 @@ async function visit(browser, base, url, after){
 
   /* 老師專區：teacher.js、pivot.js 按了才下載（2026-11-06，app.js 的 loadTeacher），確認按下去真的載得進來、畫面打得開 */
   report('tools/literacy/index.html 打開老師專區（按了才下載）', await visit(browser, base, 'tools/literacy/index.html', async (page, errs) => {
-    if (await page.evaluate(() => typeof renderTeacher !== 'undefined')) errs.push('打開網頁時就載入了 teacher.js（應該按「老師專區」才下載）');
+    /* 網頁本身不寫 teacher.js、pivot.js（畫面出現後才在背景下載，見 app.js），設定畫面才會快 */
+    if (/<script[^>]+src="(teacher|pivot)\.js/.test(await page.content())) errs.push('網頁一打開就載入了 teacher.js 或 pivot.js（應該畫面出現後才在背景下載）');
     await page.evaluate(() => document.querySelector('#openTeacher').click());
     await page.waitForFunction(() => !document.querySelector('#teacher').hidden, null, { timeout: 10000 }).catch(() => errs.push('按「老師專區」後畫面沒有出現'));
     if (!await page.evaluate(() => typeof renderPivot === 'function')) errs.push('pivot.js 沒有載入');

@@ -45,6 +45,12 @@ $("#openTeacher").onclick = () => {
     () => alert("老師專區載入失敗，請檢查網路，再按一次「老師專區」。"))
     .finally(() => { document.body.style.cursor = ""; });
 };
+/* 背景先下載（2026-11-06 維護者要求「不要有不好的影響」）：網頁打開、設定畫面出現後，趁瀏覽器有空先把老師專區下載好。
+   設定畫面一樣快出現；老師按「老師專區」時通常已經好了，不用等；網頁打開後才斷網也打得開。失敗不提醒，按的時候會再試一次。平板用不到，不下載 */
+if(!TABLET) addEventListener("load", () => {
+  const pre = () => loadTeacher().catch(() => {});
+  if(window.requestIdleCallback) requestIdleCallback(pre, {timeout: 5000}); else setTimeout(pre, 2000);
+});
 /* 收藏與頭像讀完後再畫一次，學生按鈕上才有頭像 */
 Rewards.ready.then(TABLET ? tabletKids : render);
 
