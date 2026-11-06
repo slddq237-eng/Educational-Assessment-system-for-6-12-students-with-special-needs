@@ -18,7 +18,7 @@ const PRESETS = [
    why:"每次評量的條件都一樣，前後成績才能比較，看得出教學有沒有效果。要做前後測（例如學習扶助、資源班轉介前介入）時，按「前測」或「後測」，紀錄會標記起來，老師專區就能比較；沒有要比較就選「不標」。",
    apply:() => Object.assign(state, {kind:"formal", mode:"acc"})},
   /* 計時挑戰是練習（2026-10-21 維護者決定）：像遊戲一樣挑戰，結果另外統計；要列入學習分析，到進階設定選「正式評量＋流暢性模式」 */
-  {id:"timed", name:"計時挑戰", desc:"1 分鐘內答對越多越好，看學生熟不熟練。", rec:"紀錄會存下來，不列入學習分析", off:true,
+  {id:"timed", name:"計時挑戰", desc:"1 分鐘內答對越多越好，看學生熟不熟練（就是進階設定的「流暢性模式」）。", rec:"紀錄會存下來，不列入學習分析", off:true,
    why:"認得字之後，還要認得快，讀起文章才會順。每分鐘答對幾個，可以看出熟練的程度。這是練習，老師專區把「性質」切到「練習」就看得到；要列入學習分析，請到進階設定選「正式評量」和「流暢性模式」。",
    apply:() => Object.assign(state, {kind:"practice", mode:"flu", limit:"60"})}
 ];
@@ -249,12 +249,12 @@ function playText(){
   const c = current();
   if(!useRewards()) return "不用主題（評量設定）";
   const card = willFight() && state.themePick && gameCard(state.themePick);
-  const base = willFight() ? `遊戲${card ? `・${card.act}` : ""}（${team() === "coop" && selKids().length > 1 ? "大家合作" : "個人"}）` : c.choices === "bingo" ? (sharedBingo() ? "生字賓果（大家共用一張卡）" : "生字賓果") : "一般";
+  const base = willFight() ? `主題遊戲${card ? `・${card.act}` : ""}（${team() === "coop" && selKids().length > 1 ? "大家合作" : "個人"}）` : c.choices === "bingo" ? (sharedBingo() ? "生字賓果（大家共用一張卡）" : "生字賓果") : "一般";
   return base;
 }
 function renderPlay(){
   const c = current(), formal = c.formal, row = (t, body) => `<div class="playrow"><span class="tl">${ROW_ICONS[t] || ""}${t}</span><div>${body}</div></div>`;
-  $("#playHint").textContent = formal ? "正式評量的玩法照「評量設定」，從第一次正式評量起每次都一樣，這裡只顯示。" : "練習可以自由選玩法。選「遊戲」時，請學生在下面點一張遊戲卡片；其他玩法點一個主題。";
+  $("#playHint").textContent = formal ? "正式評量的玩法照「評量設定」，從第一次正式評量起每次都一樣，這裡只顯示。" : "練習可以自由選玩法。選「主題遊戲」時，請學生在下面點一張遊戲卡片；其他玩法點一個主題。";
   const rows = [];
   if(formal){
     const fid = willFight() ? "game" : "color";
