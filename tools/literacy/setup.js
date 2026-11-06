@@ -254,7 +254,7 @@ function playText(){
 }
 function renderPlay(){
   const c = current(), formal = c.formal, row = (t, body) => `<div class="playrow"><span class="tl">${ROW_ICONS[t] || ""}${t}</span><div>${body}</div></div>`;
-  $("#playHint").textContent = formal ? "正式評量的玩法照「評量設定」，從基線期起每次都一樣，這裡只顯示。" : "練習可以自由選玩法。選「遊戲」時，請學生在下面點一張遊戲卡片；其他玩法點一個主題。";
+  $("#playHint").textContent = formal ? "正式評量的玩法照「評量設定」，從第一次正式評量起每次都一樣，這裡只顯示。" : "練習可以自由選玩法。選「遊戲」時，請學生在下面點一張遊戲卡片；其他玩法點一個主題。";
   const rows = [];
   if(formal){
     const fid = willFight() ? "game" : "color";
