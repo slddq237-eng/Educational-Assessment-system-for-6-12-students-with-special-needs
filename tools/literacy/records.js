@@ -69,7 +69,15 @@ function clearRecords(){
   try { recDb.transaction(REC_STORE, "readwrite").objectStore(REC_STORE).clear(); } catch(e){}
 }
 /* 平板作答（data.js 的 TABLET）不存進平板的資料庫：紀錄只放在記憶體、送到老師的 Google 表單（見 tablet.js） */
-(async () => { recDb = TABLET ? null : await openRecDb(); records = await loadRecords(); recordsLoaded = true; if(typeof renderTidyNote === "function") renderTidyNote(); $("#dbWarn").hidden = !!recDb || !!TABLET; checkBackup(); })();
+(async () => { recDb = TABLET ? null : await openRecDb(); records = await loadRecords(); recordsLoaded = true; if(typeof renderTidyNote === "function") renderTidyNote(); $("#dbWarn").hidden = !!recDb || !!TABLET; checkBackup(); askPersist(); })();
+
+/* 永久保存（2026-11-06 維護者決定）：電腦空間不足時，瀏覽器可能自動清掉網站的資料（作答紀錄、學生名單、貼紙）。
+   向瀏覽器申請「這個網站的資料不要自動清掉」：Chrome、Edge 不會問老師，自己決定答不答應；Firefox 會跳出一次詢問，請老師按「允許」。
+   有作答紀錄才申請（第一次打開、還沒用過的老師不會被問）；平板不存資料，不申請。申請不到也照常使用，只是要更記得下載備份檔。 */
+function askPersist(){
+  if(TABLET || !recDb || !records.length || !(navigator.storage && navigator.storage.persist)) return;
+  navigator.storage.persisted().then(ok => { if(!ok) return navigator.storage.persist(); }).catch(() => {});
+}
 
 /* 備份提醒：有紀錄、而且超過 30 天沒下載備份檔（或從來沒備份過）時，設定畫面上方提醒一次 */
 const BACKUP_KEY = KEYS.lastBackup, BACKUP_DAYS = 30;
