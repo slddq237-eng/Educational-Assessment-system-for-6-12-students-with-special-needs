@@ -30,10 +30,23 @@ function loadRecords(){
     } catch(e){ res([]); }
   });
 }
+/* 寫入失敗（例如電腦空間不足、瀏覽器限制容量）：以前會默默失敗，老師以為有存到。
+   改成在畫面上方提醒（2026-11-06）；這次打開網頁後的紀錄還在記憶體裡，下載備份檔或匯出 Excel 就救得回來。 */
+function recWriteFailed(){
+  const w = $("#dbWarn"); if(!w) return;
+  w.textContent = "⚠ 作答紀錄沒有成功存進這台電腦（可能是電腦或瀏覽器的空間不足）。請不要關掉網頁，先到右上角選單「下載備份檔」或匯出 Excel，再清出空間。";
+  w.hidden = false;
+}
+/* 開一個寫入用的交易（transaction），失敗或中斷時提醒 */
+function recWriteTx(){
+  const tx = recDb.transaction(REC_STORE, "readwrite");
+  tx.onerror = tx.onabort = recWriteFailed;
+  return tx.objectStore(REC_STORE);
+}
 function saveRecord(r){
   records.push(r);
   if(!recDb) return;
-  try { const q = recDb.transaction(REC_STORE, "readwrite").objectStore(REC_STORE).add(r); q.onsuccess = () => { r.id = q.result; if(r.dirty) updateRecord(r); }; } catch(e){}
+  try { const q = recWriteTx().add(r); q.onsuccess = () => { r.id = q.result; if(r.dirty) updateRecord(r); }; } catch(e){ recWriteFailed(); }
 }
 /* 改一筆已經存好的紀錄（例如寫進抽到的貼紙、標成中途結束）。
    剛存的紀錄可能還在寫入中（還沒有 id），先做記號，寫好後再補存一次。 */
@@ -41,7 +54,7 @@ function updateRecord(r){
   if(!recDb) return;
   if(r.id == null){ r.dirty = true; return; }
   delete r.dirty;
-  try { recDb.transaction(REC_STORE, "readwrite").objectStore(REC_STORE).put(r); } catch(e){}
+  try { recWriteTx().put(r); } catch(e){ recWriteFailed(); }
 }
 /* 移除一批紀錄（封存舊學年用）：記憶體和這台電腦的資料庫都拿掉 */
 function removeRecords(list){
@@ -189,6 +202,8 @@ function downloadJson(data, filename, msgSel = "#recMsg"){
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:"application/json"}));
     a.download = filename;
     document.body.appendChild(a); a.click(); a.remove();
+    /* 下載開始後釋放暫存的檔案（備份檔可能有好幾 MB，不釋放會一直佔記憶體，直到關掉網頁）；等一分鐘，避免慢的電腦還沒開始下載就被收走 */
+    setTimeout(() => URL.revokeObjectURL(a.href), 60 * 1000);
     return true;
   } catch(e){ setMsg(msgSel, "這個環境不允許下載檔案，請用一般瀏覽器開啟網站再下載。"); return false; }
 }
