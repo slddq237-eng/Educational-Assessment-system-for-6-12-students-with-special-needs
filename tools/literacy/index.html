@@ -1441,9 +1441,7 @@ table.rec th,table.rec td{border-bottom:1px solid var(--grid);padding:6px 8px;te
 <script src="collect.js?v=2026-11-10"></script>
 <script src="gacha.js?v=2026-11-10"></script>
 <script src="scenes.js?v=2026-11-10"></script>
-<!-- 老師專區、進階分析：平板作答（網址 #t）用不到，不下載，省約 30 KB（2026-10-24 R4a）。
-     用 document.write 是為了讓電腦上的載入順序和以前完全一樣 -->
-<script>if(!/^#t/.test(location.hash)) document.write('<script src="teacher.js?v=2026-11-10"><\/script><script src="pivot.js?v=2026-11-10"><\/script>');</script>
+<!-- 老師專區、進階分析（teacher.js、pivot.js，約 120 KB）：不寫在這裡，畫面出現後由 app.js 的 loadTeacher 在背景下載（2026-11-06）；平板作答用不到，不會下載 -->
 <script src="tablet.js?v=2026-11-10"></script>
 <script src="app.js?v=2026-11-10"></script>
 </body>

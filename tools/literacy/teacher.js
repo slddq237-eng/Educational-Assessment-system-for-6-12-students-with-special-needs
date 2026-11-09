@@ -999,5 +999,5 @@ function openCharLog(kid, c){
   openSheet("#charSheet");
 }
 
-$("#openTeacher").onclick = () => { renderTeacher(); showScreen("#teacher"); };
+/* 「老師專區」按鈕在 app.js（按了才下載這個檔和 pivot.js，2026-11-06） */
 $("#teacherBack").onclick = () => showScreen("#setup");
