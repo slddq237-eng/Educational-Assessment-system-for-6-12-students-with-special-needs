@@ -235,7 +235,7 @@ $("#recRestore").onchange = async e => {
   } else try { data = JSON.parse(await f.text()); } catch(err){ $("#recMsg").textContent = "沒辦法讀取這個檔案：這不是平台存的資料檔（Excel 檔只能看，不能匯入）。"; return; }
   if(!data || data.app !== "literacy"){ $("#recMsg").textContent = "沒辦法讀取這個檔案：這不是識字評量存的資料檔。"; return; }
   const kind = fileKind(data);
-  let text, doIt;
+  let text, doIt, extra = "", check = null;
   if(kind === "backup" || kind === "archive"){
     const have = new Set(records.map(recKey)), recs = data.records || [];
     const add = recs.filter(r => !have.has(recKey(r))).length, wsN = Object.keys(data.wordsets || {}).length;
@@ -249,33 +249,136 @@ $("#recRestore").onchange = async e => {
       + (plan.none.length ? `<br>${esc(plan.none.join("、"))}：這個版本的網頁沒有這一課的字，會略過。` : "");
     doIt = () => { wsImport(plan); render(); return `已匯入 ${plan.ok.length} 課的字組${plan.skip.length ? `，${plan.skip.length} 課沒有換掉` : ""}。到第 2 步選課次就會看到。`; };
   } else if(kind === "tablet"){
-    const have = new Set(records.map(recKey)), fresh = data.records.filter(r => !have.has(recKey(r)));
-    /* 名單裡沒有的代號不收進來（2026-10-31 維護者決定）：可能是已經刪除的學生，或是別台電腦的學生；封存的學生算有 */
-    const add = fresh.filter(r => knownKid(r.kid)), skipped = fresh.length - add.length;
-    const unknown = [...new Set(fresh.filter(r => !knownKid(r.kid)).map(r => r.kid))];
-    text = `這是${data.sheet ? "從 Google 試算表下載的平板作答紀錄" : "平板上下載的紀錄檔（送不出去時用）"}：${esc(data.sessions)} 次練習、${data.records.length} 筆作答紀錄（其中 ${add.length} 筆是這台電腦還沒有、而且學生在名單裡的）。`
+    /* 名單裡沒有的代號（2026-11-09 維護者決定，取代 2026-10-31「不收進來」）：搬家到新網站時，有些老師重新建立了學生，
+       舊網站的平板紀錄代號就對不上。這些代號逐一列出來，附上作答線索，老師選「併入現有學生」「新增為新學生」或「略過」（預設略過）。
+       併入、新增的舊代號記在學生的 oldCodes，之後再匯入同一份試算表會自動對到同一位學生，不用再選。封存的學生算「名單裡有」。 */
+    const toKid = code => knownKid(code) ? code : (kidByOld(code) || {}).code;
+    const unknownRecs = data.records.filter(r => r.kid && !toKid(r.kid));
+    const unknown = [...new Set(unknownRecs.map(r => r.kid))];
+    const plan = () => tabletAddList(data.records, toKid);
+    const add0 = plan().length;
+    text = `這是${data.sheet ? "從 Google 試算表下載的平板作答紀錄" : "平板上下載的紀錄檔（送不出去時用）"}：${esc(data.sessions)} 次練習、${data.records.length} 筆作答紀錄（其中 ${add0} 筆是這台電腦還沒有、而且學生在名單裡的）。`
       + (data.missing ? `<br><span class="warn">有 ${esc(data.missing)} 次練習少了一部分資料（可能沒有送完），收到的部分照樣匯入。</span>` : "")
-      + (skipped ? `<br><span class="warn">有 ${skipped} 筆紀錄不會匯入：代號 ${esc(unknown.join("、"))} 不在這台電腦的學生名單裡（可能是已經刪除的學生，或是別台電腦的學生）。</span>` : "");
+      + (unknown.length ? `<br><span class="warn">有 ${unknown.length} 個代號不在這台電腦的學生名單裡（共 ${unknownRecs.length} 筆紀錄）。可能是舊網站的代號（老師重新建立學生後換了新代號），也可能是已經刪除的學生、別台電腦的學生。請在下面選每個代號要怎麼處理。</span>` : "");
+    if(unknown.length){
+      extra = unknownPanel(unknown, unknownRecs);
+      check = () => unknownCheck(ask, unknown);
+    }
     doIt = () => {
+      /* 先處理名單裡沒有的代號：併入的把舊代號記到那位學生身上，新增的建立新學生（代號由系統產生） */
+      const done = unknown.length ? unknownApply(ask, unknown, unknownRecs) : {merged:[], created:[], skipped:[]};
+      const add = plan();
       /* 平板沒有學生名字，用這台電腦的學生名單補上 */
       add.forEach(r => { const k = kidBy(r.kid) || kidsArchived.find(x => x.code === r.kid); r.kidName = k ? k.name : ""; saveRecord(r); });
       /* 平板上抽到的貼紙，匯入時才收進貼紙簿（見 collect.js 的 importStickers） */
       const got = importStickers(add);
       render();
-      return `已匯入 ${add.length} 筆新的作答紀錄（重複的紀錄不會再加一次）${skipped ? `，${skipped} 筆不在學生名單裡所以沒有匯入` : ""}${got ? `，${got} 張貼紙收進學生的貼紙簿` : ""}。`;
+      const skipN = unknownRecs.filter(r => done.skipped.includes(r.kid)).length;
+      return `已匯入 ${add.length} 筆新的作答紀錄（重複的紀錄不會再加一次）${got ? `，${got} 張貼紙收進學生的貼紙簿` : ""}。`
+        + (done.merged.length ? `併入現有學生：${done.merged.join("、")}。` : "")
+        + (done.created.length ? `新增學生：${done.created.join("、")}（到「學生名單」可以改年級）。` : "")
+        + (done.skipped.length ? `略過的代號：${done.skipped.join("、")}（${skipN} 筆沒有匯入）。` : "");
     };
   } else { $("#recMsg").textContent = "這個檔案是比較新版本的網頁存的，請重新整理網頁後再匯入一次。"; return; }
   $("#recMsg").textContent = "";
-  ask.innerHTML = `<p style="margin:0">${text}</p><p style="margin:0"><b>要匯入嗎？</b></p>
+  ask.innerHTML = `<p style="margin:0">${text}</p>${extra}<p style="margin:0"><b>要匯入嗎？</b></p>
     <div class="row"><button class="save" id="importYes">匯入</button><button class="ghost" id="importNo">取消</button></div>`;
   ask.hidden = false;
+  ask.querySelectorAll("[data-oldpick]").forEach(s => s.onchange = () => { ask.querySelector(`[data-oldname="${s.dataset.oldpick}"]`).hidden = s.value !== "new"; });
   $("#importNo").onclick = () => { ask.hidden = true; $("#recMsg").textContent = "沒有匯入。"; };
   $("#importYes").onclick = async () => {
+    const bad = check && check();
+    if(bad){ $("#recMsg").textContent = bad; return; }
     ask.hidden = true;
     try { const msg = await doIt(); renderRecSheet(); $("#recMsg").textContent = msg; }
     catch(err){ $("#recMsg").textContent = `沒辦法匯入這個檔案：${err.message}`; }
   };
 };
+/* ---------- 平板紀錄裡名單沒有的代號（2026-11-09） ----------
+   學生的 oldCodes：以前用過、匯入時老師指定給這位學生的舊代號（例如舊網站的代號）。只在匯入平板紀錄時用來對應，其他地方都用 code。 */
+const kidByOld = code => [...kids, ...kidsArchived].find(k => (k.oldCodes || []).includes(code));
+/* 要加進來的紀錄：代號換成名單裡的學生（toKid 找不到的不收），換完代號再判斷重複，同一份試算表匯入兩次也不會多一份 */
+function tabletAddList(recs, toKid){
+  const have = new Set(records.map(recKey)), out = [];
+  for(const r of recs){
+    const code = r.kid && toKid(r.kid);
+    if(!code) continue;
+    const r2 = code === r.kid ? r : {...r, kid:code};
+    const key = recKey(r2);
+    if(have.has(key)) continue;
+    have.add(key); out.push(r2);
+  }
+  return out;
+}
+/* 學年：8 月到隔年 1 月算同一學年（和 data.js 的 SCHOOL_YEAR 同一個算法），用來推算新增學生的年級 */
+const schoolYearOf = d => (d.getMonth() + 1 >= 8 ? d.getFullYear() : d.getFullYear() - 1) - 1911;
+/* 每個代號一列：作答線索（幾次、幾題、日期、年級、課次、答對比例）＋怎麼處理的選單；新增學生時才出現名字欄 */
+function unknownPanel(codes, recs){
+  const opt = k => `<option value="k:${esc(k.code)}">${esc(kidLabel(k))}</option>`;
+  const kidOpts = (kids.length ? `<optgroup label="併入現在名單的學生">${kids.map(opt).join("")}</optgroup>` : "")
+    + (kidsArchived.length ? `<optgroup label="併入封存區的學生">${kidsArchived.map(opt).join("")}</optgroup>` : "");
+  const rows = codes.map(code => {
+    const rs = recs.filter(r => r.kid === code).sort((a, b) => String(a.at).localeCompare(String(b.at)));
+    const day = r => { const t = new Date(r.at); return isNaN(t) ? "" : `${t.getFullYear()}/${t.getMonth() + 1}/${t.getDate()}`; };
+    const first = day(rs[0]), last = day(rs[rs.length - 1]);
+    const grade = rs[rs.length - 1].grade, formal = rs.filter(r => r.kind === "formal").length;
+    const lessons = [...new Set(rs.map(r => r.book && BOOKS[r.book] ? `${bookName(r.book)}${lessonName(r.book, String(r.lesson))}` : "").filter(Boolean))];
+    const right = rs.filter(r => r.firstCorrect).length;
+    const clue = [`${new Set(rs.map(r => r.session)).size} 次、${rs.length} 題`,
+      first && (first === last ? first : `${first}～${last}`),
+      grade && `${GRADES[grade - 1] || grade}年級`,
+      lessons.length && (lessons.length > 3 ? `${lessons.slice(0, 3).join("、")} 等 ${lessons.length} 課` : lessons.join("、")),
+      `第一次就答對 ${Math.round(right / rs.length * 100)}%`,
+      formal && `其中正式評量 ${formal} 題`].filter(Boolean).join("・");
+    return `<div class="arow"><span class="an">代號 ${esc(code)}<br><small>${esc(clue)}</small></span>
+      <select data-oldpick="${esc(code)}" aria-label="代號 ${esc(code)} 要怎麼處理"><option value="skip">略過（不匯入）</option><option value="new">新增為新學生</option>${kidOpts}</select>
+      <input data-oldname="${esc(code)}" hidden maxlength="20" placeholder="新學生的名字" aria-label="代號 ${esc(code)} 新學生的名字" style="border:2px solid var(--ink);border-radius:10px;padding:4px 8px;min-width:0">
+    </div>`;
+  }).join("");
+  return `<div style="margin:8px 0">${rows}</div>
+    <p class="note" style="margin:0 0 8px">併入現有學生：這個代號的紀錄、貼紙都算那位學生的（一位學生可以併入好幾個舊代號）。選好後，之後再匯入同一份試算表，這個代號會自動對到同一位學生。</p>`;
+}
+/* 按「匯入」前檢查：新學生要有名字、不能和現有學生或其他新學生同名（名字不能重複，見 data.js 的 nameTaken） */
+function unknownCheck(ask, codes){
+  const names = [];
+  for(const code of codes){
+    if(ask.querySelector(`[data-oldpick="${code}"]`).value !== "new") continue;
+    const name = ask.querySelector(`[data-oldname="${code}"]`).value.trim();
+    if(!name) return `代號 ${code} 選了「新增為新學生」，請填名字。`;
+    const other = nameTaken(name);
+    if(other) return `已經有一位叫「${name}」的學生${kidsArchived.includes(other) ? "（在封存區）" : ""}了。學生名字不能重複：是同一位學生的話，請改選「併入」這位學生；不是的話，請換一個名字。`;
+    if(names.includes(name)) return `兩個代號都要新增叫「${name}」的學生。名字不能重複，請換一個名字。`;
+    names.push(name);
+  }
+  return "";
+}
+/* 照老師的選擇處理：併入的把舊代號記到那位學生身上，新增的建立新學生（年級用最後一筆紀錄的年級推算到今年） */
+function unknownApply(ask, codes, recs){
+  const done = {merged:[], created:[], skipped:[]};
+  let archTouched = false;
+  for(const code of codes){
+    const v = ask.querySelector(`[data-oldpick="${code}"]`).value;
+    if(v === "skip"){ done.skipped.push(code); continue; }
+    let k;
+    if(v === "new"){
+      const name = ask.querySelector(`[data-oldname="${code}"]`).value.trim();
+      /* 最後一筆有年級的紀錄：記那一學年的年級，kidGrade 會自動升到今年；都沒有就先放二年級（和新增學生一樣） */
+      const r = recs.filter(x => x.kid === code && x.grade && !isNaN(new Date(x.at))).sort((a, b) => String(b.at).localeCompare(String(a.at)))[0];
+      k = r ? {code:newKidCode(), name, grade:+r.grade, sy:schoolYearOf(new Date(r.at)), since:iso(new Date())}
+            : {code:newKidCode(), name, grade:2, sy:SCHOOL_YEAR, since:iso(new Date())};
+      kids.push(k); done.created.push(`${name}（舊代號 ${code}）`);
+    } else {
+      const c = v.slice(2);
+      k = kids.find(x => x.code === c) || kidsArchived.find(x => x.code === c);
+      if(!k){ done.skipped.push(code); continue; }
+      if(kidsArchived.includes(k)) archTouched = true;
+      done.merged.push(`${code} → ${kidLabel(k)}`);
+    }
+    k.oldCodes = [...new Set([...(k.oldCodes || []), code])];
+  }
+  saveKids(); if(archTouched) saveArchived();
+  return done;
+}
 /* 匯入備份檔、封存檔：作答紀錄、學生名單、教學日期加進來（重複的不再加），評量設定換成檔案裡的 */
 async function restoreBackup(data){
   const have = new Set(records.map(recKey));
