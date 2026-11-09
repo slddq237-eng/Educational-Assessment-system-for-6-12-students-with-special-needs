@@ -38,11 +38,11 @@
 
 | 頁面 | 載入順序 |
 |---|---|
-| `tools/literacy/index.html` | lessons → bpmf → freq → parts → common → sticker-art → themes → rewards → data → setup → records → wordsets → play → collect → gacha → scenes → teacher → pivot → tablet → app → tour（平板作答不載入 teacher、pivot、tour，見下方） |
+| `tools/literacy/index.html` | lessons → bpmf → freq → parts → common → sticker-art → themes → rewards → data → setup → records → wordsets → play → collect → gacha → scenes → tablet → app → tour（平板作答不載入 tour，見下方）；teacher → pivot 不在網頁一打開時載入，設定畫面出現後由 `app.js` 的 `loadTeacher` 在背景依序下載（按「老師專區」時還沒好就當場下載，2026-11-06） |
 | `tools/prep/index.html` | lessons → parts → freq → common → prep |
 
 - 每個 `<script src>`、`<link>` 後面都有 `?v=日期`，**所有頁面要一樣**；改了任何 js、css 就全部換成新的版本號，老師的瀏覽器才會抓新檔（自動檢查第 3 項）。
-- Excel 元件 `shared/vendor/xlsx-0.18.5.full.min.js` 不在上表：要匯出、匯入 Excel 時才由 `common.js` 的 `loadXlsx()` 載入。QR code 元件 `shared/vendor/qrcode-generator-1.4.4.js` 也一樣，按「產生 QR code」時才由 `tablet.js` 的 `loadQr()` 載入。
+- Excel 元件 `shared/vendor/xlsx-0.18.5.full.min.js` 不在上表：要匯出、匯入 Excel 時才由 `common.js` 的 `loadXlsx()` 載入。QR code 元件 `shared/vendor/qrcode-generator-1.4.4.js` 也一樣，按「產生 QR code」時才由 `tablet.js` 的 `loadQr()` 載入。老師專區 `teacher.js`、`pivot.js` 也是用到才載入（見上表）：**其他檔案不能在網頁一打開時就用這兩個檔的東西**，要用的共用小工具放 `data.js`。
 
 ## 3. 共用檔案 `shared/`
 
