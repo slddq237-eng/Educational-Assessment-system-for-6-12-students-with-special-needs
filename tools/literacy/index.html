@@ -252,6 +252,7 @@ body.quick .lesson .pill{display:none}
 .menu[open]>summary{background:var(--ink);color:var(--paper)}
 .menulist{position:absolute;right:0;top:calc(100% + 8px);z-index:15;min-width:250px;background:var(--card);border:2px solid var(--ink);
   border-radius:16px;box-shadow:4px 4px 0 var(--ink);padding:6px;display:grid}
+@media (max-width:480px){.tools{position:relative}.menu{position:static}.menulist{left:0;right:0;min-width:0}}   /* 手機窄螢幕：「選單」按鈕換到左邊時，選單原本往左跑出螢幕（2026-11-10 發布前測試），改成和上面那排按鈕同寬 */
 .menulist button,.menulist a{border:none;background:none;text-align:left;padding:10px 14px;border-radius:10px;font-size:17px;color:var(--ink);text-decoration:none}
 .menulist button:hover,.menulist a:hover{background:var(--mint)}
 .recgroups{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
