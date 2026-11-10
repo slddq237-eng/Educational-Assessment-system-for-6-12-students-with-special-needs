@@ -87,22 +87,22 @@ function wrShow(fresh = true){
   $("#wGoal").textContent = GOALS.find(x => x.id === W.goal).name;
   let body = "";
   if(W.goal === "W1") body = `<div class="wword zy">${wrZhuyinHtml(it)}</div>`;
-  if(W.goal === "W2") body = `<button class="wspk" id="wSpk" aria-label="再唸一次">${SPEAKER_SVG}</button>
-    ${W.wordOn && it.w ? `<div class="wword bpmf">${esc(Bpmf.blank(it.w, it.c, "○"))}</div>` : ""}`;
+  if(W.goal === "W2") body = `<button class="wspk" id="wSpk" aria-label="再唸一次">${SPEAKER_SVG}</button>`;
   if(W.goal === "W3") body = `<div class="pieces big" aria-label="拆開的部件">${it.tiles}</div>`;
   /* 提示按鈕（老師點了才出現提示） */
   const ps = W.goal === "W3" ? [] : wrParts(it.c);
   const shown = ps.slice(0, W.partN);
-  const btns = [
-    W.goal !== "W2" ? `<button class="ghost whint" data-wh="say">${SPEAKER_SVG}<span>唸題目</span></button>` : "",
-    W.goal === "W2" && it.w ? `<button class="ghost whint" data-wh="word" ${W.wordOn ? "disabled" : ""}>語詞提示</button>` : "",
-    ps.length ? `<button class="ghost whint" data-wh="part" ${W.partN >= ps.length ? "disabled" : ""}>${W.partN ? `再多一個部件（${W.partN}/${ps.length}）` : "部件提示"}</button>` : ""
-  ].join("");
-  $("#wStage").innerHTML = `<div class="wnum">${W.pos + 1}</div>${body}
-    ${shown.length ? `<div class="pieces wparts" aria-label="部件提示">${shown.map(p => `<span class="ptile">${esc(p)}</span>`).join("")}</div>` : ""}
-    ${btns ? `<div class="whints">${btns}</div>` : ""}`;
+  /* 提示分成左、中、右三格（2026-11-10 維護者要求）：左＝聲音（唸題目／再唸一次）、中＝語詞提示、右＝部件提示；
+     每格上面是按鈕、下面是點開的內容；這個題型沒有的那一格空著，位置固定 */
+  const cell = (cls, inner) => `<div class="whcell ${cls}">${inner}</div>`;
+  const left = cell("say", `<button class="ghost whint" data-wh="say">${SPEAKER_SVG}<span>${W.goal === "W2" ? "再唸一次" : "唸題目"}</span></button>`);
+  const mid = cell("word", W.goal === "W2" && it.w ? `<button class="ghost whint" data-wh="word" ${W.wordOn ? "disabled" : ""}>語詞提示</button>
+      ${W.wordOn ? `<div class="wword bpmf whword">${esc(Bpmf.blank(it.w, it.c, "○"))}</div>` : ""}` : "");
+  const right = cell("part", ps.length ? `<button class="ghost whint" data-wh="part" ${W.partN >= ps.length ? "disabled" : ""}>${W.partN ? `再多一個部件（${W.partN}/${ps.length}）` : "部件提示"}</button>
+      ${shown.length ? `<div class="pieces wparts" aria-label="部件提示">${shown.map(p => `<span class="ptile">${esc(p)}</span>`).join("")}</div>` : ""}` : "");
+  $("#wStage").innerHTML = `<div class="wnum">${W.pos + 1}</div>${body}<div class="whints">${left}${mid}${right}</div>`;
   $("#wStage").hidden = false; $("#wAns").hidden = true; $("#wNavQ").hidden = false;
-  $("#wSay").hidden = W.goal !== "W2";
+  $("#wSay").hidden = true;   /* 「再唸一次」改放在提示的左格 */
   $("#wPrevQ").disabled = W.pos === 0;
   $("#wNextQ").textContent = last ? "看答案" : "下一題";
   $("#wEnd").hidden = last;
