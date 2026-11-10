@@ -18,13 +18,15 @@
 const EXAM_SIZES = [["s", "小", 1.5], ["m", "中", 1.8], ["l", "大", 2.2]];   /* 格子邊長（公分） */
 const EXAM_ROWS = {s: 12, m: 10, l: 8};   /* 一頁幾題（A4 直式，扣掉表頭和考試方法） */
 const EXAM_FIX = 4;   /* 訂正格幾格 */
-const EXAM_HOW_FIX = `<b>訂正方法</b><span><b>1. 看一看</b>：看清楚正確的字。</span><span><b>2. 摺起來</b>：沿著虛線往後摺，蓋住左邊的題目和答案。</span><span><b>3. 訂正</b>：不看答案，在訂正格自己寫出來。主動寫出來，才能真正記住！</span>`;
+/* 訂正方法：寫幾遍由老師在第 3 步填（2026-11-10 維護者要求）；沒填就印「寫 ___ 遍」，老師在紙上自己寫 */
+const examTimes = () => examOpt.times ? `<b class="extimes">${esc(examOpt.times)}</b>` : `<span class="exblank"></span>`;
+const EXAM_HOW_FIX = () => `<b>訂正方法</b><span><b>1. 看一看</b>：看清楚正確的字。</span><span><b>2. 摺起來</b>：沿著虛線往後摺，蓋住左邊的題目和答案。</span><span><b>3. 訂正</b>：不看答案，在訂正格自己寫 ${examTimes()} 遍。主動寫出來，才能真正記住！</span>`;
 const EXAM_METHOD = {
   W1: "看注音，在格子裡寫出國字。",
   W2: "聽老師唸，在格子裡寫出國字。",
   W3: "把部件組合起來，在格子裡寫出國字。"
 };
-const examOpt = {size: "m", ruler: false, word: false, key: null};   /* 這次打開網頁時記得（不存起來）；key：null＝照預設（聽音寫字預設要印答案頁） */
+const examOpt = {size: "m", ruler: false, word: false, key: null, times: ""};   /* 這次打開網頁時記得（不存起來）；key：null＝照預設（聽音寫字預設要印答案頁） */
 const examKey = (g = state.goal) => examOpt.key ?? g === "W2";
 let EX = null;   /* 這次的考卷：goal、items */
 
@@ -38,12 +40,14 @@ function renderExamOpts(){
     <div class="group" role="group" aria-label="格子大小"><span>格子大小</span>${EXAM_SIZES.map(([id, name, cm]) => `<button class="chip ${examOpt.size === id ? "on" : ""}" data-exs="${id}" aria-pressed="${examOpt.size === id}">${name}（${cm} 公分）</button>`).join("")}</div>
     <label class="wrchk"><input type="checkbox" id="exRuler" ${examOpt.ruler ? "checked" : ""}> 字型尺提示（照字的結構畫虛線分區、加淡色底；不勾就是十字格）</label>
     ${g === "W2" ? `<label class="wrchk"><input type="checkbox" id="exWord" ${examOpt.word ? "checked" : ""}> 題目印挖空的語詞（不勾就只印題號，由老師唸題）</label>` : ""}
+    <label class="wrchk">訂正寫 <input type="number" id="exTimes" min="1" max="20" inputmode="numeric" value="${esc(examOpt.times)}" placeholder="空白" style="width:5em"> 遍（不填就印「寫 ___ 遍」，老師在紙上自己寫）</label>
     <label class="wrchk"><input type="checkbox" id="exKey" ${examKey(g) ? "checked" : ""}> 另印一張答案頁（給老師${g === "W2" ? "唸題、" : ""}對答案）</label>
     <button class="go" id="exGo" ${ready ? "" : "disabled"}>產生考卷</button>`;
   box.querySelectorAll("[data-exs]").forEach(b => b.onclick = () => { examOpt.size = b.dataset.exs; renderExamOpts(); });
   $("#exRuler").onchange = e => { examOpt.ruler = e.target.checked; };
   if($("#exWord")) $("#exWord").onchange = e => { examOpt.word = e.target.checked; };
   $("#exKey").onchange = e => { examOpt.key = e.target.checked; };
+  $("#exTimes").oninput = e => { const v = Math.round(+e.target.value); examOpt.times = v >= 1 && v <= 20 ? String(v) : ""; };
   $("#exGo").onclick = examStart;
 }
 
@@ -109,13 +113,13 @@ function examRender(){
   const head = first => `<table class="exhead"><tr>
       <th>單元</th><td contenteditable="true">${esc(unit)}</td><th>課別</th><td contenteditable="true">${esc(lessons)}</td>
       <th>班級</th><td class="blank"></td><th>座號</th><td class="blank s"></td><th>姓名</th><td class="blank"></td><th>日期</th><td class="blank"></td></tr></table>
-    ${first ? `<p class="exmethod" contenteditable="true">${esc(EXAM_METHOD[EX.goal])}</p><p class="exhowfix" contenteditable="true">${EXAM_HOW_FIX}</p>` : ""}`;
+    ${first ? `<p class="exmethod" contenteditable="true">${esc(EXAM_METHOD[EX.goal])}</p><p class="exhowfix" contenteditable="true">${EXAM_HOW_FIX()}</p>` : ""}`;
   const row = (it, n) => `<div class="exrow">
       <span class="exn">${n}</span><span class="exask">${examAsk(it)}</span>
       <span class="exans">${cellHtml(it.c)}</span>
       <span class="exfold" aria-hidden="true"></span>
       <span class="exfix">${cellHtml(it.c).repeat(EXAM_FIX)}</span></div>`;
-  const colHead = `<div class="exrow exlabels"><span class="exn"></span><span class="exask">題目</span><span class="exans">答案</span><span class="exfold">摺線</span><span class="exfix">訂正（看一看 → 摺起來 → 寫）</span></div>`;
+  const colHead = `<div class="exrow exlabels"><span class="exn"></span><span class="exask">題目</span><span class="exans">答案</span><span class="exfold">摺線</span><span class="exfix">訂正（看一看 → 摺起來 → 寫 ${examTimes()} 遍）</span></div>`;
   let n = 0;
   const sheets = pages.map((list, p) => `<section class="exsheet">${head(p === 0)}${colHead}${list.map(it => row(it, ++n)).join("")}</section>`);
   if(examKey(EX.goal)) sheets.push(`<section class="exsheet exkey"><h2>答案（給老師）</h2><table class="exkeytab"><tr><th>題號</th><th>題目</th><th>答案</th></tr>
