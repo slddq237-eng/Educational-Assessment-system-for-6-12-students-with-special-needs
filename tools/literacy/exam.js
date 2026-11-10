@@ -150,7 +150,7 @@ function examRender(){
   const head = first => `<table class="exhead"><tr>
       <th>單元</th><td contenteditable="true">${esc(unit)}</td><th>課別</th><td contenteditable="true">${esc(lessons)}</td>
       <th>考試方法</th><td contenteditable="true">${esc(goalName)}</td><th>日期</th><td class="blank d"></td></tr></table>
-    <table class="exhead exhead2"><tr><th>班級</th><td class="blank c"></td><th>座號</th><td class="blank s"></td><th>姓名</th><td class="blank n"></td></tr></table>
+    <table class="exhead exhead2"><tr><th>班級</th><td class="blank c"><span class="exfill"></span>年<span class="exfill"></span>班</td><th>座號</th><td class="blank s"></td><th>姓名</th><td class="blank n"></td></tr></table>
     ${first ? `<p class="exmethod" contenteditable="true">${esc(EXAM_METHOD[EX.goal])}</p><p class="exhowfix" contenteditable="true">${EXAM_HOW_FIX()}</p>` : ""}`;
   const g = EX.goal, mm = cm * 10, P = $("#exPages");
   /* 每一題由左到右（2026-11-10 維護者決定）：
