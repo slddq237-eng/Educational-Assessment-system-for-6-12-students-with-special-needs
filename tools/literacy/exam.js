@@ -1,6 +1,6 @@
 /* =========================================================
    識字評量：寫字組第 2 版「輸出考卷」（tools/literacy/exam.js，2026-11-10 E3／E10）
-   規格（維護者 2026-11-10 決定，見 docs/design/literacy-design.md「寫字組」）：
+   規格（維護者 2026-11-10 決定，見 docs/design/writing-design.md）：
    - A4 直式。第一排：單元、課別、班級、座號、姓名、日期（單元、課別先帶入所選的課本和課次，印之前可以直接改）。
    - 接著是考試方法（依題型預設一句，印之前可以改），再來是考題。
    - 每一題由左到右：題目 → 答案格 → 一條直的虛線（摺線，可以摺起來蓋住答案） → 訂正格 4 格（2026-11-10 維護者從 3 格改成 4 格）。
@@ -218,6 +218,8 @@ function examRenderOne(){
     <table class="exhead exhead2"><tr><th>班級</th><td class="blank c"><span class="excls"><i></i>年<i></i>班</span></td><th>座號</th><td class="blank s"></td><th>姓名</th><td class="blank n"></td></tr></table>
     ${first ? `<p class="exmethod" contenteditable="true">${esc(EXAM_METHOD[EX.goal])}</p><p class="exhowfix" contenteditable="true">${EXAM_HOW_FIX()}</p>` : ""}`;
   const g = EX.goal, mm = cm * 10, P = $("#exPages");
+  /* 大格改成 A4 橫印（2026-11-10 維護者決定）：一列寬 27.3 公分，一題有好幾個空格也放得下，空格不用縮小；小格、中格直印 */
+  const land = examOpt.size === "l", pageW = land ? 297 : 210, pageH = land ? 210 : 297, sheetCls = land ? "exsheet land" : "exsheet";
   /* 每一題由左到右（2026-11-10 維護者決定）：
      W1：題號 → 題目（空格就是答案格）→ 摺線 → 訂正
      W2：題號 → 答案（國字 1 格；語詞照字數）→ 摺線 → 訂正
@@ -249,9 +251,9 @@ function examRenderOne(){
       ${EX.items.map((it, i) => `<tr><td>${i + 1}</td><td>${esc(g === "W2" && examOpt.w2 === "word" ? it.w || it.c : it.w ? `${it.w}的${it.cs.join("、")}` : it.c)}</td><td class="a">${esc(g === "W2" && examOpt.w2 === "word" ? it.cs.join("") : it.cs.join("、"))}</td></tr>`).join("")}</table></section>`;
   const pagesHtml = fixN => {
     const rows = EX.items.map((it, i) => row(it, i + 1, fixN));
-    P.innerHTML = `<section class="exsheet exmeasure">${head(true)}${colHead}${rows.join("")}</section><section class="exsheet exmeasure">${head(false)}${colHead}</section>`;
+    P.innerHTML = `<section class="${sheetCls} exmeasure">${head(true)}${colHead}${rows.join("")}</section><section class="${sheetCls} exmeasure">${head(false)}${colHead}</section>`;
     const [s1, s2] = P.querySelectorAll(".exsheet"), cs1 = getComputedStyle(s1);
-    const inner = s1.getBoundingClientRect().width / 210 * 297 - parseFloat(cs1.paddingTop) - parseFloat(cs1.paddingBottom) - 4;   /* A4 一頁能放的高度（留一點餘裕） */
+    const inner = s1.getBoundingClientRect().width / pageW * pageH - parseFloat(cs1.paddingTop) - parseFloat(cs1.paddingBottom) - 4;   /* A4 一頁能放的高度（留一點餘裕） */
     const rh = [...s1.querySelectorAll(".exrow:not(.exlabels)")].map(r => r.getBoundingClientRect().height);
     const top = sh => [...sh.children].filter(e => !e.matches(".exrow:not(.exlabels)")).reduce((h, e) => h + e.getBoundingClientRect().height + parseFloat(getComputedStyle(e).marginTop) + parseFloat(getComputedStyle(e).marginBottom), 0);
     const pages = []; let cur = [], h = top(s1);
@@ -259,7 +261,7 @@ function examRenderOne(){
     if(cur.length) pages.push(cur);
     EX.pageN = pages.length;
     const tag = examOpt.vers.length > 1 ? `<span class="exvtag">${esc(examVerName(examOpt))}</span>` : "";   /* 好幾個版本時，每一頁右上角標版本 */
-    return pages.map((list, p) => `<section class="exsheet">${tag}${head(p === 0)}${colHead}${list.join("")}</section>`).join("");
+    return pages.map((list, p) => `<section class="${sheetCls}">${tag}${head(p === 0)}${colHead}${list.join("")}</section>`).join("");
   };
   EX.keyHtml = keyHtml;
   P.style.setProperty("--cell", cm + "cm");
@@ -268,10 +270,10 @@ function examRenderOne(){
      W1：訂正格固定 4 格；題目太長時只縮小題目裡不用寫的字（和注音），空格不變；連空格都放不下的少數題目（例如大格的「烏雲密布」四個字都考）整題一起縮小。
      W2 考語詞：答案格照字數排一行，放不下就整份少幾格訂正（最少 2 格）；還放不下的語詞（例如「放之四海而皆準」）那一題的答案格縮小。
      W1 的提示字最多縮到原本的一半（再小小朋友看不清楚），還放不下就連空格一起縮。 */
-  const room = 186 - 7 - 9 - 9 + 2;   /* 題目或答案欄＋訂正欄能用的寬度（mm） */
+  const room = pageW - 24 - 7 - 9 - 9 + 2;   /* 題目或答案欄＋訂正欄能用的寬度（mm；紙寬扣掉左右邊界 12mm、題號、摺線、間距） */
   const fixW = n => n * mm + (n - 1) * 2;
   let fixN = EXAM_FIX;
-  const pxPerMm = () => P.querySelector(".exsheet").getBoundingClientRect().width / 210;
+  const pxPerMm = () => P.querySelector(".exsheet").getBoundingClientRect().width / pageW;
   if(g === "W2"){
     fixN = Math.max(2, Math.min(EXAM_FIX, Math.floor((room - tw) / (mm + 2))));   /* 訂正格最少 2 格；更長的語詞那一題的答案格縮小 */
     const aw = Math.min(tw, room - fixW(fixN) - 2);
@@ -279,36 +281,40 @@ function examRenderOne(){
     P.style.setProperty("--aw", aw + "mm");
   }
   if(g === "W1"){
-    const cap = room - fixW(EXAM_FIX) - 2;
+    /* 空格永遠不縮小（2026-11-10 維護者決定）：題目太長時先縮小不用寫的字（最多到一半）；還放不下（中格的「吱吱喳喳」考兩個字、
+       「烏雲密布」四個字都考）就這份考卷的訂正格少一格（3 格）；大格已經改成橫印，放得下。真的還放不下才把提示字再縮小一點 */
     P.style.setProperty("--qw", "max-content"); P.style.setProperty("--fixn", 1);
     for(const it of EX.items){ it.hint = 1; it.hole = 1; }
-    for(let pass = 0; pass < 3; pass++){
-      P.innerHTML = `<section class="exsheet">${EX.items.map((it, i) => row(it, i + 1, 1)).join("")}</section>`;
+    const measure = () => {
+      P.innerHTML = `<section class="${sheetCls}">${EX.items.map((it, i) => row(it, i + 1, 1)).join("")}</section>`;
       const k = pxPerMm();
+      return [...P.querySelectorAll(".exrow.w1:not(.exlabels) .exq")].map(q => ({W: q.getBoundingClientRect().width / k, H: [...q.querySelectorAll(".exhole")].reduce((h, e) => h + e.getBoundingClientRect().width / k, 0)}));
+    };
+    const capFor = n => room - fixW(n) - 2;
+    let m = measure(), cap = capFor(EXAM_FIX);
+    if(m.some(({W, H}) => W > cap && (cap - H) / (W - H) < .5)){ fixN = EXAM_FIX - 1; cap = capFor(fixN); }   /* 提示字縮到一半還放不下：少一格訂正 */
+    for(let pass = 0; pass < 3; pass++){
       let ok = true;
-      [...P.querySelectorAll(".exrow.w1:not(.exlabels) .exq")].forEach((q, i) => {
-        const it = EX.items[i], W = q.getBoundingClientRect().width / k;
+      m.forEach(({W, H}, i) => {
         if(W <= cap) return;
         ok = false;
-        const H = [...q.querySelectorAll(".exhole")].reduce((h, e) => h + e.getBoundingClientRect().width / k, 0), T = W - H;   /* 空格、提示字各占多寬 */
-        const need = (cap - H) / T;   /* 只縮提示字要縮到幾倍 */
-        if(need >= .5) it.hint *= need * .98;   /* 提示字最多縮到一半，小朋友還看得清楚 */
-        else { it.hint *= .5; it.hole *= Math.max(.3, (cap - T * .5) / H) * .98; }   /* 還放不下：空格也一起縮 */
+        const it = EX.items[i], need = (cap - H) / (W - H);
+        if(need > 0) it.hint *= Math.max(.35, need * .98);   /* 只縮提示字（一般最多到一半；極少數才到 0.35） */
+        else it.hole *= cap / W * .98;   /* 連空格都放不下（照現在的課本不會發生）才縮空格 */
       });
       if(ok) break;
+      m = measure();
     }
-    const k = pxPerMm();
-    const qw = Math.ceil(Math.max(...[...P.querySelectorAll(".exrow.w1:not(.exlabels) .exq")].map(e => e.getBoundingClientRect().width / k))) + 1;
+    const qw = Math.ceil(Math.max(...m.map(x => x.W))) + 1;
     P.style.setProperty("--qw", Math.min(qw, cap) + "mm");
   }
   P.style.setProperty("--fixn", fixN);
-  P.innerHTML = pagesHtml(fixN);
   const html = pagesHtml(fixN);
   const vars = ["--cell", "--aw", "--qw", "--fixn"].map(k => [k, P.style.getPropertyValue(k)]).filter(([, v]) => v).map(([k, v]) => `${k}:${v}`).join(";");
   ["--cell", "--aw", "--qw", "--fixn"].forEach(k => P.style.removeProperty(k));
   return {html, vars, pageN: EX.pageN, fixN, shrunk: EX.items.some(it => (it.hint || 1) < 1 || (it.hole || 1) < 1 || (it.ansScale || 1) < 1)};
 }
-const examVerName = v => `${EXAM_SIZES.find(s => s[0] === v.size)[1]}格（${EXAM_SIZES.find(s => s[0] === v.size)[2]} 公分）・${v.ruler ? "字型尺提示" : "十字格"}`;
+const examVerName = v => `${EXAM_SIZES.find(s => s[0] === v.size)[1]}格（${EXAM_SIZES.find(s => s[0] === v.size)[2]} 公分${v.size === "l" ? "，橫印" : ""}）・${v.ruler ? "字型尺提示" : "十字格"}`;
 /* 每一個版本各排一次（格子大小不同，訂正格數、縮小的題目也不同），依序接在一起，最後放一張答案頁 */
 function examRender(){
   const g = EX.goal, P = $("#exPages"), done = [];
@@ -318,7 +324,8 @@ function examRender(){
   }
   P.innerHTML = done.map(d => `<div class="exver" style="${d.vars}">${d.html}</div>`).join("") + EX.keyHtml();
   const merged = EX.picked - EX.items.length;
-  $("#exInfo").textContent = `${EX.items.length} 題；${done.map(d => `${examVerName(d.v)} ${d.pageN} 頁${d.fixN < EXAM_FIX ? `（訂正格 ${d.fixN} 格）` : ""}`).join("、")}${examKey(g) ? "，另有答案 1 頁" : ""}${g === "W2" ? `；考${examOpt.w2 === "word" ? "語詞" : "國字"}` : ""}${merged > 0 ? `；同一個語詞的字合併成一題（${EX.picked} 個字）` : ""}${done.some(d => d.shrunk) ? "；比較長的題目字縮小了一點，才排得下一行" : ""}。單元、課別、考試方法可以直接點文字修改。`;
+  const mixed = new Set(examOpt.vers.map(v => v.size === "l")).size > 1;
+  $("#exInfo").textContent = `${mixed ? "⚠️ 有直印也有橫印（大格橫印）；印表機如果沒有自動轉向，請分開列印。" : ""}${EX.items.length} 題；${done.map(d => `${examVerName(d.v)} ${d.pageN} 頁${d.fixN < EXAM_FIX ? `（訂正格 ${d.fixN} 格）` : ""}`).join("、")}${examKey(g) ? "，另有答案 1 頁" : ""}${g === "W2" ? `；考${examOpt.w2 === "word" ? "語詞" : "國字"}` : ""}${merged > 0 ? `；同一個語詞的字合併成一題（${EX.picked} 個字）` : ""}${done.some(d => d.shrunk) ? "；比較長的題目字縮小了一點，才排得下一行" : ""}。單元、課別、考試方法可以直接點文字修改。`;
 }
 $("#exPrint").onclick = () => window.print();
 $("#exBack").onclick = () => { EX = null; showScreen("#setup"); render(); };

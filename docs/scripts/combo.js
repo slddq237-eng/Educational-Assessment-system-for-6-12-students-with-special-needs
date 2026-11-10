@@ -134,9 +134,12 @@ const WRITING_PAGE = async goal => {
     if(goal === "W3" && [...rows].some(r => r.querySelectorAll(".exans .excell").length !== 1)) bad.push("看部件寫字：每題應該有 1 格答案");
     if(document.querySelector("#exPages .teach")) bad.push("考卷不應該有老師寫正確答案的格子");
     /* 每一題都是一行（2026-11-10）：題目、答案格都不換行、不超出紙張 */
-    const k = document.querySelector("#exPages .exsheet").getBoundingClientRect().width / 210, cellPx = 18 * k;
-    if([...rows].some(r => r.getBoundingClientRect().height > cellPx * 1.6)) bad.push("考卷有題目變成兩行");
-    if([...rows].some(r => Math.max(...[...r.querySelectorAll(".excell")].map(c => c.getBoundingClientRect().right)) > r.closest(".exsheet").getBoundingClientRect().right - 12 * k + 1)) bad.push("考卷的格子超出紙張");
+    const kOf = sh => sh.getBoundingClientRect().width / (sh.classList.contains("land") ? 297 : 210);   /* 大格橫印（2026-11-10） */
+    const cellOf = r => r.closest(".exver").style.getPropertyValue("--cell");
+    if([...rows].some(r => r.getBoundingClientRect().height > parseFloat(cellOf(r)) * 10 * kOf(r.closest(".exsheet")) * 1.6)) bad.push("考卷有題目變成兩行");
+    /* 看注音寫國字的空格不縮小（2026-11-10 維護者決定） */
+    if(goal === "W1" && [...rows].some(r => [...r.querySelectorAll(".exhole .excell")].some(c => c.getBoundingClientRect().width < parseFloat(cellOf(r)) * 10 * kOf(r.closest(".exsheet")) * .97))) bad.push("看注音寫國字的空格被縮小了");
+    if([...rows].some(r => Math.max(...[...r.querySelectorAll(".excell")].map(c => c.getBoundingClientRect().right)) > r.closest(".exsheet").getBoundingClientRect().right - 12 * kOf(r.closest(".exsheet")) + 1)) bad.push("考卷的格子超出紙張");
     if(records.length !== n0) bad.push("考卷不留紀錄，卻多了作答紀錄");
     document.querySelector("#exBack").click();
   }
