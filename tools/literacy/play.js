@@ -19,7 +19,7 @@ const sayOf = (c, b) => wordOf(c, b) ? Bpmf.say(wordOf(c, b), c) : c;
 const promptOf = it => { const [b, n] = splitKey(it.k); return BOOKS[b].lessons[n].sayChar ? it.c : sayOf(it.c, b); };
 const isHan = ch => /\p{Script=Han}/u.test(ch);
 /* 這次要考的字（只考有教的字，見 wordsets.js）；選項裡的「課文字」干擾字仍然用整課的字 */
-const testChars = k => wsPick(k).filter(c => !goalSkips(c));   /* 部件重組不出拆不開的字（data.js 的 goalSkips） */
+const testChars = k => wsPick(k).filter(c => !goalSkips(c) && !(isWriting() && typeof wrSkip !== "undefined" && wrSkip.has(k + "|" + c)));   /* 部件重組不出拆不開的字（data.js 的 goalSkips）；寫字評量第 3 步「調整題目」拿掉的字（writing.js 的 wrSkip） */
 
 function pickItems(code, q){
   const pool = state.lessons.flatMap(k => testChars(k).map(c => ({c, k})));

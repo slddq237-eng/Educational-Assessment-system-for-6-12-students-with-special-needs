@@ -25,13 +25,24 @@ const WRITE_HOW = {
   W2: "電腦唸出「蜜蜂的蜂」，學生在紙上寫出國字；可以按「再唸一次」。",
   W3: "螢幕顯示拆開的部件，學生在紙上寫出組成的字（拆不開的字不出題）。"
 };
+/* 第 3 步「調整題目」拿掉的字（2026-11-10 維護者決定：預設所選的課全部出題，老師可以拿掉不考的字）：
+   「課次|字」，螢幕出題和考卷都照這個；只記在這次打開的網頁，不存起來（寫字不留紀錄） */
+const wrSkip = new Set();
+let wrAdjOpen = false;
+const wrAdjHtml = () => {
+  const n = state.lessons.reduce((s, k) => s + wsPick(k).filter(c => !goalSkips(c) && wrSkip.has(k + "|" + c)).length, 0);
+  return `<details class="wradj" id="wrAdj" ${wrAdjOpen ? "open" : ""}><summary>調整題目（拿掉不考的字${n ? `，已拿掉 ${n} 個` : ""}）</summary>
+    <p class="note" style="margin:6px 0">點字可以拿掉（再點一次放回來）；只用在這次，不存起來。螢幕出題和考卷都照這裡。${n ? ` <button class="linkbtn" id="wrAdjAll">全部放回來</button>` : ""}</p>
+    ${state.lessons.map(k => `<div class="wradjl"><b>${esc(lessonName(...splitKey(k)))}</b>${wsPick(k).filter(c => !goalSkips(c)).map(c => { const off = wrSkip.has(k + "|" + c);
+      return `<button class="wrc ${off ? "off" : ""}" data-k="${esc(k)}" data-c="${esc(c)}" aria-pressed="${!off}" title="${off ? "不考（點一下放回來）" : "要考（點一下拿掉）"}">${esc(c)}</button>`; }).join("")}</div>`).join("")}</details>`;
+};
 const wrParts = c => { const p = partsOf(c); return p && p.length > 1 ? p : []; };   /* 部件提示用的部件（拆不開就沒有） */
 
 /* ---------- 第 3 步：出題設定（setup.js 的 render 呼叫） ---------- */
 function renderWriting(){
   const box = $("#wrSet");
   if(!box || !isWriting()) return;
-  const g = GOALS.find(x => x.id === state.goal), q = quizPlan(), ready = state.lessons.length && q.count > 0;
+  const g = GOALS.find(x => x.id === state.goal), q = quizPlan(), ready = state.lessons.length && q.count > 0 && !step2Miss();
   const manyBooks = new Set(state.lessons.map(k => splitKey(k)[0])).size > 1;
   const lessons = state.lessons.map(k => { const [b, n] = splitKey(k); return manyBooks ? `${bookName(b)} ${lessonName(b, n)}` : lessonName(b, n); }).join("、");
   box.innerHTML = `
@@ -40,6 +51,7 @@ function renderWriting(){
       <dt>課次</dt><dd>${ready ? `${manyBooks ? "" : esc(bookName(splitKey(state.lessons[0])[0])) + " "}${esc(lessons)}` : "還沒選（請回第 2 步）"}</dd>
       <dt>題數</dt><dd>${ready ? `${q.count} 題，${minutes(q.sec)}` : "—"}</dd>
     </dl>
+    ${state.lessons.length ? wrAdjHtml() : ""}
     <p class="note">${WRITE_HOW[g.id]}</p>
     <p class="sub">提示</p>
     <p class="note" style="margin-top:0">${WRITE_HINT[g.id]}</p>
@@ -47,6 +59,11 @@ function renderWriting(){
     <button class="go" id="wrGo" ${ready ? "" : "disabled"}>開始出題</button>
     <div id="wrExam" class="wrexam"></div>`;
   $("#wrGo").onclick = () => { unlockSpeech(); writingStart(); };
+  if($("#wrAdj")){
+    $("#wrAdj").ontoggle = e => { wrAdjOpen = e.target.open; };
+    box.querySelectorAll(".wrc").forEach(b => b.onclick = () => { const id = b.dataset.k + "|" + b.dataset.c; wrSkip.has(id) ? wrSkip.delete(id) : wrSkip.add(id); render(); });
+    if($("#wrAdjAll")) $("#wrAdjAll").onclick = () => { wrSkip.clear(); render(); };
+  }
   if(typeof renderExamOpts === "function") renderExamOpts();   /* 第 2 版：印成考卷（exam.js） */
 }
 
