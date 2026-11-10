@@ -135,7 +135,15 @@ const w2Word = () => EX.goal === "W2" && examOpt.w2 === "word";
 function examRender(){
   const [b0] = splitKey(state.lessons[0]), manyBooks = new Set(state.lessons.map(k => splitKey(k)[0])).size > 1;
   const unit = manyBooks ? [...new Set(state.lessons.map(k => bookName(splitKey(k)[0])))].join("、") : bookName(b0);
-  const lessons = state.lessons.map(k => { const [b, n] = splitKey(k); return manyBooks ? `${bookName(b)} ${lessonName(b, n)}` : lessonName(b, n); }).join("、");
+  /* 課別：連續的課寫成「第 1～3 課」（表頭一格寫得下，不要換行，2026-11-10 維護者要求） */
+  const lessons = [...new Set(state.lessons.map(k => splitKey(k)[0]))].map(b => {
+    const ns = state.lessons.filter(k => splitKey(k)[0] === b).map(k => splitKey(k)[1]).sort((x, y) => x - y), parts = [];
+    for(let i = 0; i < ns.length; i++){
+      let j = i; while(j + 1 < ns.length && +ns[j + 1] === +ns[j] + 1 && ns[j] !== "0") j++;
+      parts.push(ns[i] === "0" ? lessonName(b, "0") : j > i ? `第 ${ns[i]}～${ns[j]} 課` : lessonName(b, ns[i])); i = j;
+    }
+    return (manyBooks ? bookName(b) + " " : "") + parts.join("、");
+  }).join("、");
   const cm = EXAM_SIZES.find(s => s[0] === examOpt.size)[2];
   /* 表頭兩排（2026-11-10 維護者要求）：上排單元、課別、考試方法（題型名稱）、日期；下排班級、座號、姓名（姓名格比較寬） */
   const goalName = GOALS.find(x => x.id === EX.goal).name;
@@ -155,13 +163,13 @@ function examRender(){
   for(const it of EX.items) it.slots = g === "W1" && it.w ? [...it.w].filter(ch => it.cs.includes(ch)) : it.cs;
   const maxN = Math.max(...EX.items.map(it => it.slots.length));
   /* W2 答案欄：放得下 4 格訂正就排成一行，放不下（大格）才排成兩行 */
-  const colN = Math.max(1, Math.min(maxN, Math.floor((186 - 7 - 9 - 9 - (EXAM_FIX * mm + (EXAM_FIX - 1) * 2) + 2) / (mm + 2)))), tw = colN * mm + (colN - 1) * 2;   /* W2 答案欄的寬度 */
+  const colN = maxN, tw = colN * mm + (colN - 1) * 2;   /* W2 答案欄的寬度（照最長的語詞） */
   const cells = cs => cs.map(cellHtml).join("");
   const fixCells = (it, n) => Array.from({length: n}, (_, i) => cellHtml(it.cs[i % it.cs.length])).join("");
-  const row = (it, no, fixN) => g === "W2" ? `<div class="exrow w2">
+  const row = (it, no, fixN) => g === "W2" ? `<div class="exrow w2" style="--ans:${it.ansScale || 1}">
       <span class="exn">${no}</span><span class="exans">${cells(it.slots)}</span>
       <span class="exfold" aria-hidden="true"></span><span class="exfix">${fixCells(it, fixN)}</span></div>`
-    : g === "W1" ? `<div class="exrow w1">
+    : g === "W1" ? `<div class="exrow w1" style="--hint:${it.hint || 1};--hole:${it.hole || 1}">
       <span class="exn">${no}</span><span class="exask">${examAsk(it)}</span>
       <span class="exfold" aria-hidden="true"></span><span class="exfix">${fixCells(it, fixN)}</span></div>`
     : `<div class="exrow">
@@ -189,23 +197,47 @@ function examRender(){
   };
   P.style.setProperty("--cell", cm + "cm");
   /* 先排一次量出題目最寬的那一題（W1），再決定訂正格幾格 */
-  const fixFit = qw => Math.max(1, Math.min(EXAM_FIX, Math.floor((186 - 7 - 9 - 9 - qw + 2) / (mm + 2))));
-  let fixN = EXAM_FIX, qw = 0;
-  if(g === "W2"){ P.style.setProperty("--aw", tw + "mm"); fixN = Math.max(1, Math.min(EXAM_FIX, Math.floor((186 - 7 - 9 - 9 - tw + 2) / (mm + 2)))); }
+  /* 每一題都排成一行（2026-11-10 維護者要求，不要有字變成兩行）：
+     W1：訂正格固定 4 格；題目太長時只縮小題目裡不用寫的字（和注音），空格不變；連空格都放不下的少數題目（例如大格的「烏雲密布」四個字都考）整題一起縮小。
+     W2 考語詞：答案格照字數排一行，放不下就整份少幾格訂正（最少 2 格）；還放不下的語詞（例如「放之四海而皆準」）那一題的答案格縮小。
+     W1 的提示字最多縮到原本的一半（再小小朋友看不清楚），還放不下就連空格一起縮。 */
+  const room = 186 - 7 - 9 - 9 + 2;   /* 題目或答案欄＋訂正欄能用的寬度（mm） */
+  const fixW = n => n * mm + (n - 1) * 2;
+  let fixN = EXAM_FIX;
+  const pxPerMm = () => P.querySelector(".exsheet").getBoundingClientRect().width / 210;
+  if(g === "W2"){
+    fixN = Math.max(2, Math.min(EXAM_FIX, Math.floor((room - tw) / (mm + 2))));   /* 訂正格最少 2 格；更長的語詞那一題的答案格縮小 */
+    const aw = Math.min(tw, room - fixW(fixN) - 2);
+    for(const it of EX.items){ const w = it.slots.length * mm + (it.slots.length - 1) * 2; it.ansScale = w > aw ? aw / w : 1; }
+    P.style.setProperty("--aw", aw + "mm");
+  }
   if(g === "W1"){
+    const cap = room - fixW(EXAM_FIX) - 2;
     P.style.setProperty("--qw", "max-content"); P.style.setProperty("--fixn", 1);
-    P.innerHTML = `<section class="exsheet">${EX.items.map((it, i) => row(it, i + 1, 1)).join("")}</section>`;
-    const px = Math.max(...[...P.querySelectorAll(".exrow.w1:not(.exlabels) .exq")].map(e => e.getBoundingClientRect().width));
-    const pxPerMm = P.querySelector(".exsheet").getBoundingClientRect().width / 210;
-    qw = Math.ceil(px / pxPerMm) + 2;
-    fixN = Math.min(EXAM_FIX, Math.max(3, fixFit(qw)));   /* 至少留 3 格訂正，題目太長就換行 */
-    qw = Math.min(qw, 186 - 7 - 9 - 9 - (fixN * mm + (fixN - 1) * 2));
-    P.style.setProperty("--qw", qw + "mm");
+    for(const it of EX.items){ it.hint = 1; it.hole = 1; }
+    for(let pass = 0; pass < 3; pass++){
+      P.innerHTML = `<section class="exsheet">${EX.items.map((it, i) => row(it, i + 1, 1)).join("")}</section>`;
+      const k = pxPerMm();
+      let ok = true;
+      [...P.querySelectorAll(".exrow.w1:not(.exlabels) .exq")].forEach((q, i) => {
+        const it = EX.items[i], W = q.getBoundingClientRect().width / k;
+        if(W <= cap) return;
+        ok = false;
+        const H = [...q.querySelectorAll(".exhole")].reduce((h, e) => h + e.getBoundingClientRect().width / k, 0), T = W - H;   /* 空格、提示字各占多寬 */
+        const need = (cap - H) / T;   /* 只縮提示字要縮到幾倍 */
+        if(need >= .5) it.hint *= need * .98;   /* 提示字最多縮到一半，小朋友還看得清楚 */
+        else { it.hint *= .5; it.hole *= Math.max(.3, (cap - T * .5) / H) * .98; }   /* 還放不下：空格也一起縮 */
+      });
+      if(ok) break;
+    }
+    const k = pxPerMm();
+    const qw = Math.ceil(Math.max(...[...P.querySelectorAll(".exrow.w1:not(.exlabels) .exq")].map(e => e.getBoundingClientRect().width / k))) + 1;
+    P.style.setProperty("--qw", Math.min(qw, cap) + "mm");
   }
   P.style.setProperty("--fixn", fixN);
   P.innerHTML = pagesHtml(fixN);
   const merged = EX.picked - EX.items.length;
-  $("#exInfo").textContent = `${EX.items.length} 題，${EX.pageN} 頁${examKey(g) ? "＋答案 1 頁" : ""}；格子 ${cm} 公分${examOpt.ruler ? "，字型尺提示" : "，十字格"}${g === "W2" ? `，考${examOpt.w2 === "word" ? "語詞" : "國字"}` : ""}${merged > 0 ? `；同一個語詞的字合併成一題（${EX.picked} 個字）` : ""}${fixN < EXAM_FIX ? `；一列放不下，訂正格 ${fixN} 格` : ""}。單元、課別、考試方法可以直接點文字修改。`;
+  $("#exInfo").textContent = `${EX.items.length} 題，${EX.pageN} 頁${examKey(g) ? "＋答案 1 頁" : ""}；格子 ${cm} 公分${examOpt.ruler ? "，字型尺提示" : "，十字格"}${g === "W2" ? `，考${examOpt.w2 === "word" ? "語詞" : "國字"}` : ""}${merged > 0 ? `；同一個語詞的字合併成一題（${EX.picked} 個字）` : ""}${fixN < EXAM_FIX ? `；語詞比較長，訂正格 ${fixN} 格` : ""}${EX.items.some(it => (it.hint || 1) < 1 || (it.hole || 1) < 1 || (it.ansScale || 1) < 1) ? "；比較長的題目字縮小了一點，才排得下一行" : ""}。單元、課別、考試方法可以直接點文字修改。`;
 }
 $("#exPrint").onclick = () => window.print();
 $("#exBack").onclick = () => { EX = null; showScreen("#setup"); render(); };
