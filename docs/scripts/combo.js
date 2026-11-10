@@ -191,7 +191,7 @@ module.exports = async function comboErrors(browser, base) {
     await page.route('**/*', r => r.request().url().startsWith(base) ? r.continue() : r.abort());
     page.on('pageerror', e => pe.push(e.message));
     try {
-      await page.goto(base + 'tools/literacy/index.html', {waitUntil: 'load', timeout: 20000});
+      await page.goto(base + 'tools/literacy/index.html?area=write', {waitUntil: 'load', timeout: 20000});   /* 首頁「寫字評量」卡片（2026-11-10） */
       const r = await page.evaluate(WRITING_PAGE, goal);
       for (const b of r.bad) errs.push(`寫字 ${goal}：${b}`);
       if (!r.bad.length) ran++;

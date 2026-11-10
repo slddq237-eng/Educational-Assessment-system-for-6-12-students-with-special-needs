@@ -10,7 +10,7 @@
 <!-- Google 字型背景載入（2026-11-10 發布前測試）：學校網路不回應時，原本整頁要等 30 秒以上才出現；沒載到就先用電腦內建字型 -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" media="print" onload="this.media='all'">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="shared/fonts/tw-kai.css?v=2026-11-10z6">
+<link rel="stylesheet" href="shared/fonts/tw-kai.css?v=2026-11-10z7">
 <style>
 /* 平台首頁：配色沿用原本生字賓果的方格紙風格 */
 :root{
@@ -51,6 +51,7 @@ footer a{color:var(--green)}
   <details class="news" id="news">
     <summary>最後更新：<b><time datetime="2026-11-10">2026-11-10</time></b>（點開看這次更新了什麼）</summary>
     <ul>
+      <li>首頁分成「識字評量」「寫字評量」兩張卡片（學生名單、課本、作答紀錄兩邊共用）。寫字評量一次只能選同一本課本，預設所選的課全部出題，可以拿掉不考的字；考卷的答案頁改成一頁三欄。</li>
       <li>識字評量（寫字）：可以印成考卷。A4 直式，第一排是單元、課別、班級、座號、姓名、日期，每一題是題目、答案格、摺線、4 格訂正格，還有「看一看、摺起來、訂正」的訂正方法說明；格子有小、中、大三種，預設十字格，也可以勾選「字型尺提示」照字的結構分區、加淡色底。可以另印答案頁給老師。</li>
       <li>識字評量：開放寫字組「看注音寫國字」「聽音寫字」「看部件寫字」（第 1 版）。大螢幕一題一題出，學生寫在紙上，老師自己改；設定只有 3 步，不用選學生；出完題有答案頁，可以帶學生對答案。系統不留成績，也不存作答紀錄。</li>
       <li>識字評量：匯入平板作答紀錄時，如果有代號不在學生名單裡（例如搬到新網站後重新建立學生，代號換了），不再直接擋掉，改成一個一個列出來，附上作答日期、年級、課次，讓老師選「併入現有學生」「新增為新學生」或「略過」。選過一次，之後再匯入同一份試算表就會自動對好。</li>
@@ -124,6 +125,10 @@ footer a{color:var(--green)}
     <a class="tool" href="tools/literacy/">
       <b>識字評量</b>
       <span>依評量目標分階段檢測識字，逐字記錄作答，可匯出 Excel。</span>
+    </a>
+    <a class="tool" href="tools/literacy/?area=write">
+      <b>寫字評量</b>
+      <span>看注音寫國字、聽音寫字、看部件寫字：大螢幕一題一題出，或印成考卷（不留成績）。</span>
     </a>
     <a class="tool" href="tools/prep/">
       <b>備課分析</b>

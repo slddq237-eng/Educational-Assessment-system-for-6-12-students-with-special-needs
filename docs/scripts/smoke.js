@@ -21,7 +21,7 @@ const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
 /* 要打開的頁面。加了新工具或新網頁，在這裡加一行（漏加時 check.js 第 13 項會報錯） */
 const PAGES = [
   'index.html', 'about.html', 'privacy.html',
-  'tools/literacy/index.html',
+  'tools/literacy/index.html',   /* 寫字評量（?area=write）在下面「只顯示寫字評量的目標」另外打開 */
   'tools/prep/index.html',
 ];
 
@@ -93,6 +93,15 @@ async function visit(browser, base, url, after){
   for (const p of PAGES) report(p, await visit(browser, base, p));
   report('shared/parts-api.js 部件入口（不用瀏覽器）', partsApiErrors());
   report('識字評量 組合測試（目標×練習／正式×模式×玩法×作答方式）', await require('./combo.js')(browser, base));
+
+  /* 首頁兩張卡片（2026-11-10）：識字評量只看得到識字的目標，寫字評量只看得到寫字的目標，標題跟著換 */
+  for (const [url, want, title] of [['tools/literacy/index.html', 'R', '識字評量'], ['tools/literacy/index.html?area=write', 'W', '寫字評量']])
+    report(`${url} 只顯示${title}的目標`, await visit(browser, base, url, async (page, errs) => {
+      const r = await page.evaluate(() => ({ ids: [...document.querySelectorAll('#goals button.goal')].map(b => b.dataset.g), t: document.title, goal: state.goal }));
+      if (!r.ids.length || r.ids.some(g => g[0] !== want)) errs.push(`第 1 步的目標應該只有 ${want} 開頭的，現在是 ${r.ids.join('、')}`);
+      if (r.t !== title) errs.push(`網頁標題應該是「${title}」，現在是「${r.t}」`);
+      if (r.goal[0] !== want) errs.push(`一打開選的目標是 ${r.goal}，應該是 ${want} 開頭的`);
+    }));
 
   /* 老師專區：teacher.js、pivot.js 按了才下載（2026-11-06，app.js 的 loadTeacher），確認按下去真的載得進來、畫面打得開 */
   report('tools/literacy/index.html 打開老師專區（按了才下載）', await visit(browser, base, 'tools/literacy/index.html', async (page, errs) => {
