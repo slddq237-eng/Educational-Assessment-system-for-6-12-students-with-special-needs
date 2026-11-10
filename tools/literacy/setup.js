@@ -168,9 +168,9 @@ function renderGoals(){
     const list = GOALS.filter(g => g.group === grp && (showOffGoals || !g.off));
     return `<div class="gcol"><h3>${grp}</h3><div class="goals">${list.length ? list.map(btn).join("") : `<p class="note" style="margin:0">還沒有開放的目標</p>`}</div></div>`;
   };
-  const offN = GOALS.filter(g => g.off).length;
-  $("#goals").innerHTML = `<div class="goalcols">${col("識字")}<div class="gdiv" aria-hidden="true"></div>${col("寫字")}</div>
-    <button class="linkbtn" id="goalOff" aria-expanded="${showOffGoals}">${showOffGoals ? "收起準備中的功能" : `顯示準備中的功能（${offN} 個）`}</button>`;
+  const offN = GOALS.filter(g => g.off && g.group === AREA).length;   /* 只看這張卡片（識字或寫字，data.js 的 AREA）的目標 */
+  $("#goals").innerHTML = `<div class="goalcols one">${col(AREA)}</div>
+    ${offN ? `<button class="linkbtn" id="goalOff" aria-expanded="${showOffGoals}">${showOffGoals ? "收起準備中的功能" : `顯示準備中的功能（${offN} 個）`}</button>` : ""}`;
   $("#goals").querySelectorAll("button.goal:not(:disabled)").forEach(b => b.onclick = () => {
     /* 寫字組一律是練習、沒有流暢性；換回識字時，還原老師原本選的正式／練習、正確率／流暢性 */
     const was = isWriting(); state.goal = b.dataset.g;
@@ -178,7 +178,7 @@ function renderGoals(){
     if(!isWriting() && was && wrBack){ Object.assign(state, wrBack); wrBack = null; }
     render(); if(goalCaps().loadMaskFix) loadMaskFix().then(render);
   });
-  $("#goalOff").onclick = () => { showOffGoals = !showOffGoals; renderGoals(); };
+  if($("#goalOff")) $("#goalOff").onclick = () => { showOffGoals = !showOffGoals; renderGoals(); };
 }
 
 function renderKind(){

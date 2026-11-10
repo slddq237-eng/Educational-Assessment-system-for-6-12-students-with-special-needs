@@ -388,6 +388,10 @@ const state = {
   kids:new Set()
 };
 let dBook = "h2";
+/* 首頁兩張卡片（2026-11-10 維護者決定，見 docs/decisions/2026-11-07-writing-plan.md）：「識字評量」tools/literacy/、「寫字評量」tools/literacy/?area=write。
+   同一個網頁，學生名單、課本、教學日期、作答紀錄、備份共用；只差第 1 步看到哪一組評量目標、網頁標題。兩邊不能互相切換，要換就回首頁（維護者決定）。平板作答一律是識字 */
+const AREA = !TABLET && new URLSearchParams(location.search).get("area") === "write" ? "寫字" : "識字";
+if(AREA === "寫字") Object.assign(state, {goal: "W1", kind: "practice", mode: "acc"});
 
 const $ = s => document.querySelector(s);
 

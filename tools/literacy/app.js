@@ -51,6 +51,9 @@ if(!TABLET) addEventListener("load", () => {
   const pre = () => loadTeacher().catch(() => {});
   if(window.requestIdleCallback) requestIdleCallback(pre, {timeout: 5000}); else setTimeout(pre, 2000);
 });
+/* 首頁「寫字評量」卡片進來（?area=write，data.js 的 AREA）：網頁標題、左上角改成寫字評量 */
+if(AREA === "寫字"){ document.title = "寫字評量"; $("#setup .brand h1").textContent = "寫字評量"; $("#setup .brand .stamp").textContent = "寫";
+  $("#mockBar span").textContent = "目前可以用「看注音寫國字」「聽音寫字」「看部件寫字」：大螢幕一題一題出，或印成考卷，學生寫在紙上、老師自己改，不留成績。學生名單、課本、教學日期和識字評量共用（識字評量在平台首頁另一張卡片）。"; }
 /* 收藏與頭像讀完後再畫一次，學生按鈕上才有頭像 */
 Rewards.ready.then(TABLET ? tabletKids : render);
 
