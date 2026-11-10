@@ -14,6 +14,7 @@
 | `records.js` | 6～7 | 作答紀錄存取（IndexedDB）、`COLS` 紀錄欄位、Excel 匯出、紀錄面板、備份還原、匯入檔案（平板紀錄裡名單沒有的代號：`unknownPanel`、`unknownApply`，舊代號記在學生的 `oldCodes`，見 `design/kid-roster.md`「匯入規則」） | `records`（全部紀錄）、`saveRecord`、`updateRecord`、`exportXlsx`、`addBackupPart` |
 | `wordsets.js` | — | 只考有教的字（字組、鎖定、分享） | `wsPick`（這課要考哪些字）、`wsStart`、`wsImport` |
 | `play.js` | 8～10 | 出題、組選項、提示、語音、開始前先下載字型（讀取條）、作答畫面、賓果卡、打怪獸過場、貼紙夥伴（選夥伴、出場）、流暢性、結果畫面 | `startSession`、`prepareThen`（`collect.js` 的 `chooseTheme` 呼叫）、`sessionText`、`loadFonts`（`tablet.js` 也用）、`endItem`、`finish`、`G`（這次作答的狀態） |
+| `writing.js` | — | 寫字組第 1 版（W1～W3，E3，2026-11-10）：第 3 步出題設定、大螢幕一題一題出、答案頁；**不存作答紀錄**；設定只有 3 步由 `setup.js` 的 `wsteps`、`isWriting`（`data.js`）切換 | `renderWriting`（`setup.js` 的 `render` 呼叫）、`writingStart`、`W`（這次出題的狀態） |
 | `collect.js` | 11～14 | 選主題、頭像、得到貼紙、貼紙簿 | `chooseTheme`、`drawStickers`、`giveStickers`、`importStickers` |
 | `gacha.js` | — | 扭蛋機：拉拉桿揭曉貼紙、各星等特效與聲音 | `showGacha`（`collect.js` 的 `showReveals` 呼叫） |
 | `scenes.js` | — | 打怪獸的四個場景動畫 | 由 `play.js` 的 3-3 呼叫 |
@@ -29,4 +30,5 @@
 3. **出題**（`play.js` 第 8 節）：`pickItems` 抽字（「常錯優先」會讀 `records`）→ 多位學生輪流時 `interleaveLists` 排順序（相鄰題不出同一個字）→ `makeOptions` 組選項（用 `common.js` 的 `confOf`、`wordOf`）→ `hintHtml` 做提示（`data.js` 的 `fitHints` 跳過不適合的提示）。
 4. **作答**（第 9 節）：每題結束呼叫 `endItem` → 組成一筆紀錄，前後測用 `play.js` 開始時記下的 `G.prepost`，教學後天數用 `data.js` 的 `daysAfterEnd`、字組資訊用 `wordsets.js` → `records.js` 的 `saveRecord` 存進 IndexedDB。
 5. **結果**（第 10 節 `finish`）：中途離開的紀錄標 `quit` → `collect.js` 的 `drawStickers` 抽好寫進紀錄 → 平板送出 → `giveStickers` → 扭蛋機 `showGacha` 揭曉。
+- **寫字組（W1～W3）不走 2～5**：第 3 步按「開始出題」→ `writing.js` 的 `writingStart`（用 `play.js` 的 `pickItems` 抽字、`prepareThen` 先下載字型）→ 一題一題出 → 答案頁；不存紀錄、沒有主題和貼紙。
 6. **老師專區**（`teacher.js`、`pivot.js`）：只讀 `records`，不寫回。錯誤類型的「亂猜會佔」用 `play.js` 的 `optType`（傳入紀錄的 `goal`）替舊紀錄的選項重新分類，改 `optType` 時要一起檢查；`pivot.js` 的「目標字在語詞的位置」用 `teacher.js` 的 `wposOf`。

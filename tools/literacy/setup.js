@@ -97,12 +97,16 @@ function renderPrepost(){
    （2026-10-24 維護者改的順序：先決定「怎麼玩」，再決定「玩什麼」；右邊的摘要和「開始」只在第 4 步出現）。
    每一步要先完成才能往下；第 3 步只剩一個選項時自動跳過（例如小考：只能大螢幕）。上方的步驟標籤也可以直接點。 */
 const WSTEPS = ["選目標和評量方式", "選學生和課次", "選作答方式", "選玩法和主題"];
+/* 寫字組（E3 第 1 版）只有 3 步：不選學生（不留紀錄）、沒有作答方式和玩法（學生寫在紙上），第 3 步換成出題設定（writing.js 的 renderWriting） */
+const WSTEPS_W = ["選目標", "選課次和題數", "出題設定"];
+const wsteps = () => isWriting() ? WSTEPS_W : WSTEPS;
 let wstep = 1;
 /* 每一步還缺什麼（空字串＝可以往下） */
 /* 聽音補部件（R5）、聽音選部件（R6）先只開放練習的正確率模式（2026-10-31 維護者決定，等 A3 再開放正式評量；流暢性要連續快點，複選不適合） */
-const step1Miss = () => { const g = GOALS.find(x => x.id === state.goal), c = goalCaps(); return g && c.formal === false && state.kind === "formal" ? `「${g.name}」先只能用在練習，請改選「練習」或換評量目標` : g && c.flu === false && state.mode === "flu" ? `「${g.name}」還不能用在流暢性模式，請改選「正確率」` : ""; };
-const step2Miss = () => !selKids().length ? (isQuick() ? "請先點選要做的學生" : "請先點選要評量的學生") : !state.lessons.length ? "請先選課次" : !state.lessons.some(k => lessonSize(k)) ? `所選課次的字都不能出「${goalName(state.goal)}」（沒有部件，或部件太多），請換課次或換評量目標` : "";
+const step1Miss = () => { if(isWriting()) return ""; const g = GOALS.find(x => x.id === state.goal), c = goalCaps(); return g && c.formal === false && state.kind === "formal" ? `「${g.name}」先只能用在練習，請改選「練習」或換評量目標` : g && c.flu === false && state.mode === "flu" ? `「${g.name}」還不能用在流暢性模式，請改選「正確率」` : ""; };
+const step2Miss = () => !isWriting() && !selKids().length ? (isQuick() ? "請先點選要做的學生" : "請先點選要評量的學生") : !state.lessons.length ? "請先選課次" : !state.lessons.some(k => lessonSize(k)) ? `所選課次的字都不能出「${goalName(state.goal)}」（沒有部件，或部件太多），請換課次或換評量目標` : "";
 function step3Miss(){
+  if(isWriting()) return "";
   const n = selKids().length, a = ANSWERS.find(x => x.id === state.answer);
   if(n < a.min || n > a.max) return `「${a.name}」可以 ${a.min}～${a.max} 位學生，目前 ${n} 位`;
   /* 分區輪流先只開放練習的正確率模式（E14；正式評量等 A3，流暢性是一人一回合，版面不同） */
@@ -120,22 +124,22 @@ const answerList = () => ANSWERS.filter(a => (!isQuick() || a.id === "turn" || a
 const isTurnLike = id => id === "turn" || id === "splitturn" || id === "oneround";   /* 大螢幕輪流（全螢幕、分區、接力） */
 const answerOff = a => a.off || "";
 /* 第 3 步可以跳過嗎：作答方式只有一個能選 */
-const skip3 = () => answerList().filter(a => !answerOff(a)).length === 1 && !step3Miss();
+const skip3 = () => !isWriting() && answerList().filter(a => !answerOff(a)).length === 1 && !step3Miss();
 function renderWizard(){
   const miss = [step1Miss(), step2Miss(), step3Miss()];
   /* 第 n 步能不能去：前面每一步都要完成 */
   const can = n => miss.slice(0, n - 1).every(m => !m);
-  $("#wTabs").innerHTML = WSTEPS.map((t, i) => `<button class="wtab ${i + 1 < wstep ? "ok" : ""}" data-w="${i + 1}" ${i + 1 === wstep ? 'aria-current="step"' : ""} ${can(i + 1) ? "" : "disabled"}><span class="n">${i + 1}</span>${t}${i === 2 && skip3() ? "<small>（不用選）</small>" : ""}</button>`).join("");
+  $("#wTabs").innerHTML = wsteps().map((t, i) => `<button class="wtab ${i + 1 < wstep ? "ok" : ""}" data-w="${i + 1}" ${i + 1 === wstep ? 'aria-current="step"' : ""} ${can(i + 1) ? "" : "disabled"}><span class="n">${i + 1}</span>${t}${i === 2 && skip3() ? "<small>（不用選）</small>" : ""}</button>`).join("");
   $("#wTabs").querySelectorAll("button:not(:disabled)").forEach(b => b.onclick = () => showStep(+b.dataset.w));
   $("#wPrev").hidden = wstep === 1;
-  $("#wNext").hidden = wstep === WSTEPS.length;
+  $("#wNext").hidden = wstep === wsteps().length;
   $("#wNext").disabled = !can(wstep + 1);
-  $("#wNote").textContent = wstep === 4 ? "確認摘要後，按「開始」。" : miss[wstep - 1];
+  $("#wNote").textContent = isWriting() && wstep === 3 ? "確認後，按「開始出題」。" : wstep === 4 ? "確認摘要後，按「開始」。" : miss[wstep - 1];
 }
 function showStep(n){
-  wstep = n;
-  document.querySelectorAll("#setup .wstep").forEach(d => d.hidden = +d.dataset.step !== n);
-  $("#layout").dataset.step = n;
+  wstep = Math.min(n, wsteps().length);
+  document.querySelectorAll("#setup .wstep").forEach(d => d.hidden = +d.dataset.step !== wstep);
+  $("#layout").dataset.step = wstep;
   renderWizard();
 }
 /* 上一步、下一步：第 3 步可以跳過時直接跳過 */
@@ -152,6 +156,7 @@ $("#topMenu .menulist").addEventListener("click", e => {
 document.addEventListener("click", e => { if($("#topMenu").open && !e.target.closest("#topMenu")) $("#topMenu").open = false; });
 document.addEventListener("keydown", e => { if(e.key === "Escape" && $("#topMenu").open){ $("#topMenu").open = false; $("#topMenu summary").focus(); } });
 
+let wrBack = null;   /* 選寫字前的正式／練習、評量方式（換回識字時還原） */
 let showOffGoals = false;   /* 「顯示準備中的功能」：預設收起來，老師好奇再點開（不存起來） */
 function renderGoals(){
   const btn = g => `<button class="goal ${state.goal===g.id?"on":""}" data-g="${g.id}" ${g.off?"disabled":""} aria-pressed="${state.goal===g.id}">
@@ -163,7 +168,13 @@ function renderGoals(){
   const offN = GOALS.filter(g => g.off).length;
   $("#goals").innerHTML = `<div class="goalcols">${col("識字")}<div class="gdiv" aria-hidden="true"></div>${col("寫字")}</div>
     <button class="linkbtn" id="goalOff" aria-expanded="${showOffGoals}">${showOffGoals ? "收起準備中的功能" : `顯示準備中的功能（${offN} 個）`}</button>`;
-  $("#goals").querySelectorAll("button.goal:not(:disabled)").forEach(b => b.onclick = () => { state.goal = b.dataset.g; render(); if(goalCaps().loadMaskFix) loadMaskFix().then(render); });
+  $("#goals").querySelectorAll("button.goal:not(:disabled)").forEach(b => b.onclick = () => {
+    /* 寫字組一律是練習、沒有流暢性；換回識字時，還原老師原本選的正式／練習、正確率／流暢性 */
+    const was = isWriting(); state.goal = b.dataset.g;
+    if(isWriting() && !was) wrBack = {kind: state.kind, mode: state.mode};
+    if(!isWriting() && was && wrBack){ Object.assign(state, wrBack); wrBack = null; }
+    render(); if(goalCaps().loadMaskFix) loadMaskFix().then(render);
+  });
   $("#goalOff").onclick = () => { showOffGoals = !showOffGoals; renderGoals(); };
 }
 
@@ -379,8 +390,8 @@ function quizPlan(){
   while(left > 0){ let moved = false;
     for(const k of order){ if(left && per.get(k) < lessonSize(k)){ per.set(k, per.get(k)+1); left--; moved = true; } }
     if(!moved) break; }
-  const n = Math.max(1, selKids().length);
-  const sec = count * (SEC_PER_ITEM[state.answer] || 8) * (isTurnLike(state.answer) ? n : 1);
+  const n = isWriting() ? 1 : Math.max(1, selKids().length);   /* 寫字：全班一起寫同一題，不分人 */
+  const sec = isWriting() ? count * WRITE_SEC : count * (SEC_PER_ITEM[state.answer] || 8) * (isTurnLike(state.answer) ? n : 1);
   return {pool, one, def, count, isAll, isDefault, canChoose, method, freqN, per, sec, n, bingo, shared};
 }
 /* 題數旁的補充說明：賓果卡的上限、只考部分字（練習和正式評量各自點選的字組，題數以點選的字為準） */
@@ -410,7 +421,7 @@ function renderQuiz(){
       <button class="chip ${q.isAll ? "on" : ""}" data-qq="all" aria-pressed="${q.isAll}">全課生字</button></div>`;
     /* 剛好 10 個字：兩個按鈕一樣，不顯示也不說明；真的不到 10 個字才寫明 */
     const note = (practice ? (q.pool < PRACTICE_COUNT ? "不到 10 個字，全課生字都考。" : "") : "要改題數，請切換到「進階設定」。") + extraNote(q);
-    box.innerHTML = `${pick}<p class="time"><b>${q.count} 題，${minutes(q.sec)}</b><span class="note" style="margin:0">${selKids().length > 1 ? "（學生輪流作答）" : ""}${note}</span></p>`;
+    box.innerHTML = `${pick}<p class="time"><b>${q.count} 題，${minutes(q.sec)}</b><span class="note" style="margin:0">${selKids().length > 1 && !isWriting() ? "（學生輪流作答）" : ""}${note}</span></p>`;
     box.querySelectorAll("[data-qq]").forEach(b => b.onclick = () => { state.qCount = b.dataset.qq === "all" ? "all" : null; render(); });
     return;
   }
@@ -420,7 +431,7 @@ function renderQuiz(){
   if(q.isAll) how = `<p class="note" style="margin:0">所選課次的 ${q.pool} 個字全部出題，順序隨機，不需要選出題方式。</p>`;
   else {
     const head = q.canChoose
-      ? `<div class="group"><span>出題方式</span>${METHODS.map(m => `<button class="chip ${q.method===m.id?"on":""}" data-qm="${m.id}">${m.name}</button>`).join("")}</div>`
+      ? `<div class="group"><span>出題方式</span>${METHODS.filter(m => !isWriting() || m.id !== "weak").map(m => `<button class="chip ${q.method===m.id?"on":""}" data-qm="${m.id}">${m.name}</button>`).join("")}</div>`
       : `<div class="locked"><span class="lock">${q.isDefault ? "預設" : "固定"}</span><span>平均隨機${q.isDefault ? "。改變題數後，練習可以選其他出題方式" : "（正式評量固定，避免只挑難字讓正確率偏低）"}</span></div>`;
     const m = METHODS.find(x => x.id === q.method);
     const detail = q.method === "even" && !q.freqN
@@ -438,7 +449,7 @@ function renderQuiz(){
       <button class="chip ${q.count === q.one && (state.kind === "formal" || state.qCount != null) ?"on":""}" data-qc="one">一課的量（${q.one} 字）</button>
       <button class="chip ${q.isAll?"on":""}" data-qc="all">全課生字（${q.pool} 字）</button></label>
     ${how}
-    <p class="time"><b>${minutes(q.sec)}</b>　<span class="note" style="margin:0">${isTurnLike(state.answer) && q.n > 1 ? `${q.n} 位學生輪流，每人 ${q.count} 題，` : ""}每題約 ${SEC_PER_ITEM[state.answer] || 8} 秒估算${extraNote(q)}</span></p>`;
+    <p class="time"><b>${minutes(q.sec)}</b>　<span class="note" style="margin:0">${isTurnLike(state.answer) && q.n > 1 ? `${q.n} 位學生輪流，每人 ${q.count} 題，` : ""}每題約 ${isWriting() ? WRITE_SEC : SEC_PER_ITEM[state.answer] || 8} 秒估算${extraNote(q)}</span></p>`;
   $("#qCount").onchange = e => { const v = Math.max(1, Math.min(q.pool, +e.target.value || 1)); state.qCount = v; render(); };
   box.querySelectorAll("[data-qc]").forEach(b => b.onclick = () => {
     const qc = b.dataset.qc;
@@ -882,4 +893,4 @@ document.addEventListener("keydown", e => { if(e.key === "Escape") closeSheets()
 document.addEventListener("click", e => { const t = e.target.closest("[data-open]"); if(t && t.dataset.open === "set") openSettings(); if(t && t.dataset.open === "kids"){ renderKidSheet(); openSheet("#kidsSheet"); } });
 $("#openRecords").onclick = () => { renderRecSheet(); openSheet("#recSheet"); };
 
-function render(){ if(state.answer === "splitturn" && selKids().length < 2){ state.answer = "turn"; flowNote("只剩 1 位學生，沒有別人的區可以分，作答方式已改回「大螢幕・輪流」。"); } if(state.answer === "oneround" && selKids().length < 2){ state.answer = "turn"; flowNote("只剩 1 位學生，不用接力，作答方式已改回「大螢幕・輪流」。"); } renderPresets(); renderPrepost(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); renderWizard(); }
+function render(){ document.body.classList.toggle("writing", isWriting()); if(isWriting()){ state.kind = "practice"; state.mode = "acc"; if(state.qMethod === "weak") state.qMethod = "even"; if(wstep > wsteps().length) showStep(wsteps().length); } if(state.answer === "splitturn" && selKids().length < 2){ state.answer = "turn"; flowNote("只剩 1 位學生，沒有別人的區可以分，作答方式已改回「大螢幕・輪流」。"); } if(state.answer === "oneround" && selKids().length < 2){ state.answer = "turn"; flowNote("只剩 1 位學生，不用接力，作答方式已改回「大螢幕・輪流」。"); } renderPresets(); renderPrepost(); renderGoals(); renderKind(); renderHints(); renderLessons(); renderQuiz(); renderAnswers(); renderKids(); renderPlay(); renderThemePick(); renderSummary(); if(typeof renderWriting === "function") renderWriting(); renderWizard(); }

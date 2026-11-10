@@ -251,7 +251,7 @@ let G = null;
 const SPEAKER_SVG = `<svg viewBox="0 0 24 24" width="55%" height="55%" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>`;
 
 function showScreen(id){
-  for(const s of ["#setup", "#play", "#result", "#book", "#teacher", "#tabPick"]) $(s).hidden = s !== id;
+  for(const s of ["#setup", "#play", "#wplay", "#result", "#book", "#teacher", "#tabPick"]) $(s).hidden = s !== id;
   window.scrollTo(0, 0);
 }
 
@@ -310,8 +310,8 @@ function loadPic(theme){
 const setBar = (sel, n, all) => { const p = all ? Math.round(n / all * 100) : 100; $(sel + " i").style.width = p + "%"; $(sel).setAttribute("aria-valuenow", p); };
 /* 電腦：按「開始」後先下載；都下載過就直接開始。等超過 3 秒的，讀完要再按一次「開始」
    （瀏覽器要「使用者剛點過」才肯唸題目，等太久就不算剛點過） */
-function prepareThen(go){
-  const faces = fontsToLoad(sessionText(state.lessons, state.kind !== "formal" && !!settings.practiceBpmf));
+function prepareThen(go, texts){   /* texts：要用的字（{TWKai, BpmfKai}）；寫字組（writing.js）自己給，識字照這次的課次和選項算 */
+  const faces = fontsToLoad(texts || sessionText(state.lessons, state.kind !== "formal" && !!settings.practiceBpmf));
   if(!faces.length) return go();
   const box = $("#loadSheet"), t0 = performance.now();
   $("#ldGo").hidden = true; $("#ldPic").innerHTML = loadPic(state.theme); setBar("#ldBar", 0, 1); box.hidden = false;

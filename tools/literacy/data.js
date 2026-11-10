@@ -82,6 +82,7 @@ const R6_MAX_PARTS = 5;   /* 聽音選部件：部件超過 5 個的字不出（
    partsAnswer：答案是部件不是字（備課分析不做字的混淆和亂猜分析）；
    skip(c)：這個字這個目標不出題（沒寫＝都出）；
    loadMaskFix：要先載入遮擋調整資料 mask-fix.js（loadMaskFix()）；
+   writing：寫字組（大螢幕出題、學生寫在紙上，不留紀錄；設定步驟和出題畫面另外由 writing.js 處理）；
    hintUnfit：不適合的提示和原因（開發路線圖 A2，規格書「提示和題目的適配性」表裡的 ✗；△ 提示很強的還是可用，等維護者討論） */
 const GOAL_CAPS = {
   R1: {hintUnfit: {pic:"答案就是圖片", mask:"會直接看到字"}},
@@ -92,9 +93,14 @@ const GOAL_CAPS = {
        hintUnfit: {parts:"答案就是部件之一", mask:"畫面已經是遮住的字"}},
   R6: {formal:false, flu:false, noBingo:"答案是部件，不能用賓果卡", partsAnswer:true, skip: c => !partsOf(c) || partsOf(c).length > R6_MAX_PARTS,
        hintUnfit: {parts:"答案就是部件"}},
-  R7: {}, W1: {}, W2: {}, W3: {}
+  R7: {},
+  W1: {writing:true, formal:false, flu:false, noBingo:"寫字是紙筆作答"},
+  W2: {writing:true, formal:false, flu:false, noBingo:"寫字是紙筆作答"},
+  W3: {writing:true, formal:false, flu:false, noBingo:"寫字是紙筆作答", skip: c => !partsOf(c)}
 };
 const goalCaps = (goal = state.goal) => GOAL_CAPS[goal] || {};
+const isWriting = (goal = state.goal) => !!goalCaps(goal).writing;   /* 寫字組：設定只有 3 步、不選學生、不留紀錄 */
+const WRITE_SEC = 30;   /* 寫字每題預估的秒數（設定畫面估算時間用；實際由老師按「下一題」） */
 const goalSkips = (c, goal = state.goal) => { const f = goalCaps(goal).skip; return f ? f(c) : false; };
 /* 部件提示對拆不開的字：黑圓圈遮住字的中心、只露出旁邊的樣子（2026-10-31，取代以前打亂旋轉的切塊；圓圈直徑約字寬的 0.5 倍，維護者 2026-10-31 看過 0.4、0.5、0.6 倍的截圖後選的）。
    蓋住中心後剩下的筆畫太少、認不出字形的字，不給這種提示，系統自動跳到下一個提示。
@@ -116,9 +122,10 @@ const GOALS = [
   {id:"R5", group:"識字", name:"聽音補部件", what:"聽音，畫面上的字被遮住一塊部件，選出被遮的部件（4 選 1）"},
   {id:"R6", group:"識字", name:"聽音選部件", what:"聽音，從一堆部件中選出這個字的全部部件，再按「送出」（複選）"},
   {id:"R7", group:"識字", name:"看句子選字", what:"看句子，選出適合的字；「念句子」放在提示", off:"準備中"},
-  {id:"W1", group:"寫字", name:"看注音寫國字", what:"看注音寫出國字；紙筆作答、老師登錄", off:"準備中"},
-  {id:"W2", group:"寫字", name:"聽音寫字",  what:"聽音寫出國字；紙筆作答、老師登錄", off:"準備中"},
-  {id:"W3", group:"寫字", name:"看部件寫字", what:"看部件寫出國字；紙筆作答、老師登錄", off:"準備中"}
+  /* 寫字組第 1 版（E3，2026-11-10）：大螢幕出題、學生寫在紙上，老師自己改；不留成績、不記紀錄（writing.js；規則見 docs/plans/writing-discussion.md） */
+  {id:"W1", group:"寫字", name:"看注音寫國字", what:"看語詞裡的注音，在紙上寫出國字（螢幕出題，不留成績）"},
+  {id:"W2", group:"寫字", name:"聽音寫字",  what:"聽「蜜蜂的蜂」，在紙上寫出國字（螢幕出題，不留成績）"},
+  {id:"W3", group:"寫字", name:"看部件寫字", what:"看拆開的部件，在紙上寫出組成的字（螢幕出題，不留成績）"}
 ];
 /* 紀錄裡的 goal 值換成畫面和 Excel 上的目標名稱（2026-10-25 起不寫「目標 3」）；沒有這個目標就照寫原值 */
 const goalName = id => { const g = GOALS.find(x => x.id === id); return g ? g.name : `目標 ${id}`; };
