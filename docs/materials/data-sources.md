@@ -24,6 +24,7 @@
 | SheetJS 0.18.5 | `shared/vendor/`（識字評量、備課分析，按匯出時才載入） | SheetJS | 0.18.5 | Apache 2.0（授權全文 `shared/vendor/xlsx-LICENSE.txt`） | 已列入關於我們；2026-10-20 放進 repo |
 | qrcode-generator 1.4.4 | `shared/vendor/qrcode-generator-1.4.4.js`（識字評量平板作答，按「產生 QR code」時才載入） | Kazuhiko Arase（npm `qrcode-generator`） | 1.4.4 | MIT（授權全文 `shared/vendor/qrcode-LICENSE.txt`）；「QR Code」是 DENSO WAVE 的註冊商標 | 2026-10-23 放進 repo；已列入關於我們 |
 | 注音字型（識字評量） | `shared/fonts/`、`shared/bpmf.js` | ButTaiwan/bpmfvs（字嗨注音標楷） | bpmfvs commit fa20c2b（2026-03-27） | 漢字 CC BY 4.0、其餘 SIL OFL 1.1 | 2026-10-20 加入；已列入關於我們 |
+| 注音文字表（寫字 W1 看注音寫國字） | `shared/zhuyin.js`（只收課本生字的讀音） | ButTaiwan/bpmfvs 的讀音順序表 `phonetic/phonic_table_Z.txt`（和注音字型同一份，讀音順序一致）；只在產生時下載，不放進 repo | bpmfvs master（2026-11-10 下載） | Apache 2.0（bpmfvs 規格與程式碼的授權；讀音本身是事實資料） | 2026-11-10 加入；已列入關於我們 |
 | 新酷音詞庫 | 只在產生 `shared/bpmf.js` 時使用，不放進 repo | chewing/libchewing-data | libchewing-data commit c44e81a（2026-03-22；詞庫標示 2025.11.17） | LGPL-2.1 | 2026-10-20；已列入關於我們 |
 | 教育部《國語一字多音審訂表》88 年版 PDF | 只在執行 `make_bpmf.py` 比對讀音時自動下載到電腦的暫存資料夾，不放進 repo | language.moe.gov.tw/001/Upload/Files/wxiao89/a.pdf | 88 年版（PDF 檔案日期 2025-09-18，2026-10-21 下載） | 教育部公告的標準，只拿來比對 | 2026-10-21；已列入關於我們 |
 | 圖片提示（表情符號） | 識字評量的圖片提示 | 使用者裝置內建的表情符號 | — | 系統字型提供 | 不用標示 |
@@ -70,7 +71,7 @@
 3. ☐ 和平台現有課本比對：同一本課本已經有的，列出差異給維護者確認，不直接覆蓋。
 4. ☐ 從最新的 main 開新分支、發草稿 PR。
 5. ☐ 新增一個檔案 `shared/lessons-<代號>.js`（2026-10-24 起每本課本一個檔，照現有的 `lessons-k5.js` 寫），裡面寫 `BOOKS.<代號>`、`WORDS_ED`、`SENT_ED`（有放例句才加）、`CONF_ED`；代號照現有規則（康軒 k、南一 n、翰林 h ＋年級），上面寫說明：來源、字數、語詞／例句／干擾字各從哪來、哪些是 AI 擬定。**每個字都要能說出來源。**
-6. ☐ 跑 `node docs/scripts/make_lessons.js`（把新檔加進課本清單、更新所有課本的字；2026-10-24 起），再跑 `make_parts.py`、`make_bpmf.py`、`make_kai.py`（下載的資料版本照上面「資料來源與授權清單」的「版本」欄）。
+6. ☐ 跑 `node docs/scripts/make_lessons.js`（把新檔加進課本清單、更新所有課本的字；2026-10-24 起），再跑 `make_parts.py`、`make_bpmf.py`、`make_zhuyin.js`、`make_kai.py`（下載的資料版本照上面「資料來源與授權清單」的「版本」欄）。
 7. ☐ `make_bpmf.py` 列出和審訂表不一致的讀音：課本和平台不同就加進 `FIX`，課本就是這樣標就加進 `CHECKED` 並寫出處（見 `pronunciation.md`「讀音、注音以課本為主」）；不確定的寫「待老師對照課本」。
 7-1. ☐ `check.js` 提醒「裡有語音替換詞」的：確認那個字在新句子裡的讀音和替換詞一樣，加進 `check.js` 的 `SAY_OK`；不一樣就改 `make_bpmf.py` 的 `SAY`。
 8. ☐ 跑 `make_conf_candidates.py`（干擾字少於 2 個的字的候選）；`docs/materials/material-review.xlsx`「逐字總表」加新課本每個字的列（來源欄照實寫）、「說明」頁的各課本統計加一行。

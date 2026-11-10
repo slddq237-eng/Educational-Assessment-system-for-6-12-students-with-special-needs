@@ -9,11 +9,13 @@
      不玩遊戲、用選項卡（A3-16）、不提示且答錯就結束這題（A3-6）、不回饋對錯（不變色、不搖動、沒有星星、沒有對錯音效，A3-7、A3-8）、
      新題出現 0.7 秒內不收點選（A3-7）、老師提示紀錄按鈕照常顯示（A3-9）、不報讀（A3-10）、正確率模式預設不顯示計時（A3-11；流暢性有時限，一律顯示）、
      分區輪流不能選正式評量（A3-19）。正式評量選了遊戲或賓果也照樣開始，確認程式自己改回一般選項卡。
+   寫字組（W1～W3，E3 第 1 版）不走上面的組合，另外用 WRITING_PAGE 測：3 步設定、不選學生、每題有題目、答案頁、不留紀錄。
    用瀏覽器開頁，所以要有 Playwright（同 smoke.js）。
    ========================================================= */
 const IN_PAGE = async ({goal, kind, mode, play, answer}) => {
   /* 在頁面裡執行：設定這個組合，不能選就回 skip，能選就開始作答、答第一題 */
   const wait = ms => new Promise(r => setTimeout(r, ms));
+  if(goalCaps(goal).writing) return {skip: "寫字組另外測（WRITING_PAGE）"};
   const bk = state.book, ls = BOOKS[bk].lessons;
   kids.length = 0; ["T1", "T2"].forEach(c => kids.push({code: c, name: "", grade: 4}));
   Object.assign(state, {goal, kind, mode, answer, book: bk, lessons: [], limit: "60"});
@@ -86,6 +88,41 @@ const IN_PAGE = async ({goal, kind, mode, play, answer}) => {
   return {n: before() - n0, over: !!G.over, bad};
 };
 
+/* 寫字組（E3 第 1 版，writing.js）：螢幕出題、不留紀錄。每個寫字目標：設定只有 3 步、不用選學生，
+   開始出題後每一題都有題目，一路按「下一題」到答案頁，答案頁的題數對、而且沒有存任何作答紀錄 */
+const WRITING_PAGE = async goal => {
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const bad = [];
+  state.kids = new Set();
+  const btn = [...document.querySelectorAll("#goals button.goal")].find(x => x.dataset.g === goal);
+  if(!btn) return {bad: ["第 1 步找不到這個目標的按鈕"]};
+  btn.click();
+  const bk = state.book, ls = BOOKS[bk].lessons;
+  state.lessons = Object.keys(ls).map(n => `${bk}-${n}`).filter(k => lessonSize(k) >= 3).slice(0, 1);
+  render();
+  if(document.querySelectorAll("#wTabs button").length !== 3) bad.push("寫字的設定應該只有 3 步");
+  if(step2Miss()) bad.push(`不選學生也應該可以往下，卻寫「${step2Miss()}」`);
+  showStep(3);
+  const go = document.querySelector("#wrGo");
+  if(!go || go.disabled) return {bad: [...bad, "第 3 步沒有可以按的「開始出題」"]};
+  const n0 = records.length;
+  go.click(); await wait(1500);
+  if(document.querySelector("#wplay").hidden) return {bad: [...bad, "按了「開始出題」沒有出現出題畫面"]};
+  const total = W.items.length;
+  for(let i = 0; i < total; i++){
+    if(!document.querySelector("#wStage").textContent.trim() && !document.querySelector("#wStage .ptile")) bad.push(`第 ${i + 1} 題沒有題目`);
+    if(goal === "W1" && /？/.test(document.querySelector("#wStage").textContent)) bad.push(`第 ${i + 1} 題「${W.items[i].c}」查不到注音`);
+    document.querySelector("#wNextQ").click(); await wait(30);
+  }
+  if(!W.answers) bad.push("出完全部題目沒有出現答案頁");
+  const rows = document.querySelectorAll("#wAns tbody tr").length;
+  if(rows !== total) bad.push(`答案頁有 ${rows} 題，應該是 ${total} 題`);
+  await wait(300);
+  if(records.length !== n0) bad.push(`寫字不留紀錄，卻多了 ${records.length - n0} 筆作答紀錄`);
+  document.querySelector("#wHome").click();
+  return {bad, total};
+};
+
 module.exports = async function comboErrors(browser, base) {
   const goals = await (async () => {
     const page = await browser.newPage();
@@ -117,6 +154,20 @@ module.exports = async function comboErrors(browser, base) {
       await page.close();
       if (errs.length > 10) return errs;
     }
+  /* 寫字組 */
+  for (const goal of goals.filter(g => /^W/.test(g))) {
+    const page = await browser.newPage(), pe = [];
+    await page.route('**/*', r => r.request().url().startsWith(base) ? r.continue() : r.abort());
+    page.on('pageerror', e => pe.push(e.message));
+    try {
+      await page.goto(base + 'tools/literacy/index.html', {waitUntil: 'load', timeout: 20000});
+      const r = await page.evaluate(WRITING_PAGE, goal);
+      for (const b of r.bad) errs.push(`寫字 ${goal}：${b}`);
+      if (!r.bad.length) ran++;
+    } catch (e) { errs.push(`寫字 ${goal}：${e.message.split('\n')[0]}`); }
+    if (pe.length) errs.push(`寫字 ${goal}：程式錯誤 ${pe[0]}`);
+    await page.close();
+  }
   console.log(`　　　組合測試：實際跑 ${ran} 種（其中正式評量 ${formalRan} 種，檢查 A3 條件）、依設定畫面的限制略過 ${skipped} 種`);
   if (!formalRan) errs.push('一種正式評量的組合都沒跑到，A3 條件沒有檢查到');
   if (ran < 20) errs.push(`只跑了 ${ran} 種組合，太少了（略過 ${skipped}）`);
