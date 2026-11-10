@@ -276,21 +276,24 @@ function examRenderOne(){
     : g === "W1" ? `<div class="exrow w1 exlabels"><span class="exn"></span><span class="exask">題目（寫在格子裡）</span><span class="exfold">摺線</span>${fixHead}</div>`
     : `<div class="exrow exlabels"><span class="exn"></span><span class="exask">題目</span><span class="exans">答案</span><span class="exfold">摺線</span>${fixHead}</div>`;
   /* 分頁照實際高度（2026-11-10）：先把全部題目排在一張量每一題多高，再一頁一頁放滿；空格多、題目換行的題目比較高 */
-  /* 答案頁（給老師）：題目多時分成好幾頁（2026-11-10 發布前測試：原本只有一張，超過一頁的題目印不出來）；每頁都有表格標題 */
+  /* 答案頁（給老師）：三欄（2026-11-10 維護者要求：格子不用那麼大，少用紙），每一欄由上往下排題號；題目多時分成好幾頁（2026-11-10 發布前測試） */
   const keyHtml = () => {
     if(!examKey(g)) return "";
     const trs = EX.items.map((it, i) => `<tr><td>${i + 1}</td><td>${esc(g === "W2" && examOpt.w2 === "word" ? it.w || it.c : it.w ? `${it.w}的${it.cs.join("、")}` : it.c)}</td><td class="a">${esc(g === "W2" && examOpt.w2 === "word" ? it.cs.join("") : it.cs.join("、"))}</td></tr>`);
     const th = `<tr><th>題號</th><th>題目</th><th>答案</th></tr>`;
-    const sheet = (list, p) => `<section class="exsheet exkey"><h2>答案（給老師）${p ? `<small>（第 ${p + 1} 頁）</small>` : ""}</h2><table class="exkeytab">${th}${list.join("")}</table></section>`;
-    const m = document.createElement("div"); m.innerHTML = `<section class="exsheet exkey exmeasure">${sheet(trs, 0).replace(/^<section[^>]*>|<\/section>$/g, "")}</section>`;
+    const col = list => `<table class="exkeytab">${th}${list.join("")}</table>`;
+    const sheet = (cols, p) => `<section class="exsheet exkey"><h2>答案（給老師）${p ? `<small>（第 ${p + 1} 頁）</small>` : ""}</h2><div class="exkeycols">${cols.map(col).join("")}</div></section>`;
+    /* 先排一欄量每一列多高，再一欄一欄放滿（一頁三欄） */
+    const m = document.createElement("div"); m.innerHTML = `<section class="exsheet exkey exmeasure"><h2>答案（給老師）</h2><div class="exkeycols">${col(trs)}</div></section>`;
     P.appendChild(m);
     const s1 = m.firstElementChild, cs1 = getComputedStyle(s1), k = s1.getBoundingClientRect().width / 210;
     const inner = 297 * k - parseFloat(cs1.paddingTop) - parseFloat(cs1.paddingBottom) - 4;
-    const trEls = [...s1.querySelectorAll("tr")], head0 = trEls[0].getBoundingClientRect().top - s1.getBoundingClientRect().top - parseFloat(cs1.paddingTop) + trEls[0].getBoundingClientRect().height;
-    const pages = []; let cur = [], h = head0;
-    trs.forEach((t, i) => { const rh = trEls[i + 1].getBoundingClientRect().height; if(cur.length && h + rh > inner){ pages.push(cur); cur = []; h = head0; } cur.push(t); h += rh; });
-    if(cur.length) pages.push(cur);
+    const trEls = [...s1.querySelectorAll("tr")], head0 = trEls[0].getBoundingClientRect().bottom - s1.getBoundingClientRect().top - parseFloat(cs1.paddingTop);
+    const cols = []; let cur = [], h = head0;
+    trs.forEach((t, i) => { const rh = trEls[i + 1].getBoundingClientRect().height; if(cur.length && h + rh > inner){ cols.push(cur); cur = []; h = head0; } cur.push(t); h += rh; });
+    if(cur.length) cols.push(cur);
     m.remove();
+    const pages = []; for(let i = 0; i < cols.length; i += 3) pages.push(cols.slice(i, i + 3));
     return pages.map(sheet).join("");
   };
   const pagesHtml = fixN => {

@@ -1123,9 +1123,12 @@ body.writing section[aria-labelledby="h4"],body.writing #taught,body.writing #pp
 .excell.ruler i{position:absolute}
 .excell .ln{position:absolute;border:0 dashed #9a9a9a}.excell .ln.v{border-left-width:1px;width:0;margin-left:-.5px}.excell .ln.h{border-top-width:1px;height:0;margin-top:-.5px}
 .exkey h2{font-size:16pt;margin:0 0 4mm}
-.exkeytab{border-collapse:collapse;width:100%;font-size:14pt}
-.exkeytab th,.exkeytab td{border:1px solid #999;padding:1.5mm 3mm;text-align:center}
-.exkeytab td.a{font-size:20pt}
+.exkeycols{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm;align-items:start}   /* 答案頁三欄（2026-11-10 維護者要求） */
+.exkeytab{border-collapse:collapse;width:100%;font-size:10.5pt}
+.exkeytab th,.exkeytab td{border:1px solid #999;padding:1mm 1.5mm;text-align:center}
+.exkeytab th{font-size:9pt;white-space:nowrap}
+.exkeytab td:first-child{width:8mm}
+.exkeytab td.a{font-size:15pt;white-space:nowrap}
 @page{size:A4 portrait;margin:0}
 @page land{size:A4 landscape;margin:0}   /* 大格橫印（2026-11-10） */
 .exsheet.land{width:297mm;min-height:210mm}
