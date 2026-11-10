@@ -20,7 +20,7 @@ const EXAM_SIZES = [["s", "小", 1.5], ["m", "中", 1.8], ["l", "大", 2.2]];   
 const EXAM_FIX = 4;   /* 訂正格幾格 */
 /* 訂正方法：寫幾遍由老師在第 3 步填（2026-11-10 維護者要求）；沒填就印「寫 ___ 遍」，老師在紙上自己寫 */
 const examTimes = () => examOpt.times ? `<b class="extimes">${esc(examOpt.times)}</b>` : `<span class="exblank"></span>`;
-const EXAM_HOW_FIX = () => `<b>訂正方法</b><span><b>1. 看一看</b>：看清楚正確的字。</span><span><b>2. 摺起來</b>：沿著虛線往後摺，蓋住左邊的題目和答案。</span><span><b>3. 訂正</b>：不看答案自己寫 ${examTimes()} 遍。<mark class="exmark">主動寫出來，才能真正記住！</mark></span>`;   /* 最後一句黃色底（2026-11-10 維護者要求） */
+const EXAM_HOW_FIX = () => `<b class="exhowtitle">訂正方法</b><span><b>1. 看一看</b>：看正確的字。</span><span><b>2. 摺起來</b>：沿著虛線摺，蓋住題目和答案。</span><span><b>3. 訂正</b>：不看答案自己寫 ${examTimes()} 遍。<mark class="exmark">主動寫出來，才能真正記住！</mark></span>`;   /* 最後一句黃色底（2026-11-10 維護者要求） */
 const EXAM_METHOD = {
   W1: "看注音，在格子裡寫出國字。",
   W2: "聽老師唸，在格子裡寫出國字。",
@@ -137,9 +137,12 @@ function examRender(){
   const unit = manyBooks ? [...new Set(state.lessons.map(k => bookName(splitKey(k)[0])))].join("、") : bookName(b0);
   const lessons = state.lessons.map(k => { const [b, n] = splitKey(k); return manyBooks ? `${bookName(b)} ${lessonName(b, n)}` : lessonName(b, n); }).join("、");
   const cm = EXAM_SIZES.find(s => s[0] === examOpt.size)[2];
+  /* 表頭兩排（2026-11-10 維護者要求）：上排單元、課別、考試方法（題型名稱）、日期；下排班級、座號、姓名（姓名格比較寬） */
+  const goalName = GOALS.find(x => x.id === EX.goal).name;
   const head = first => `<table class="exhead"><tr>
       <th>單元</th><td contenteditable="true">${esc(unit)}</td><th>課別</th><td contenteditable="true">${esc(lessons)}</td>
-      <th>班級</th><td class="blank"></td><th>座號</th><td class="blank s"></td><th>姓名</th><td class="blank"></td><th>日期</th><td class="blank"></td></tr></table>
+      <th>考試方法</th><td contenteditable="true">${esc(goalName)}</td><th>日期</th><td class="blank d"></td></tr></table>
+    <table class="exhead exhead2"><tr><th>班級</th><td class="blank c"></td><th>座號</th><td class="blank s"></td><th>姓名</th><td class="blank n"></td></tr></table>
     ${first ? `<p class="exmethod" contenteditable="true">${esc(EXAM_METHOD[EX.goal])}</p><p class="exhowfix" contenteditable="true">${EXAM_HOW_FIX()}</p>` : ""}`;
   const g = EX.goal, mm = cm * 10, P = $("#exPages");
   /* 每一題由左到右（2026-11-10 維護者決定）：
