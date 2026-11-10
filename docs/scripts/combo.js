@@ -128,11 +128,11 @@ const WRITING_PAGE = async goal => {
     const rows = document.querySelectorAll("#exPages .exrow:not(.exlabels)");
     if(rows.length !== EX.items.length) bad.push(`考卷有 ${rows.length} 題，應該是 ${EX.items.length} 題`);
     if([...rows].some(r => !r.querySelectorAll(".exfix .excell").length)) bad.push("考卷每一題應該有訂正格");
-    /* W1：題目裡的空格數＝老師寫正確答案的格數；W2：答案格數＝正確答案格數；W3：1 格答案 */
-    if(goal === "W1" && [...rows].some(r => !r.querySelectorAll(".exhole").length || r.querySelectorAll(".exhole").length !== r.querySelectorAll(".exans.teach .excell").length)) bad.push("看注音寫國字：題目的空格數和正確答案格數不一樣");
-    if(goal === "W2" && [...rows].some(r => r.querySelectorAll(".exans:not(.teach) .excell").length !== r.querySelectorAll(".exans.teach .excell").length)) bad.push("聽音寫字：答案格數和正確答案格數不一樣");
+    /* W1：題目裡有空格（答案格）；W2：每題有答案格；W3：1 格答案；不再有老師寫正確答案的格子（2026-11-10 拿掉） */
+    if(goal === "W1" && [...rows].some(r => !r.querySelectorAll(".exhole").length)) bad.push("看注音寫國字：題目裡沒有空格");
+    if(goal === "W2" && [...rows].some(r => !r.querySelectorAll(".exans .excell").length)) bad.push("聽音寫字：沒有答案格");
     if(goal === "W3" && [...rows].some(r => r.querySelectorAll(".exans .excell").length !== 1)) bad.push("看部件寫字：每題應該有 1 格答案");
-    if([...document.querySelectorAll("#exPages .exsheet")].some(s => s.scrollHeight > s.clientHeight + 2)) bad.push("考卷內容超出 A4 一頁");
+    if(document.querySelector("#exPages .teach")) bad.push("考卷不應該有老師寫正確答案的格子");
     if(records.length !== n0) bad.push("考卷不留紀錄，卻多了作答紀錄");
     document.querySelector("#exBack").click();
   }

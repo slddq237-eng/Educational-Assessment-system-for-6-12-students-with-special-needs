@@ -10,8 +10,8 @@
      左右、上下、左中右、上中下的分線照字的比例（shared/ruler.js，2026-11-10 維護者要求；表裡沒有的字從正中間分），
      每一塊一種淡色底（第一塊淡藍、第二塊淡黃、第三塊淡綠，2026-10-21 E9 定的樣式）；訂正格的提示跟著答案格。
      沒有分區的字（獨體字、交疊）照樣用十字格。黑白印表機印不出底色，虛線還在。
-   - 題目欄：W1 語詞（要寫的字換成方格＋直排注音，同螢幕出題）；W2 只有題號（老師唸題），答案格旁邊多一樣多的格子給老師寫正確答案，
-     老師選考國字（各 1 格）或語詞（格子照字數）；W1 題目的空格就是答案格，旁邊有正確答案格（老師寫）；同一個語詞的字合併成一題；
+   - 題目欄：W1 語詞，題目的空格就是答案格（右邊直排注音），同一個語詞的字合併成一題；W2 只有題號（老師唸題），
+     老師選考國字（1 格）或語詞（格子照字數）；
      W3 拆開的部件。可以另印一張答案頁給老師（W2 唸題用）。
    - 不留成績、不存紀錄（同第 1 版）。題目和螢幕出題用同一套抽字（play.js 的 pickItems、setup.js 的 quizPlan）。
    用到 writing.js 的 wrZhuyinHtml、wrTarget、wrParts、WRITE_HOW；play.js 的 prepareThen、showScreen。
@@ -39,8 +39,8 @@ function renderExamOpts(){
     <p class="sub">或者印成考卷</p>
     <div class="group" role="group" aria-label="格子大小"><span>格子大小</span>${EXAM_SIZES.map(([id, name, cm]) => `<button class="chip ${examOpt.size === id ? "on" : ""}" data-exs="${id}" aria-pressed="${examOpt.size === id}">${name}（${cm} 公分）</button>`).join("")}</div>
     <label class="wrchk"><input type="checkbox" id="exRuler" ${examOpt.ruler ? "checked" : ""}> 字型尺提示（照字的結構畫虛線分區、加淡色底；不勾就是十字格）</label>
-    ${g === "W2" ? `<div class="group" role="group" aria-label="學生寫什麼"><span>考</span>${[["char", "國字（學生 1 格＋老師 1 格）"], ["word", "語詞（格子照語詞的字數，學生和老師各一份）"]].map(([id, t]) => `<button class="chip ${examOpt.w2 === id ? "on" : ""}" data-exw="${id}" aria-pressed="${examOpt.w2 === id}">${t}</button>`).join("")}</div>
-      <p class="note" style="margin:0 0 6px">聽音寫字的考卷只印題號，由老師唸題（考語詞時唸語詞，考國字時唸「蜜蜂的蜂」）；學生的答案旁邊有一樣多的格子，老師改完錯了可以幫學生寫正確答案。同一個語詞只考一次。</p>` : ""}
+    ${g === "W2" ? `<div class="group" role="group" aria-label="學生寫什麼"><span>考</span>${[["char", "國字（1 格）"], ["word", "語詞（格子照語詞的字數）"]].map(([id, t]) => `<button class="chip ${examOpt.w2 === id ? "on" : ""}" data-exw="${id}" aria-pressed="${examOpt.w2 === id}">${t}</button>`).join("")}</div>
+      <p class="note" style="margin:0 0 6px">聽音寫字的考卷只印題號，由老師唸題（考語詞時唸語詞，考國字時唸「蜜蜂的蜂」）。同一個語詞只考一次。</p>` : ""}
     <label class="wrchk">訂正寫 <input type="number" id="exTimes" min="1" max="20" inputmode="numeric" value="${esc(examOpt.times)}" placeholder="空白" style="width:5em"> 遍（不填就印「寫 ___ 遍」，老師在紙上自己寫）</label>
     <label class="wrchk"><input type="checkbox" id="exKey" ${examKey(g) ? "checked" : ""}> 另印一張答案頁（給老師${g === "W2" ? "唸題、" : ""}對答案）</label>
     <button class="go" id="exGo" ${ready ? "" : "disabled"}>產生考卷</button>`;
@@ -68,7 +68,7 @@ function examStart(){
 }
 
 /* 一個格子：十字格，或字型尺（結構虛線＋淡色底） */
-const RULER_TINT = ["#dcebfa", "#fbf1c7", "#dcf2df"];   /* 淡藍、淡黃、淡綠 */
+const RULER_TINT = ["#eef5fc", "#fdf8e6", "#eef8f0"];   /* 淡藍、淡黃、淡綠（2026-11-10 維護者要求再淺一點；用很淡的不透明色，包圍字裡面那一塊才不會和外框疊成別的顏色） */
 function rulerBlocks(c){
   /* 每一塊是 [left, top, width, height]（0～1，格子的比例）；線畫在塊和塊的交界 */
   const s = examOpt.ruler && typeof Parts !== "undefined" ? Parts.struct(c) : "";
@@ -143,29 +143,30 @@ function examRender(){
     ${first ? `<p class="exmethod" contenteditable="true">${esc(EXAM_METHOD[EX.goal])}</p><p class="exhowfix" contenteditable="true">${EXAM_HOW_FIX()}</p>` : ""}`;
   const g = EX.goal, mm = cm * 10, P = $("#exPages");
   /* 每一題由左到右（2026-11-10 維護者決定）：
-     W1：題號 → 題目（空格就是答案格）→ 正確答案（老師改完錯了幫學生寫）→ 摺線 → 訂正
-     W2：題號 → 答案（國字 1 格；語詞照字數）→ 正確答案（老師寫，格數一樣）→ 摺線 → 訂正
+     W1：題號 → 題目（空格就是答案格）→ 摺線 → 訂正
+     W2：題號 → 答案（國字 1 格；語詞照字數）→ 摺線 → 訂正
+     （原本有「正確答案（老師寫）」的格子，2026-11-10 維護者決定拿掉，留給訂正格更多位置）
      W3：題號 → 題目（部件）→ 答案 → 摺線 → 訂正
      摺線每一列都要對齊才摺得起來，所以欄寬照最寬的那一題；訂正格一般 4 格，放不下就整份一起少一兩格（至少 1 格） */
   /* 每一題要寫的格子：W1 是語詞裡每一個空格（「冷冷」兩格），W2 考語詞是每一個字，其他 1 格 */
   for(const it of EX.items) it.slots = g === "W1" && it.w ? [...it.w].filter(ch => it.cs.includes(ch)) : it.cs;
   const maxN = Math.max(...EX.items.map(it => it.slots.length));
-  /* 答案、正確答案欄最多 2 格寬，3、4 個格子就排成兩行（一列才放得下訂正格） */
-  const colN = Math.min(maxN, 2), tw = colN * mm + (colN - 1) * 2;
+  /* W2 答案欄：放得下 4 格訂正就排成一行，放不下（大格）才排成兩行 */
+  const colN = Math.max(1, Math.min(maxN, Math.floor((186 - 7 - 9 - 9 - (EXAM_FIX * mm + (EXAM_FIX - 1) * 2) + 2) / (mm + 2)))), tw = colN * mm + (colN - 1) * 2;   /* W2 答案欄的寬度 */
   const cells = cs => cs.map(cellHtml).join("");
   const fixCells = (it, n) => Array.from({length: n}, (_, i) => cellHtml(it.cs[i % it.cs.length])).join("");
   const row = (it, no, fixN) => g === "W2" ? `<div class="exrow w2">
-      <span class="exn">${no}</span><span class="exans">${cells(it.slots)}</span><span class="exans teach">${cells(it.slots)}</span>
+      <span class="exn">${no}</span><span class="exans">${cells(it.slots)}</span>
       <span class="exfold" aria-hidden="true"></span><span class="exfix">${fixCells(it, fixN)}</span></div>`
     : g === "W1" ? `<div class="exrow w1">
-      <span class="exn">${no}</span><span class="exask">${examAsk(it)}</span><span class="exans teach">${cells(it.slots)}</span>
+      <span class="exn">${no}</span><span class="exask">${examAsk(it)}</span>
       <span class="exfold" aria-hidden="true"></span><span class="exfix">${fixCells(it, fixN)}</span></div>`
     : `<div class="exrow">
       <span class="exn">${no}</span><span class="exask">${examAsk(it)}</span><span class="exans">${cellHtml(it.c)}</span>
       <span class="exfold" aria-hidden="true"></span><span class="exfix">${fixCells(it, fixN)}</span></div>`;
-  const fixHead = `<span class="exfix">訂正</span>`;   /* 訂正方法上面已經說明，這裡只寫「訂正」（2026-11-10 維護者要求） */
-  const colHead = g === "W2" ? `<div class="exrow w2 exlabels"><span class="exn"></span><span class="exans">答案</span><span class="exans teach">正確答案（老師寫）</span><span class="exfold">摺線</span>${fixHead}</div>`
-    : g === "W1" ? `<div class="exrow w1 exlabels"><span class="exn"></span><span class="exask">題目（寫在格子裡）</span><span class="exans teach">正確答案（老師寫）</span><span class="exfold">摺線</span>${fixHead}</div>`
+  const fixHead = `<span class="exfix">訂正（看一看、摺起來，再訂正）</span>`;   /* 2026-11-10 維護者要求的寫法 */
+  const colHead = g === "W2" ? `<div class="exrow w2 exlabels"><span class="exn"></span><span class="exans">答案</span><span class="exfold">摺線</span>${fixHead}</div>`
+    : g === "W1" ? `<div class="exrow w1 exlabels"><span class="exn"></span><span class="exask">題目（寫在格子裡）</span><span class="exfold">摺線</span>${fixHead}</div>`
     : `<div class="exrow exlabels"><span class="exn"></span><span class="exask">題目</span><span class="exans">答案</span><span class="exfold">摺線</span>${fixHead}</div>`;
   /* 分頁照實際高度（2026-11-10）：先把全部題目排在一張量每一題多高，再一頁一頁放滿；空格多、題目換行的題目比較高 */
   const keyHtml = () => !examKey(g) ? "" : `<section class="exsheet exkey"><h2>答案（給老師）</h2><table class="exkeytab"><tr><th>題號</th><th>題目</th><th>答案</th></tr>
@@ -183,11 +184,11 @@ function examRender(){
     EX.pageN = pages.length;
     return pages.map((list, p) => `<section class="exsheet">${head(p === 0)}${colHead}${list.join("")}</section>`).join("") + keyHtml();
   };
-  P.style.setProperty("--cell", cm + "cm"); P.style.setProperty("--tw", tw + "mm");
+  P.style.setProperty("--cell", cm + "cm");
   /* 先排一次量出題目最寬的那一題（W1），再決定訂正格幾格 */
-  const fixFit = qw => Math.max(1, Math.min(EXAM_FIX, Math.floor((186 - 7 - 9 - 12 - qw - tw + 2) / (mm + 2))));
+  const fixFit = qw => Math.max(1, Math.min(EXAM_FIX, Math.floor((186 - 7 - 9 - 9 - qw + 2) / (mm + 2))));
   let fixN = EXAM_FIX, qw = 0;
-  if(g === "W2"){ P.style.setProperty("--aw", tw + "mm"); fixN = Math.max(1, Math.min(EXAM_FIX, Math.floor((186 - 7 - 9 - 12 - 2 * tw + 2) / (mm + 2)))); }
+  if(g === "W2"){ P.style.setProperty("--aw", tw + "mm"); fixN = Math.max(1, Math.min(EXAM_FIX, Math.floor((186 - 7 - 9 - 9 - tw + 2) / (mm + 2)))); }
   if(g === "W1"){
     P.style.setProperty("--qw", "max-content"); P.style.setProperty("--fixn", 1);
     P.innerHTML = `<section class="exsheet">${EX.items.map((it, i) => row(it, i + 1, 1)).join("")}</section>`;
@@ -195,7 +196,7 @@ function examRender(){
     const pxPerMm = P.querySelector(".exsheet").getBoundingClientRect().width / 210;
     qw = Math.ceil(px / pxPerMm) + 2;
     fixN = Math.min(EXAM_FIX, Math.max(3, fixFit(qw)));   /* 至少留 3 格訂正，題目太長就換行 */
-    qw = Math.min(qw, 186 - 7 - 9 - 12 - tw - (fixN * mm + (fixN - 1) * 2));
+    qw = Math.min(qw, 186 - 7 - 9 - 9 - (fixN * mm + (fixN - 1) * 2));
     P.style.setProperty("--qw", qw + "mm");
   }
   P.style.setProperty("--fixn", fixN);
