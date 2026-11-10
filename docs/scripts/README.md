@@ -14,7 +14,7 @@
 | `make_mask_fix.js` | `tools/literacy/mask-fix.js`（聽音補部件的遮擋位置調整資料） | 維護者用調整工具調好、下載的 json 放到 `docs/materials/mask-fix.json` 之後 |
 | `make_mask_tool.js`（範本 `mask-tool-template.txt`；下載的 json 有 `ps` 和「基於版本」，工具在 repo 結果更新時提醒並能三方合併） | 單機的「遮擋位置調整工具」HTML（約 6MB，不放進 repo；要有 Playwright） | 要調整遮擋位置時；部件表（第一層拆法）改了之後要重新產生 |
 | `make_bpmf.py` | `shared/bpmf.js`、`shared/fonts/bpmf-kai*` | 新增課本、改讀音後 |
-| `make_zhuyin.js` | `shared/zhuyin.js`（寫字 W1 看注音寫國字的注音文字表；讀音表要先下載，見檔案開頭）；有給字型檔時也重做直排注音的小字型 `shared/fonts/bpmf-zhuyin.woff2` | 新增課本後（在 `make_bpmf.py` 之後跑） |
+| `make_bpmf_only.py` | `shared/fonts/bpmf-only.woff2`（寫字 W1 看注音寫國字：「字嗨注音而已」字型只取課本生字；字型要先下載，見檔案開頭） | 新增課本後（和 `make_bpmf.py` 一起） |
 | `make_kai.py` | `shared/fonts/tw-kai*` | 新增課本、部件，或改了頁面文字後 |
 | `make_conf_candidates.py` | `docs/materials/material-review.xlsx` 的「干擾字候選」頁 | 要請老師挑干擾字時 |
 | `bump.js` | 改所有網頁的版本號 `?v=`（今天的日期，同一天第二次起加 b、c…）（2026-10-24 加） | 改了網頁會載入的 js、css 後 |
