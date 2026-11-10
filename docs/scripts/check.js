@@ -16,7 +16,7 @@
   8. 大檔案清單：超過 30KB 的程式檔、超過 20KB 的 docs 文件要寫在 CLAUDE.md 的「省 token」清單（Claude 才知道先搜尋、不要整份讀）
   9. 楷書字型缺字：畫面文字、教材裡的字要在楷書字型裡，沒有就提醒跑 make_kai.py
   10. 網頁下載量：每個頁面一打開要下載的程式和樣式（不含字型）超過上限就提醒，避免越來越慢
-  11. 對外連線：程式裡新的外部網址要寫進 docs/code/architecture.md 第 7 節（也要更新 privacy.html）
+  11. 對外連線：程式裡新的外部網址要寫進 docs/code/architecture.md 第 7 節（也要更新 privacy.html）；外部樣式要背景載入（2026-11-10 加）
   12. 變更紀錄：docs/changelog/changes/ 的小檔案要有「日期」「動到哪裡」「改了什麼」（只提醒；2026-11-02 起不再新增小檔，只檢查舊檔）
   13. 網頁打得開測試的清單：每個網頁（.html）都要寫在 docs/scripts/smoke.js 的 PAGES，漏了是錯誤
   14. 紀錄匯出欄位：records.js 的 COLS 要和 docs/scripts/records-columns.txt 一致（刪欄位、改名、換順序是錯誤；最後面新增欄位只提醒）
@@ -375,6 +375,10 @@ for (const f of files.filter(f => own(f) && f.endsWith('.html'))) {
       if (m[1] !== 'www.w3.org' && !arch.includes(m[1])) hosts.set(m[1], f);
   }
   for (const [h, f] of hosts) warn(f, `連到外部網站「${h}」，請寫進 docs/code/architecture.md 第 7 節「對外連線」，並更新 privacy.html`);
+  /* 外部樣式要背景載入（2026-11-10 發布前測試）：學校網路不回應時，一般寫法的 <link rel="stylesheet" href="https://…"> 會讓整頁卡 30 秒以上才出現 */
+  for (const f of files.filter(f => own(f) && f.endsWith('.html')))
+    for (const m of stripComments(read(f)).matchAll(/<link\b[^>]*rel="stylesheet"[^>]*>/g))
+      if (/href="https?:/.test(m[0]) && !/media="print"[^>]*onload=/.test(m[0])) warn(f, `外部樣式要背景載入（加 media="print" onload="this.media='all'"），否則學校網路不回應時整頁會卡住：${m[0].slice(0, 80)}`);
 }
 
 /* ---------- 12. 變更紀錄 ----------

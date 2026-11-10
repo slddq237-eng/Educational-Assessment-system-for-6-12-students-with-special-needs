@@ -236,6 +236,14 @@ $("#recRestore").onchange = async e => {
   if(!data || data.app !== "literacy"){ $("#recMsg").textContent = "沒辦法讀取這個檔案：這不是識字評量存的資料檔。"; return; }
   const kind = fileKind(data);
   let text, doIt, extra = "", check = null;
+  /* 備份檔、封存檔先檢查內容的形狀（2026-11-10 發布前測試）：被改壞的檔案原本會照單全收，學生名單多出怪東西，之後打開名單就出錯 */
+  const isObj = v => v && typeof v === "object" && !Array.isArray(v);
+  const listOk = (v, ok) => v === undefined || (Array.isArray(v) && v.every(ok));
+  const okKid = k => isObj(k) && typeof k.code === "string" && k.code !== "";
+  if((kind === "backup" || kind === "archive") && !(listOk(data.records, r => isObj(r) && r.kid != null && !isNaN(new Date(r.at))) && listOk(data.kids, okKid) && listOk(data.kidsArchived, okKid)
+    && (data.teach === undefined || isObj(data.teach)) && (data.settings === undefined || isObj(data.settings)))){
+    $("#recMsg").textContent = "沒辦法匯入這個檔案：內容不完整或被改過（學生名單或作答紀錄的格式不對）。請用平台下載的原始備份檔。"; return;
+  }
   if(kind === "backup" || kind === "archive"){
     const have = new Set(records.map(recKey)), recs = data.records || [];
     const add = recs.filter(r => !have.has(recKey(r))).length, wsN = Object.keys(data.wordsets || {}).length;

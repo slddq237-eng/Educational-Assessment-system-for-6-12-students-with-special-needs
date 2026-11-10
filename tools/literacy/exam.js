@@ -203,6 +203,7 @@ function examAsk(it){
   if(EX.goal === "W3") return `<span class="pieces exq">${wrParts(it.c).map(p => `<span class="ptile">${esc(p)}</span>`).join("")}</span>`;
   return "";   /* 聽音寫字只印題號（2026-11-10 維護者決定） */
 }
+const nb = t => t.replace(/ /g, "\u00a0");   /* 表頭太長要換行時，只在「、」後面換，「第 1 課」「康軒 五上」不拆開 */
 const w2Word = () => EX.goal === "W2" && examOpt.w2 === "word";
 
 function examRenderOne(){
@@ -221,7 +222,7 @@ function examRenderOne(){
   /* 表頭兩排（2026-11-10 維護者要求）：上排單元、課別、考試方法（題型名稱）、日期；下排班級、座號、姓名（姓名格比較寬） */
   const goalName = GOALS.find(x => x.id === EX.goal).name;
   const head = first => `<table class="exhead"><tr>
-      <th>單元</th><td contenteditable="true">${esc(unit)}</td><th>課別</th><td contenteditable="true">${esc(lessons)}</td>
+      <th>單元</th><td contenteditable="true">${esc(nb(unit))}</td><th>課別</th><td contenteditable="true">${esc(nb(lessons))}</td>
       <th>考試方法</th><td contenteditable="true">${esc(goalName)}</td><th>日期</th><td class="blank d"></td></tr></table>
     <table class="exhead exhead2"><tr><th>班級</th><td class="blank c"><span class="excls"><i></i>年<i></i>班</span></td><th>座號</th><td class="blank s"></td><th>姓名</th><td class="blank n"></td></tr></table>
     ${first ? `<p class="exmethod" contenteditable="true">${esc(EXAM_METHOD[EX.goal])}</p><p class="exhowfix" contenteditable="true">${EXAM_HOW_FIX()}</p>` : ""}`;
@@ -268,8 +269,23 @@ function examRenderOne(){
     : g === "W1" ? `<div class="exrow w1 exlabels"><span class="exn"></span><span class="exask">題目（寫在格子裡）</span><span class="exfold">摺線</span>${fixHead}</div>`
     : `<div class="exrow exlabels"><span class="exn"></span><span class="exask">題目</span><span class="exans">答案</span><span class="exfold">摺線</span>${fixHead}</div>`;
   /* 分頁照實際高度（2026-11-10）：先把全部題目排在一張量每一題多高，再一頁一頁放滿；空格多、題目換行的題目比較高 */
-  const keyHtml = () => !examKey(g) ? "" : `<section class="exsheet exkey"><h2>答案（給老師）</h2><table class="exkeytab"><tr><th>題號</th><th>題目</th><th>答案</th></tr>
-      ${EX.items.map((it, i) => `<tr><td>${i + 1}</td><td>${esc(g === "W2" && examOpt.w2 === "word" ? it.w || it.c : it.w ? `${it.w}的${it.cs.join("、")}` : it.c)}</td><td class="a">${esc(g === "W2" && examOpt.w2 === "word" ? it.cs.join("") : it.cs.join("、"))}</td></tr>`).join("")}</table></section>`;
+  /* 答案頁（給老師）：題目多時分成好幾頁（2026-11-10 發布前測試：原本只有一張，超過一頁的題目印不出來）；每頁都有表格標題 */
+  const keyHtml = () => {
+    if(!examKey(g)) return "";
+    const trs = EX.items.map((it, i) => `<tr><td>${i + 1}</td><td>${esc(g === "W2" && examOpt.w2 === "word" ? it.w || it.c : it.w ? `${it.w}的${it.cs.join("、")}` : it.c)}</td><td class="a">${esc(g === "W2" && examOpt.w2 === "word" ? it.cs.join("") : it.cs.join("、"))}</td></tr>`);
+    const th = `<tr><th>題號</th><th>題目</th><th>答案</th></tr>`;
+    const sheet = (list, p) => `<section class="exsheet exkey"><h2>答案（給老師）${p ? `<small>（第 ${p + 1} 頁）</small>` : ""}</h2><table class="exkeytab">${th}${list.join("")}</table></section>`;
+    const m = document.createElement("div"); m.innerHTML = `<section class="exsheet exkey exmeasure">${sheet(trs, 0).replace(/^<section[^>]*>|<\/section>$/g, "")}</section>`;
+    P.appendChild(m);
+    const s1 = m.firstElementChild, cs1 = getComputedStyle(s1), k = s1.getBoundingClientRect().width / 210;
+    const inner = 297 * k - parseFloat(cs1.paddingTop) - parseFloat(cs1.paddingBottom) - 4;
+    const trEls = [...s1.querySelectorAll("tr")], head0 = trEls[0].getBoundingClientRect().top - s1.getBoundingClientRect().top - parseFloat(cs1.paddingTop) + trEls[0].getBoundingClientRect().height;
+    const pages = []; let cur = [], h = head0;
+    trs.forEach((t, i) => { const rh = trEls[i + 1].getBoundingClientRect().height; if(cur.length && h + rh > inner){ pages.push(cur); cur = []; h = head0; } cur.push(t); h += rh; });
+    if(cur.length) pages.push(cur);
+    m.remove();
+    return pages.map(sheet).join("");
+  };
   const pagesHtml = fixN => {
     const rows = EX.items.map((it, i) => row(it, i + 1, fixN));
     P.innerHTML = `<section class="${sheetCls} exmeasure">${head(true)}${colHead}${rows.join("")}</section><section class="${sheetCls} exmeasure">${head(false)}${colHead}</section>`;
@@ -343,10 +359,11 @@ function examRender(){
     Object.assign(examOpt, v);
     done.push({v, ...examRenderOne()});
   }
-  P.innerHTML = done.map(d => `<div class="exver" style="${d.vars}">${d.html}</div>`).join("") + EX.keyHtml();
+  const key = EX.keyHtml(), keyN = (key.match(/class="exsheet exkey"/g) || []).length;
+  P.innerHTML = done.map(d => `<div class="exver" style="${d.vars}">${d.html}</div>`).join("") + key;
   const merged = EX.picked - EX.items.length;
   const mixed = new Set(examOpt.vers.map(v => v.size === "l")).size > 1;
-  $("#exInfo").textContent = `${mixed ? "⚠️ 有直印也有橫印（大格橫印）；印表機如果沒有自動轉向，請分開列印。" : ""}${EX.items.length} 題；${done.map(d => `${examVerName(d.v)} ${d.pageN} 頁${d.fixN < EXAM_FIX ? `（訂正格 ${d.fixN} 格）` : ""}`).join("、")}${examKey(g) ? "，另有答案 1 頁" : ""}${g === "W2" ? `；考${examOpt.w2 === "word" ? "語詞" : "國字"}` : ""}${merged > 0 ? `；同一個語詞的字合併成一題（${EX.picked} 個字）` : ""}${done.some(d => d.shrunk) ? "；比較長的題目字縮小了一點，才排得下一行" : ""}。單元、課別、考試方法可以直接點文字修改。`;
+  $("#exInfo").textContent = `${mixed ? "⚠️ 有直印也有橫印（大格橫印）；印表機如果沒有自動轉向，請分開列印。" : ""}${EX.items.length} 題；${done.map(d => `${examVerName(d.v)} ${d.pageN} 頁${d.fixN < EXAM_FIX ? `（訂正格 ${d.fixN} 格）` : ""}`).join("、")}${keyN ? `，另有答案 ${keyN} 頁` : ""}${g === "W2" ? `；考${examOpt.w2 === "word" ? "語詞" : "國字"}` : ""}${merged > 0 ? `；同一個語詞的字合併成一題（${EX.picked} 個字）` : ""}${done.some(d => d.shrunk) ? "；比較長的題目字縮小了一點，才排得下一行" : ""}。單元、課別、考試方法可以直接點文字修改。`;
 }
 $("#exPrint").onclick = () => window.print();
 $("#exBack").onclick = () => { EX = null; showScreen("#setup"); render(); };

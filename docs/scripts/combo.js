@@ -121,7 +121,9 @@ const WRITING_PAGE = async goal => {
   if(records.length !== n0) bad.push(`寫字不留紀錄，卻多了 ${records.length - n0} 筆作答紀錄`);
   document.querySelector("#wHome").click();
   /* 第 2 版考卷（exam.js）：每一題一列（題目、答案格、摺線、3 格訂正格），一頁不超出 A4，不留紀錄 */
-  showStep(3); examOpt.vers = [{size: "m", ruler: true}, {size: "l", ruler: false}]; renderExamOpts();
+  /* 考卷用不連續的 4 課、全部出題，另印答案頁：表頭比較長、答案頁超過一張，才測得到會不會超出紙張 */
+  state.lessons = Object.keys(ls).filter((n, i) => i % 2 === 0).slice(0, 4).map(n => `${bk}-${n}`); state.qCount = "all"; render();
+  showStep(3); examOpt.vers = [{size: "m", ruler: true}, {size: "l", ruler: false}]; examOpt.key = true; renderExamOpts();
   document.querySelector("#exGo").click(); await wait(1500);
   if(document.querySelector("#wexam").hidden) bad.push("按了「產生考卷」沒有出現考卷預覽");
   else {
@@ -143,6 +145,9 @@ const WRITING_PAGE = async goal => {
     /* 看注音寫國字的空格不縮小（2026-11-10 維護者決定） */
     if(goal === "W1" && [...rows].some(r => [...r.querySelectorAll(".exhole .excell")].some(c => c.getBoundingClientRect().width < parseFloat(cellOf(r)) * 10 * kOf(r.closest(".exsheet")) * .97))) bad.push("看注音寫國字的空格被縮小了");
     if([...rows].some(r => Math.max(...[...r.querySelectorAll(".excell")].map(c => c.getBoundingClientRect().right)) > r.closest(".exsheet").getBoundingClientRect().right - 12 * kOf(r.closest(".exsheet")) + 1)) bad.push("考卷的格子超出紙張");
+    /* 表頭、答案頁也不超出紙張（2026-11-10 發布前測試發現：不連續的課表頭太寬、答案頁只有一張） */
+    if([...document.querySelectorAll("#exPages .exhead")].some(t => t.getBoundingClientRect().right > t.closest(".exsheet").getBoundingClientRect().right - 12 * kOf(t.closest(".exsheet")) + 1)) bad.push("考卷表頭超出紙張");
+    if([...document.querySelectorAll("#exPages .exkey")].some(sh => sh.getBoundingClientRect().height > 297 * kOf(sh) + 1)) bad.push("答案頁超過一張 A4（題目多時要分頁）");
     if(records.length !== n0) bad.push("考卷不留紀錄，卻多了作答紀錄");
     document.querySelector("#exBack").click();
   }
