@@ -34,7 +34,7 @@ let EX = null;   /* 這次的考卷：goal、items */
 function renderExamOpts(){
   const box = $("#wrExam");
   if(!box) return;
-  const g = state.goal, ready = state.lessons.length && quizPlan().count > 0;
+  const g = state.goal, ready = state.lessons.length && quizPlan().count > 0 && !step2Miss();
   box.innerHTML = `
     <p class="sub">或者印成考卷</p>
     <p class="note" style="margin:0 0 4px">格子大小和字型尺可以勾好幾種，一次印出好幾個版本（題目和順序都一樣），給不同程度的學生（2026-11-10 維護者要求）。</p>
@@ -52,7 +52,7 @@ function renderExamOpts(){
     examOpt.vers = examOpt.vers.filter(v => !(v.size === size && v.ruler === ruler));
     if(c.checked) examOpt.vers.push({size, ruler});
     examOpt.vers.sort((a, b) => EXAM_SIZES.findIndex(x => x[0] === a.size) - EXAM_SIZES.findIndex(x => x[0] === b.size) || a.ruler - b.ruler);
-    $("#exGo").disabled = !examOpt.vers.length || !state.lessons.length;
+    $("#exGo").disabled = !examOpt.vers.length || !state.lessons.length || !!step2Miss();
   });
   box.querySelectorAll("[data-exw]").forEach(b => b.onclick = () => { examOpt.w2 = b.dataset.exw; renderExamOpts(); });
   $("#exKey").onchange = e => { examOpt.key = e.target.checked; };

@@ -104,7 +104,10 @@ let wstep = 1;
 /* 每一步還缺什麼（空字串＝可以往下） */
 /* 聽音補部件（R5）、聽音選部件（R6）先只開放練習的正確率模式（2026-10-31 維護者決定，等 A3 再開放正式評量；流暢性要連續快點，複選不適合） */
 const step1Miss = () => { if(isWriting()) return ""; const g = GOALS.find(x => x.id === state.goal), c = goalCaps(); return g && c.formal === false && state.kind === "formal" ? `「${g.name}」先只能用在練習，請改選「練習」或換評量目標` : g && c.flu === false && state.mode === "flu" ? `「${g.name}」還不能用在流暢性模式，請改選「正確率」` : ""; };
-const step2Miss = () => !isWriting() && !selKids().length ? (isQuick() ? "請先點選要做的學生" : "請先點選要評量的學生") : !state.lessons.length ? "請先選課次" : !state.lessons.some(k => lessonSize(k)) ? `所選課次的字都不能出「${goalName(state.goal)}」（沒有部件，或部件太多），請換課次或換評量目標` : "";
+/* 寫字評量一次只能選同一本課本（2026-11-10 維護者決定：考卷表頭、課別才寫得清楚）；從識字評量換過來時可能已選了好幾本 */
+const manyBooksSel = () => new Set(state.lessons.map(k => splitKey(k)[0])).size > 1;
+const step2Miss = () => !isWriting() && !selKids().length ? (isQuick() ? "請先點選要做的學生" : "請先點選要評量的學生") : !state.lessons.length ? "請先選課次"
+  : isWriting() && manyBooksSel() ? `寫字評量一次只能選同一本課本，現在選了 ${new Set(state.lessons.map(k => splitKey(k)[0])).size} 本（${lessonsText()}），請只留一本` : !state.lessons.some(k => lessonSize(k)) ? `所選課次的字都不能出「${goalName(state.goal)}」（沒有部件，或部件太多），請換課次或換評量目標` : "";
 function step3Miss(){
   if(isWriting()) return "";
   const n = selKids().length, a = ANSWERS.find(x => x.id === state.answer);
@@ -341,9 +344,11 @@ function renderLessons(){
   $("#lessons").querySelectorAll("button").forEach(b => b.onclick = () => {
     const k = key(state.book, b.dataset.n);
     state.lessons = state.lessons.includes(k) ? state.lessons.filter(x => x !== k) : [...state.lessons, k];
+    /* 寫字評量只能選同一本（2026-11-10 維護者決定）：點了別本的課，就取消其他課本的課次並說明 */
+    if(isWriting() && state.lessons.includes(k) && manyBooksSel()){ state.lessons = state.lessons.filter(x => splitKey(x)[0] === state.book); flowNote(`寫字評量一次只能選同一本課本，已取消其他課本的課次，只留 ${bookName(state.book)}。`); }
     render();
   });
-  $("#picked").innerHTML = state.lessons.length ? `已選：${esc(lessonsText())}　<button class="linkbtn" id="clearLessons">全部清除</button>` : "還沒選課次，可以選好幾課，也可以跨版本。";
+  $("#picked").innerHTML = state.lessons.length ? `已選：${esc(lessonsText())}　<button class="linkbtn" id="clearLessons">全部清除</button>` : (isWriting() ? "還沒選課次，可以選好幾課（寫字評量一次只能選同一本課本）。" : "還沒選課次，可以選好幾課，也可以跨版本。");
   if($("#clearLessons")) $("#clearLessons").onclick = () => { state.lessons = []; render(); };
   renderTaught();
   renderPpWarn();
@@ -374,7 +379,8 @@ function quizPlan(){
   const nKids = Math.max(1, selKids().length), shared = bingo && sharedBingo();
   const pool = bingo ? Math.min(shared ? Math.floor(36 / nKids) : 36, new Set(state.lessons.flatMap(k => testChars(k))).size) : state.lessons.reduce((s,k) => s + lessonSize(k), 0);
   const one = Math.min(oneLesson(), pool);
-  const def = state.kind === "formal" ? one : Math.min(PRACTICE_COUNT, pool);   /* 預設題數 */
+  /* 預設題數；寫字評量預設所選的課全部出題（2026-11-10 維護者決定），不要的字在第 3 步「調整題目」拿掉 */
+  const def = isWriting() ? pool : state.kind === "formal" ? one : Math.min(PRACTICE_COUNT, pool);
   /* state.qCount：null＝預設、"all"＝全部（換課次後仍是全部）、數字＝老師自己輸入的題數 */
   const count = state.qCount === "all" ? pool : Math.min(pool, state.qCount ?? def);
   const isAll = count === pool, isDefault = count === def;

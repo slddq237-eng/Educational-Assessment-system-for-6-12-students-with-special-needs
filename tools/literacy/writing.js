@@ -31,7 +31,7 @@ const wrParts = c => { const p = partsOf(c); return p && p.length > 1 ? p : []; 
 function renderWriting(){
   const box = $("#wrSet");
   if(!box || !isWriting()) return;
-  const g = GOALS.find(x => x.id === state.goal), q = quizPlan(), ready = state.lessons.length && q.count > 0;
+  const g = GOALS.find(x => x.id === state.goal), q = quizPlan(), ready = state.lessons.length && q.count > 0 && !step2Miss();
   const manyBooks = new Set(state.lessons.map(k => splitKey(k)[0])).size > 1;
   const lessons = state.lessons.map(k => { const [b, n] = splitKey(k); return manyBooks ? `${bookName(b)} ${lessonName(b, n)}` : lessonName(b, n); }).join("、");
   box.innerHTML = `
