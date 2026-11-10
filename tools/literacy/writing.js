@@ -44,8 +44,10 @@ function renderWriting(){
     <p class="sub">提示</p>
     <p class="note" style="margin-top:0">${WRITE_HINT[g.id]}</p>
     <p class="note">老師看大家寫完，再按「下一題」。出完全部題目會出現答案頁，可以帶學生對答案。<b>系統不留成績，也不存作答紀錄。</b></p>
-    <button class="go" id="wrGo" ${ready ? "" : "disabled"}>開始出題</button>`;
+    <button class="go" id="wrGo" ${ready ? "" : "disabled"}>開始出題</button>
+    <div id="wrExam" class="wrexam"></div>`;
   $("#wrGo").onclick = () => { unlockSpeech(); writingStart(); };
+  if(typeof renderExamOpts === "function") renderExamOpts();   /* 第 2 版：印成考卷（exam.js） */
 }
 
 /* ---------- 開始出題 ---------- */
