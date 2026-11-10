@@ -179,6 +179,7 @@ function renderGoals(){
     render(); if(goalCaps().loadMaskFix) loadMaskFix().then(render);
   });
   if($("#goalOff")) $("#goalOff").onclick = () => { showOffGoals = !showOffGoals; renderGoals(); };
+  if(AREA === "寫字" && typeof renderWrRecent === "function") renderWrRecent();   /* 寫字評量：最近的題目（writing.js） */
 }
 
 function renderKind(){

@@ -90,6 +90,7 @@
 | localStorage | `literacy-ui`、`literacy-preset` | 設定畫面停在哪 | `setup.js` |
 | localStorage | `literacy-teacher`、`literacy-pivot`、`literacy-pivots` | 老師專區、進階分析的選單 | `teacher.js`、`pivot.js` |
 | localStorage | `literacy-lastBackup` | 上次下載備份檔的日期（超過 30 天提醒） | `records.js` |
+| localStorage | `literacy-writing-sets` | 寫字評量存過的題目（最近 10 份：哪些字、順序、語詞、拿掉的字、考卷設定；不存學生寫得對不對；跟著備份檔走，2026-11-10） | `writing.js`（`exam.js` 也用） |
 | localStorage | `prep-ui`、`prep-ranges` | 備課分析的選擇 | `prep.js` |
 | sessionStorage | `literacy-tablet` | 平板作答：這個分頁的練習設定（含學生名字），關掉分頁就不見；不放進備份 | `data.js` |
 

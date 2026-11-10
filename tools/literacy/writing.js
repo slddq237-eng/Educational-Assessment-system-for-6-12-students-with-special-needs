@@ -26,16 +26,95 @@ const WRITE_HOW = {
   W3: "螢幕顯示拆開的部件，學生在紙上寫出組成的字（拆不開的字不出題）。"
 };
 /* 第 3 步「調整題目」拿掉的字（2026-11-10 維護者決定：預設所選的課全部出題，老師可以拿掉不考的字）：
-   「課次|字」，螢幕出題和考卷都照這個；只記在這次打開的網頁，不存起來（寫字不留紀錄） */
+   「課次|字」，螢幕出題和考卷都照這個；抽好題目後跟著「這份題目」存起來（下面 WS） */
 const wrSkip = new Set();
 let wrAdjOpen = false;
 const wrAdjHtml = () => {
   const n = state.lessons.reduce((s, k) => s + wsPick(k).filter(c => !goalSkips(c) && wrSkip.has(k + "|" + c)).length, 0);
   return `<details class="wradj" id="wrAdj" ${wrAdjOpen ? "open" : ""}><summary>調整題目（拿掉不考的字${n ? `，已拿掉 ${n} 個` : ""}）</summary>
-    <p class="note" style="margin:6px 0">點字可以拿掉（再點一次放回來）；只用在這次，不存起來。螢幕出題和考卷都照這裡。${n ? ` <button class="linkbtn" id="wrAdjAll">全部放回來</button>` : ""}</p>
+    <p class="note" style="margin:6px 0">點字可以拿掉（再點一次放回來）；螢幕出題和考卷都照這裡，抽好題目後跟著「這份題目」存起來。${n ? ` <button class="linkbtn" id="wrAdjAll">全部放回來</button>` : ""}</p>
     ${state.lessons.map(k => `<div class="wradjl"><b>${esc(lessonName(...splitKey(k)))}</b>${wsPick(k).filter(c => !goalSkips(c)).map(c => { const off = wrSkip.has(k + "|" + c);
       return `<button class="wrc ${off ? "off" : ""}" data-k="${esc(k)}" data-c="${esc(c)}" aria-pressed="${!off}" title="${off ? "不考（點一下放回來）" : "要考（點一下拿掉）"}">${esc(c)}</button>`; }).join("")}</div>`).join("")}</details>`;
 };
+/* ---------- 這份題目（2026-11-10 維護者決定，取代 2026-11-07「不記出過哪些題目」，見 docs/decisions/2026-11-10-writing-saved-sets.md）----------
+   抽好的題目（哪些字、順序、語詞、老師換的語詞和讀音、拿掉的字）＋考卷設定存在這台電腦，大螢幕出題和考卷都用同一份，隔天打開可以接著用。
+   不存學生寫得對不對（寫字還是不留成績）。只留最近 WR_MAX 份，跟著備份檔走（records.js 的 addBackupPart）。
+   一份：{id, at（抽題時間）, used（最後用的時間）, goal, lessons, skip（拿掉的字）, qCount, items:[{c, k, b, w, w0, vs, drop}], exam（考卷設定）} */
+const WR_MAX = 10;
+let WS = null;   /* 現在這份題目；第 3 步的目標、課次、拿掉的字、題數換了就不算（下次開始時重新抽） */
+const wrSets = () => { const v = load(KEYS.writingSets, []); return Array.isArray(v) ? v.filter(s => s && Array.isArray(s.items)) : []; };
+const wrSig = () => JSON.stringify([state.goal, [...state.lessons].sort(), [...wrSkip].sort(), state.qCount]);
+const setSig = s => JSON.stringify([s.goal, [...s.lessons].sort(), [...(s.skip || [])].sort(), s.qCount ?? null]);
+const wrCur = () => WS && setSig(WS) === wrSig() ? WS : null;
+function wrSave(){
+  if(!WS) return;
+  WS.used = new Date().toISOString();
+  if(typeof EX !== "undefined" && EX && EX.raw === WS.items) WS.exam = {vers: examOpt.vers.map(v => ({...v})), w2: examOpt.w2, key: examOpt.key, times: examOpt.times};
+  store(KEYS.writingSets, [WS, ...wrSets().filter(s => s.id !== WS.id)].slice(0, WR_MAX));
+}
+function wrDraw(){
+  const items = pickItems("", quizPlan()).map(it => {
+    const b = splitKey(it.k)[0], w = BOOKS[b].lessons[splitKey(it.k)[1]].sayChar ? "" : wordOf(it.c, b);
+    return {c: it.c, k: it.k, b, w, w0: w, vs: {}};   /* w0：課本的語詞；w：這份題目用的語詞（老師可以在考卷的「調整題目」換）；vs：老師點選的讀音 */
+  });
+  if(!items.length) return null;
+  WS = {id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), at: new Date().toISOString(), goal: state.goal, lessons: [...state.lessons], skip: [...wrSkip], qCount: state.qCount, items};
+  wrSave();
+  return WS;
+}
+const wrEnsure = () => wrCur() || wrDraw();
+const wrSetName = s => `${goalName(s.goal)}・${bookName(splitKey(s.lessons[0])[0])} ${s.lessons.map(k => lessonName(...splitKey(k))).join("、")}`;
+const wrWhen = iso => { const d = new Date(iso); return isNaN(d) ? "" : `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
+/* 打開存過的題目：目標、課次、拿掉的字、題數、考卷設定都換回那一份 */
+function wrOpen(id){
+  const s = wrSets().find(x => x.id === id);
+  if(!s || !s.lessons.every(k => { const [b, n] = splitKey(k); return BOOKS[b] && BOOKS[b].lessons[n]; })) return flowNote("這份題目的課次在這個版本的網頁找不到，沒辦法打開。");
+  Object.assign(state, {goal: s.goal, lessons: [...s.lessons], qCount: s.qCount ?? null, book: splitKey(s.lessons[0])[0]});
+  state.ed = BOOKS[state.book].edition;
+  wrSkip.clear(); (s.skip || []).forEach(x => wrSkip.add(x));
+  if(s.exam && typeof examOpt !== "undefined") Object.assign(examOpt, {vers: s.exam.vers && s.exam.vers.length ? s.exam.vers.map(v => ({...v})) : examOpt.vers, w2: s.exam.w2 || examOpt.w2, key: s.exam.key ?? null, times: s.exam.times || ""});
+  WS = s; wrSave(); render(); showStep(3);
+}
+/* 換電腦：存過的題目跟著備份檔走；還原時和這台電腦的合在一起（同一份不重複），留最近用的 WR_MAX 份 */
+addBackupPart("writingSets", () => wrSets(), list => {
+  if(!Array.isArray(list)) return;
+  const ok = list.filter(s => s && typeof s.id === "string" && Array.isArray(s.items) && Array.isArray(s.lessons) && s.lessons.length && typeof s.goal === "string");
+  const all = [...wrSets(), ...ok.filter(s => !wrSets().some(x => x.id === s.id))];
+  store(KEYS.writingSets, all.sort((a, b) => String(b.used || b.at).localeCompare(String(a.used || a.at))).slice(0, WR_MAX));
+});
+let wrListOpen = false;
+/* 最近的題目清單：第 1 步（隔天打開網頁還沒選課次，就看得到）和第 3 步都有 */
+const wrListHtml = (cur, list) => `<details class="wrsetlist" ${wrListOpen ? "open" : ""}><summary>最近的題目（${list.length} 份，最多留 ${WR_MAX} 份）</summary>
+      <table class="wrsets">${list.map(s => `<tr class="${cur && cur.id === s.id ? "on" : ""}"><td>${esc(wrSetName(s))}<small>${esc(wrWhen(s.at))} 抽的・${s.items.filter(it => !it.drop).length} 題${s.exam ? "・印過考卷" : ""}</small></td>
+        <td>${cur && cur.id === s.id ? "<small>現在這份</small>" : `<button class="ghost" data-wso="${esc(s.id)}">打開</button>`}</td><td><button class="linkbtn" data-wsd="${esc(s.id)}">刪除</button></td></tr>`).join("")}</table>
+      <p class="note" style="margin:4px 0 0">打開就接著用那一份（同樣的字、順序、語詞和考卷設定）。不存學生寫得對不對；存超過 ${WR_MAX} 份時，最久沒用的會自動刪掉；換電腦時跟著備份檔走。</p></details>`;
+function renderWrRecent(){   /* setup.js 的 renderGoals 呼叫：寫字評量第 1 步 */
+  const box = $("#wrRecent"), list = wrSets();
+  if(!box) return;
+  box.hidden = !list.length;
+  box.innerHTML = list.length ? `<div class="wrset">${wrListHtml(wrCur(), list)}</div>` : "";
+  bindWrSet(box);
+}
+function wrSetHtml(){
+  const cur = wrCur(), list = wrSets();
+  const n = cur ? cur.items.filter(it => !it.drop).length : 0;
+  return `<div class="wrset">
+    <p class="sub" style="margin-top:0">這份題目</p>
+    <p class="note" style="margin:0 0 6px">${cur ? `<b>${n} 題</b>（${esc(wrWhen(cur.at))} 抽的，已經存在這台電腦）。大螢幕出題和考卷都用這一份，順序一樣。 <button class="linkbtn" id="wrRedraw">重新抽題</button>`
+      : "按「開始出題」或「產生考卷」時抽題；抽好的題目會存在這台電腦，大螢幕出題和考卷都用同一份，隔天打開也可以接著用。"}</p>
+    ${list.length ? wrListHtml(cur, list) : ""}
+  </div>`;
+}
+function bindWrSet(box){
+  const r = box.querySelector("#wrRedraw"), d = box.querySelector(".wrsetlist");
+  if(r) r.onclick = () => { wrDraw(); render(); };
+  if(d) d.ontoggle = e => { wrListOpen = e.target.open; };
+  box.querySelectorAll("[data-wso]").forEach(b => b.onclick = () => wrOpen(b.dataset.wso));
+  box.querySelectorAll("[data-wsd]").forEach(b => b.onclick = () => {
+    if(!b.classList.contains("armed")){ b.classList.add("armed"); b.textContent = "確定刪除？再按一次"; return; }
+    store(KEYS.writingSets, wrSets().filter(s => s.id !== b.dataset.wsd)); if(WS && WS.id === b.dataset.wsd) WS = null; render();
+  });
+}
 const wrParts = c => { const p = partsOf(c); return p && p.length > 1 ? p : []; };   /* 部件提示用的部件（拆不開就沒有） */
 
 /* ---------- 第 3 步：出題設定（setup.js 的 render 呼叫） ---------- */
@@ -56,9 +135,11 @@ function renderWriting(){
     <p class="sub">提示</p>
     <p class="note" style="margin-top:0">${WRITE_HINT[g.id]}</p>
     <p class="note">老師看大家寫完，再按「下一題」。出完全部題目會出現答案頁，可以帶學生對答案。<b>系統不留成績，也不存作答紀錄。</b></p>
+    ${ready ? wrSetHtml() : ""}
     <button class="go" id="wrGo" ${ready ? "" : "disabled"}>開始出題</button>
     <div id="wrExam" class="wrexam"></div>`;
   $("#wrGo").onclick = () => { unlockSpeech(); writingStart(); };
+  bindWrSet(box);
   if($("#wrAdj")){
     $("#wrAdj").ontoggle = e => { wrAdjOpen = e.target.open; };
     box.querySelectorAll(".wrc").forEach(b => b.onclick = () => { const id = b.dataset.k + "|" + b.dataset.c; wrSkip.has(id) ? wrSkip.delete(id) : wrSkip.add(id); render(); });
@@ -69,12 +150,12 @@ function renderWriting(){
 
 /* ---------- 開始出題 ---------- */
 function writingStart(){
-  const q = quizPlan();
-  const items = pickItems("", q).map(it => {
-    const b = splitKey(it.k)[0], w = BOOKS[b].lessons[splitKey(it.k)[1]].sayChar ? "" : wordOf(it.c, b);
-    return {...it, b, w, tiles: state.goal === "W3" ? regroupHtml(it.c) : ""};
-  });
+  /* 用「這份題目」（和考卷同一份、同樣順序；考卷「調整題目」勾了不考的不出，換過的語詞照換過的） */
+  const set = wrEnsure();
+  if(!set) return;
+  const items = set.items.filter(it => !it.drop).map(it => ({...it, tiles: state.goal === "W3" ? regroupHtml(it.c) : ""}));
   if(!items.length) return;
+  wrSave();
   W = {goal: state.goal, items, pos: 0, seen: 0, answers: false, partN: 0, wordOn: false};
   /* 先下載這次要用的字型：部件、答案頁的字用楷書，語詞（W1、W2 的提示）用注音字型 */
   const kai = items.map(it => it.c + it.w + wrParts(it.c).join("")).join("");   /* 部件提示、W3 的部件也要楷書 */

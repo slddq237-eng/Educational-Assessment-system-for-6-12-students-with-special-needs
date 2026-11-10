@@ -62,14 +62,12 @@ function renderExamOpts(){
 
 /* ---------- 產生考卷 ---------- */
 function examStart(){
-  const q = quizPlan();
-  const items = pickItems("", q).map(it => {
-    const b = splitKey(it.k)[0], w = BOOKS[b].lessons[splitKey(it.k)[1]].sayChar ? "" : wordOf(it.c, b);
-    return {...it, b, w, w0: w, vs: {}, cs: [it.c]};   /* w0：課本的語詞；w：這次考卷用的語詞（老師可以換）；vs：老師點選的讀音 */
-  });
-  if(!items.length) return;
+  /* 用「這份題目」（writing.js 的 WS，和大螢幕出題同一份）；EX.raw 就是 WS.items，老師在「調整題目」改的會跟著存起來（wrSave） */
+  const set = wrEnsure();
+  if(!set) return;
+  const items = set.items;
   EX = {goal: state.goal, raw: items};
-  examBuild();
+  examBuild(); wrSave();
   const kai = items.map(it => it.c + it.w + wrParts(it.c).join("")).join("") + "正確答案老師寫題號單元課別班級座號姓名日期答案訂正摺線看注音聽老師唸把部件組合起來在格子裡寫出國字一二三四五六七八九十";
   const ruby = items.map(it => it.w ? Bpmf.text(it.w) : "").join("");
   const only = EX.goal === "W1" ? items.map(wrTarget).join("") : "";   /* 要寫的字的注音（只有注音的字型） */
@@ -88,6 +86,7 @@ function examBuild(){
   EX.excluded = examLongOut() ? use.filter(it => hanLen(it.w) >= EXAM_LONG) : [];
   EX.items = examGroup(use.filter(it => !EX.excluded.includes(it)).map(it => ({...it, cs: [it.c]})), EX.goal);
   EX.picked = use.length - EX.excluded.length;
+  wrSave();   /* 老師換的語詞、讀音、勾的不考，跟著這份題目存起來（writing.js） */
 }
 let examWords = null;   /* 課本裡所有的語詞（找替換的語詞用） */
 function examCands(it){
@@ -104,7 +103,7 @@ function examAdjRender(){
   $("#exLong").hidden = !long;
   $("#exLong").innerHTML = long ? `⚠️ 這些字的語詞太長（${EXAM_LONG} 個字以上），排不進一行，<b>這次沒有出題</b>：${esc(long)}。可以打開下面的「調整題目」換一個語詞。` : "";
   const dropN = EX.raw.filter(it => it.drop).length;
-  sum.textContent = `調整題目（拿掉不考的字、換語詞或自己輸入，只用在這一份考卷）${EX.excluded.length ? `：${EX.excluded.length} 個字沒有出題` : ""}${dropN ? `；拿掉 ${dropN} 個字` : ""}`;
+  sum.textContent = `調整題目（拿掉不考的字、換語詞或自己輸入；跟著這份題目存起來，大螢幕出題也照這裡）${EX.excluded.length ? `：${EX.excluded.length} 個字沒有出題` : ""}${dropN ? `；拿掉 ${dropN} 個字` : ""}`;
   box.innerHTML = `<table class="exadjtab"><tr><th>不考</th><th>字</th><th>語詞</th>${showRead ? "<th>讀音（自己輸入的語詞，破音字請點選）</th>" : ""}<th></th></tr>
     ${EX.raw.map((it, i) => {
       const cands = examCands(it), custom = !cands.includes(it.w);
@@ -377,4 +376,4 @@ function examRender(){
 }
 $("#exPrint").onclick = () => window.print();
 $("#exBack").onclick = () => { EX = null; showScreen("#setup"); render(); };
-$("#exAgain").onclick = () => { if(EX) examStart(); };   /* 重新抽題、重新排順序 */
+$("#exAgain").onclick = () => { if(EX){ wrDraw(); examStart(); } };   /* 重新抽題、重新排順序（存成新的一份題目） */

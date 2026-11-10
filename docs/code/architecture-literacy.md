@@ -14,7 +14,7 @@
 | `records.js` | 6～7 | 作答紀錄存取（IndexedDB）、`COLS` 紀錄欄位、Excel 匯出、紀錄面板、備份還原、匯入檔案（平板紀錄裡名單沒有的代號：`unknownPanel`、`unknownApply`，舊代號記在學生的 `oldCodes`，見 `design/kid-roster.md`「匯入規則」） | `records`（全部紀錄）、`saveRecord`、`updateRecord`、`exportXlsx`、`addBackupPart` |
 | `wordsets.js` | — | 只考有教的字（字組、鎖定、分享） | `wsPick`（這課要考哪些字）、`wsStart`、`wsImport` |
 | `play.js` | 8～10 | 出題、組選項、提示、語音、開始前先下載字型（讀取條）、作答畫面、賓果卡、打怪獸過場、貼紙夥伴（選夥伴、出場）、流暢性、結果畫面 | `startSession`、`prepareThen`（`collect.js` 的 `chooseTheme` 呼叫）、`sessionText`、`loadFonts`（`tablet.js` 也用）、`endItem`、`finish`、`G`（這次作答的狀態） |
-| `writing.js` | — | 寫字組第 1 版（W1～W3，E3，2026-11-10）：第 3 步出題設定、大螢幕一題一題出、答案頁；**不存作答紀錄**；設定只有 3 步由 `setup.js` 的 `wsteps`、`isWriting`（`data.js`）切換 | `renderWriting`（`setup.js` 的 `render` 呼叫）、`writingStart`、`W`（這次出題的狀態）、`wrSkip`（第 3 步拿掉不考的字，`play.js` 的 `testChars` 讀） |
+| `writing.js` | — | 寫字組第 1 版（W1～W3，E3，2026-11-10）：第 3 步出題設定、大螢幕一題一題出、答案頁；**不存作答紀錄**；設定只有 3 步由 `setup.js` 的 `wsteps`、`isWriting`（`data.js`）切換 | `renderWriting`（`setup.js` 的 `render` 呼叫）、`writingStart`、`W`（這次出題的狀態）、`wrSkip`（第 3 步拿掉不考的字，`play.js` 的 `testChars` 讀）、`WS`（這份題目，存在 `literacy-writing-sets`，`exam.js` 也用）、`wrDraw`、`wrEnsure`、`wrSave`、`renderWrRecent`（`setup.js` 的 `renderGoals` 呼叫） |
 | `exam.js` | — | 寫字組第 2 版考卷（E3／E10，2026-11-10）：第 3 步考卷設定（格子大小、字型尺提示、W2 挖空語詞、答案頁）、A4 考卷預覽與列印（`@media print`）；字型尺照 `Parts.struct` 分區；**不存作答紀錄** | `renderExamOpts`（`writing.js` 的 `renderWriting` 呼叫）、`examStart`、`examOpt`、`EX` |
 | `collect.js` | 11～14 | 選主題、頭像、得到貼紙、貼紙簿 | `chooseTheme`、`drawStickers`、`giveStickers`、`importStickers` |
 | `gacha.js` | — | 扭蛋機：拉拉桿揭曉貼紙、各星等特效與聲音 | `showGacha`（`collect.js` 的 `showReveals` 呼叫） |

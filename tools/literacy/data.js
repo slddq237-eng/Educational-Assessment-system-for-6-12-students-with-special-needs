@@ -251,7 +251,7 @@ const md = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()}`;
 const KEYS = Object.freeze({
   settings:"literacy-settings", kids:"literacy-kids", kidsArchived:"literacy-kids-archived", kidsTerm:"literacy-kids-term", teach:"literacy-teach", wordsets:"literacy-wordsets",
   ui:"literacy-ui", preset:"literacy-preset", teacher:"literacy-teacher", pivot:"literacy-pivot", pivots:"literacy-pivots",
-  lastBackup:"literacy-lastBackup",
+  lastBackup:"literacy-lastBackup", writingSets:"literacy-writing-sets",   /* 寫字評量存過的題目（writing.js，最近 10 份） */
   tablet:"literacy-tablet"   /* sessionStorage：平板作答這個分頁的練習設定 */
 });
 /* 平板作答（tablet.js）：學生掃老師電腦上的 QR code 打開網頁，網址 #t= 後面帶著這次練習的設定。
