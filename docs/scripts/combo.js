@@ -121,12 +121,12 @@ const WRITING_PAGE = async goal => {
   if(records.length !== n0) bad.push(`寫字不留紀錄，卻多了 ${records.length - n0} 筆作答紀錄`);
   document.querySelector("#wHome").click();
   /* 第 2 版考卷（exam.js）：每一題一列（題目、答案格、摺線、3 格訂正格），一頁不超出 A4，不留紀錄 */
-  showStep(3); examOpt.ruler = true; renderExamOpts();
+  showStep(3); examOpt.vers = [{size: "m", ruler: true}, {size: "l", ruler: false}]; renderExamOpts();
   document.querySelector("#exGo").click(); await wait(1500);
   if(document.querySelector("#wexam").hidden) bad.push("按了「產生考卷」沒有出現考卷預覽");
   else {
     const rows = document.querySelectorAll("#exPages .exrow:not(.exlabels)");
-    if(rows.length !== EX.items.length) bad.push(`考卷有 ${rows.length} 題，應該是 ${EX.items.length} 題`);
+    if(rows.length !== EX.items.length * examOpt.vers.length) bad.push(`考卷有 ${rows.length} 列，應該是 ${EX.items.length} 題 × ${examOpt.vers.length} 個版本`);
     if([...rows].some(r => !r.querySelectorAll(".exfix .excell").length)) bad.push("考卷每一題應該有訂正格");
     /* W1：題目裡有空格（答案格）；W2：每題有答案格；W3：1 格答案；不再有老師寫正確答案的格子（2026-11-10 拿掉） */
     if(goal === "W1" && [...rows].some(r => !r.querySelectorAll(".exhole").length)) bad.push("看注音寫國字：題目裡沒有空格");
