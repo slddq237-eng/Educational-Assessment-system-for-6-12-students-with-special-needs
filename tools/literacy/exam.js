@@ -20,7 +20,7 @@ const EXAM_SIZES = [["s", "小", 1.5], ["m", "中", 1.8], ["l", "大", 2.2]];   
 const EXAM_FIX = 4;   /* 訂正格幾格 */
 /* 訂正方法：寫幾遍由老師在第 3 步填（2026-11-10 維護者要求）；沒填就印「寫 ___ 遍」，老師在紙上自己寫 */
 const examTimes = () => examOpt.times ? `<b class="extimes">${esc(examOpt.times)}</b>` : `<span class="exblank"></span>`;
-const EXAM_HOW_FIX = () => `<b class="exhowtitle">訂正方法</b><span><b>1. 看一看</b>：看正確的字。</span><span><b>2. 摺起來</b>：沿著虛線摺，蓋住題目和答案。</span><span><b>3. 訂正</b>：不看答案自己寫 ${examTimes()} 遍。<mark class="exmark">主動寫出來，才能真正記住！</mark></span>`;   /* 最後一句黃色底（2026-11-10 維護者要求） */
+const EXAM_HOW_FIX = () => `<b class="exhowtitle">訂正方法</b><span><b>1. 看一看</b>：看正確的字。</span><span><b>2. 摺起來</b>：沿著虛線摺，蓋住題目和答案。</span><span><b>3. 訂正</b>：不看答案自己寫 ${examTimes()} 遍。</span>`;
 const EXAM_METHOD = {
   W1: "看注音，在格子裡寫出國字。",
   W2: "聽老師唸，在格子裡寫出國字。",
@@ -109,7 +109,7 @@ function examGroup(items, goal){
     const key = it.w && it.w.includes(it.c) ? it.b + "|" + it.w : "";
     if(word){
       if(key && byWord.has(key)) continue;
-      const g = {...it, cs: it.w ? [...it.w] : [it.c]}; out.push(g); if(key) byWord.set(key, g); continue;
+      const g = {...it, cs: it.w ? [...it.w].filter(ch => /\p{Script=Han}/u.test(ch)) : [it.c]}; out.push(g); if(key) byWord.set(key, g); continue;   /* 「海倫‧凱勒」的「‧」不給格子 */
     }
     if(key && byWord.has(key)){ const g = byWord.get(key); if(!g.cs.includes(it.c)) g.cs.push(it.c); continue; }
     const g = {...it, cs: [it.c]}; out.push(g); if(key) byWord.set(key, g);
@@ -167,7 +167,7 @@ function examRender(){
     : `<div class="exrow">
       <span class="exn">${no}</span><span class="exask">${examAsk(it)}</span><span class="exans">${cellHtml(it.c)}</span>
       <span class="exfold" aria-hidden="true"></span><span class="exfix">${fixCells(it, fixN)}</span></div>`;
-  const fixHead = `<span class="exfix">訂正（看一看、摺起來，再訂正）</span>`;   /* 2026-11-10 維護者要求的寫法 */
+  const fixHead = `<span class="exfix">訂正（看一看 → 摺起來 → 再訂正）</span>`;   /* 2026-11-10 維護者要求的寫法 */
   const colHead = g === "W2" ? `<div class="exrow w2 exlabels"><span class="exn"></span><span class="exans">答案</span><span class="exfold">摺線</span>${fixHead}</div>`
     : g === "W1" ? `<div class="exrow w1 exlabels"><span class="exn"></span><span class="exask">題目（寫在格子裡）</span><span class="exfold">摺線</span>${fixHead}</div>`
     : `<div class="exrow exlabels"><span class="exn"></span><span class="exask">題目</span><span class="exans">答案</span><span class="exfold">摺線</span>${fixHead}</div>`;
