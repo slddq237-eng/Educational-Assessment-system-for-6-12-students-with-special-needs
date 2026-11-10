@@ -1015,6 +1015,7 @@ body.writing section[aria-labelledby="h4"],body.writing #taught,body.writing #pp
 .whints{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;width:min(100%,1100px);align-items:stretch}
 .whcell{display:flex;flex-direction:column;align-items:center;gap:12px;min-height:48px;padding:12px;border:2px solid var(--grid);border-radius:16px;background:rgba(255,255,255,.7)}
 .whcell:empty{border-color:transparent;background:none}
+@media (max-width:520px){.whints{grid-template-columns:1fr;gap:8px}.whcell:empty{display:none}.whcell{flex-direction:row;flex-wrap:wrap;justify-content:center;padding:8px}}   /* 手機：三格提示上下排，按鈕不會被擠成一字一行（2026-11-10 發布前測試） */
 .whword{font-size:clamp(40px,min(6vw,11vh),96px)!important}
 .whint{display:inline-flex;align-items:center;gap:8px;font-size:1.15rem;min-height:48px;padding:0 18px}
 .whint svg{width:26px;height:26px}
