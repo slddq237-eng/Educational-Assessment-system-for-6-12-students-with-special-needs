@@ -10,7 +10,8 @@
      左右、上下、左中右、上中下的分線照字的比例（shared/ruler.js，2026-11-10 維護者要求；表裡沒有的字從正中間分），
      每一塊一種淡色底（第一塊淡藍、第二塊淡黃、第三塊淡綠，2026-10-21 E9 定的樣式）；訂正格的提示跟著答案格。
      沒有分區的字（獨體字、交疊）照樣用十字格。黑白印表機印不出底色，虛線還在。
-   - 題目欄：W1 語詞（要寫的字換成方格＋直排注音，同螢幕出題）；W2 老師勾選要不要印挖空的語詞，不印就只有題號（老師唸題）；
+   - 題目欄：W1 語詞（要寫的字換成方格＋直排注音，同螢幕出題）；W2 只有題號（老師唸題），答案格旁邊多一樣多的格子給老師寫正確答案，
+     老師選學生寫國字（各 1 格）或語詞（各 2 格）；
      W3 拆開的部件。可以另印一張答案頁給老師（W2 唸題用）。
    - 不留成績、不存紀錄（同第 1 版）。題目和螢幕出題用同一套抽字（play.js 的 pickItems、setup.js 的 quizPlan）。
    用到 writing.js 的 wrZhuyinHtml、wrTarget、wrParts、WRITE_HOW；play.js 的 prepareThen、showScreen。
@@ -20,13 +21,13 @@ const EXAM_ROWS = {s: 12, m: 10, l: 8};   /* 一頁幾題（A4 直式，扣掉�
 const EXAM_FIX = 4;   /* 訂正格幾格 */
 /* 訂正方法：寫幾遍由老師在第 3 步填（2026-11-10 維護者要求）；沒填就印「寫 ___ 遍」，老師在紙上自己寫 */
 const examTimes = () => examOpt.times ? `<b class="extimes">${esc(examOpt.times)}</b>` : `<span class="exblank"></span>`;
-const EXAM_HOW_FIX = () => `<b>訂正方法</b><span><b>1. 看一看</b>：看清楚正確的字。</span><span><b>2. 摺起來</b>：沿著虛線往後摺，蓋住左邊的題目和答案。</span><span><b>3. 訂正</b>：不看答案，在訂正格自己寫 ${examTimes()} 遍。主動寫出來，才能真正記住！</span>`;
+const EXAM_HOW_FIX = () => `<b>訂正方法</b><span><b>1. 看一看</b>：看清楚正確的字。</span><span><b>2. 摺起來</b>：沿著虛線往後摺，蓋住左邊的題目和答案。</span><span><b>3. 訂正</b>：不看答案自己寫 ${examTimes()} 遍。<mark class="exmark">主動寫出來，才能真正記住！</mark></span>`;   /* 最後一句黃色底（2026-11-10 維護者要求） */
 const EXAM_METHOD = {
   W1: "看注音，在格子裡寫出國字。",
   W2: "聽老師唸，在格子裡寫出國字。",
   W3: "把部件組合起來，在格子裡寫出國字。"
 };
-const examOpt = {size: "m", ruler: false, word: false, key: null, times: ""};   /* 這次打開網頁時記得（不存起來）；key：null＝照預設（聽音寫字預設要印答案頁） */
+const examOpt = {size: "m", ruler: false, w2: "char", key: null, times: ""};   /* 這次打開網頁時記得（不存起來）；key：null＝照預設（聽音寫字預設要印答案頁） */
 const examKey = (g = state.goal) => examOpt.key ?? g === "W2";
 let EX = null;   /* 這次的考卷：goal、items */
 
@@ -39,13 +40,14 @@ function renderExamOpts(){
     <p class="sub">或者印成考卷</p>
     <div class="group" role="group" aria-label="格子大小"><span>格子大小</span>${EXAM_SIZES.map(([id, name, cm]) => `<button class="chip ${examOpt.size === id ? "on" : ""}" data-exs="${id}" aria-pressed="${examOpt.size === id}">${name}（${cm} 公分）</button>`).join("")}</div>
     <label class="wrchk"><input type="checkbox" id="exRuler" ${examOpt.ruler ? "checked" : ""}> 字型尺提示（照字的結構畫虛線分區、加淡色底；不勾就是十字格）</label>
-    ${g === "W2" ? `<label class="wrchk"><input type="checkbox" id="exWord" ${examOpt.word ? "checked" : ""}> 題目印挖空的語詞（不勾就只印題號，由老師唸題）</label>` : ""}
+    ${g === "W2" ? `<div class="group" role="group" aria-label="學生寫什麼"><span>學生寫</span>${[["char", "國字（學生 1 格＋老師 1 格）"], ["word", "語詞（學生 2 格＋老師 2 格）"]].map(([id, t]) => `<button class="chip ${examOpt.w2 === id ? "on" : ""}" data-exw="${id}" aria-pressed="${examOpt.w2 === id}">${t}</button>`).join("")}</div>
+      <p class="note" style="margin:0 0 6px">聽音寫字的考卷只印題號，由老師唸題；學生的答案旁邊有一樣多的格子，老師改完錯了可以幫學生寫正確答案。</p>` : ""}
     <label class="wrchk">訂正寫 <input type="number" id="exTimes" min="1" max="20" inputmode="numeric" value="${esc(examOpt.times)}" placeholder="空白" style="width:5em"> 遍（不填就印「寫 ___ 遍」，老師在紙上自己寫）</label>
     <label class="wrchk"><input type="checkbox" id="exKey" ${examKey(g) ? "checked" : ""}> 另印一張答案頁（給老師${g === "W2" ? "唸題、" : ""}對答案）</label>
     <button class="go" id="exGo" ${ready ? "" : "disabled"}>產生考卷</button>`;
   box.querySelectorAll("[data-exs]").forEach(b => b.onclick = () => { examOpt.size = b.dataset.exs; renderExamOpts(); });
   $("#exRuler").onchange = e => { examOpt.ruler = e.target.checked; };
-  if($("#exWord")) $("#exWord").onchange = e => { examOpt.word = e.target.checked; };
+  box.querySelectorAll("[data-exw]").forEach(b => b.onclick = () => { examOpt.w2 = b.dataset.exw; renderExamOpts(); });
   $("#exKey").onchange = e => { examOpt.key = e.target.checked; };
   $("#exTimes").oninput = e => { const v = Math.round(+e.target.value); examOpt.times = v >= 1 && v <= 20 ? String(v) : ""; };
   $("#exGo").onclick = examStart;
@@ -100,8 +102,12 @@ function cellHtml(c){
 function examAsk(it){
   if(EX.goal === "W1") return `<span class="wword zy exq">${wrZhuyinHtml(it)}</span>`;
   if(EX.goal === "W3") return `<span class="pieces exq">${wrParts(it.c).map(p => `<span class="ptile">${esc(p)}</span>`).join("")}</span>`;
-  return examOpt.word && it.w ? `<span class="wword bpmf exq">${esc(Bpmf.blank(it.w, it.c, "○"))}</span>` : "";
+  return "";   /* 聽音寫字只印題號（2026-11-10 維護者決定） */
 }
+/* 聽音寫字（2026-11-10 維護者決定）：題號 → 學生答案 → 正確答案（老師改完錯了幫學生寫）→ 摺線 → 訂正。
+   老師選學生寫國字（各 1 格）或寫語詞（各 2 格；兩個字的語詞照每個字畫字型尺，其他語詞用十字格） */
+const w2Word = () => EX.goal === "W2" && examOpt.w2 === "word";
+const w2Chars = it => !w2Word() ? [it.c] : it.w && [...it.w].length === 2 ? [...it.w] : ["", ""];
 
 function examRender(){
   const [b0] = splitKey(state.lessons[0]), manyBooks = new Set(state.lessons.map(k => splitKey(k)[0])).size > 1;
@@ -114,19 +120,31 @@ function examRender(){
       <th>單元</th><td contenteditable="true">${esc(unit)}</td><th>課別</th><td contenteditable="true">${esc(lessons)}</td>
       <th>班級</th><td class="blank"></td><th>座號</th><td class="blank s"></td><th>姓名</th><td class="blank"></td><th>日期</th><td class="blank"></td></tr></table>
     ${first ? `<p class="exmethod" contenteditable="true">${esc(EXAM_METHOD[EX.goal])}</p><p class="exhowfix" contenteditable="true">${EXAM_HOW_FIX()}</p>` : ""}`;
-  const row = (it, n) => `<div class="exrow">
+  const w2 = EX.goal === "W2", k = w2Word() ? 2 : 1;
+  /* 訂正格：一般 4 格；聽音寫字寫語詞時一列比較寬，放不下就少幾格（A4 內容寬 186mm，扣掉題號、答案、摺線和間距） */
+  const fixN = w2 ? Math.max(1, Math.min(EXAM_FIX, Math.floor((186 - 7 - 9 - 15 - 2 * (k * cm * 10 + (k - 1) * 2) + 2) / (cm * 10 + 2)))) : EXAM_FIX;
+  const fix = it => { const cs = w2Chars(it); return Array.from({length: fixN}, (_, i) => cellHtml(cs[i % cs.length])).join(""); };
+  const row = (it, n) => w2 ? `<div class="exrow w2">
+      <span class="exn">${n}</span>
+      <span class="exans">${w2Chars(it).map(cellHtml).join("")}</span>
+      <span class="exans teach">${w2Chars(it).map(cellHtml).join("")}</span>
+      <span class="exfold" aria-hidden="true"></span>
+      <span class="exfix">${fix(it)}</span></div>` : `<div class="exrow">
       <span class="exn">${n}</span><span class="exask">${examAsk(it)}</span>
       <span class="exans">${cellHtml(it.c)}</span>
       <span class="exfold" aria-hidden="true"></span>
-      <span class="exfix">${cellHtml(it.c).repeat(EXAM_FIX)}</span></div>`;
-  const colHead = `<div class="exrow exlabels"><span class="exn"></span><span class="exask">題目</span><span class="exans">答案</span><span class="exfold">摺線</span><span class="exfix">訂正（看一看 → 摺起來 → 寫 ${examTimes()} 遍）</span></div>`;
+      <span class="exfix">${fix(it)}</span></div>`;
+  const fixHead = `<span class="exfix">訂正（看一看 → 摺起來 → 寫 ${examTimes()} 遍）</span>`;
+  const colHead = w2 ? `<div class="exrow w2 exlabels"><span class="exn"></span><span class="exans">答案</span><span class="exans teach">正確答案（老師寫）</span><span class="exfold">摺線</span>${fixHead}</div>`
+    : `<div class="exrow exlabels"><span class="exn"></span><span class="exask">題目</span><span class="exans">答案</span><span class="exfold">摺線</span>${fixHead}</div>`;
   let n = 0;
   const sheets = pages.map((list, p) => `<section class="exsheet">${head(p === 0)}${colHead}${list.map(it => row(it, ++n)).join("")}</section>`);
   if(examKey(EX.goal)) sheets.push(`<section class="exsheet exkey"><h2>答案（給老師）</h2><table class="exkeytab"><tr><th>題號</th><th>題目</th><th>答案</th></tr>
-      ${EX.items.map((it, i) => `<tr><td>${i + 1}</td><td>${esc(it.w ? `${it.w}的${it.c}` : it.c)}</td><td class="a">${esc(it.c)}</td></tr>`).join("")}</table></section>`);
+      ${EX.items.map((it, i) => `<tr><td>${i + 1}</td><td>${esc(it.w ? `${it.w}的${it.c}` : it.c)}</td><td class="a">${esc(w2Word() && it.w ? it.w : it.c)}</td></tr>`).join("")}</table></section>`);
   $("#exPages").style.setProperty("--cell", cm + "cm");
+  $("#exPages").style.setProperty("--k", k); $("#exPages").style.setProperty("--fixn", fixN);
   $("#exPages").innerHTML = sheets.join("");
-  $("#exInfo").textContent = `${EX.items.length} 題，${pages.length} 頁${examKey(EX.goal) ? "＋答案 1 頁" : ""}；格子 ${cm} 公分${examOpt.ruler ? "，字型尺提示" : "，十字格"}。單元、課別、考試方法可以直接點文字修改。`;
+  $("#exInfo").textContent = `${EX.items.length} 題，${pages.length} 頁${examKey(EX.goal) ? "＋答案 1 頁" : ""}；格子 ${cm} 公分${examOpt.ruler ? "，字型尺提示" : "，十字格"}${w2 ? `，學生寫${k === 2 ? "語詞" : "國字"}` : ""}${fixN < EXAM_FIX ? `；一列放不下，訂正格改成 ${fixN} 格` : ""}。單元、課別、考試方法可以直接點文字修改。`;
 }
 $("#exPrint").onclick = () => window.print();
 $("#exBack").onclick = () => { EX = null; showScreen("#setup"); render(); };
