@@ -240,7 +240,20 @@ function examRenderOne(){
   /* W2 答案欄：放得下 4 格訂正就排成一行，放不下（大格）才排成兩行 */
   const colN = maxN, tw = colN * mm + (colN - 1) * 2;   /* W2 答案欄的寬度（照最長的語詞） */
   const cells = cs => cs.map(cellHtml).join("");
-  const fixCells = (it, n) => Array.from({length: n}, (_, i) => cellHtml(it.cs[i % it.cs.length])).join("");
+  /* 訂正區（2026-11-10 維護者決定）：每個要訂正的字都要有地方寫，一題考好幾個字時訂正區就好幾排
+     W1 一題有好幾個字：每個字自己一排（「蜜蜜蜜蜜」「蜂蜂蜂蜂」）；同一個字出現兩次（「冷冷」）只要一排
+     W2 考語詞：照語詞重複寫兩遍（「蜜蜂蜜蜂」）；一排放不下兩遍（3、4 個字的語詞）就兩排，每排一遍
+     其他（一題一個字）：一排 n 格。訂正格數不看「寫 ___ 遍」（那只是說明文字） */
+  const line = cs => `<span class="exfixln">${cs.map(cellHtml).join("")}</span>`;
+  const fixCells = (it, n) => {
+    if(g === "W2" && examOpt.w2 === "word" && it.cs.length > 1){
+      const per = Math.max(1, Math.floor(n / it.cs.length)), reps = 2, lines = [];
+      for(let r = 0; r < reps; r += per) lines.push(line(Array.from({length: Math.min(per, reps - r)}, () => it.cs).flat()));
+      return lines.join("");
+    }
+    const chars = [...new Set(it.cs)];
+    return chars.map(ch => line(Array.from({length: n}, () => ch))).join("");
+  };
   const row = (it, no, fixN) => g === "W2" ? `<div class="exrow w2" style="--ans:${it.ansScale || 1}">
       <span class="exn">${no}</span><span class="exans">${cells(it.slots)}</span>
       <span class="exfold" aria-hidden="true"></span><span class="exfix">${fixCells(it, fixN)}</span></div>`

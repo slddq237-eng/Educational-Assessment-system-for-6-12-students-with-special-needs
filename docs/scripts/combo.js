@@ -136,7 +136,10 @@ const WRITING_PAGE = async goal => {
     /* 每一題都是一行（2026-11-10）：題目、答案格都不換行、不超出紙張 */
     const kOf = sh => sh.getBoundingClientRect().width / (sh.classList.contains("land") ? 297 : 210);   /* 大格橫印（2026-11-10） */
     const cellOf = r => r.closest(".exver").style.getPropertyValue("--cell");
-    if([...rows].some(r => r.getBoundingClientRect().height > parseFloat(cellOf(r)) * 10 * kOf(r.closest(".exsheet")) * 1.6)) bad.push("考卷有題目變成兩行");
+    /* 題目和答案格不換行（訂正區可以好幾排，2026-11-10） */
+    if([...rows].some(r => [...r.querySelectorAll(".exask, .exans")].some(e => e.getBoundingClientRect().height > parseFloat(cellOf(r)) * 10 * kOf(r.closest(".exsheet")) * 1.6))) bad.push("考卷有題目變成兩行");
+    /* 每個要寫的字在訂正區都至少有 2 格 */
+    if([...rows].some((r, i) => r.querySelectorAll(".exfix .excell").length < 2)) bad.push("訂正區每題至少要有 2 格");
     /* 看注音寫國字的空格不縮小（2026-11-10 維護者決定） */
     if(goal === "W1" && [...rows].some(r => [...r.querySelectorAll(".exhole .excell")].some(c => c.getBoundingClientRect().width < parseFloat(cellOf(r)) * 10 * kOf(r.closest(".exsheet")) * .97))) bad.push("看注音寫國字的空格被縮小了");
     if([...rows].some(r => Math.max(...[...r.querySelectorAll(".excell")].map(c => c.getBoundingClientRect().right)) > r.closest(".exsheet").getBoundingClientRect().right - 12 * kOf(r.closest(".exsheet")) + 1)) bad.push("考卷的格子超出紙張");
