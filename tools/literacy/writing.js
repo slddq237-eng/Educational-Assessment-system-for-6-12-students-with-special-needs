@@ -4,7 +4,7 @@
    - 大螢幕一題一題出，學生寫在紙上，老師自己改；**不留成績、不存作答紀錄、不記出過哪些題目**，沒有主題和貼紙。
    - 設定只有 3 步：選目標（W1～W3）→ 選課次和題數（不選學生）→ 出題設定（這個檔案的 renderWriting）。
    - 老師按「下一題」換題（學生寫得快慢不同）；出完題出現答案頁，帶學生對答案。
-   - W1 看注音寫國字：語詞裡要寫的字換成括號裡的注音，其他字照常加注音，例如「蜜（ㄈㄥ）」；注音文字查 shared/zhuyin.js。
+   - W1 看注音寫國字：語詞裡要寫的字換成空白方格，右邊直排注音（像國語考卷，2026-11-10 維護者要求直排），其他字照常加注音；注音文字查 shared/zhuyin.js。
      W2 聽音寫字：唸「蜜蜂的蜂」，可以按「再唸一次」。W3 看部件寫字：顯示拆開的部件（和部件重組 R4 一樣，拆不開的字不出）。
    - 出題設定只有一個提示開關（每個目標各一個，不存起來）：W1、W3 同時唸出題目；W2 畫面同時顯示語詞（要寫的字挖空）。
    用到 play.js 的 pickItems（抽字）、promptOf（唸的文字）、speak、regroupHtml（部件卡）、prepareThen（先下載字型）、showScreen；
@@ -17,7 +17,7 @@ const WRITE_HINT = {
   W3: "同時唸出題目（例如「蜜蜂的蜂」）"
 };
 const WRITE_HOW = {
-  W1: "螢幕顯示語詞，要寫的字換成注音，例如「蜜（ㄈㄥ）」；學生在紙上寫出國字。",
+  W1: "螢幕顯示語詞，要寫的字換成空白方格，旁邊直排注音（像國語考卷）；學生在紙上寫出國字。",
   W2: "電腦唸出「蜜蜂的蜂」，學生在紙上寫出國字；可以按「再唸一次」。",
   W3: "螢幕顯示拆開的部件，學生在紙上寫出組成的字（拆不開的字不出題）。"
 };
@@ -61,10 +61,16 @@ function writingStart(){
   prepareThen(() => { showScreen("#wplay"); wrShow(); }, {TWKai: kai, BpmfKai: ruby});
 }
 
-/* W1：語詞裡要寫的字換成括號裡的注音，其他字照常加注音（注音字型）；沒有語詞就只顯示注音 */
-function wrZhuyinHtml(it, big){
+/* 直排注音（2026-11-10 維護者要求，和國語考卷一樣）：符號由上往下排，聲調（ˊˇˋ）放在右邊、對齊最後一個符號，輕聲（˙）放在最上面 */
+function zyVertical(zy){
+  const light = zy.startsWith("˙"), body = zy.replace(/^˙/, ""), tone = (body.match(/[ˊˇˋ]$/) || [""])[0];
+  const syms = [...body.replace(/[ˊˇˋ]$/, "")];
+  return `<span class="zycol" aria-label="${esc(zy)}">${light ? `<span class="zylight">˙</span>` : ""}<span class="zysyms">${syms.map(s => `<span>${esc(s)}</span>`).join("")}</span>${tone ? `<span class="zytone">${esc(tone)}</span>` : ""}</span>`;
+}
+/* W1：語詞裡要寫的字換成空白方格＋右邊直排注音（像考卷的「看注音寫國字」），其他字照常加注音（注音字型）；沒有語詞就只顯示方格和注音 */
+function wrZhuyinHtml(it){
   const zy = Zhuyin.of(it.c, it.w, it.b) || "？";
-  const hole = `<span class="zyhole">（${esc(zy)}）</span>`;
+  const hole = `<span class="zyhole"><span class="zybox" aria-hidden="true"></span>${zyVertical(zy)}</span>`;
   if(!it.w) return hole;
   return [...Bpmf.text(it.w).matchAll(/(.)([\u{E01E0}-\u{E01EF}]?)/gu)].map(([, ch, vs]) => ch === it.c ? hole : `<span class="bpmf">${esc(ch + vs)}</span>`).join("");
 }
