@@ -159,7 +159,15 @@ function cellHtml(c){
   const blocks = rulerBlocks(c);
   if(!blocks) return `<span class="excell cross"></span>`;
   const pct = x => (x * 100).toFixed(2) + "%";
-  return `<span class="excell ruler">${blocks.map(([l, t, w, h], i) => `<i style="left:${pct(l)};top:${pct(t)};width:${pct(w)};height:${pct(h)};background:${RULER_TINT[i]}"></i>`).join("")}</span>`;
+  /* 淡色底不畫框；分線只畫在格子裡面（每條畫一次），外框和十字格一樣是黑色實線（2026-11-10 修正：原本每塊都有虛線框，貼在外框內側，外框看起來像不見了） */
+  const lines = new Map(), e = 1e-6;
+  for(const [l, t, w, h] of blocks){
+    if(l > e) lines.set(`v${l.toFixed(3)}${t}`, `<b class="ln v" style="left:${pct(l)};top:${pct(t)};height:${pct(h)}"></b>`);
+    if(l + w < 1 - e) lines.set(`v${(l + w).toFixed(3)}${t}`, `<b class="ln v" style="left:${pct(l + w)};top:${pct(t)};height:${pct(h)}"></b>`);
+    if(t > e) lines.set(`h${t.toFixed(3)}${l}`, `<b class="ln h" style="top:${pct(t)};left:${pct(l)};width:${pct(w)}"></b>`);
+    if(t + h < 1 - e) lines.set(`h${(t + h).toFixed(3)}${l}`, `<b class="ln h" style="top:${pct(t + h)};left:${pct(l)};width:${pct(w)}"></b>`);
+  }
+  return `<span class="excell ruler">${blocks.map(([l, t, w, h], i) => `<i style="left:${pct(l)};top:${pct(t)};width:${pct(w)};height:${pct(h)};background:${RULER_TINT[i]}"></i>`).join("")}${[...lines.values()].join("")}</span>`;
 }
 
 /* 同一個語詞的字合併成一題（2026-11-10 維護者決定）：
