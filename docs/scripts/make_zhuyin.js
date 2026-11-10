@@ -6,9 +6,13 @@
      見 docs/materials/data-sources.md）。讀音的順序和注音字型一樣：第 0 個是預設讀音，第 n 個對應字型的異體字選擇子 n，
      所以 bpmf.js 判斷出的讀音（Bpmf.text、BPMF_CH）可以直接拿來查這張表。
    只收錄課本生字（shared/lessons*.js 每課的 write、read），新增課本後要重新執行。
+   另外產生直排注音用的小字型 shared/fonts/bpmf-zhuyin.woff2（2026-11-10 維護者要求用「ㄅ字嗨注音標楷」本身的注音字形）：
+     從同一個字型檔只取 37 個注音符號和 4 個聲調（約 7KB；字型授權：漢字 CC BY 4.0、其餘 SIL OFL 1.1，注音符號屬「其餘」）。
+     要有 fonttools、brotli（pip install fonttools brotli）。只給第一個參數就不重做字型（注音符號不會因為新增課本而變）。
    用法（在 repo 最上層）：
      1. 下載讀音表（不放進 repo）：https://raw.githubusercontent.com/ButTaiwan/bpmfvs/master/phonetic/phonic_table_Z.txt
-     2. node docs/scripts/make_zhuyin.js <phonic_table_Z.txt>
+        要重做字型時再下載字型檔：https://raw.githubusercontent.com/ButTaiwan/bpmfvs/master/fonts/BpmfZihiKaiStd-Regular.ttf
+     2. node docs/scripts/make_zhuyin.js <phonic_table_Z.txt> [BpmfZihiKaiStd-Regular.ttf]
    ========================================================= */
 const fs = require('fs');
 const path = require('path');
@@ -53,4 +57,11 @@ const Zhuyin = {
 };
 `;
 fs.writeFileSync(path.join(root, 'shared', 'zhuyin.js'), head + body);
+/* 直排注音的小字型（有給字型檔才做） */
+const fontSrc = process.argv[3];
+if (fontSrc) {
+  require('child_process').execFileSync('pyftsubset', [fontSrc, '--unicodes=U+3105-3129,U+02CA,U+02C7,U+02CB,U+02D9', '--flavor=woff2',
+    '--output-file=' + path.join(root, 'shared', 'fonts', 'bpmf-zhuyin.woff2'), '--layout-features=', '--no-hinting', '--desubroutinize'], {stdio: 'inherit'});
+  console.log('shared/fonts/bpmf-zhuyin.woff2：' + fs.statSync(path.join(root, 'shared', 'fonts', 'bpmf-zhuyin.woff2')).size + ' bytes');
+}
 console.log(`shared/zhuyin.js：${Object.keys(out).length} 個字${miss.length ? `；讀音表裡沒有的 ${miss.length} 個：${miss.join('')}` : ''}`);

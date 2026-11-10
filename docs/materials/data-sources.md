@@ -24,6 +24,7 @@
 | SheetJS 0.18.5 | `shared/vendor/`（識字評量、備課分析，按匯出時才載入） | SheetJS | 0.18.5 | Apache 2.0（授權全文 `shared/vendor/xlsx-LICENSE.txt`） | 已列入關於我們；2026-10-20 放進 repo |
 | qrcode-generator 1.4.4 | `shared/vendor/qrcode-generator-1.4.4.js`（識字評量平板作答，按「產生 QR code」時才載入） | Kazuhiko Arase（npm `qrcode-generator`） | 1.4.4 | MIT（授權全文 `shared/vendor/qrcode-LICENSE.txt`）；「QR Code」是 DENSO WAVE 的註冊商標 | 2026-10-23 放進 repo；已列入關於我們 |
 | 注音字型（識字評量） | `shared/fonts/`、`shared/bpmf.js` | ButTaiwan/bpmfvs（字嗨注音標楷） | bpmfvs commit fa20c2b（2026-03-27） | 漢字 CC BY 4.0、其餘 SIL OFL 1.1 | 2026-10-20 加入；已列入關於我們 |
+| 直排注音字型（寫字 W1） | `shared/fonts/bpmf-zhuyin.woff2`（只取 37 個注音符號和 4 個聲調） | ButTaiwan/bpmfvs（字嗨注音標楷，和上面的注音字型同一個字型檔） | bpmfvs master（2026-11-10 下載） | SIL OFL 1.1（注音符號屬「漢字以外」的部分） | 2026-11-10 加入；已列入關於我們（同注音字型那一列） |
 | 注音文字表（寫字 W1 看注音寫國字） | `shared/zhuyin.js`（只收課本生字的讀音） | ButTaiwan/bpmfvs 的讀音順序表 `phonetic/phonic_table_Z.txt`（和注音字型同一份，讀音順序一致）；只在產生時下載，不放進 repo | bpmfvs master（2026-11-10 下載） | Apache 2.0（bpmfvs 規格與程式碼的授權；讀音本身是事實資料） | 2026-11-10 加入；已列入關於我們 |
 | 新酷音詞庫 | 只在產生 `shared/bpmf.js` 時使用，不放進 repo | chewing/libchewing-data | libchewing-data commit c44e81a（2026-03-22；詞庫標示 2025.11.17） | LGPL-2.1 | 2026-10-20；已列入關於我們 |
 | 教育部《國語一字多音審訂表》88 年版 PDF | 只在執行 `make_bpmf.py` 比對讀音時自動下載到電腦的暫存資料夾，不放進 repo | language.moe.gov.tw/001/Upload/Files/wxiao89/a.pdf | 88 年版（PDF 檔案日期 2025-09-18，2026-10-21 下載） | 教育部公告的標準，只拿來比對 | 2026-10-21；已列入關於我們 |
