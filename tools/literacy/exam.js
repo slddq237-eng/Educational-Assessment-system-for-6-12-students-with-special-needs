@@ -57,14 +57,70 @@ function examStart(){
   const q = quizPlan();
   const items = pickItems("", q).map(it => {
     const b = splitKey(it.k)[0], w = BOOKS[b].lessons[splitKey(it.k)[1]].sayChar ? "" : wordOf(it.c, b);
-    return {...it, b, w, cs: [it.c]};
+    return {...it, b, w, w0: w, vs: {}, cs: [it.c]};   /* w0：課本的語詞；w：這次考卷用的語詞（老師可以換）；vs：老師點選的讀音 */
   });
   if(!items.length) return;
-  EX = {goal: state.goal, items: examGroup(items, state.goal), picked: items.length};
+  EX = {goal: state.goal, raw: items};
+  examBuild();
   const kai = items.map(it => it.c + it.w + wrParts(it.c).join("")).join("") + "正確答案老師寫題號單元課別班級座號姓名日期答案訂正摺線看注音聽老師唸把部件組合起來在格子裡寫出國字一二三四五六七八九十";
   const ruby = items.map(it => it.w ? Bpmf.text(it.w) : "").join("");
   const only = EX.goal === "W1" ? items.map(wrTarget).join("") : "";   /* 要寫的字的注音（只有注音的字型） */
-  prepareThen(() => { showScreen("#wexam"); examRender(); }, {TWKai: kai, BpmfKai: ruby, BpmfOnly: only});
+  prepareThen(() => { showScreen("#wexam"); $("#exAdj").open = false; examRender(); examAdjRender(); }, {TWKai: kai, BpmfKai: ruby, BpmfOnly: only});
+}
+
+/* ---------- 太長的語詞不出題、調整題目（2026-11-10 維護者決定） ----------
+   5 個字以上的語詞（例如「放之四海而皆準」）排不進一行，看注音寫國字、聽寫考語詞時這個字先不出題，預覽上方提醒老師；
+   老師可以在「調整題目」換成課本裡其他有這個字的語詞，或自己輸入（4 個字以內）。只用在這一份考卷，不存起來。
+   自己輸入的語詞，系統判斷不了破音字的讀音，看注音寫國字要讓老師點選（shared/bpmf-read.js）。 */
+const EXAM_LONG = 5;
+const hanLen = w => [...(w || "")].filter(ch => /\p{Script=Han}/u.test(ch)).length;
+const examLongOut = () => EX.goal === "W1" || (EX.goal === "W2" && examOpt.w2 === "word");
+function examBuild(){
+  EX.excluded = examLongOut() ? EX.raw.filter(it => hanLen(it.w) >= EXAM_LONG) : [];
+  EX.items = examGroup(EX.raw.filter(it => !EX.excluded.includes(it)).map(it => ({...it, cs: [it.c]})), EX.goal);
+  EX.picked = EX.raw.length - EX.excluded.length;
+}
+let examWords = null;   /* 課本裡所有的語詞（找替換的語詞用） */
+function examCands(it){
+  if(!examWords) examWords = [...new Set([...Object.values(WORDS), ...(typeof WORDS_ED !== "undefined" ? Object.values(WORDS_ED).flatMap(m => Object.values(m)) : [])])];
+  return [...new Set([it.w0, ...examWords.filter(w => w.includes(it.c) && hanLen(w) < EXAM_LONG)])].filter(Boolean);
+}
+/* 語詞裡的字有沒有注音字型（自己輸入的字可能不在網站的注音字型裡，就不會有注音） */
+const hasBpmf = ch => document.fonts && [...document.fonts].some(f => f.family.replace(/["']/g, "") === "BpmfKai" && rangeHits(f.unicodeRange, new Set([ch.codePointAt(0)])));
+function examAdjRender(){
+  const box = $("#exAdjBody"), sum = $("#exAdj summary");
+  if(!box || !EX) return;
+  const g = EX.goal, showRead = g === "W1";
+  const long = EX.excluded.map(it => `${it.c}（${it.w}）`).join("、");
+  $("#exLong").hidden = !long;
+  $("#exLong").innerHTML = long ? `⚠️ 這些字的語詞太長（${EXAM_LONG} 個字以上），排不進一行，<b>這次沒有出題</b>：${esc(long)}。可以打開下面的「調整題目」換一個語詞。` : "";
+  sum.textContent = `調整題目（換語詞或自己輸入，只用在這一份考卷）${EX.excluded.length ? `：${EX.excluded.length} 個字沒有出題` : ""}`;
+  box.innerHTML = `<table class="exadjtab"><tr><th>字</th><th>語詞</th>${showRead ? "<th>讀音（自己輸入的語詞，破音字請點選）</th>" : ""}<th></th></tr>
+    ${EX.raw.map((it, i) => {
+      const cands = examCands(it), custom = !cands.includes(it.w);
+      const polys = showRead && custom && it.w ? [...new Set([...it.w])]   /* 只有自己輸入的語詞要點選讀音（課本語詞的讀音系統判斷好了） */.filter(ch => typeof BPMF_READ !== "undefined" && BPMF_READ[ch]) : [];
+      const reads = polys.map(ch => { const rs = BPMF_READ[ch].split("|"), m = Bpmf.text(it.w).match(new RegExp(ch + "([\\u{E01E0}-\\u{E01EF}])?", "u")), cur = ch in it.vs ? it.vs[ch] : m && m[1] ? m[1].codePointAt(0) - 0xE01E0 : 0;
+        return `<span class="exread"><b>${esc(ch)}</b>${rs.map((r, n) => `<button class="chip ${n === cur ? "on" : ""}" data-i="${i}" data-ch="${esc(ch)}" data-n="${n}">${esc(r)}</button>`).join("")}</span>`; }).join("");
+      const noFont = showRead && it.w ? [...it.w].filter(ch => /\p{Script=Han}/u.test(ch) && ch !== it.c && !hasBpmf(ch)) : [];
+      const out = EX.excluded.includes(it);
+      return `<tr class="${out ? "out" : ""}"><td class="c">${esc(it.c)}<small>${esc(lessonName(...splitKey(it.k)))}</small></td>
+        <td><select data-i="${i}">${cands.map(w => `<option ${w === it.w ? "selected" : ""} value="${esc(w)}">${esc(w)}${w === it.w0 ? "（課本）" : ""}${hanLen(w) >= EXAM_LONG ? "（太長，不出題）" : ""}</option>`).join("")}<option value="" ${custom ? "selected" : ""}>自己輸入…</option></select>
+          ${custom ? `<input type="text" data-i="${i}" value="${esc(it.w)}" maxlength="8" placeholder="輸入有「${esc(it.c)}」的語詞" style="width:9em">` : ""}
+          ${noFont.length ? `<small class="warn">「${esc(noFont.join(""))}」不在注音字型裡，沒有注音</small>` : ""}</td>
+        ${showRead ? `<td>${reads || (it.w ? "—" : "")}</td>` : ""}
+        <td>${out ? `<small class="warn">沒有出題</small>` : ""}</td></tr>`;
+    }).join("")}</table>
+    <p class="note" id="exAdjMsg" style="margin:6px 0 0"></p>`;
+  const apply = (it, w) => {
+    if(w && !w.includes(it.c)) return $("#exAdjMsg").textContent = `語詞裡要有「${it.c}」。`;
+    if(hanLen(w) >= EXAM_LONG) return $("#exAdjMsg").textContent = `語詞要 ${EXAM_LONG - 1} 個字以內，才排得進一行。`;
+    it.w = w; it.vs = {}; examBuild();
+    const texts = {TWKai: w, BpmfKai: w ? Bpmf.text(w) : "", BpmfOnly: g === "W1" ? wrTarget(it) : ""};
+    loadFonts(fontsToLoad(texts), () => {}, 4000).then(() => { examRender(); examAdjRender(); });
+  };
+  box.querySelectorAll("select[data-i]").forEach(s => s.onchange = () => { const it = EX.raw[+s.dataset.i]; if(s.value) apply(it, s.value); else { it.w = ""; it.vs = {}; examAdjRender(); } });
+  box.querySelectorAll("input[data-i]").forEach(inp => inp.onchange = () => apply(EX.raw[+inp.dataset.i], inp.value.trim()));
+  box.querySelectorAll("button[data-ch]").forEach(bt => bt.onclick = () => { const it = EX.raw[+bt.dataset.i]; it.vs[bt.dataset.ch] = +bt.dataset.n; examBuild(); examRender(); examAdjRender(); });
 }
 
 /* 一個格子：十字格，或字型尺（結構虛線＋淡色底） */
@@ -123,7 +179,8 @@ function examGroup(items, goal){
 function examAskW1(it){
   const hole = ch => `<span class="exhole">${cellHtml(ch[0])}<span class="zyonly">${esc(ch)}</span></span>`;
   if(!it.w) return hole(wrTarget(it));
-  return [...Bpmf.text(it.w).matchAll(/(.)([\u{E01E0}-\u{E01EF}]?)/gu)].map(([, ch, vs]) => it.cs.includes(ch) ? hole(ch + vs) : `<span class="bpmf">${esc(ch + vs)}</span>`).join("");
+  const vsOf = (ch, vs) => it.vs && ch in it.vs ? wrVs(it.vs[ch]) : vs;   /* 老師點選的讀音優先 */
+  return [...Bpmf.text(it.w).matchAll(/(.)([\u{E01E0}-\u{E01EF}]?)/gu)].map(([, ch, vs]) => it.cs.includes(ch) ? hole(ch + vsOf(ch, vs)) : `<span class="bpmf">${esc(ch + vsOf(ch, vs))}</span>`).join("");
 }
 function examAsk(it){
   if(EX.goal === "W1") return `<span class="exq exw1">${examAskW1(it)}</span>`;
