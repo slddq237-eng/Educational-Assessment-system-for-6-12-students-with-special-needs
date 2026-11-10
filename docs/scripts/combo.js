@@ -127,7 +127,7 @@ const WRITING_PAGE = async goal => {
   else {
     const rows = document.querySelectorAll("#exPages .exrow:not(.exlabels)");
     if(rows.length !== EX.items.length) bad.push(`考卷有 ${rows.length} 題，應該是 ${EX.items.length} 題`);
-    if([...rows].some(r => r.querySelectorAll(".exans .excell").length !== 1 || r.querySelectorAll(".exfix .excell").length !== 3)) bad.push("考卷每一題應該有 1 格答案、3 格訂正");
+    if([...rows].some(r => r.querySelectorAll(".exans .excell").length !== 1 || r.querySelectorAll(".exfix .excell").length !== 4)) bad.push("考卷每一題應該有 1 格答案、4 格訂正");
     if([...document.querySelectorAll("#exPages .exsheet")].some(s => s.scrollHeight > s.clientHeight + 2)) bad.push("考卷內容超出 A4 一頁");
     if(records.length !== n0) bad.push("考卷不留紀錄，卻多了作答紀錄");
     document.querySelector("#exBack").click();

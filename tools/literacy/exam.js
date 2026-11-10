@@ -3,7 +3,8 @@
    規格（維護者 2026-11-10 決定，見 docs/design/literacy-design.md「寫字組」）：
    - A4 直式。第一排：單元、課別、班級、座號、姓名、日期（單元、課別先帶入所選的課本和課次，印之前可以直接改）。
    - 接著是考試方法（依題型預設一句，印之前可以改），再來是考題。
-   - 每一題由左到右：題目 → 答案格 → 一條直的虛線（摺線，可以摺起來蓋住答案） → 訂正格 3 格。
+   - 每一題由左到右：題目 → 答案格 → 一條直的虛線（摺線，可以摺起來蓋住答案） → 訂正格 4 格（2026-11-10 維護者從 3 格改成 4 格）。
+   - 考試方法下面有一段訂正方法：1. 看一看 2. 摺起來 3. 訂正（看過正確的字以後摺起來蓋住，自己寫出來，主動書寫才記得住）。
    - 格子三種大小：小 1.5、中 1.8（預設）、大 2.2 公分；格線預設十字格。
    - 「字型尺提示」可勾選：照這個字的結構（shared/parts-api.js 的 Parts.struct：左右、上下、包圍…）畫虛線分區，
      左右、上下、左中右、上中下的分線照字的比例（shared/ruler.js，2026-11-10 維護者要求；表裡沒有的字從正中間分），
@@ -16,6 +17,8 @@
    ========================================================= */
 const EXAM_SIZES = [["s", "小", 1.5], ["m", "中", 1.8], ["l", "大", 2.2]];   /* 格子邊長（公分） */
 const EXAM_ROWS = {s: 12, m: 10, l: 8};   /* 一頁幾題（A4 直式，扣掉表頭和考試方法） */
+const EXAM_FIX = 4;   /* 訂正格幾格 */
+const EXAM_HOW_FIX = `<b>訂正方法</b><span><b>1. 看一看</b>：看清楚正確的字。</span><span><b>2. 摺起來</b>：沿著虛線往後摺，蓋住左邊的題目和答案。</span><span><b>3. 訂正</b>：不看答案，在訂正格自己寫出來。主動寫出來，才能真正記住！</span>`;
 const EXAM_METHOD = {
   W1: "看注音，在格子裡寫出國字。",
   W2: "聽老師唸，在格子裡寫出國字。",
@@ -106,13 +109,13 @@ function examRender(){
   const head = first => `<table class="exhead"><tr>
       <th>單元</th><td contenteditable="true">${esc(unit)}</td><th>課別</th><td contenteditable="true">${esc(lessons)}</td>
       <th>班級</th><td class="blank"></td><th>座號</th><td class="blank s"></td><th>姓名</th><td class="blank"></td><th>日期</th><td class="blank"></td></tr></table>
-    ${first ? `<p class="exmethod" contenteditable="true">${esc(EXAM_METHOD[EX.goal])}</p>` : ""}`;
+    ${first ? `<p class="exmethod" contenteditable="true">${esc(EXAM_METHOD[EX.goal])}</p><p class="exhowfix" contenteditable="true">${EXAM_HOW_FIX}</p>` : ""}`;
   const row = (it, n) => `<div class="exrow">
       <span class="exn">${n}</span><span class="exask">${examAsk(it)}</span>
       <span class="exans">${cellHtml(it.c)}</span>
       <span class="exfold" aria-hidden="true"></span>
-      <span class="exfix">${cellHtml(it.c)}${cellHtml(it.c)}${cellHtml(it.c)}</span></div>`;
-  const colHead = `<div class="exrow exlabels"><span class="exn"></span><span class="exask">題目</span><span class="exans">答案</span><span class="exfold">摺線</span><span class="exfix">訂正</span></div>`;
+      <span class="exfix">${cellHtml(it.c).repeat(EXAM_FIX)}</span></div>`;
+  const colHead = `<div class="exrow exlabels"><span class="exn"></span><span class="exask">題目</span><span class="exans">答案</span><span class="exfold">摺線</span><span class="exfix">訂正（看一看 → 摺起來 → 寫）</span></div>`;
   let n = 0;
   const sheets = pages.map((list, p) => `<section class="exsheet">${head(p === 0)}${colHead}${list.map(it => row(it, ++n)).join("")}</section>`);
   if(examKey(EX.goal)) sheets.push(`<section class="exsheet exkey"><h2>答案（給老師）</h2><table class="exkeytab"><tr><th>題號</th><th>題目</th><th>答案</th></tr>
