@@ -134,7 +134,7 @@ function renderWizard(){
   $("#wPrev").hidden = wstep === 1;
   $("#wNext").hidden = wstep === wsteps().length;
   $("#wNext").disabled = !can(wstep + 1);
-  $("#wNote").textContent = isWriting() && wstep === 3 ? "確認後，按「開始出題」。" : wstep === 4 ? "確認摘要後，按「開始」。" : miss[wstep - 1];
+  $("#wNote").textContent = isWriting() && wstep === 3 ? "確認後，按「開始出題」或「產生考卷」。" : wstep === 4 ? "確認摘要後，按「開始」。" : miss[wstep - 1];
 }
 function showStep(n){
   wstep = Math.min(n, wsteps().length);

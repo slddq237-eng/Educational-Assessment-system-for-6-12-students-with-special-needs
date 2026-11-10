@@ -251,7 +251,7 @@ let G = null;
 const SPEAKER_SVG = `<svg viewBox="0 0 24 24" width="55%" height="55%" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>`;
 
 function showScreen(id){
-  for(const s of ["#setup", "#play", "#wplay", "#result", "#book", "#teacher", "#tabPick"]) $(s).hidden = s !== id;
+  for(const s of ["#setup", "#play", "#wplay", "#wexam", "#result", "#book", "#teacher", "#tabPick"]) $(s).hidden = s !== id;
   window.scrollTo(0, 0);
 }
 

@@ -13,6 +13,7 @@
  make_parts.py ─→│ shared/parts.js    部件（自動產生，可手改）                         │
  make_bpmf.py  ─→│ shared/bpmf.js、fonts/bpmf-kai*  注音讀音表與注音字型（自動產生）    │
  make_bpmf_only.py→│ shared/fonts/bpmf-only.woff2  只有注音的字型（寫字 W1 用）        │
+ make_ruler.py ─→│ shared/ruler.js  字型尺分線位置（寫字考卷用，自動產生）              │
  make_kai.py   ─→│ shared/fonts/tw-kai*  標準楷書字型（自動產生）                        │
                  │ shared/freq.js     字頻排名                                         │
                  └──────────────────────────────┬──────────────────────────────────────┘
@@ -54,6 +55,8 @@
 | `parts.js` | `PARTS_AUTO` 自動拆的部件（第三層的原料，備課分析「拆到最細」往下拆用） | 透過 `parts-api.js` 的 `Parts` | `make_parts.py` 只新增，可手改錯的 |
 | `parts-layers.js` | `PARTS_LAYERS` 部件第一、第二層資料（每個字：結構、電腦拆法、老師的人工手動拆法與狀態、正式評量遮第幾塊；第三層不存，由 `Parts` 從 `parts.js` 算；見 `docs/design/parts-layers.md`） | 只有 `Parts` 讀；識字評量、備課分析網頁載入 | 跑 `make_parts_columns.py` |
 | `bpmf.js` | `BPMF_TXT`、`BPMF_CH`、`BPMF_SAY`、`Bpmf`（注音顯示、唸題換字） | 識字評量（`play.js` 的 `sayOf`、選項注音） | **不要手改**，跑 `make_bpmf.py`；讀音例外寫在它的 `CHECKED` |
+| `bpmf-read.js` | `BPMF_READ`（課本生字裡的破音字 → 各個讀音，順序和注音字型的異體字選擇子一樣，2026-11-10） | 識字評量的寫字考卷「調整題目」（`exam.js`，老師自己輸入語詞時點選讀音） | **不要手改**，跑 `make_bpmf_read.js`；新增課本後要重跑 |
+| `ruler.js` | `RULER`（左右、上下、左中右、上中下結構的課本生字 → 分線在格子裡的位置 0～1，從全字庫正楷體量出來，2026-11-10） | 識字評量的寫字考卷（`exam.js` 的字型尺提示） | **不要手改**，跑 `make_ruler.py`；量錯的字加進它的 `RULER_FIX` |
 | `freq.js` | `FREQ`（字→排名） | 識字評量（常用字、字頻優先、高字頻）、備課分析 | 從原始檔重新產生 |
 | `parts-api.js` | `window.Parts` 部件資料入口：`read`（從起點層往下讀）、`layer`、`struct`、`mask`、`sub`（電腦自動往下拆一層）；**只有它能讀 `PARTS_AUTO`、`PARTS_LAYERS`**（自動檢查）（2026-10-31） | 識字評量 `data.js`（部件提示、部件重組從第二層讀）、備課分析 `prep.js`（第一層、第二層、拆到最細） | 資料來源或讀取規則的改動只改這裡 |
 | `common.js` | `esc`（防止文字變成程式碼）、`BOOK_ORDER`、`bookName`、`gradeTerm`（「二上」「六下」寫法）、`lessonName`、`lessonKeys`、`wordOf`、`sentOf`、`confOf`、`setMsg`、`loadXlsx` | 識字評量、備課分析 | 規則只寫在這裡，**改一處兩個工具都變** |
@@ -108,7 +111,7 @@
 
 | 要改的東西 | 會一起受影響 |
 |---|---|
-| 新增課本（加一個 `shared/lessons-代號.js`） | 跑 `make_lessons.js`（更新課本檔清單和所有課本的字）、`make_parts.py`、`make_bpmf.py`、`make_bpmf_only.py`、`make_kai.py`；跑自動檢查；兩個工具的課本清單會自動更新 |
+| 新增課本（加一個 `shared/lessons-代號.js`） | 跑 `make_lessons.js`（更新課本檔清單和所有課本的字）、`make_parts.py`、`make_bpmf.py`、`make_bpmf_only.py`、`make_bpmf_read.js`、`make_kai.py`、`make_ruler.py`；跑自動檢查；兩個工具的課本清單會自動更新 |
 | `shared/common.js` 的任何函數 | 識字評量**和**備課分析都要打開試一次 |
 | 作答紀錄欄位（`play.js` 的 `endItem`、`records.js` 的 `COLS`） | Excel 匯出、老師專區、進階分析（`pivot.js` 的 `DIMS`）、備份與匯入、`RECORD_FORMAT` 版本、`docs/design/records.md`；**先討論** |
 | 前後測（`data.js` 的 `state.prepost`；`setup.js` 的 `renderPrepost`；`play.js` 寫進紀錄的 `prepost`） | 紀錄欄位、Excel 匯出 `records.js` 的 `COLS`、老師專區 `teacher.js` 的 `phaseOf`、進階分析 `pivot.js` 的 `prepost` 分組；屬 A8（`docs/design/a8-terms.md`），**改欄位前先討論** |
@@ -122,7 +125,7 @@
 
 ## 9. 自動產生資料的程式 `docs/scripts/`
 
-`check.js`、`smoke.js`（含 `combo.js` 識字評量組合測試）、`bump.js`、`changelog.js`、`make_lessons.js`、`lessons-src.js`、`make_parts*.py`、`make_mask_fix.js`（遮擋位置調整資料）、`make_mask_tool.js`（遮擋位置調整工具）、`make_bpmf.py`、`make_bpmf_only.py`（寫字 W1 只有注音的字型）、`make_kai.py`、`make_conf_candidates.py`：各產生什麼、什麼時候跑，見 `docs/scripts/README.md`（2026-10-24 搬去）。
+`check.js`、`smoke.js`（含 `combo.js` 識字評量組合測試）、`bump.js`、`changelog.js`、`make_lessons.js`、`lessons-src.js`、`make_parts*.py`、`make_mask_fix.js`（遮擋位置調整資料）、`make_mask_tool.js`（遮擋位置調整工具）、`make_bpmf.py`、`make_bpmf_only.py`（寫字 W1 只有注音的字型）、`make_bpmf_read.js`（破音字讀音表）、`make_ruler.py`（寫字考卷的字型尺分線）、`make_kai.py`、`make_conf_candidates.py`：各產生什麼、什麼時候跑，見 `docs/scripts/README.md`（2026-10-24 搬去）。
 
 ## 10. 現在架構的特點與注意事項
 

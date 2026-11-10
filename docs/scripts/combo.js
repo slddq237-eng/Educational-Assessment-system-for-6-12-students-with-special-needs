@@ -9,7 +9,7 @@
      不玩遊戲、用選項卡（A3-16）、不提示且答錯就結束這題（A3-6）、不回饋對錯（不變色、不搖動、沒有星星、沒有對錯音效，A3-7、A3-8）、
      新題出現 0.7 秒內不收點選（A3-7）、老師提示紀錄按鈕照常顯示（A3-9）、不報讀（A3-10）、正確率模式預設不顯示計時（A3-11；流暢性有時限，一律顯示）、
      分區輪流不能選正式評量（A3-19）。正式評量選了遊戲或賓果也照樣開始，確認程式自己改回一般選項卡。
-   寫字組（W1～W3，E3 第 1 版）不走上面的組合，另外用 WRITING_PAGE 測：3 步設定、不選學生、每題有題目、答案頁、不留紀錄。
+   寫字組（W1～W3，E3 第 1、2 版）不走上面的組合，另外用 WRITING_PAGE 測：3 步設定、不選學生、每題有題目、答案頁、考卷（每題 1 格答案＋3 格訂正、不超出 A4）、不留紀錄。
    用瀏覽器開頁，所以要有 Playwright（同 smoke.js）。
    ========================================================= */
 const IN_PAGE = async ({goal, kind, mode, play, answer}) => {
@@ -120,6 +120,32 @@ const WRITING_PAGE = async goal => {
   await wait(300);
   if(records.length !== n0) bad.push(`寫字不留紀錄，卻多了 ${records.length - n0} 筆作答紀錄`);
   document.querySelector("#wHome").click();
+  /* 第 2 版考卷（exam.js）：每一題一列（題目、答案格、摺線、3 格訂正格），一頁不超出 A4，不留紀錄 */
+  showStep(3); examOpt.vers = [{size: "m", ruler: true}, {size: "l", ruler: false}]; renderExamOpts();
+  document.querySelector("#exGo").click(); await wait(1500);
+  if(document.querySelector("#wexam").hidden) bad.push("按了「產生考卷」沒有出現考卷預覽");
+  else {
+    const rows = document.querySelectorAll("#exPages .exrow:not(.exlabels)");
+    if(rows.length !== EX.items.length * examOpt.vers.length) bad.push(`考卷有 ${rows.length} 列，應該是 ${EX.items.length} 題 × ${examOpt.vers.length} 個版本`);
+    if([...rows].some(r => !r.querySelectorAll(".exfix .excell").length)) bad.push("考卷每一題應該有訂正格");
+    /* W1：題目裡有空格（答案格）；W2：每題有答案格；W3：1 格答案；不再有老師寫正確答案的格子（2026-11-10 拿掉） */
+    if(goal === "W1" && [...rows].some(r => !r.querySelectorAll(".exhole").length)) bad.push("看注音寫國字：題目裡沒有空格");
+    if(goal === "W2" && [...rows].some(r => !r.querySelectorAll(".exans .excell").length)) bad.push("聽音寫字：沒有答案格");
+    if(goal === "W3" && [...rows].some(r => r.querySelectorAll(".exans .excell").length !== 1)) bad.push("看部件寫字：每題應該有 1 格答案");
+    if(document.querySelector("#exPages .teach")) bad.push("考卷不應該有老師寫正確答案的格子");
+    /* 每一題都是一行（2026-11-10）：題目、答案格都不換行、不超出紙張 */
+    const kOf = sh => sh.getBoundingClientRect().width / (sh.classList.contains("land") ? 297 : 210);   /* 大格橫印（2026-11-10） */
+    const cellOf = r => r.closest(".exver").style.getPropertyValue("--cell");
+    /* 題目和答案格不換行（訂正區可以好幾排，2026-11-10） */
+    if([...rows].some(r => [...r.querySelectorAll(".exask, .exans")].some(e => e.getBoundingClientRect().height > parseFloat(cellOf(r)) * 10 * kOf(r.closest(".exsheet")) * 1.6))) bad.push("考卷有題目變成兩行");
+    /* 每個要寫的字在訂正區都至少有 2 格 */
+    if([...rows].some((r, i) => r.querySelectorAll(".exfix .excell").length < 2)) bad.push("訂正區每題至少要有 2 格");
+    /* 看注音寫國字的空格不縮小（2026-11-10 維護者決定） */
+    if(goal === "W1" && [...rows].some(r => [...r.querySelectorAll(".exhole .excell")].some(c => c.getBoundingClientRect().width < parseFloat(cellOf(r)) * 10 * kOf(r.closest(".exsheet")) * .97))) bad.push("看注音寫國字的空格被縮小了");
+    if([...rows].some(r => Math.max(...[...r.querySelectorAll(".excell")].map(c => c.getBoundingClientRect().right)) > r.closest(".exsheet").getBoundingClientRect().right - 12 * kOf(r.closest(".exsheet")) + 1)) bad.push("考卷的格子超出紙張");
+    if(records.length !== n0) bad.push("考卷不留紀錄，卻多了作答紀錄");
+    document.querySelector("#exBack").click();
+  }
   return {bad, total};
 };
 
