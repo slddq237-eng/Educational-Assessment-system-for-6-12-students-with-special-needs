@@ -203,6 +203,7 @@ function examAsk(it){
   if(EX.goal === "W3") return `<span class="pieces exq">${wrParts(it.c).map(p => `<span class="ptile">${esc(p)}</span>`).join("")}</span>`;
   return "";   /* 聽音寫字只印題號（2026-11-10 維護者決定） */
 }
+const nb = t => t.replace(/ /g, "\u00a0");   /* 表頭太長要換行時，只在「、」後面換，「第 1 課」「康軒 五上」不拆開 */
 const w2Word = () => EX.goal === "W2" && examOpt.w2 === "word";
 
 function examRenderOne(){
@@ -221,7 +222,7 @@ function examRenderOne(){
   /* 表頭兩排（2026-11-10 維護者要求）：上排單元、課別、考試方法（題型名稱）、日期；下排班級、座號、姓名（姓名格比較寬） */
   const goalName = GOALS.find(x => x.id === EX.goal).name;
   const head = first => `<table class="exhead"><tr>
-      <th>單元</th><td contenteditable="true">${esc(unit)}</td><th>課別</th><td contenteditable="true">${esc(lessons)}</td>
+      <th>單元</th><td contenteditable="true">${esc(nb(unit))}</td><th>課別</th><td contenteditable="true">${esc(nb(lessons))}</td>
       <th>考試方法</th><td contenteditable="true">${esc(goalName)}</td><th>日期</th><td class="blank d"></td></tr></table>
     <table class="exhead exhead2"><tr><th>班級</th><td class="blank c"><span class="excls"><i></i>年<i></i>班</span></td><th>座號</th><td class="blank s"></td><th>姓名</th><td class="blank n"></td></tr></table>
     ${first ? `<p class="exmethod" contenteditable="true">${esc(EXAM_METHOD[EX.goal])}</p><p class="exhowfix" contenteditable="true">${EXAM_HOW_FIX()}</p>` : ""}`;

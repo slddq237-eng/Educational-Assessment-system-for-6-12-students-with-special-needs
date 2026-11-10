@@ -1087,7 +1087,7 @@ body.writing section[aria-labelledby="h4"],body.writing #taught,body.writing #pp
 .exrow.exlabels .exfix,.exrow.exlabels .exask,.exrow.exlabels .exans{white-space:nowrap;overflow:visible}   /* 欄名也不換行；訂正欄窄時往左延伸 */
 .exrow.exlabels .exfix{justify-content:flex-start;font-size:9pt}
 .exrow.w2 .exans .excell{width:calc(var(--cell) * var(--ans,1));height:calc(var(--cell) * var(--ans,1))}
-.exhead td[contenteditable]{white-space:nowrap}
+.exhead td[contenteditable]{white-space:normal;word-break:keep-all}   /* 平常一行；不連續的課、兩本課本太長時才在「、」後面換行，不要被紙邊切掉（2026-11-10 發布前測試；「第 1 課」中間用不換行空白，見 exam.js 的 nb） */
 .exhole .excell{flex:none}
 .exhole .zyonly{font-family:"BpmfOnly";line-height:1;margin:0 -.48em 0 .06em}
 .exrow.w2 .exfix{justify-content:flex-start}
