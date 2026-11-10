@@ -111,7 +111,7 @@ const WRITING_PAGE = async goal => {
   const total = W.items.length;
   for(let i = 0; i < total; i++){
     if(!document.querySelector("#wStage").textContent.trim() && !document.querySelector("#wStage .ptile")) bad.push(`第 ${i + 1} 題沒有題目`);
-    if(goal === "W1" && /？/.test(document.querySelector("#wStage").textContent)) bad.push(`第 ${i + 1} 題「${W.items[i].c}」查不到注音`);
+    if(goal === "W1" && !document.querySelector("#wStage .zyonly")) bad.push(`第 ${i + 1} 題「${W.items[i].c}」沒有注音`);
     document.querySelector("#wNextQ").click(); await wait(30);
   }
   if(!W.answers) bad.push("出完全部題目沒有出現答案頁");
