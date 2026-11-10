@@ -84,9 +84,10 @@ const EXAM_LONG = 5;
 const hanLen = w => [...(w || "")].filter(ch => /\p{Script=Han}/u.test(ch)).length;
 const examLongOut = () => EX.goal === "W1" || (EX.goal === "W2" && examOpt.w2 === "word");
 function examBuild(){
-  EX.excluded = examLongOut() ? EX.raw.filter(it => hanLen(it.w) >= EXAM_LONG) : [];
-  EX.items = examGroup(EX.raw.filter(it => !EX.excluded.includes(it)).map(it => ({...it, cs: [it.c]})), EX.goal);
-  EX.picked = EX.raw.length - EX.excluded.length;
+  const use = EX.raw.filter(it => !it.drop);   /* drop：老師在「調整題目」勾了不考（2026-11-10 維護者要求） */
+  EX.excluded = examLongOut() ? use.filter(it => hanLen(it.w) >= EXAM_LONG) : [];
+  EX.items = examGroup(use.filter(it => !EX.excluded.includes(it)).map(it => ({...it, cs: [it.c]})), EX.goal);
+  EX.picked = use.length - EX.excluded.length;
 }
 let examWords = null;   /* 課本裡所有的語詞（找替換的語詞用） */
 function examCands(it){
@@ -102,8 +103,9 @@ function examAdjRender(){
   const long = EX.excluded.map(it => `${it.c}（${it.w}）`).join("、");
   $("#exLong").hidden = !long;
   $("#exLong").innerHTML = long ? `⚠️ 這些字的語詞太長（${EXAM_LONG} 個字以上），排不進一行，<b>這次沒有出題</b>：${esc(long)}。可以打開下面的「調整題目」換一個語詞。` : "";
-  sum.textContent = `調整題目（換語詞或自己輸入，只用在這一份考卷）${EX.excluded.length ? `：${EX.excluded.length} 個字沒有出題` : ""}`;
-  box.innerHTML = `<table class="exadjtab"><tr><th>字</th><th>語詞</th>${showRead ? "<th>讀音（自己輸入的語詞，破音字請點選）</th>" : ""}<th></th></tr>
+  const dropN = EX.raw.filter(it => it.drop).length;
+  sum.textContent = `調整題目（拿掉不考的字、換語詞或自己輸入，只用在這一份考卷）${EX.excluded.length ? `：${EX.excluded.length} 個字沒有出題` : ""}${dropN ? `；拿掉 ${dropN} 個字` : ""}`;
+  box.innerHTML = `<table class="exadjtab"><tr><th>不考</th><th>字</th><th>語詞</th>${showRead ? "<th>讀音（自己輸入的語詞，破音字請點選）</th>" : ""}<th></th></tr>
     ${EX.raw.map((it, i) => {
       const cands = examCands(it), custom = !cands.includes(it.w);
       const polys = showRead && custom && it.w ? [...new Set([...it.w])]   /* 只有自己輸入的語詞要點選讀音（課本語詞的讀音系統判斷好了） */.filter(ch => typeof BPMF_READ !== "undefined" && BPMF_READ[ch]) : [];
@@ -111,12 +113,12 @@ function examAdjRender(){
         return `<span class="exread"><b>${esc(ch)}</b>${rs.map((r, n) => `<button class="chip ${n === cur ? "on" : ""}" data-i="${i}" data-ch="${esc(ch)}" data-n="${n}">${esc(r)}</button>`).join("")}</span>`; }).join("");
       const noFont = showRead && it.w ? [...it.w].filter(ch => /\p{Script=Han}/u.test(ch) && ch !== it.c && !hasBpmf(ch)) : [];
       const out = EX.excluded.includes(it);
-      return `<tr class="${out ? "out" : ""}"><td class="c">${esc(it.c)}<small>${esc(lessonName(...splitKey(it.k)))}</small></td>
+      return `<tr class="${out || it.drop ? "out" : ""}"><td><input type="checkbox" data-drop="${i}" ${it.drop ? "checked" : ""} aria-label="不考「${esc(it.c)}」"></td><td class="c">${esc(it.c)}<small>${esc(lessonName(...splitKey(it.k)))}</small></td>
         <td><select data-i="${i}">${cands.map(w => `<option ${w === it.w ? "selected" : ""} value="${esc(w)}">${esc(w)}${w === it.w0 ? "（課本）" : ""}${hanLen(w) >= EXAM_LONG ? "（太長，不出題）" : ""}</option>`).join("")}<option value="" ${custom ? "selected" : ""}>自己輸入…</option></select>
           ${custom ? `<input type="text" data-i="${i}" value="${esc(it.w)}" maxlength="8" placeholder="輸入有「${esc(it.c)}」的語詞" style="width:9em">` : ""}
           ${noFont.length ? `<small class="warn">「${esc(noFont.join(""))}」不在注音字型裡，沒有注音</small>` : ""}</td>
         ${showRead ? `<td>${reads || (it.w ? "—" : "")}</td>` : ""}
-        <td>${out ? `<small class="warn">沒有出題</small>` : ""}</td></tr>`;
+        <td>${it.drop ? `<small class="warn">不考</small>` : out ? `<small class="warn">沒有出題</small>` : ""}</td></tr>`;
     }).join("")}</table>
     <p class="note" id="exAdjMsg" style="margin:6px 0 0"></p>`;
   const apply = (it, w) => {
@@ -128,6 +130,11 @@ function examAdjRender(){
   };
   box.querySelectorAll("select[data-i]").forEach(s => s.onchange = () => { const it = EX.raw[+s.dataset.i]; if(s.value) apply(it, s.value); else { it.w = ""; it.vs = {}; examAdjRender(); } });
   box.querySelectorAll("input[data-i]").forEach(inp => inp.onchange = () => apply(EX.raw[+inp.dataset.i], inp.value.trim()));
+  box.querySelectorAll("input[data-drop]").forEach(c => c.onchange = () => {
+    const it = EX.raw[+c.dataset.drop];
+    if(c.checked && EX.raw.filter(x => !x.drop).length <= 1){ c.checked = false; return $("#exAdjMsg").textContent = "至少要留一題。"; }
+    it.drop = c.checked; examBuild(); examRender(); examAdjRender();
+  });
   box.querySelectorAll("button[data-ch]").forEach(bt => bt.onclick = () => { const it = EX.raw[+bt.dataset.i]; it.vs[bt.dataset.ch] = +bt.dataset.n; examBuild(); examRender(); examAdjRender(); });
 }
 

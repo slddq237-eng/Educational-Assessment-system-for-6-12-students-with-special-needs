@@ -1034,6 +1034,11 @@ body.writing section[aria-labelledby="h4"],body.writing #taught,body.writing #pp
 @media (max-width:600px){.wnavq button{min-width:7em}}
 
 /* ---------- 寫字組考卷（exam.js）：A4 直式，--cell 是格子邊長（1.5／1.8／2.2 公分） ---------- */
+.wradj{margin:0 0 12px;padding:8px 14px;background:#fff;border:2px solid var(--grid);border-radius:14px}
+.wradj summary{cursor:pointer;font-weight:700}
+.wradjl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}.wradjl b{margin-right:6px;font-size:.95rem}
+.wrc{font-family:var(--kai);font-size:1.5rem;min-width:44px;min-height:44px;border:2px solid var(--ink);border-radius:10px;background:#fff;cursor:pointer}
+.wrc.off{opacity:.45;text-decoration:line-through;border-style:dashed;background:none}   /* 第 3 步拿掉不考的字（2026-11-10） */
 .wrexam{margin-top:18px;padding-top:6px;border-top:2px dashed var(--grid)}
 .wrexam .group{margin:6px 0 8px}
 .exbar{position:sticky;top:0;z-index:5;display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 16px;background:var(--paper);border-bottom:2px solid var(--grid)}
