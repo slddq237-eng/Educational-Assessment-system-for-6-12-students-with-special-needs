@@ -229,7 +229,7 @@ function confusedChars(rs){
   const note = !st.n ? "" : st.n < 5
     ? `<p class="note" style="margin:0 0 8px">錯的題目只有 ${st.n} 題，還不夠判斷哪一種錯誤類型比較容易（至少要 5 題）。${moreTxt}</p>`
     : st.sig.length ? `<p class="note" style="margin:0 0 8px">特別容易選成的錯誤類型：${st.sig.map(o => `<b>${esc(typeName(o.t))}</b>（${o.k} 次，亂猜預期約 ${r1(o.e)} 次，統計上顯著，${fmtP(o.p)}）`).join("、")}。</p>`
-    : `<p class="note" style="margin:0 0 8px">看不出特別容易搞混哪一種錯誤類型：沒有達到統計上的顯著（p 值要小於 ${r1(st.alpha * 1000) / 1000}）。可能是錯的題數還不夠，也可能接近亂猜。${moreTxt}</p>`;
+    : `<p class="note" style="margin:0 0 8px">看不出特別容易搞混哪一種錯誤類型：沒有達到統計上的顯著（一般的標準是 p 值小於 0.05${st.rows.length > 1 ? `；因為同時比 ${st.rows.length} 種錯誤類型，每一類要小於 ${r1(st.alpha * 1000) / 1000}` : ""}）。可能是錯的題數還不夠，也可能接近亂猜。${moreTxt}</p>`;
   return note + detailTable([["字", r => r.char, true], ["常選成", r => r.pick], ["次數", r => r.n], ["錯誤類型", r => r.type]], rows);
 }
 /* =========================================================
