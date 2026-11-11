@@ -134,7 +134,7 @@ const WRITING_PAGE = async goal => {
     if(goal === "W1" && [...rows].some(r => !r.querySelectorAll(".exhole").length)) bad.push("看注音寫國字：題目裡沒有空格");
     if(goal === "W2" && [...rows].some(r => !r.querySelectorAll(".exans .excell").length)) bad.push("聽音寫字：沒有答案格");
     if(goal === "W3" && [...rows].some(r => r.querySelectorAll(".exans .excell").length !== 1)) bad.push("看部件寫字：每題應該有 1 格答案");
-    if(document.querySelector("#exPages .teach")) bad.push("考卷不應該有老師寫正確答案的格子");
+    if(document.querySelector("#exPages .exteach")) bad.push("沒勾「老師寫正確答案」時考卷不應該有老師格");
     /* 每一題都是一行（2026-11-10）：題目、答案格都不換行、不超出紙張 */
     const kOf = sh => sh.getBoundingClientRect().width / (sh.classList.contains("land") ? 297 : 210);   /* 大格橫印（2026-11-10） */
     const cellOf = r => r.closest(".exver").style.getPropertyValue("--cell");
