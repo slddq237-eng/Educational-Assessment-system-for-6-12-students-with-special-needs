@@ -204,10 +204,16 @@ function confusedChars(rs){
   const rows = [...g].map(([k, l]) => { const [c, p] = k.split("→"), ty = groupBy(l.filter(r => r.errorType), r => r.errorType), top = [...ty].sort((a, b) => b[1].length - a[1].length)[0];
     return {char: c, kid: T.kid, pick: p, n: l.length, type: top ? typeName(top[0]) : ""}; }).sort((a, b) => b.n - a.n).slice(0, SIMPLE_ROWS);
   /* 和亂猜比較：統計上顯著（p 值）才說「特別容易」，不然寫「看不出來」（維護者 2026-11-11；見上面「統計上顯著」） */
-  const st = sigTypes(wrong), note = !st.n ? "" : st.n < 5
-    ? `<p class="note" style="margin:0 0 8px">錯的題目只有 ${st.n} 題，還不夠判斷哪一種錯誤類型比較容易（至少要 5 題）。</p>`
+  const st = sigTypes(wrong), mn = st.n && !st.sig.length ? moreNeeded(st, rs.filter(r => !isPartsGoal(r)).length) : null;
+  const trialsTxt = mn && mn.extraTrials ? `（約再作答 ${mn.extraTrials} 題）` : "";
+  const moreTxt = !mn ? (st.n >= 5 && !st.sig.length ? "目前沒有哪一類明顯比亂猜多，繼續累積作答再看；如果學生其實是亂猜，不會顯著。" : "")
+    : mn.kind === "min" ? `再累積約 ${mn.extraErr} 題錯誤${trialsTxt}才能開始判斷；要錯到十幾二十題以上才比較有機會達到顯著。`
+    : mn.kind === "go" ? `如果之後選錯的方式和現在差不多（${esc(typeName(mn.t))}佔錯誤的 ${mn.share}%，亂猜約 ${mn.chance}%），大約再累積 ${mn.extraErr} 題錯誤${trialsTxt}就有機會達到顯著（估算，之後選法變了就不準）。`
+    : `${esc(typeName(mn.t))}目前佔錯誤的 ${mn.share}%（亂猜約 ${mn.chance}%），但還要累積很多題（超過 300 題錯誤）才會達到顯著。`;
+  const note = !st.n ? "" : st.n < 5
+    ? `<p class="note" style="margin:0 0 8px">錯的題目只有 ${st.n} 題，還不夠判斷哪一種錯誤類型比較容易（至少要 5 題）。${moreTxt}</p>`
     : st.sig.length ? `<p class="note" style="margin:0 0 8px">特別容易選成的錯誤類型：${st.sig.map(o => `<b>${esc(typeName(o.t))}</b>（${o.k} 次，亂猜預期約 ${r1(o.e)} 次，統計上顯著，${fmtP(o.p)}）`).join("、")}。</p>`
-    : `<p class="note" style="margin:0 0 8px">看不出特別容易搞混哪一種錯誤類型：沒有達到統計上的顯著（p 值要小於 ${r1(st.alpha * 1000) / 1000}）。可能是錯的題數還不夠，也可能接近亂猜。</p>`;
+    : `<p class="note" style="margin:0 0 8px">看不出特別容易搞混哪一種錯誤類型：沒有達到統計上的顯著（p 值要小於 ${r1(st.alpha * 1000) / 1000}）。可能是錯的題數還不夠，也可能接近亂猜。${moreTxt}</p>`;
   return note + detailTable([["字", r => r.char, true], ["常選成", r => r.pick], ["次數", r => r.n], ["錯誤類型", r => r.type]], rows);
 }
 /* =========================================================
@@ -866,6 +872,21 @@ function sigTypes(wrong){
   const qs = chanceQs(use), g = groupBy(use, r => r.errorType), types = ETYPES.filter(t => qs[t]), alpha = SIG_ALPHA / Math.max(1, types.length);
   const rows = types.map(t => { const k = g.has(t) ? g.get(t).length : 0, e = qs[t].reduce((a, b) => a + b, 0); return {t, k, e, ratio: e ? k / e : 0, p: pbUpper(qs[t], k)}; });
   return {n: use.length, alpha, rows, sig: use.length >= 5 ? rows.filter(o => o.k >= 3 && o.ratio >= 1.5 && o.p < alpha).sort((a, b) => a.p - b.p) : []};
+}
+/* 「再累積多少題才有機會判斷」的估算（維護者 2026-11-11）：假設之後選錯的方式和現在一樣（以目前最偏向的那一類為準），
+   模擬再多錯幾題時會不會達到顯著（同樣的 p 值規則，亂猜機率用目前每題的平均）；再用這位學生的錯誤率換算成要再作答幾題。
+   目前沒有哪一類比亂猜多 1.5 倍時沒辦法估（回傳 null）。只是估算，之後選法變了就會不準。 */
+function moreNeeded(st, trialsAll){
+  const rate = trialsAll ? st.n / trialsAll : 0, toTrials = x => rate > 0 ? Math.ceil(x / rate) : null;
+  if(st.n < 5) return {kind: "min", extraErr: 5 - st.n, extraTrials: toTrials(5 - st.n)};
+  const cand = st.rows.filter(o => o.k >= 1 && o.ratio >= 1.5).sort((a, b) => b.ratio - a.ratio)[0];
+  if(!cand) return null;
+  const share = cand.k / st.n, q = cand.e / st.n;
+  for(let n2 = st.n + 1; n2 <= 300; n2++){
+    const k2 = Math.max(3, Math.ceil(n2 * share));
+    if(k2 / (n2 * q) >= 1.5 && pbUpper(new Array(n2).fill(q), k2) < st.alpha) return {kind: "go", t: cand.t, share: Math.round(share * 100), chance: Math.round(q * 100), extraErr: n2 - st.n, extraTrials: toTrials(n2 - st.n)};
+  }
+  return {kind: "far", t: cand.t, share: Math.round(share * 100), chance: Math.round(q * 100)};
 }
 /* 目標字在語詞的哪個位置（例如「蘋果」的「蘋」在詞首、「果」在詞尾）；單字或沒有語詞回傳空字串。進階分析也用 */
 const WPOS_ORDER = ["詞首（第 1 個字）", "詞中", "詞尾（最後一個字）", "單字或沒有語詞"];
