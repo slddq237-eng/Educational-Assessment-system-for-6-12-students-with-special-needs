@@ -144,7 +144,9 @@ const UI_SIZES = [["0.85","小"],["1","標準"],["1.15","大"]];
 const HINT_SIDES = [["right","右邊（預設）"],["left","左邊"]];
 const TURN_STYLES = [["chime","畫面＋提示音（預設）"],["voice","畫面＋唸出名字"],["both","畫面＋提示音＋唸出名字"],["silent","只有畫面"]];
 const LIMITS = [["30","30 秒"],["60","1 分鐘"],["120","2 分鐘"]];
-const CHOICES = [["3","3 個"],["4","4 個"],["6","6 個"]];
+/* 每題的選項數只有 4 個、6 個（維護者 2026-11-11 決定拿掉 3 個：3 個選項時干擾字的組合只剩同詞和同音，分析錯誤類型時每類各佔一半，不容易看出差別）。
+   舊紀錄裡的 choices 是 3 的不動；分析（teacher.js 的 chanceQs）本來就是每題依實際選項算，所以舊紀錄照樣能分析 */
+const CHOICES = [["4","4 個"],["6","6 個"]];
 const choiceText = c => c === "bingo" ? "生字賓果卡" : c === "parts" ? "部件選項（至少 6 個，依這個字的部件數決定）" : `${c} 個選項`;
 /* 練習的玩法（第 4 步選）：一般、主題遊戲、生字賓果三個按鈕（2026-10-24 維護者決定；2026-11-06 B13 從「一般模式」「遊戲」改名，代號不變）；正式評量看「評量設定」（遊戲開或關），生字賓果只在練習
    icon：第 4 步卡片上的小圖示（自己畫的 SVG，不用圖片檔）；desc：卡片上的一句話說明 */
@@ -313,6 +315,8 @@ if(!settings.practicePlay) settings.practicePlay = settings.practiceGame === fal
 if(settings.practicePlay === "monster") settings.practicePlay = "game";   /* 2026-10-24 以前叫「打怪獸」 */
 delete settings.practiceGame;
 const saveSettings = () => store(KEYS.settings, settings);
+/* 以前存的選項數是 3（2026-11-11 拿掉）：自動改成 4，並記下原本是多少，評量設定裡提醒老師一次（正式評量的選項數要前後一致，所以不能默默改掉） */
+if(!CHOICES.some(c => c[0] === settings.choices)){ settings.choicesWas = String(settings.choices); settings.choices = "4"; saveSettings(); }
 
 /* 學生名單：年級記的是設定那一年的年級，之後每學年自動升級 */
 /* 第一次打開時名單是空的，老師自己新增學生（2026-10-31 維護者決定：不再放範例的 S01、S02，

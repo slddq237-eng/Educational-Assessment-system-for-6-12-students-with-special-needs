@@ -821,7 +821,11 @@ function renderDates(){
 /* 評量設定面板 */
 function renderSettings(){
   $("#sChoices").innerHTML = CHOICES.filter(c => c[0] !== "bingo").map(([v,t]) => `<button class="chip ${settings.choices===v?"on":""}" data-c="${v}">${t}</button>`).join("");
-  $("#sChoices").querySelectorAll("button").forEach(b => b.onclick = () => { settings.choices = b.dataset.c; saveSettings(); renderSettings(); render(); });
+  $("#sChoices").querySelectorAll("button").forEach(b => b.onclick = () => { settings.choices = b.dataset.c; delete settings.choicesWas; saveSettings(); renderSettings(); render(); });
+  /* 原本設定 3 個選項的老師：提醒一次已經改成 4 個（2026-11-11 拿掉 3 個選項）；按「知道了」或自己選過就不再顯示 */
+  const nt = $("#sChoicesNote"); nt.hidden = !settings.choicesWas;
+  nt.innerHTML = settings.choicesWas ? `這台電腦原本設定「${esc(settings.choicesWas)} 個選項」，現在沒有這個選項了，已經改成 4 個。如果已經有學生用 ${esc(settings.choicesWas)} 個選項做過前測，之後的後測選項數會不一樣，分析時要留意（紀錄裡有記每次的選項數）。<button class="linkbtn" id="sChoicesOk">知道了</button>` : "";
+  if(settings.choicesWas) $("#sChoicesOk").onclick = () => { delete settings.choicesWas; saveSettings(); renderSettings(); };
   $("#sTheme").checked = settings.formalTheme;
   $("#sClock").checked = !!settings.clockFormal;
 }
