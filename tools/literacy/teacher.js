@@ -990,11 +990,14 @@ function renderClass(){
   bindPicker();
   $("#tResult").querySelectorAll("[data-char]").forEach(el => el.onclick = () => openCharLog(el.dataset.kid, el.dataset.char));
   $("#tExport").onclick = () => {
-    const wide = kidList.map(k => Object.fromEntries([["學生", kidLabel(k)], ["全部", fmt("acc", accOf(rs.filter(r => r.kid === k.code)).v)],
+    /* 選了某個目標：檔名、工作表名稱加上目標名稱，每一列也有「評量目標」欄（沒選＝「全部目標」，檔名維持原本的）（維護者 2026-11-11） */
+    const gn = T.classGoal ? goalName(T.classGoal) : "全部目標", tag = T.classGoal ? `_${gn}` : "";
+    const wide = kidList.map(k => Object.fromEntries([["學生", kidLabel(k)], ["評量目標", gn], ["全部", fmt("acc", accOf(rs.filter(r => r.kid === k.code)).v)],
       ...chars.map(c => { const l = cell.get(k.code + "|" + c); return [c, l ? `${accOf(l).v}%（${l.length}）` : ""]; })]));
-    exportSheet(wide, "全班總表", `識字評量_全班總表_${fileDate(Date.now())}.xlsx`, "#tMsg",
-      [{name:"逐格資料", rows: rows.map(r => ({"學生": r.name, "字": r.char, "第一次就答對（%）": r.v, "作答次數": r.n}))}]);
+    exportSheet(wide, T.classGoal ? `全班總表（${gn}）` : "全班總表", `識字評量_全班總表${tag}_${fileDate(Date.now())}.xlsx`, "#tMsg",
+      [{name:"逐格資料", rows: rows.map(r => ({"學生": r.name, "評量目標": gn, "字": r.char, "第一次就答對（%）": r.v, "作答次數": r.n}))}]);
   };
+
 }
 
 /* =========================================================
