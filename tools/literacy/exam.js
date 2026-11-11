@@ -271,11 +271,13 @@ function examRenderOne(land = false){   /* land：這一版橫排（只有大格
   /* 老師寫正確答案的格子（選項，2026-11-11 維護者要求加回）：格數和學生答案一樣，接在題目／答案後面；摺線和訂正區靠右，中間的空白留給老師寫字 */
   const teach = !!examOpt.teach, tc = teach ? " exhast" : "";
   const tcell = cs => teach ? `<span class="exans exteach">${cells(cs)}</span>` : "";
-  const row = (it, no, fixN) => g === "W2" ? `<div class="exrow w2${tc}" style="--ans:${it.ansScale || 1}">
-      <span class="exn">${no}</span><span class="exans">${cells(it.slots)}</span>${tcell(it.slots)}
+  /* 答案格永遠不縮小（2026-11-11 維護者決定）：放不下就換行。有老師格時，並排放不下的題目（it.stack）老師格排在答案格下一行（答案欄和老師欄合併成一欄）；
+     沒有老師格、答案格自己一排放不下（it.wrapc）就在欄內換行 */
+  const row = (it, no, fixN) => g === "W2" ? `<div class="exrow w2${tc}${it.stack ? " exwrap" : ""}${it.wrapc ? " exwrapc" : ""}">
+      <span class="exn">${no}</span>${it.stack ? `<span class="exans exstack"><span class="exln">${cells(it.slots)}</span><span class="exln exteach">${cells(it.slots)}</span></span>` : `<span class="exans">${cells(it.slots)}</span>${tcell(it.slots)}`}
       <span class="exsp"></span><span class="exfold" aria-hidden="true"></span><span class="exfix">${fixCells(it, fixN)}</span></div>`
-    : g === "W1" ? `<div class="exrow w1${tc}" style="--hint:${it.hint || 1};--hole:${it.hole || 1}">
-      <span class="exn">${no}</span><span class="exask">${examAsk(it)}</span>${tcell(it.slots)}
+    : g === "W1" ? `<div class="exrow w1${tc}${it.stack ? " exwrap" : ""}" style="--hint:${it.hint || 1};--hole:${it.hole || 1}">
+      <span class="exn">${no}</span>${it.stack ? `<span class="exask"><span class="exstack">${examAsk(it)}<span class="exans exteach">${cells(it.slots)}</span></span></span>` : `<span class="exask">${examAsk(it)}</span>${tcell(it.slots)}`}
       <span class="exsp"></span><span class="exfold" aria-hidden="true"></span><span class="exfix">${fixCells(it, fixN)}</span></div>`
     : `<div class="exrow w3${tc}" style="--pc:${it.pc || 1}">
       <span class="exn">${no}</span><span class="exask">${examAsk(it)}</span><span class="exans">${cellHtml(it.c)}</span>${tcell([it.c])}
@@ -336,39 +338,62 @@ function examRenderOne(land = false){   /* land：這一版橫排（只有大格
     /* 有老師格時答案欄和老師欄各佔一份（中間隔 3mm） */
     fixN = Math.max(2, Math.min(EXAM_FIX, Math.floor((room - (teach ? 2 * tw + 3 : tw)) / (mm + 2))));   /* 訂正格最少 2 格；更長的語詞那一題的答案格縮小 */
     if(examOpt.w2 === "word") fixN = Math.max(fixN, Math.min(maxN, EXAM_FIX));   /* 訂正區至少放得下語詞寫一遍（4 個字的語詞要 4 格），不夠的話縮小答案格 */
-    const aw = Math.min(tw, (room - fixW(fixN) - 2 - (teach ? 3 : 0)) / (teach ? 2 : 1));
-    for(const it of EX.items){ const w = it.slots.length * mm + (it.slots.length - 1) * 2; it.ansScale = w > aw ? aw / w : 1; }
-    P.style.setProperty("--aw", aw + "mm");
+    /* 答案格不縮小：並排放得下的照原樣；放不下的，有老師格就把老師格排到下一行（stack），沒有老師格就答案格自己換行（wrapc） */
+    const avail = room - fixW(fixN) - 2, C = teach ? (avail - 3) / 2 : avail;
+    let side = 0, stackMax = 0;
+    for(const it of EX.items){
+      const w = fixW(it.slots.length); it.stack = it.wrapc = false;
+      if(w <= C) side = Math.max(side, w);
+      else if(teach){ it.stack = true; stackMax = Math.max(stackMax, Math.min(w, avail)); }
+      else { it.wrapc = true; side = avail; }
+    }
+    P.style.setProperty("--aw", (teach ? Math.max(side, (stackMax - 3) / 2) : side) + "mm");
   }
   if(g === "W1"){
     /* 空格永遠不縮小（2026-11-10 維護者決定）：題目太長時先縮小不用寫的字（最多到一半）；還放不下（中格的「吱吱喳喳」考兩個字、
        「烏雲密布」四個字都考）就這份考卷的訂正格少一格（3 格）；大格已經改成橫印，放得下。真的還放不下才把提示字再縮小一點 */
     P.style.setProperty("--qw", "max-content"); P.style.setProperty("--fixn", 1);
-    for(const it of EX.items){ it.hint = 1; it.hole = 1; }
+    for(const it of EX.items){ it.hint = 1; it.hole = 1; it.stack = false; }
     const measure = () => {
       P.innerHTML = `<section class="${sheetCls}">${EX.items.map((it, i) => row(it, i + 1, 1)).join("")}</section>`;
       const k = pxPerMm();
       return [...P.querySelectorAll(".exrow.w1:not(.exlabels) .exq")].map(q => ({W: q.getBoundingClientRect().width / k, H: [...q.querySelectorAll(".exhole")].reduce((h, e) => h + e.getBoundingClientRect().width / k, 0)}));
     };
-    const tw1 = teach ? fixW(maxN) : 0;   /* 老師格欄寬（最多空格那一題） */
+    const capFor = n => room - fixW(n) - 2;   /* 題目欄（沒有老師格時）能用的寬度 */
+    let m = measure(), tw1 = 0, cap;
+    const half = ({W, H}) => H + (W - H) * .5;   /* 提示字縮到一半的題目寬度 */
+    if(teach){
+      /* 有老師格：先假設每題老師格都排在題目右邊；題目欄寬＝最寬的題目、老師欄寬＝最多空格的題目，加起來放不下，就把最寬的那一題（題目＋老師格）拿掉，
+         它的老師格排到題目下一行（stack），重複到放得下；空格、老師格都不縮小，也不少訂正格（2026-11-11 維護者決定） */
+      const avail0 = capFor(fixN), tOf = i => fixW(EX.items[i].slots.length), S = new Set(m.map((x, i) => i));
+      const dims = () => ({q: Math.max(0, ...[...S].map(i => half(m[i]))), t: Math.max(0, ...[...S].map(tOf))});
+      while(S.size && dims().q + 3 + dims().t > avail0){
+        let worst = -1, wv = -1; for(const i of S){ const v = half(m[i]) + tOf(i); if(v > wv){ wv = v; worst = i; } }
+        S.delete(worst);
+      }
+      m.forEach((x, i) => { EX.items[i].stack = !S.has(i); });
+      tw1 = dims().t; cap = avail0 - (S.size ? tw1 + 3 : 0);
+    } else {
+      cap = capFor(EXAM_FIX);
+      if(m.some(x => x.W > cap && (cap - x.H) / (x.W - x.H) < .5)){ fixN = EXAM_FIX - 1; cap = capFor(fixN); }   /* 提示字縮到一半還放不下：少一格訂正 */
+    }
     P.style.setProperty("--tw", tw1 + "mm");
-    const capFor = n => room - fixW(n) - 2 - (teach ? tw1 + 3 : 0);
-    let m = measure(), cap = capFor(EXAM_FIX);
-    if(m.some(({W, H}) => W > cap && (cap - H) / (W - H) < .5)){ fixN = EXAM_FIX - 1; cap = capFor(fixN); }   /* 提示字縮到一半還放不下：少一格訂正 */
+    const cap2 = room - fixW(fixN) - 2;   /* 老師格排下一行的題目：題目可以佔到整欄 */
+    const capOf = i => EX.items[i].stack ? cap2 : cap;
     for(let pass = 0; pass < 3; pass++){
       let ok = true;
       m.forEach(({W, H}, i) => {
-        if(W <= cap) return;
+        if(W <= capOf(i)) return;
         ok = false;
-        const it = EX.items[i], need = (cap - H) / (W - H);
-        if(need > 0) it.hint *= Math.max(.35, need * .98);   /* 只縮提示字（一般最多到一半；極少數才到 0.35） */
-        else it.hole *= cap / W * .98;   /* 連空格都放不下（照現在的課本不會發生）才縮空格 */
+        const it = EX.items[i], need = (capOf(i) - H) / (W - H);
+        if(need > 0) it.hint *= Math.max(.35, need * .98);   /* 只縮提示字（一般最多到一半；極少數才到 0.35）；空格（答案格）永遠不縮小 */
       });
       if(ok) break;
       m = measure();
     }
-    const qw = Math.ceil(Math.max(...m.map(x => x.W))) + 1;
-    P.style.setProperty("--qw", Math.min(qw, cap) + "mm");
+    const stackW = Math.max(0, ...m.filter((x, i) => EX.items[i].stack).map(x => x.W));
+    const qw = Math.ceil(Math.max(0, ...m.filter((x, i) => !EX.items[i].stack).map(x => x.W))) + 1;
+    P.style.setProperty("--qw", Math.max(Math.min(qw, cap), stackW - tw1 - 3) + "mm");
   }
   /* W3 看部件寫字（2026-11-11 維護者決定）：部件分兩列、部件卡大小由字格算（兩列剛好和答案格同高）；還是太寬就再縮小部件卡（最多縮到一半，答案格、老師格不縮）；
      縮到一半還放不下才算 over（大格，或有老師格時，改橫排）。每一列題目欄固定同寬，摺線才對得齊 */
@@ -396,7 +421,7 @@ function examRenderOne(land = false){   /* land：這一版橫排（只有大格
   const html = pagesHtml(fixN);
   const vars = ["--cell", "--aw", "--qw", "--tw", "--fixn"].map(k => [k, P.style.getPropertyValue(k)]).filter(([, v]) => v).map(([k, v]) => `${k}:${v}`).join(";");
   ["--cell", "--aw", "--qw", "--tw", "--fixn"].forEach(k => P.style.removeProperty(k));
-  return {html, vars, land, over, pageN: EX.pageN, fixN, shrunk: EX.items.some(it => (it.hint || 1) < 1 || (it.hole || 1) < 1 || (it.ansScale || 1) < 1), pcShrunk: EX.items.some(it => (it.pc || 1) < 1)};
+  return {html, vars, land, over, pageN: EX.pageN, fixN, shrunk: EX.items.some(it => (it.hint || 1) < 1 || (it.hole || 1) < 1 || it.stack || it.wrapc), pcShrunk: EX.items.some(it => (it.pc || 1) < 1)};
 }
 const examVerName = (v, land) => `${EXAM_SIZES.find(s => s[0] === v.size)[1]}格（${EXAM_SIZES.find(s => s[0] === v.size)[2]} 公分${land ? "，橫排" : ""}）・${v.ruler ? "字型尺提示" : "十字格"}`;
 /* 每一個版本各排一次（格子大小不同，訂正格數、縮小的題目也不同），依序接在一起，最後放一張答案頁 */
