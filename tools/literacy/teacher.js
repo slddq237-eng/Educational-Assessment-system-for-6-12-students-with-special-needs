@@ -187,10 +187,10 @@ function errorTile(rs, partsPage){
   }
   const v = typeVerdict(rs), st = v.st, ab = v.ab;
   if(v.state === "none") return ["常見錯誤類型", "—", "還沒有選錯"];
-  if(v.state === "sig"){ const o = st.sig[0]; return ["常見錯誤類型", st.sig.map(x => typeName(x.t)).join("、"), `${o.k} 次・佔錯誤 ${pct(o.k, st.n)}%・統計上顯著`]; }
+  if(v.state === "sig"){ const o = st.sig[0]; return ["常見錯誤類型", st.sig.map(x => typeName(x.t)).join("、"), `${st.units} 個錯的字中有 ${o.k} 個選過・統計上顯著`]; }
   if(v.state === "guess") return ["常見錯誤類型", "接近亂猜", `正確率 ${pc100(ab.acc)}%，亂猜水準約 ${pc100(ab.chance)}%`];
-  if(v.state === "few") return ["常見錯誤類型", "資料不夠", `錯的題目 ${st.n} 題，要至少 ${NO_BIAS_MIN_ERR} 題才能判斷`];
-  return ["常見錯誤類型", "沒有特定偏向", `正確率 ${pc100(ab.acc)}%，錯的 ${st.n} 題分散在各類`];
+  if(v.state === "few") return ["常見錯誤類型", "資料不夠", `錯的字 ${st.units} 個，要至少 ${NO_BIAS_MIN_CHARS} 個不同的字才能判斷`];
+  return ["常見錯誤類型", "沒有特定偏向", `正確率 ${pc100(ab.acc)}%，錯的 ${st.units} 個字分散在各類`];
 }
 function simpleSummary(rs, partsPage){
   const sess = sessionsOf(rs), days = [...new Set(rs.map(dayOf))].sort(), a = accOf(rs), secs = secList(rs);
@@ -237,18 +237,19 @@ function confusedChars(rs){
     return {char: c, kid: T.kid, pick: p, n: l.length, type: top ? typeName(top[0]) : ""}; }).sort((a, b) => b.n - a.n).slice(0, SIMPLE_ROWS);
   /* 和亂猜比較：統計上顯著（p 值）才說「特別容易」，不然寫「看不出來」（維護者 2026-11-11；見上面「統計上顯著」） */
   const v = typeVerdict(rs), st = v.st, ab = v.ab, mn = v.state === "few" ? moreNeeded(st, rs.filter(r => !isPartsGoal(r)).length) : null;
-  const trialsTxt = mn && mn.extraTrials ? `（約再作答 ${mn.extraTrials} 題）` : "";
-  const moreTxt = !mn ? "" : mn.kind === "min" ? `再累積約 ${mn.extraErr} 題錯誤${trialsTxt}才能開始判斷。`
-    : mn.kind === "go" ? `如果之後選錯的方式和現在差不多（${esc(typeName(mn.t))}佔錯誤的 ${mn.share}%，亂猜約 ${mn.chance}%），大約再累積 ${mn.extraErr} 題錯誤${trialsTxt}就有機會達到顯著（估算，之後選法變了就不準）。`
-    : mn.kind === "far" ? `${esc(typeName(mn.t))}目前佔錯誤的 ${mn.share}%（亂猜約 ${mn.chance}%），但還要累積很多題（超過 300 題錯誤）才會達到顯著。` : "";
+  const trialsTxt = mn && mn.extraTrials ? `（約再作答 ${mn.extraTrials} 題，會有重複的字，實際可能更多）` : "";
+  const moreTxt = !mn ? "" : mn.kind === "min" ? `再累積約 ${mn.extraChars} 個不同的錯字${trialsTxt}才能開始判斷。`
+    : mn.kind === "go" ? `如果之後選錯的方式和現在差不多（${esc(typeName(mn.t))}：${mn.share}% 的錯字選過，亂猜預期約 ${mn.chance}%），大約再累積 ${mn.extraChars} 個不同的錯字${trialsTxt}就有機會達到顯著（估算，之後選法變了就不準）。`
+    : mn.kind === "far" ? `${esc(typeName(mn.t))}目前有 ${mn.share}% 的錯字選過（亂猜預期約 ${mn.chance}%），但還要累積很多個不同的錯字（超過 300 個）才會達到顯著。` : "";
   const pTxt = `一般的標準是 p 值小於 0.05${st.rows.length > 1 ? `；因為同時比 ${st.rows.length} 種錯誤類型，每一類要小於 ${r1(st.alpha * 1000) / 1000}` : ""}`;
+  const unitTxt = "（以「不同的字」為單位：一個字不管錯幾次都只算一個字，同一個字重複錯不會讓結果看起來更確定；一個字可以同時選過好幾類。）";
   const note = v.state === "none" ? "" : v.state === "sig"
-    ? `<p class="note" style="margin:0 0 8px">特別容易選成的錯誤類型：${st.sig.map(o => `<b>${esc(typeName(o.t))}</b>（${o.k} 次，亂猜預期約 ${r1(o.e)} 次，統計上顯著，${fmtP(o.p)}）`).join("、")}。</p>`
+    ? `<p class="note" style="margin:0 0 8px">特別容易選成的錯誤類型：${st.sig.map(o => `<b>${esc(typeName(o.t))}</b>（${st.units} 個錯的字中有 ${o.k} 個選過，亂猜預期約 ${r1(o.e)} 個，統計上顯著，${fmtP(o.p)}）`).join("、")}。${unitTxt}</p>`
     : v.state === "guess"
     ? `<p class="note" style="margin:0 0 8px"><b>接近亂猜</b>：做了 ${ab.n} 題，正確率 ${pc100(ab.acc)}%（有 95% 把握不超過 ${pc100(ab.hi)}%），和亂猜水準約 ${pc100(ab.chance)}% 差不多，所以錯誤類型沒有意義。可能是在亂點，也可能是還不認得這些字，從紀錄分不出是哪一種。</p>`
     : v.state === "few"
-    ? `<p class="note" style="margin:0 0 8px"><b>資料不夠</b>：錯的題目只有 ${st.n} 題，要累積到至少 ${NO_BIAS_MIN_ERR} 題，才能判斷有沒有特別容易搞混的錯誤類型（目前沒有達到統計上的顯著，${pTxt}）。${moreTxt}</p>`
-    : `<p class="note" style="margin:0 0 8px"><b>沒有特定偏向</b>：正確率 ${pc100(ab.acc)}%，明顯高於亂猜水準約 ${pc100(ab.chance)}%，錯的 ${st.n} 題平均分散在各類，沒有哪一類特別多（沒有達到統計上的顯著，${pTxt}）。</p>`;
+    ? `<p class="note" style="margin:0 0 8px"><b>資料不夠</b>：錯的字只有 ${st.units} 個（共錯 ${st.n} 題），要累積到至少 ${NO_BIAS_MIN_CHARS} 個不同的錯字，才能判斷有沒有特別容易搞混的錯誤類型（目前沒有達到統計上的顯著，${pTxt}）。${moreTxt}${unitTxt}</p>`
+    : `<p class="note" style="margin:0 0 8px"><b>沒有特定偏向</b>：正確率 ${pc100(ab.acc)}%，明顯高於亂猜水準約 ${pc100(ab.chance)}%，錯的 ${st.units} 個字（共錯 ${st.n} 題）平均分散在各類，沒有哪一類特別多（沒有達到統計上的顯著，${pTxt}）。${unitTxt}</p>`;
   return note + detailTable([["字", r => r.char, true], ["常選成", r => r.pick], ["次數", r => r.n], ["錯誤類型", r => r.type]], rows);
 }
 /* =========================================================
@@ -297,20 +298,30 @@ function partStats(rs){
     }
   }
   /* 部件別 */
-  const by = new Map(), P = p => by.get(p) || by.set(p, {p, a: 0, h: 0, e: 0, c: 0, qw: [], cw: 0}).get(p);
+  const by = new Map(), P = p => by.get(p) || by.set(p, {p, a: 0, h: 0, e: 0, c: 0}).get(p), expo = new Map();   /* expo：部件 → 字 → 這個部件在這個字出現當干擾的紀錄、有沒有選過（被干擾以「不同的字」為單位，2026-11-11） */
   trials.forEach(t => {
     t.answers.forEach(x => { const o = P(x.p); o.a += x.n; o.h += x.hit; });
-    t.dis.forEach(x => { const o = P(x.p); o.e++; o.c += x.hit; if(isR5 && t.over){ o.qw.push(1 / t.nDis); o.cw += x.hit; } });   /* 聽音補部件：只看選錯的題目，那題選錯時隨機選到它的機率 1÷干擾部件數 */
+    t.dis.forEach(x => {
+      const o = P(x.p); o.e++; o.c += x.hit;
+      if(!isR5 || t.over){   /* 聽音補部件：只看選錯的題目，那題選錯時隨機選到它的機率 1÷干擾部件數 */
+        const byChar = expo.get(x.p) || expo.set(x.p, new Map()).get(x.p), u = byChar.get(t.char) || byChar.set(t.char, {qs: [], hit: false}).get(t.char);
+        u.qs.push(isR5 ? 1 / t.nDis : null); u.hit = u.hit || !!x.hit;
+      }
+    });
   });
-  const parts = [...by.values()], eligF = parts.filter(o => o.a >= 3).length, eligD = parts.filter(o => isR5 ? o.qw.length >= 3 : o.e >= 3).length;
+  const parts = [...by.values()], eligF = parts.filter(o => o.a >= 3).length, eligD = parts.filter(o => (expo.get(o.p) || new Map()).size >= 3).length;
   const aF = SIG_ALPHA / Math.max(1, eligF), aD = SIG_ALPHA / Math.max(1, eligD);
   parts.forEach(o => {
     o.forget = o.disturb = false; o.pF = o.pD = null;
     if(!discr) return;   /* 看不出有分辨力時，部件別也不下判斷 */
     if(o.a >= 3){ const Hp = (hitsA - o.h + 1) / (cardsA - o.a + 2); o.pF = pbLower(new Array(o.a).fill(Hp), o.h); o.forget = o.h / o.a < Hp && o.pF < aF; }   /* 跟這位學生其他部件比（加一點平滑，免得其他部件全對時機率變成 0） */
-    if(isR5 ? o.cw >= 3 && o.qw.length >= 3 : o.c >= 3 && o.e >= 3){
-      o.pD = isR5 ? pbUpper(o.qw, o.cw) : pbUpper(new Array(o.e).fill((fas - o.c + 1) / (cardsD - o.e + 2)), o.c);
-      o.disturb = o.pD < aD;
+    /* 被干擾：以「不同的字」為單位。這個部件當干擾出現的每一個字，亂猜時「至少選過一次它」的機率 ＝ 1 − 每次都沒選到的機率
+       （聽音補部件每次 1÷干擾部件數；聽音選部件用這位學生誤選其他干擾部件的比例）；至少 3 個字、選過的字至少 3 個、p 值夠小、而且比亂猜預期多 15 個百分點以上的字 */
+    const us = [...(expo.get(o.p) || new Map()).values()];
+    if(us.length >= 3){
+      const Fp = (fas - o.c + 1) / (cardsD - o.e + 2), pcs = us.map(u => 1 - (isR5 ? u.qs.reduce((a, q) => a * (1 - q), 1) : Math.pow(1 - Fp, u.qs.length))), kU = us.filter(u => u.hit).length, eU = pcs.reduce((a, b) => a + b, 0);
+      o.dK = kU; o.dU = us.length;
+      if(kU >= 3){ o.pD = pbUpper(pcs, kU); o.disturb = o.pD < aD && (kU - eU) / us.length >= TYPE_MIN_DIFF; }
     }
   });
   const flagged = new Set(parts.filter(o => o.disturb).map(o => o.p));
@@ -343,7 +354,7 @@ function partConfusion(rs, kid){
     ${tile("選到答案部件", partPct(st.H), "越高越記得")}${tile("選到干擾部件", partPct(st.F), "越高越像亂選")}${tile("判讀", st.tag, `忘記 ${st.forgetN} ${u}・被干擾 ${st.disturbN} ${u}`)}</div><p class="note">${esc(why)}</p>`;
   const severity = o => (o.forget ? 100 : 0) + (o.disturb ? 100 : 0) + (o.a - o.h) + o.c;
   const prows = st.parts.filter(o => o.a - o.h + o.c > 0).sort((a, b) => severity(b) - severity(a)).slice(0, SIMPLE_ROWS + 2);
-  const verdict = o => [o.forget ? `常忘記（${fmtP(o.pF)}）` : "", o.disturb ? `容易被它干擾（${fmtP(o.pD)}）` : ""].filter(Boolean).join("・") || "看不出來";
+  const verdict = o => [o.forget ? `常忘記（${fmtP(o.pF)}）` : "", o.disturb ? `容易被它干擾（${o.dK}/${o.dU} 個字，${fmtP(o.pD)}）` : ""].filter(Boolean).join("・") || "看不出來";
   const ptable = prows.length ? `<h4 class="sgrp">哪些部件容易出問題<span>　當答案時第一次選到幾次、當干擾時被誤選幾次；統計上顯著才下判斷，其他寫「看不出來」</span></h4>` + detailTable([["部件", r => r.p], ["當答案時第一次選到", r => r.a ? `${r.h}/${r.a}（${pct(r.h, r.a)}%）` : "—"], ["當干擾時被誤選", r => r.e ? `${r.c}/${r.e}（${pct(r.c, r.e)}%）` : "—"],
     ["判讀", verdict]], prows) : "";
   /* 字 × 部件：聽音補部件＝被遮的部件被誤選成哪一個；聽音選部件＝這個字漏選哪些部件、多選了哪些 */
@@ -516,12 +527,12 @@ const TAB_HELP = {
     "<b>正確率</b>＝第一次就點對的比例（越高越好）；<b>反應時間</b>＝題目唸完到答對的秒數（越短越熟）。",
     "統計、每天的折線圖和字的清單，是正式評量加練習全部一起算；「各課前後測正確率」的圓點是正式評量的前測、後測，橘色空心菱形是練習，依時間連成一條線。",
     "「各課前後測正確率」上面的課次按鈕可以點，看每一課；任何一個字都可以點，看那個字的每一次作答。",
-    "錯誤類型的四種說法：<b>特別容易○○</b>＝某一類錯誤明顯比亂猜多（統計上顯著）；<b>接近亂猜</b>＝正確率和亂猜水準差不多（至少做了 30 題），錯誤類型沒有意義，可能是在亂點、也可能還不認得，從紀錄分不出；<b>資料不夠</b>＝題數或錯的題數還不夠下結論（要錯到至少 40 題，才能說有沒有特定偏向）；<b>沒有特定偏向</b>＝正確率明顯高於亂猜，錯的題目平均分散在各類。"], "one"],
+    "錯誤類型的四種說法：<b>特別容易○○</b>＝某一類錯誤明顯比亂猜多（統計上顯著；以「不同的字」為單位，一個字錯幾次都只算一個字）；<b>接近亂猜</b>＝正確率和亂猜水準差不多（至少做了 30 題），錯誤類型沒有意義，可能是在亂點、也可能還不認得，從紀錄分不出；<b>資料不夠</b>＝題數或錯的字數還不夠下結論（要有至少 35 個不同的錯字，才能說有沒有特定偏向）；<b>沒有特定偏向</b>＝正確率明顯高於亂猜，錯的題目平均分散在各類。"], "one"],
   goal: ["選一位學生、再選評量目標，版面和「個人」一樣。聽音選字、部件重組用「選字」的版面（選項是字）；聽音補部件、聽音選部件用「選部件」的版面（選項是部件，沒有前後測和流暢性，分析的是忘記部件、被干擾，還是亂猜）。", [
     "不同目標的難度和計時方式不一樣（亂猜時第一次答對：聽音選字約 25%、聽音選部件全對只有約 5～7%；聽音選字從題目唸完才計時，部件重組從畫面出現就計時），所以不要把不同目標的正確率、反應時間直接拿來比。",
     "「特別容易搞混」「忘記部件」「被干擾」這類判斷，要統計上顯著（p 值小於 0.05）才寫；沒有達到時，會依情況寫「接近亂猜」「資料不夠」「沒有特定偏向」，不是系統壞了。",
     "聽音補部件、聽音選部件目前只開放練習，有提示和回饋，數字看學生的狀況，不當前後測比較。",
-    "錯誤類型的四種說法：<b>特別容易○○</b>＝某一類錯誤明顯比亂猜多（統計上顯著）；<b>接近亂猜</b>＝正確率和亂猜水準差不多（至少做了 30 題），錯誤類型沒有意義，可能是在亂點、也可能還不認得，從紀錄分不出；<b>資料不夠</b>＝題數或錯的題數還不夠下結論（要錯到至少 40 題，才能說有沒有特定偏向）；<b>沒有特定偏向</b>＝正確率明顯高於亂猜，錯的題目平均分散在各類。",
+    "錯誤類型的四種說法：<b>特別容易○○</b>＝某一類錯誤明顯比亂猜多（統計上顯著；以「不同的字」為單位，一個字錯幾次都只算一個字）；<b>接近亂猜</b>＝正確率和亂猜水準差不多（至少做了 30 題），錯誤類型沒有意義，可能是在亂點、也可能還不認得，從紀錄分不出；<b>資料不夠</b>＝題數或錯的字數還不夠下結論（要有至少 35 個不同的錯字，才能說有沒有特定偏向）；<b>沒有特定偏向</b>＝正確率明顯高於亂猜，錯的題目平均分散在各類。",
     "聽音補部件、聽音選部件的「接近亂猜」＝選到的答案部件和亂選差不多（至少做了 30 題）；「資料不夠」＝還看不出有沒有分辨力，要再多做幾題。"], "goal"],
   charts: ["看一位學生的進步，自己選：由上往下選：看誰 → 看什麼 → 怎麼看，下面再選日期和課次範圍。", [
     "<b>正確率</b>＝第一次就點對的比例（越高越好）；<b>反應時間</b>＝題目唸完到答對的秒數（越短越熟）；<b>流暢性</b>＝計時挑戰每分鐘答對幾個。",
@@ -898,19 +909,20 @@ function charStats(rs){
 }
 /* 和隨機猜比較：每一題選錯時，如果是在干擾字裡隨便猜，各類字被選到的機會＝那類字在干擾字裡占幾分之幾。
    把每一題的機會加起來，就是「隨機猜的話預期幾次」。選項的類別用 play.js 的 optType 依現在的教材重新判斷（紀錄只存了選項的字） */
-function chanceQs(wrong){   /* 每一類：每題的亂猜機率（那題選錯時，隨便猜到這類字的機率）；2026-11-11 為了算 p 值，從 chanceOf 拆出來 */
-  const qs = {};
-  wrong.forEach(r => {
-    if(isPartsGoal(r)) return;   /* 聽音選部件的選項是部件、錯法是少選或選到干擾部件，不拿亂猜比較 */
-    const opts = [...(r.options || "")].filter(x => x !== r.char);
-    if(!opts.length) return;
-    const cnt = {};
-    opts.forEach(x => {
-      let t; try { t = optType(r.char, x, key(r.book, r.lesson), r.goal); } catch(e){ t = "其他字"; }
-      if(t !== "答案") cnt[t] = (cnt[t] || 0) + 1 / opts.length;
-    });
-    for(const t in cnt) (qs[t] = qs[t] || []).push(cnt[t]);
+function chanceOfTrial(r){   /* 這一題選錯時，隨便猜到各類字的機率（那類字在干擾字裡占幾分之幾）；沒有選項回傳 null */
+  if(isPartsGoal(r)) return null;   /* 聽音選部件的選項是部件、錯法是少選或選到干擾部件，不拿亂猜比較 */
+  const opts = [...(r.options || "")].filter(x => x !== r.char);
+  if(!opts.length) return null;
+  const cnt = {};
+  opts.forEach(x => {
+    let t; try { t = optType(r.char, x, key(r.book, r.lesson), r.goal); } catch(e){ t = "其他字"; }
+    if(t !== "答案") cnt[t] = (cnt[t] || 0) + 1 / opts.length;
   });
+  return cnt;
+}
+function chanceQs(wrong){   /* 每一類：每題的亂猜機率；2026-11-11 為了算 p 值，從 chanceOf 拆出來 */
+  const qs = {};
+  wrong.forEach(r => { const cnt = chanceOfTrial(r); if(cnt) for(const t in cnt) (qs[t] = qs[t] || []).push(cnt[t]); });
   return qs;
 }
 function chanceOf(wrong){   /* 每一類「亂猜預期幾次」＝每題機率加總 */
@@ -922,10 +934,10 @@ function chanceOf(wrong){   /* 每一類「亂猜預期幾次」＝每題機率�
    「接近亂猜」「資料不夠」「沒有特定偏向」（維護者 2026-11-11）：沒有達到顯著，不等於亂猜。以前一律寫「看不出來」，其實混了三種情況：
    ・接近亂猜：做了至少 ABILITY_MIN_N 題，而且有 95% 把握「正確率不超過亂猜水準 + ABILITY_MARGIN（15 個百分點）」（Wilson 單側上限）。
      這代表他還不認得這些字、或在亂點，錯誤類型沒有意義；紀錄分不出是不認得還是亂點
-   ・資料不夠：題數或錯的題數不夠下結論（要錯到至少 NO_BIAS_MIN_ERR＝40 題才能說「沒有特定偏向」：40 題時，如果學生真的有六成偏向，有 87% 的機會抓得到）
+   ・資料不夠：題數或錯的字數不夠下結論（要有至少 NO_BIAS_MIN_CHARS＝35 個「不同的錯字」才能說「沒有特定偏向」：35 個字時，如果學生真的有六成偏向，有 86% 的機會抓得到）
    ・沒有特定偏向：不是亂猜（正確率明顯高），錯的題目也夠多，但沒有哪一類特別多
    選字版面看第一次就答對的比例（亂猜水準＝每題 1÷選項數的平均）；聽音補部件同樣；聽音選部件看「選到的答案比隨機多多少成」（見 partStats） */
-const ABILITY_MARGIN = 0.15, ABILITY_MIN_N = 30, NO_BIAS_MIN_ERR = 40;
+const ABILITY_MARGIN = 0.15, ABILITY_MIN_N = 30, NO_BIAS_MIN_CHARS = 35, TYPE_MIN_DIFF = 0.15;
 function wilson(k, n){ const z = 1.645, p = k / n, d = 1 + z * z / n, c = p + z * z / (2 * n), m = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)); return [(c - m) / d, (c + m) / d]; }
 function abilityOf(rs){   /* 選字版面：rs＝這個目標全部有效作答（含答對） */
   const n = rs.length; if(!n) return null;
@@ -935,32 +947,44 @@ function abilityOf(rs){   /* 選字版面：rs＝這個目標全部有效作答�
 /* 選字版面「錯誤類型」的結論：sig＝某一類顯著；guess＝接近亂猜；few＝資料不夠；nobias＝沒有特定偏向；none＝還沒有選錯 */
 function typeVerdict(rs){
   const ch = rs.filter(r => !isPartsGoal(r)), st = sigTypes(ch.filter(r => !r.firstCorrect && r.firstPick)), ab = abilityOf(ch);
-  const state = !st.n ? "none" : st.sig.length ? "sig" : ab && ab.guess ? "guess" : st.n < NO_BIAS_MIN_ERR ? "few" : "nobias";
+  const state = !st.n ? "none" : st.sig.length ? "sig" : ab && ab.guess ? "guess" : st.units < NO_BIAS_MIN_CHARS ? "few" : "nobias";
   return {state, st, ab};
 }
 const pc100 = x => Math.round(x * 100);
-/* 哪些錯誤類型「統計上顯著」比亂猜多（個人頁的字、進階分析的錯誤類型共用）：錯的題目至少 5 題，該類至少 3 次、至少 1.5 倍，
-   而且 p 值小於 SIG_ALPHA ÷ 比較的類別數 */
+/* 哪些錯誤類型「統計上顯著」比亂猜多（個人頁的字、進階分析的錯誤類型共用）。
+   單位是「不同的字」（維護者 2026-11-11 決定，原本是「錯幾次」）：同一個字重複考、重複錯成同一類，以前每次都算一次，會讓結果看起來比實際更確定
+   （模擬：少數字重複錯成同一類時，98～100% 被誤判成「特別容易」；改成不同的字之後約 1%）。
+   做法：同一位學生的同一個字，不管錯幾次，只算一個單位；這個字「選過」某一類，就算這一類 1 個字。亂猜時這個字選過某一類的機率 ＝ 1 − 每次都沒猜到這一類的機率
+   （每次的機率用那一題實際的干擾字組成算）；全部字的機率加起來是「亂猜預期幾個字」，用精確分布（每個字各有一個機率）算 p 值。
+   顯著的條件：至少 5 個錯字、該類至少 3 個字、p 值小於 SIG_ALPHA ÷ 比較的類別數、而且比亂猜預期多 TYPE_MIN_DIFF（15 個百分點）以上的字
+   （舊的「至少亂猜的 1.5 倍」不能沿用：一個字錯得越多次，越容易選過每一類，亂猜預期的比例被墊高，1.5 倍幾乎不可能達到）。
+   一個字可以同時選過好幾類，所以各類的字數加起來可以超過錯字的總數 */
 function sigTypes(wrong){
   const use = wrong.filter(r => r.errorType && !isPartsGoal(r) && [...(r.options || "")].some(x => x !== r.char));
-  const qs = chanceQs(use), g = groupBy(use, r => r.errorType), types = ETYPES.filter(t => qs[t]), alpha = SIG_ALPHA / Math.max(1, types.length);
-  const rows = types.map(t => { const k = g.has(t) ? g.get(t).length : 0, e = qs[t].reduce((a, b) => a + b, 0); return {t, k, e, ratio: e ? k / e : 0, p: pbUpper(qs[t], k)}; });
-  return {n: use.length, alpha, rows, sig: use.length >= 5 ? rows.filter(o => o.k >= 3 && o.ratio >= 1.5 && o.p < alpha).sort((a, b) => a.p - b.p) : []};
+  const byChar = new Map();
+  use.forEach(r => { const q = chanceOfTrial(r); if(!q) return; const u = r.kid + "|" + r.char; if(!byChar.has(u)) byChar.set(u, []); byChar.get(u).push({t: r.errorType, q}); });
+  const list = [...byChar.values()], nUnits = list.length;
+  const types = ETYPES.filter(t => list.some(u => u.some(x => x.q[t]))), alpha = SIG_ALPHA / Math.max(1, types.length);
+  const rows = types.map(t => {
+    const pcs = list.map(u => 1 - u.reduce((a, x) => a * (1 - (x.q[t] || 0)), 1)), k = list.filter(u => u.some(x => x.t === t)).length, e = pcs.reduce((a, b) => a + b, 0);
+    return {t, k, e, units: nUnits, diff: nUnits ? (k - e) / nUnits : 0, ratio: e ? k / e : 0, p: pbUpper(pcs, k), times: use.filter(r => r.errorType === t).length};
+  });
+  return {n: use.length, units: nUnits, alpha, rows, sig: nUnits >= 5 ? rows.filter(o => o.k >= 3 && o.diff >= TYPE_MIN_DIFF && o.p < alpha).sort((a, b) => a.p - b.p) : []};
 }
-/* 「再累積多少題才有機會判斷」的估算（維護者 2026-11-11）：假設之後選錯的方式和現在一樣（以目前最偏向的那一類為準），
-   模擬再多錯幾題時會不會達到顯著（同樣的 p 值規則，亂猜機率用目前每題的平均）；再用這位學生的錯誤率換算成要再作答幾題。
-   目前沒有哪一類比亂猜多 1.5 倍時沒辦法估（回傳 null）。只是估算，之後選法變了就會不準。 */
+/* 「再累積多少個不同的錯字才有機會判斷」的估算（維護者 2026-11-11）：假設之後選錯的方式和現在一樣（以目前比亂猜多最多的那一類為準），
+   模擬再多幾個不同的錯字時會不會達到顯著（同樣的 p 值和 15 個百分點規則，亂猜機率用目前每個字的平均）；再用「平均作答一題會多出幾個不同的錯字」換算成要再作答幾題
+   （之後會有重複的字，實際會比估算多）。目前沒有哪一類比亂猜多 15 個百分點以上時沒辦法估（回傳 null）。只是估算，之後選法變了就會不準。 */
 function moreNeeded(st, trialsAll){
-  const rate = trialsAll ? st.n / trialsAll : 0, toTrials = x => rate > 0 ? Math.ceil(x / rate) : null;
-  if(st.n < 5) return {kind: "min", extraErr: 5 - st.n, extraTrials: toTrials(5 - st.n)};
-  const cand = st.rows.filter(o => o.k >= 1 && o.ratio >= 1.5).sort((a, b) => b.ratio - a.ratio)[0];
+  const rate = trialsAll ? st.units / trialsAll : 0, toTrials = x => rate > 0 ? Math.ceil(x / rate) : null;
+  if(st.units < 5) return {kind: "min", extraChars: 5 - st.units, extraTrials: toTrials(5 - st.units)};
+  const cand = st.rows.filter(o => o.k >= 1 && o.diff >= TYPE_MIN_DIFF).sort((a, b) => b.diff - a.diff)[0];
   if(!cand) return null;
-  const share = cand.k / st.n, q = cand.e / st.n;
-  for(let n2 = st.n + 1; n2 <= 300; n2++){
+  const share = cand.k / st.units, q = cand.e / st.units, info = {t: cand.t, share: Math.round(share * 100), chance: Math.round(q * 100)};
+  for(let n2 = st.units + 1; n2 <= 300; n2++){
     const k2 = Math.max(3, Math.ceil(n2 * share));
-    if(k2 / (n2 * q) >= 1.5 && pbUpper(new Array(n2).fill(q), k2) < st.alpha) return {kind: "go", t: cand.t, share: Math.round(share * 100), chance: Math.round(q * 100), extraErr: n2 - st.n, extraTrials: toTrials(n2 - st.n)};
+    if((k2 - n2 * q) / n2 >= TYPE_MIN_DIFF && pbUpper(new Array(n2).fill(q), k2) < st.alpha) return {kind: "go", ...info, extraChars: n2 - st.units, extraTrials: toTrials(n2 - st.units)};
   }
-  return {kind: "far", t: cand.t, share: Math.round(share * 100), chance: Math.round(q * 100)};
+  return {kind: "far", ...info};
 }
 /* 目標字在語詞的哪個位置（例如「蘋果」的「蘋」在詞首、「果」在詞尾）；單字或沒有語詞回傳空字串。進階分析也用 */
 const WPOS_ORDER = ["詞首（第 1 個字）", "詞中", "詞尾（最後一個字）", "單字或沒有語詞"];
@@ -1015,11 +1039,11 @@ const LIST_VIEWS = {
     const sg = sigTypes(wrong), over = sg.sig.map(o => ({...rows.find(r => r.label === typeName(o.t)), p: o.p}));
     return {title: whoTitle("錯誤類型"), chart: barChart(rows, {label: r => `${r.v} 次（${r.share}%）${r.chance == null ? "" : `・亂猜會佔 ${r.chance}%`}`}), rows,
       note: `第一次就選錯時，選到的是哪一類的字。同詞＝同一個語詞裡的另一個字（例如「新聞」的「聞」）；同部件＝有相同部件的字（只在部件重組）。`
-        + `<br>「亂猜會佔」：如果學生不會、亂猜一個，這類字大概會被點到幾 %（例如 3 個選項裡只有 1 個同詞字，亂猜選錯時就有一半會點到它）。錯的題目至少 5 題，而且某一類被選到的次數在統計上顯著比亂猜多（p 值小於 0.05，同時比好幾類時已修正；也至少 3 次、至少 1.5 倍），才會列在上方「特別容易搞混」：代表學生不是亂猜，而是一直把這類字當成答案；沒達到就寫「看不出來」。（字屬於哪一類是照現在的教材判斷，教材改過的話可能稍有出入。）`
+        + `<br>「亂猜會佔」：如果學生不會、亂猜一個，這類字大概會被點到幾 %（例如 3 個選項裡只有 1 個同詞字，亂猜選錯時就有一半會點到它）。上方「特別容易搞混」的判斷以「不同的字」為單位（一個字不管錯幾次都只算一個字，同一個字重複錯不會讓結果看起來更確定）：至少 5 個錯字，而且「選過這一類的字」在統計上顯著比亂猜多（p 值小於 0.05，同時比好幾類時已修正；至少 3 個字、比亂猜預期多 15 個百分點以上），代表學生不是亂猜，而是一直把這類字當成答案；沒達到就寫「看不出來」。下面的次數、比例是每一次錯都算。（字屬於哪一類是照現在的教材判斷，教材改過的話可能稍有出入。）`
         + `${pairs ? `<br>最常搞混：${esc(pairs)}` : ""}${wposNote(rs)}`,
       cols:[["錯誤類型", r => r.label], ["次數", r => r.v], ["比例", r => `${r.share}%`], ["亂猜會佔", r => r.chance == null ? "—" : `${r.chance}%`]],
       tiles:[["第一次就選錯", `${wrong.length} 題`, `共 ${rs.length} 題`], ["最常見", top ? top.label : "—", top ? `${top.share}%` : "沒有錯誤"],
-        ["特別容易搞混", over.length ? over.map(r => r.label).join("、") : "—", over.length ? `${over[0].label}：實際 ${over[0].share}%，亂猜會佔 ${over[0].chance}%（${fmtP(over[0].p)}）` : sg.n < 5 ? "樣本數不夠" : "看不出來（沒有達到統計上的顯著）"]]};
+        ["特別容易搞混", over.length ? over.map(r => r.label).join("、") : "—", over.length ? `${over[0].label}：${sg.units} 個錯字中有 ${sg.sig[0].k} 個選過，亂猜預期約 ${r1(sg.sig[0].e)} 個（${fmtP(over[0].p)}）` : sg.units < 5 ? "樣本數不夠" : "看不出來（沒有達到統計上的顯著）"]]};
   },
   hint(rs){
     const g = groupBy(rs, r => r.hintLevel || 0), levels = [...g.keys()].sort((a, b) => a - b);
