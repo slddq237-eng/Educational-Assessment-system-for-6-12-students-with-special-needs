@@ -19,7 +19,7 @@
 | 改部件的拆法、各功能讀哪一層部件、部件相關新玩法（聽音選部件、聽音補部件、看部件寫字） | `design/parts-layers.md`（部件三層設計，2026-10-31 討論稿；部件改用筆畫切分、教育部授權讀 `design/parts-strokes.md`；資料檔、`Parts` 入口、實作順序在 `design/parts-layers-impl.md`）、`materials/materials.md`「部件資料的狀況」；新玩法舊設計讀 `design/literacy-play.md` |
 | 改貼紙、扭蛋、星等、進化、設定步驟、玩法設定表 | `design/game-design.md` |
 | 改學生名單（代號、新增、封存、刪除、重置貼紙） | `design/kid-roster.md`、`design/records.md` |
-| 改老師專區、分析、報告、備課分析 | `design/analysis-design.md`、`design/records.md` |
+| 改老師專區、分析、報告、備課分析 | `design/analysis-design.md`、`design/records.md`；部件題（聽音補部件、聽音選部件）的分析讀 `design/analysis-parts-confusion.md` |
 | 改作答紀錄格式、資料儲存、匯出入 | `design/records.md`、`design/a8-terms.md`（**改格式前一定要先讀，並先和維護者討論**） |
 | 改教材資料、語詞、干擾字、部件、讀音、注音 | `materials/materials.md`；干擾字讀 `materials/distractors.md`；讀音、注音、破音字讀 `materials/pronunciation.md`；`materials/data-sources.md` |
 | 維護者上傳教材檔案、課本改版 | `materials/data-sources.md`「上傳教材檔案、課本改版時」、`materials/materials.md` |
@@ -55,6 +55,7 @@
 | `design/kid-roster.md` | 學生名單管理：代號自動生成、封存、刪除、重置貼紙、新學期整理名單，分五個 PR（2026-10-31 新增） | （新） |
 | `design/records.md` | 資料怎麼存、作答紀錄 | 4 |
 | `design/a8-terms.md` | A8 名詞與時期定義：前後測、研究時期、紀錄第 3 版欄位、實作待辦（2026-10-25 從 `design/records.md` 拆出） | 3-3 的「A8 名詞與時期定義」 |
+| `design/analysis-parts-confusion.md` | 老師專區：聽音補部件、聽音選部件的「忘記部件／被干擾／亂猜」判斷規則、門檻、畫面、限制（2026-11-11 新增） | （新） |
 | `design/analysis-page-draft.md` | 老師專區「一位學生」簡潔畫面設計草稿：預設畫面、換字表、待決題號（2026-10-25 新增） | （新） |
 | `materials/data-sources.md` | 資料來源與授權清單、上傳教材檔案時讀得到哪些檔案 | 4-1、「上傳教材檔案、課本改版時」 |
 | `materials/materials.md` | 教材資料的來源與使用邏輯、待確認清單、資料掃描發現、部件資料 | 4-1 的「教材資料的來源與使用邏輯」 |
