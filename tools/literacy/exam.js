@@ -212,7 +212,7 @@ function examAsk(it){
 const nb = t => t.replace(/ /g, "\u00a0");   /* 表頭太長要換行時，只在「、」後面換，「第 1 課」「康軒 五上」不拆開 */
 const w2Word = () => EX.goal === "W2" && examOpt.w2 === "word";
 
-function examRenderOne(){
+function examRenderOne(land = false){   /* land：這一版橫排（只有大格直排放不下才橫排，examRender 決定） */
   const [b0] = splitKey(state.lessons[0]), manyBooks = new Set(state.lessons.map(k => splitKey(k)[0])).size > 1;
   const unit = manyBooks ? [...new Set(state.lessons.map(k => bookName(splitKey(k)[0])))].join("、") : bookName(b0);
   /* 課別：連續的課寫成「第 1～3 課」（表頭一格寫得下，不要換行，2026-11-10 維護者要求） */
@@ -234,7 +234,7 @@ function examRenderOne(){
     ${first ? `<p class="exmethod" contenteditable="true">${esc(EXAM_METHOD[EX.goal])}</p><p class="exhowfix" contenteditable="true">${EXAM_HOW_FIX()}</p>` : ""}`;
   const g = EX.goal, mm = cm * 10, P = $("#exPages");
   /* 大格改成 A4 橫印（2026-11-10 維護者決定）：一列寬 27.3 公分，一題有好幾個空格也放得下，空格不用縮小；小格、中格直印 */
-  const land = examOpt.size === "l", pageW = land ? 297 : 210, pageH = land ? 210 : 297, sheetCls = land ? "exsheet land" : "exsheet";
+  const pageW = land ? 297 : 210, pageH = land ? 210 : 297, sheetCls = land ? "exsheet land" : "exsheet";
   /* 每一題由左到右（2026-11-10 維護者決定）：
      W1：題號 → 題目（空格就是答案格）→ 摺線 → 訂正
      W2：題號 → 答案（國字 1 格；語詞照字數）→ 摺線 → 訂正
@@ -306,7 +306,7 @@ function examRenderOne(){
     rows.forEach((r, i) => { if(cur.length && h + rh[i] > inner){ pages.push(cur); cur = []; h = top(s2); } cur.push(r); h += rh[i]; });
     if(cur.length) pages.push(cur);
     EX.pageN = pages.length;
-    const tag = examOpt.vers.length > 1 ? `<span class="exvtag">${esc(examVerName(examOpt))}</span>` : "";   /* 好幾個版本時，每一頁右上角標版本 */
+    const tag = examOpt.vers.length > 1 ? `<span class="exvtag">${esc(examVerName(examOpt, land))}</span>` : "";   /* 好幾個版本時，每一頁右上角標版本 */
     /* 大格橫印：紙還是直的 A4，列印時把整頁轉 90 度（2026-11-11 維護者要求：手機瀏覽器不認橫向紙張，印出來還是直的）；外面包一層 exlandwrap 才有直的一頁大小 */
     return pages.map((list, p) => { const sh = `<section class="${sheetCls}">${tag}${head(p === 0)}${colHead}${list.join("")}</section>`; return land ? `<div class="exlandwrap">${sh}</div>` : sh; }).join("");
   };
@@ -359,21 +359,24 @@ function examRenderOne(){
   const html = pagesHtml(fixN);
   const vars = ["--cell", "--aw", "--qw", "--fixn"].map(k => [k, P.style.getPropertyValue(k)]).filter(([, v]) => v).map(([k, v]) => `${k}:${v}`).join(";");
   ["--cell", "--aw", "--qw", "--fixn"].forEach(k => P.style.removeProperty(k));
-  return {html, vars, pageN: EX.pageN, fixN, shrunk: EX.items.some(it => (it.hint || 1) < 1 || (it.hole || 1) < 1 || (it.ansScale || 1) < 1)};
+  return {html, vars, land, pageN: EX.pageN, fixN, shrunk: EX.items.some(it => (it.hint || 1) < 1 || (it.hole || 1) < 1 || (it.ansScale || 1) < 1)};
 }
-const examVerName = v => `${EXAM_SIZES.find(s => s[0] === v.size)[1]}格（${EXAM_SIZES.find(s => s[0] === v.size)[2]} 公分${v.size === "l" ? "，橫印" : ""}）・${v.ruler ? "字型尺提示" : "十字格"}`;
+const examVerName = (v, land) => `${EXAM_SIZES.find(s => s[0] === v.size)[1]}格（${EXAM_SIZES.find(s => s[0] === v.size)[2]} 公分${land ? "，橫排" : ""}）・${v.ruler ? "字型尺提示" : "十字格"}`;
 /* 每一個版本各排一次（格子大小不同，訂正格數、縮小的題目也不同），依序接在一起，最後放一張答案頁 */
 function examRender(){
   const g = EX.goal, P = $("#exPages"), done = [];
   for(const v of examOpt.vers){
     Object.assign(examOpt, v);
-    done.push({v, ...examRenderOne()});
+    /* 大格先照直排排一次；題目放不下（要縮小或少訂正格，例如考三個字以上的語詞、看注音寫國字的長語詞）才改橫排（2026-11-11 維護者決定） */
+    let r = examRenderOne(false);
+    if(v.size === "l" && (r.shrunk || r.fixN < EXAM_FIX)) r = examRenderOne(true);
+    done.push({v: {...v}, ...r});
   }
   const key = EX.keyHtml(), keyN = (key.match(/class="exsheet exkey"/g) || []).length;
   P.innerHTML = done.map(d => `<div class="exver" style="${d.vars}">${d.html}</div>`).join("") + key;
   const merged = EX.picked - EX.items.length;
-  const hasLand = examOpt.vers.some(v => v.size === "l");
-  $("#exInfo").textContent = `${hasLand ? "↻ 大格的考卷：紙是直的、內容轉了 90 度，印好後把紙橫過來看（順時針轉）。" : ""}${EX.items.length} 題；${done.map(d => `${examVerName(d.v)} ${d.pageN} 頁${d.fixN < EXAM_FIX ? `（訂正格 ${d.fixN} 格）` : ""}`).join("、")}${keyN ? `，另有答案 ${keyN} 頁` : ""}${g === "W2" ? `；考${examOpt.w2 === "word" ? "語詞" : "國字"}` : ""}${merged > 0 ? `；同一個語詞的字合併成一題（${EX.picked} 個字）` : ""}${done.some(d => d.shrunk) ? "；比較長的題目字縮小了一點，才排得下一行" : ""}。單元、課別、考試方法可以直接點文字修改。`;
+  const hasLand = done.some(d => d.land);
+  $("#exInfo").textContent = `${hasLand ? "↻ 橫排的考卷（大格直排放不下的題目）：紙是直的、內容轉了 90 度，印好後把紙橫過來看（順時針轉）。" : ""}${EX.items.length} 題；${done.map(d => `${examVerName(d.v, d.land)} ${d.pageN} 頁${d.fixN < EXAM_FIX ? `（訂正格 ${d.fixN} 格）` : ""}`).join("、")}${keyN ? `，另有答案 ${keyN} 頁` : ""}${g === "W2" ? `；考${examOpt.w2 === "word" ? "語詞" : "國字"}` : ""}${merged > 0 ? `；同一個語詞的字合併成一題（${EX.picked} 個字）` : ""}${done.some(d => d.shrunk) ? "；比較長的題目字縮小了一點，才排得下一行" : ""}。單元、課別、考試方法可以直接點文字修改。`;
 }
 $("#exPrint").onclick = () => window.print();
 $("#exBack").onclick = () => { EX = null; showScreen("#setup"); render(); };
