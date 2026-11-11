@@ -175,7 +175,22 @@ function fluencySection(all){
   const n = rounds(flu).length;
   return `<div class="tchart">${dailyChart(flu, "flu")}</div><p class="note">流暢性＝限時內第一次就答對的字數，換算成每分鐘幾個（越高越流暢）。每個點是那一天所有回合的平均，共 ${n} 個回合；正式評量和練習的流暢性回合全部算。</p>`;
 }
-function simpleSummary(rs){
+/* 第五張卡「常見錯誤類型」（維護者 2026-11-11：要和下面「容易搞混的字／部件」同步，沒有統計顯著就寫「不確定」，不要寫成已經有結論）：
+   選字版面＝和「容易搞混的字」用同一個判斷（sigTypes）；選部件版面＝和「容易搞混的部件」用同一個判讀（partStats） */
+function errorTile(rs, partsPage){
+  if(partsPage){
+    const st = partStats(rs), u = partUnit(st);
+    if(!st.n) return ["判讀", "—", "還沒有可以分析的紀錄"];
+    return ["判讀（忘記部件／被干擾）", st.tag === "資料不夠" ? "不確定" : st.tag, st.tag === "資料不夠" ? `只有 ${st.n} 題，資料不夠` : `忘記 ${st.forgetN} ${u}・被干擾 ${st.disturbN} ${u}`];
+  }
+  const st = sigTypes(rs.filter(r => !r.firstCorrect && r.firstPick && !isPartsGoal(r)));
+  if(!st.n) return ["常見錯誤類型", "—", "還沒有選錯"];
+  if(st.n < 5) return ["常見錯誤類型", "不確定", `錯的題目只有 ${st.n} 題，資料不夠`];
+  if(st.sig.length){ const o = st.sig[0]; return ["常見錯誤類型", st.sig.map(x => typeName(x.t)).join("、"), `${o.k} 次・佔錯誤 ${pct(o.k, st.n)}%・統計上顯著`]; }
+  const top = st.rows.slice().sort((a, b) => b.k - a.k)[0];
+  return ["常見錯誤類型", "不確定", `最多是${typeName(top.t)} ${top.k} 次（${pct(top.k, st.n)}%），統計上還不能確定`];
+}
+function simpleSummary(rs, partsPage){
   const sess = sessionsOf(rs), days = [...new Set(rs.map(dayOf))].sort(), a = accOf(rs), secs = secList(rs);
   const lastDay = days[days.length - 1], lastAcc = accOf(rs.filter(r => dayOf(r) === lastDay));
   let speed = ["—", "資料還不到一週"];
@@ -183,10 +198,9 @@ function simpleSummary(rs){
     const w1 = avg(secList(rs.filter(r => daysBetween(days[0], dayOf(r)) < 7))), w2 = avg(secList(rs.filter(r => daysBetween(dayOf(r), lastDay) < 7)));
     if(w1 != null && w2 != null){ const d = Math.round((w2 - w1) * 10) / 10; speed = [d < 0 ? `快 ${-d} 秒` : d > 0 ? `慢 ${d} 秒` : "一樣快", `第一週 ${w1} → 最近一週 ${w2}`]; }
   }
-  const wrongT = rs.filter(r => !r.firstCorrect && r.errorType), topType = [...groupBy(wrongT, r => r.errorType)].sort((a, b) => b[1].length - a[1].length)[0];
   const tile = (label, value, sub) => `<div class="tstat"><span>${label}</span><b>${esc(value)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</div>`;
   return `<div class="tstats">${tile("做過", `${sess.length} 次`, `${days.length} 天・${rs.length} 題`)}${tile("整體正確率", a.v == null ? "—" : `${a.v}%`, `最近一天 ${lastAcc.v == null ? "—" : lastAcc.v + "%"}`)}
-    ${tile("平均反應時間", secs.length ? `${avg(secs)} 秒` : "—", secs.length ? `中位數 ${median(secs)} 秒` : "")}${tile("反應速度變化", speed[0], speed[1])}${tile("常見錯誤類型", topType ? typeName(topType[0]) : "—", topType ? `${topType[1].length} 次・佔錯誤 ${pct(topType[1].length, wrongT.length)}%` : "還沒有選錯")}</div>`;
+    ${tile("平均反應時間", secs.length ? `${avg(secs)} 秒` : "—", secs.length ? `中位數 ${median(secs)} 秒` : "")}${tile("反應速度變化", speed[0], speed[1])}${tile(...errorTile(rs, partsPage))}</div>`;
 }
 const SIMPLE_CHIPS = 24, SIMPLE_ROWS = 10;
 /* 做過哪些評量目標（依 GOALS 的順序，不認得的舊代號排最後）；「看哪個目標」按鈕用（個人、多位學生，維護者 2026-11-11） */
@@ -431,7 +445,7 @@ function renderSimple(){
     box.innerHTML = head + onlyNote + `<section class="ssec"><p class="hint" style="margin:0">這位學生還沒有「${esc(goalName(goal))}」的作答紀錄。</p></section>`;
   } else {
     const secSec = metric => metric === "sec" ? `答對的題目，從${goal === "R4" ? "畫面出現" : "題目唸完"}到答對的平均秒數${goal === "R4" ? "（部件重組沒有唸題目，所以不能和聽音選字的反應時間直接比）" : ""}。` : "";
-    const summary = sec("總體紀錄（正式評量＋練習）", simpleSummary(all));
+    const summary = sec("總體紀錄（正式評量＋練習）", simpleSummary(all, partsPage));
     const accSec = sec("每天的平均正確率", `<div class="tchart">${dailyChart(all, "acc")}</div><p class="note">正確率＝第一次就答對的比例。每個點是那一天所有評量和練習的平均；有標前測、後測的那天，日期後面會註明。</p>`);
     const secSecH = sec("每天的平均反應時間（越低越快）", `<div class="tchart">${dailyChart(all, "sec")}</div><p class="note">${secSec("sec")}</p>`);
     const common = sec("常錯的字", wrongChars(all)) + sec("反應最慢的字", slowChars(all));
