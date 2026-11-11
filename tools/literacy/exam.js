@@ -307,7 +307,8 @@ function examRenderOne(){
     if(cur.length) pages.push(cur);
     EX.pageN = pages.length;
     const tag = examOpt.vers.length > 1 ? `<span class="exvtag">${esc(examVerName(examOpt))}</span>` : "";   /* 好幾個版本時，每一頁右上角標版本 */
-    return pages.map((list, p) => `<section class="${sheetCls}">${tag}${head(p === 0)}${colHead}${list.join("")}</section>`).join("");
+    /* 大格橫印：紙還是直的 A4，列印時把整頁轉 90 度（2026-11-11 維護者要求：手機瀏覽器不認橫向紙張，印出來還是直的）；外面包一層 exlandwrap 才有直的一頁大小 */
+    return pages.map((list, p) => { const sh = `<section class="${sheetCls}">${tag}${head(p === 0)}${colHead}${list.join("")}</section>`; return land ? `<div class="exlandwrap">${sh}</div>` : sh; }).join("");
   };
   EX.keyHtml = keyHtml;
   P.style.setProperty("--cell", cm + "cm");
@@ -371,8 +372,8 @@ function examRender(){
   const key = EX.keyHtml(), keyN = (key.match(/class="exsheet exkey"/g) || []).length;
   P.innerHTML = done.map(d => `<div class="exver" style="${d.vars}">${d.html}</div>`).join("") + key;
   const merged = EX.picked - EX.items.length;
-  const mixed = new Set(examOpt.vers.map(v => v.size === "l")).size > 1;
-  $("#exInfo").textContent = `${mixed ? "⚠️ 有直印也有橫印（大格橫印）；印表機如果沒有自動轉向，請分開列印。" : ""}${EX.items.length} 題；${done.map(d => `${examVerName(d.v)} ${d.pageN} 頁${d.fixN < EXAM_FIX ? `（訂正格 ${d.fixN} 格）` : ""}`).join("、")}${keyN ? `，另有答案 ${keyN} 頁` : ""}${g === "W2" ? `；考${examOpt.w2 === "word" ? "語詞" : "國字"}` : ""}${merged > 0 ? `；同一個語詞的字合併成一題（${EX.picked} 個字）` : ""}${done.some(d => d.shrunk) ? "；比較長的題目字縮小了一點，才排得下一行" : ""}。單元、課別、考試方法可以直接點文字修改。`;
+  const hasLand = examOpt.vers.some(v => v.size === "l");
+  $("#exInfo").textContent = `${hasLand ? "↻ 大格的考卷：紙是直的、內容轉了 90 度，印好後把紙橫過來看（順時針轉）。" : ""}${EX.items.length} 題；${done.map(d => `${examVerName(d.v)} ${d.pageN} 頁${d.fixN < EXAM_FIX ? `（訂正格 ${d.fixN} 格）` : ""}`).join("、")}${keyN ? `，另有答案 ${keyN} 頁` : ""}${g === "W2" ? `；考${examOpt.w2 === "word" ? "語詞" : "國字"}` : ""}${merged > 0 ? `；同一個語詞的字合併成一題（${EX.picked} 個字）` : ""}${done.some(d => d.shrunk) ? "；比較長的題目字縮小了一點，才排得下一行" : ""}。單元、課別、考試方法可以直接點文字修改。`;
 }
 $("#exPrint").onclick = () => window.print();
 $("#exBack").onclick = () => { EX = null; showScreen("#setup"); render(); };

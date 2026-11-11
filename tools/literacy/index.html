@@ -1135,7 +1135,6 @@ body.writing section[aria-labelledby="h4"],body.writing #taught,body.writing #pp
 .exkeytab td:first-child{width:8mm}
 .exkeytab td.a{font-size:15pt;white-space:nowrap}
 @page{size:A4 portrait;margin:0}
-@page land{size:A4 landscape;margin:0}   /* 大格橫印（2026-11-10） */
 .exsheet.land{width:297mm;min-height:210mm}
 @media print{
   body{background:#fff!important}
@@ -1143,9 +1142,12 @@ body.writing section[aria-labelledby="h4"],body.writing #taught,body.writing #pp
   #wexam{display:block!important}
   .noprint{display:none!important}
   .expages{display:block;padding:0;background:none}
-  .exsheet{box-shadow:none;break-after:page;page-break-after:always;min-height:0;height:297mm;overflow:hidden}
-  .exsheet.land{page:land;height:210mm}
-  .exsheet:last-child{break-after:auto;page-break-after:auto}
+  .exsheet,.exlandwrap{box-shadow:none;break-after:page;page-break-after:always;min-height:0;height:297mm;overflow:hidden}
+  /* 大格橫印（2026-11-11）：紙張一律直的 A4，整頁轉 90 度（手機瀏覽器不認橫向紙張）；轉的時候以左上角為軸逆時針轉 90 度（頂端朝左，和一般橫印一樣），再下移一張紙高 */
+  .exlandwrap{position:relative;width:210mm}
+  .exlandwrap > .exsheet.land{position:absolute;top:0;left:0;height:210mm;break-after:auto;page-break-after:auto;transform-origin:0 0;transform:translateY(297mm) rotate(-90deg)}
+  /* 只有整份最後一頁不換頁；每個版本之間一定換頁（.exver 在畫面上不佔位置，不能用 .exsheet:last-child） */
+  #exPages > :last-child:not(.exver),#exPages > .exver:last-child > :last-child{break-after:auto;page-break-after:auto}
 }
 </style>
 </head>
