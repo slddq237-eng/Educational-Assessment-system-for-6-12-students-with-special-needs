@@ -246,6 +246,10 @@ const today = new Date(); today.setHours(0,0,0,0);
 const iso = d => new Date(d.getTime() - d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
 const md = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()}`; };
+/* 老師專區「進階分析」分頁（更多圖表與明細、樞紐分析）：2026-11-11 維護者決定暫時隱藏（程式沒有刪：teacher.js 的第 16～18 節、pivot.js 都還在，老師存在瀏覽器的「我的比較」也沒動）。
+   隱藏時：老師專區不顯示「進階分析」分頁、也不下載 pivot.js。要恢復：這裡改成 true，再執行 node docs/scripts/bump.js 換版本號。
+   恢復前先確認：舊代號 3、4-1 在進階分析還被當成另外兩個目標（pivot.js 的 goal 分組、匯出 Excel 的「評量目標」欄），要像個人頁一樣用 teacher.js 的 goalKey 併進 R3、R4。原因與做法見 docs/history/history-2026-11-11.md「進階分析暫時隱藏」 */
+const ADVANCED_ANALYSIS = false;
 /* 儲存名稱表：識字評量存在這台電腦的資料（localStorage、sessionStorage），名稱只寫在這裡。
    其他檔案用 KEYS.settings 這樣拿，不要自己打完整的名稱（打錯一個字，老師存的資料就讀不到）；
    用了表裡沒有的名稱，自動檢查會報錯。新增名稱時也寫進 docs/code/architecture.md 第 6 節。

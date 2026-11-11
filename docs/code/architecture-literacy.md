@@ -20,7 +20,7 @@
 | `gacha.js` | — | 扭蛋機：拉拉桿揭曉貼紙、各星等特效與聲音 | `showGacha`（`collect.js` 的 `showReveals` 呼叫） |
 | `scenes.js` | — | 打怪獸的四個場景動畫 | 由 `play.js` 的 3-3 呼叫 |
 | `teacher.js` | 15～20 | 老師專區：一位學生的圖表、全班總表、逐字學習紀錄 | `renderTeacher`、`openCharLog` |
-| `pivot.js` | 21～23 | 進階分析（樞紐分析表） | `renderPivot` |
+| `pivot.js` | 21～23 | 進階分析（樞紐分析表）。**2026-11-11 起暫時隱藏**：`data.js` 的 `ADVANCED_ANALYSIS = false` 時不顯示分頁、`app.js` 的 `loadTeacher` 不下載它，程式還在 | `renderPivot` |
 | `tablet.js` | — | 平板作答（F2）：表單網址設定、產生 QR code、平板點代號與送出、匯入 Google 試算表的 Excel | `tabletQr`、`tabletStart`、`tabletSend`（`finish` 呼叫）、`tabletSheet`（`records.js` 的匯入檔案呼叫） |
 | `app.js` | — | 全部載入後畫出第一個畫面（平板作答時改成點代號的畫面）、過夜換日提醒 | — |
 

@@ -109,8 +109,16 @@ async function visit(browser, base, url, after){
     if (/<script[^>]+src="(teacher|pivot)\.js/.test(await page.content())) errs.push('網頁一打開就載入了 teacher.js 或 pivot.js（應該畫面出現後才在背景下載）');
     await page.evaluate(() => document.querySelector('#openTeacher').click());
     await page.waitForFunction(() => !document.querySelector('#teacher').hidden, null, { timeout: 10000 }).catch(() => errs.push('按「老師專區」後畫面沒有出現'));
-    if (!await page.evaluate(() => typeof renderPivot === 'function')) errs.push('pivot.js 沒有載入');
-    await page.evaluate(() => { T.tab = 'pivot'; T.adv = 'pivot'; renderTeacher(); }).catch(e => errs.push(`進階分析打不開：${e.message.split('\n')[0]}`));
+    /* 進階分析暫時隱藏時（data.js 的 ADVANCED_ANALYSIS = false，2026-11-11）：不顯示分頁、不下載 pivot.js、以前停在進階分析的會回到個人；恢復時（true）照原本檢查它打得開 */
+    if (await page.evaluate(() => ADVANCED_ANALYSIS)) {
+      if (!await page.evaluate(() => typeof renderPivot === 'function')) errs.push('pivot.js 沒有載入');
+      await page.evaluate(() => { T.tab = 'pivot'; T.adv = 'pivot'; renderTeacher(); }).catch(e => errs.push(`進階分析打不開：${e.message.split('\n')[0]}`));
+    } else {
+      if (await page.evaluate(() => typeof renderPivot === 'function')) errs.push('進階分析已隱藏，不該下載 pivot.js');
+      await page.evaluate(() => { T.tab = 'pivot'; renderTeacher(); }).catch(e => errs.push(`停在進階分析的老師回不到個人：${e.message.split('\n')[0]}`));
+      if (await page.evaluate(() => T.tab) !== 'one') errs.push('進階分析已隱藏，T.tab 應該回到 one');
+      if ((await page.evaluate(() => document.querySelector('#tTabs').innerText)).includes('進階分析')) errs.push('進階分析已隱藏，分頁不該出現');
+    }
   }));
 
   /* 3. 平板作答：在電腦版用產生 QR code 的同一個函數做出網址，再用新分頁打開 */

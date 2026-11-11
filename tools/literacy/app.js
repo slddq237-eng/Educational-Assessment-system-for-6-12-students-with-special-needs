@@ -34,9 +34,10 @@ const loadScript = name => new Promise((res, rej) => {
   document.head.appendChild(s);
 });
 function loadTeacher(){
-  if(typeof renderTeacher === "function" && typeof renderPivot === "function") return Promise.resolve();
+  const needPivot = () => ADVANCED_ANALYSIS && typeof renderPivot !== "function";   /* 進階分析暫時隱藏時（data.js 的 ADVANCED_ANALYSIS）不下載 pivot.js */
+  if(typeof renderTeacher === "function" && !needPivot()) return Promise.resolve();
   return teacherLoading = teacherLoading || (typeof renderTeacher === "function" ? Promise.resolve() : loadScript("teacher.js"))
-    .then(() => typeof renderPivot === "function" ? null : loadScript("pivot.js"))
+    .then(() => needPivot() ? loadScript("pivot.js") : null)
     .catch(e => { teacherLoading = null; throw e; });
 }
 $("#openTeacher").onclick = () => {
