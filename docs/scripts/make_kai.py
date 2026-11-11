@@ -72,6 +72,12 @@ def book_chars(b):
             s += [c, *(W.get(c) or L['WORDS'].get(c) or ''), *(''.join(C.get(c) or L['CONF'].get(c) or []))]
         for c in les['write'] + les['read']: s += list(S.get(c) or L['SENT'].get(c) or '')   # 例句只在提示出現，排在這課後面
     return ordered(s)
+# 全字庫正楷體沒有的字（部首變體、罕用部件、表情符號等）：不收進字型，寫進 CSS 的註解，
+# check.js 讀這份清單，只對「字型有、但子集沒收」的字提醒（2026-11-11 加）
+used = set()
+for f in glob.glob('**/*.html', recursive=True) + glob.glob('tools/**/*.js', recursive=True): used |= {c for c in strip_comments(read(f)) if ord(c) >= 0x2E80}
+for t in (lessons_src(), read('shared/parts.js'), read('shared/parts-layers.js')): used |= {c for c in t if ord(c) >= 0x2E80}
+skipped = sorted(c for c in used if ord(c) not in CMAP and not c.isspace())
 groups, seen = [], set()
 for g in [pages] + [book_chars(b) for b in order] + [ordered(lessons_src()), ordered(read('shared/parts.js')), ordered(read('shared/parts-layers.js'))]:
     g = [c for c in g if c not in seen]; seen |= set(g)
@@ -94,5 +100,7 @@ for i, g in enumerate(groups):
 with open(os.path.join(OUT_DIR, 'tw-kai.css'), 'w', encoding='utf8') as f:
     f.write('/* 標準楷書字型（自動產生，見 docs/scripts/make_kai.py）。取自行政院「全字庫正楷體」（TW-Kai，https://www.cns11643.gov.tw/），\n'
             '   政府資料開放授權條款－第 1 版。依頁面文字、課本、部件拆成幾個檔，瀏覽器只下載用到的字所在的檔。 */\n')
+    f.write(f'/* 全字庫正楷體沒有的字（make_kai.py 略過，畫面改用電腦裡的字型；check.js 讀這一行）：{"".join(skipped)} */\n')
     f.write('\n'.join(css) + '\n')
+print(f'全字庫正楷體沒有、略過 {len(skipped)} 個字')
 print(f'字數 {len(seen)}，{len(groups)} 個檔共 {sum(sizes) // 1024} KB（最大 {max(sizes) // 1024} KB，第 1 檔 {sizes[0] // 1024} KB）')

@@ -75,7 +75,6 @@ const SAY_OK = new Set([   /* 2026-10-23 確認：都是同一個意思、同一
 const KNOWN_WARN = [
   {has: ['shared/lessons.js：', '個字的干擾字少於 2 個'], max: 242, why: '等老師在 material-review.xlsx「干擾字候選」頁挑干擾字（pending.md「老師確認」）', since: '2026-11-06'},
   {has: ['docs/history/history-2026-10-24.md：文件有 14071 字'], why: '已封存的歷史檔，新的歷史寫在 history-2026-10-31.md，平常不讀', since: '2026-11-06'},
-  {has: ['shared/fonts/tw-kai.css：有 2 個字不在楷書字型裡（戳菱）'], why: '只在老師畫面，缺字時改用電腦的標楷體；重跑 make_kai.py 會讓 33 個字型檔全部重排（約 4MB，老師都要重新下載），等下次新增課本時一起跑', since: '2026-11-06'},
 ];
 
 /* repo 裡所有檔案（略過 .git） */
@@ -333,17 +332,23 @@ if (files.includes('docs/materials/mask-fix.json') || files.includes('tools/lite
 
 /* ---------- 9. 楷書字型缺字 ----------
    畫面文字（.html、tools/ 的 .js，不含註解）和教材（lessons.js、parts.js、parts-layers.js）的中文字，要在 shared/fonts/tw-kai.css 的範圍裡；
-   沒有的字會變成電腦裡的別種字型。新增頁面文字、課本、部件後跑 make_kai.py 就好 */
-const KAI_NOT_IN_FONT = '龶冫勹龰亠龴龵龸龷龹';   /* 全字庫正楷體本來就沒有的部件符號，make_kai.py 會略過（2026-10-24 確認） */
+   沒有的字會變成電腦裡的別種字型。新增頁面文字、課本、部件後跑 make_kai.py 就好。
+   2026-11-11 補強：原本只查一般漢字（U+3400～9FFF），老師部件表用的部首變體（⻗⻊⺩，U+2E80～2FDF）和罕用字（U+20000 以上）沒查到；
+   改成查 U+2E80 以上的所有字。全字庫正楷體本來就沒有的字，make_kai.py 寫在 tw-kai.css 第 3 行的註解，這裡讀那份清單略過 */
+const KAI_NOT_IN_FONT = '龶冫勹龰亠龴龵龸龷龹';   /* 全字庫正楷體本來就沒有的部件符號（2026-10-24 確認）；之後以 tw-kai.css 註解裡的清單為準 */
 {
+  const css = read('shared/fonts/tw-kai.css');
+  const skipLine = (css.match(/全字庫正楷體沒有的字[^：]*：([^\n]*?) \*\//) || [])[1] || '';
+  if (!skipLine) warn('shared/fonts/tw-kai.css', '找不到「全字庫正楷體沒有的字」那行註解（舊版 make_kai.py 產生的？），請重跑 docs/scripts/make_kai.py');
+  const skip = new Set([...skipLine, ...KAI_NOT_IN_FONT]);
   const have = new Set();
-  for (const m of read('shared/fonts/tw-kai.css').matchAll(/U\+([0-9A-F]+)(?:-([0-9A-F]+))?/gi)) {
+  for (const m of css.matchAll(/U\+([0-9A-F]+)(?:-([0-9A-F]+))?/gi)) {
     const a = parseInt(m[1], 16), b = m[2] ? parseInt(m[2], 16) : a;
     for (let c = a; c <= b; c++) have.add(c);
   }
   const text = files.filter(f => own(f) && (/\.html$/.test(f) || /^tools\/.*\.js$/.test(f))).map(f => stripComments(read(f))).join('')
     + lessonsSrc() + read('shared/parts.js') + read('shared/parts-layers.js');
-  const miss = [...new Set([...text].filter(c => { const p = c.codePointAt(0); return (p >= 0x3400 && p <= 0x9FFF) && !have.has(p) && !KAI_NOT_IN_FONT.includes(c); }))];
+  const miss = [...new Set([...text].filter(c => { const p = c.codePointAt(0); return p >= 0x2E80 && !/\s/.test(c) && !have.has(p) && !skip.has(c); }))];
   if (miss.length) warn('shared/fonts/tw-kai.css', `有 ${miss.length} 個字不在楷書字型裡（${miss.slice(0, 20).join('')}${miss.length > 20 ? '…' : ''}），請跑 docs/scripts/make_kai.py`);
 }
 
