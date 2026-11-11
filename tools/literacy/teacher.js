@@ -13,8 +13,8 @@
    ========================================================= */
 const TEACH_UI = KEYS.teacher;
 const T = Object.assign({tab:"one", kid:"", metric:"acc", view:"time", axis:"date", split:"lesson", range:"term", from:"", to:"",
-  kind:"formal", goal:"", book:"", lesson:"", gap:"after", top:"300", adv:"charts", simpleLesson:"", classKids:[], groups:[], classLesson:""}, load(TEACH_UI, {}));
-const saveT = () => store(TEACH_UI, {...T, groups: getGroups()});   /* 組別由 getGroups／saveGroups 管，這裡不蓋掉 */
+  kind:"formal", goal:"", book:"", lesson:"", gap:"after", top:"300", adv:"charts", simpleLesson:"", simpleGoal:"", classGoal:"", classKids:[], groups:[], classLesson:""}, load(TEACH_UI, {}));
+const saveT = () => store(TEACH_UI, {...T, simpleGoal:"", classGoal:"", groups: getGroups()});   /* 組別由 getGroups／saveGroups 管，這裡不蓋掉；個人頁、多位學生的「看哪個目標」不存，每次打開都回到整體（維護者 2026-11-11） */
 const hasFreq = () => typeof FREQ !== "undefined";
 
 /* 看什麼：trend＝可以依時間／課別／時期看變化；list＝用排序表或分布呈現 */
@@ -163,6 +163,8 @@ function simpleSummary(rs){
     ${tile("平均反應時間", secs.length ? `${avg(secs)} 秒` : "—", secs.length ? `中位數 ${median(secs)} 秒` : "")}${tile("反應速度變化", speed[0], speed[1])}${tile("常見錯誤類型", topType ? typeName(topType[0]) : "—", topType ? `${topType[1].length} 次・佔錯誤 ${pct(topType[1].length, wrongT.length)}%` : "還沒有選錯")}</div>`;
 }
 const SIMPLE_CHIPS = 24, SIMPLE_ROWS = 10;
+/* 做過哪些評量目標（依 GOALS 的順序，不認得的舊代號排最後）；「看哪個目標」按鈕用（個人、多位學生，維護者 2026-11-11） */
+const goalsOf = rs => [...new Set(rs.map(r => r.goal))].sort((a, b) => { const i = GOALS.findIndex(g => g.id === a), j = GOALS.findIndex(g => g.id === b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j); });
 function wrongChars(rs){
   const by = groupBy(rs, r => r.char);
   const list = [...by].map(([c, l]) => ({c, n: l.length, w: l.filter(r => !r.firstCorrect).length})).filter(x => x.w >= 1)
@@ -218,16 +220,16 @@ function recentByLesson(all, formal){
   const top = rows.sort((a, b) => a.at < b.at ? 1 : -1).slice(0, RECENT_ROWS);
   if(!top.length) return `<p class="note" style="margin:0">還沒有紀錄。</p>`;
   const groups = [...groupBy(top, x => x.k)];   /* 同一課放一起；課次依最近一次的先後排 */
-  const cols = formal ? ["日期", "前後測", "抽到的字", "正確率", "點錯", "平均反應", "沒有一次答對的字"] : ["日期", "玩法", "抽到的字", "正確率", "點錯", "平均反應", "沒有一次答對的字"];
+  const cols = formal ? ["日期", "目標", "前後測", "抽到的字", "正確率", "點錯", "平均反應", "沒有一次答對的字"] : ["日期", "目標", "玩法", "抽到的字", "正確率", "點錯", "平均反應", "沒有一次答對的字"];
   return groups.map(([k, list]) => {
     const counted = list.filter(x => !x.rs.some(r => r.quit)), a = accOf(counted.flatMap(x => x.rs));
     const head = `<h4 class="sgrp">${esc(lessonLabel(k))}<span>　${formal ? "評量" : "練習"} ${counted.length} 次${a.v == null ? "" : `，平均正確率 ${a.v}%`}</span></h4>`;
     const body = list.map(x => {
       const r0 = x.rs[0], quit = x.rs.some(r => r.quit), acc = accOf(x.rs), secs = secList(x.rs);
       const chars = [...new Set(x.rs.map(r => r.char))], miss = [...new Set(x.rs.filter(r => !r.firstCorrect).map(r => r.char))];
-      const cells = [shortDay(x.day), (formal ? (r0.prepost || "—") : recentPlay(r0)) + deviation(r0), `<span class="schars">${esc(chars.join(""))}</span>`,
+      const cells = [shortDay(x.day), goalName(r0.goal), (formal ? (r0.prepost || "—") : recentPlay(r0)) + deviation(r0), `<span class="schars">${esc(chars.join(""))}</span>`,
         `${x.rs.filter(r => r.firstCorrect).length}/${x.rs.length}（${acc.v}%）${quit ? "・未做完" : ""}`, x.rs.reduce((n, r) => n + (r.wrongCount || 0), 0), secs.length ? `${avg(secs)} 秒` : "—", `<span class="schars miss">${esc(miss.join(""))}</span>`];
-      return `<tr class="${quit ? "squit" : ""}">${cells.map((c, i) => `<td>${i === 2 || i === 6 ? c : esc(c)}</td>`).join("")}</tr>`;
+      return `<tr class="${quit ? "squit" : ""}">${cells.map((c, i) => `<td>${i === 3 || i === 7 ? c : esc(c)}</td>`).join("")}</tr>`;
     }).join("");
     return `${head}<div class="tablewrap"><table class="rec"><thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div>`;
   }).join("");
@@ -287,10 +289,16 @@ function renderSimple(){
   if(box.hidden) return;
   if(!withData.length){ side.innerHTML = ""; box.innerHTML = `<section class="card tpanel"><p class="hint" style="margin:0">還沒有作答紀錄。學生做過評量後，這裡就會出現名字和結果。</p></section>`; return; }
   /* 統計、折線圖、字的清單：正式評量加練習全部一起算（維護者 2026-10-25）；只有前後測是正式評量才有（練習沒有前後測標記）。中途結束的不算 */
-  const everything = records.filter(r => r.kid === T.kid), all = everything.filter(okRec);
+  const kidRecs = records.filter(r => r.kid === T.kid && okRec(r));
+  /* 看哪個目標（維護者 2026-11-11）：預設「全部目標」＝整體；這位學生做過兩種以上目標才出現按鈕；選到的目標沒資料（換學生）就回到整體 */
+  const goalIds = goalsOf(kidRecs);
+  if(!goalIds.includes(T.simpleGoal)) T.simpleGoal = "";
+  const byGoal = r => !T.simpleGoal || r.goal === T.simpleGoal;
+  const everything = records.filter(r => r.kid === T.kid && byGoal(r)), all = everything.filter(okRec);
   const kid = kidBy(T.kid), sec = (title, body) => `<section class="ssec"><h3 class="ttitle">${title}</h3>${body}</section>`;
-  side.innerHTML = `<div class="trow"><span class="tl">看誰</span>${chipRow(withData.map(k => [k.code, esc(kidLabel(k))]), T.kid, "tkid2")}</div>`;
-  box.innerHTML = `<section class="ssec"><h2 class="sname">${esc(kid ? kidLabel(kid) : T.kid)}</h2></section>
+  side.innerHTML = `<div class="trow"><span class="tl">看誰</span>${chipRow(withData.map(k => [k.code, esc(kidLabel(k))]), T.kid, "tkid2")}</div>`
+    + (goalIds.length > 1 ? `<div class="trow"><span class="tl">看哪個目標</span>${chipRow([["", "全部目標"], ...goalIds.map(g => [g, esc(goalName(g))])], T.simpleGoal, "tgoal2")}</div>` : "");
+  box.innerHTML = `<section class="ssec"><h2 class="sname">${esc(kid ? kidLabel(kid) : T.kid)}${T.simpleGoal ? `<small style="font-size:18px;color:var(--muted)">　${esc(goalName(T.simpleGoal))}</small>` : ""}</h2></section>
     ${sec("總體紀錄（正式評量＋練習）", simpleSummary(all))}
     ${sec("每天的平均正確率", `<div class="tchart">${dailyChart(all, "acc")}</div><p class="note">正確率＝第一次就答對的比例。每個點是那一天所有評量和練習的平均；有標前測、後測的那天，日期後面會註明。</p>`)}
     ${sec("每天的平均反應時間（越低越快）", `<div class="tchart">${dailyChart(all, "sec")}</div><p class="note">答對的題目，從題目唸完到答對的平均秒數。</p>`)}
@@ -302,7 +310,8 @@ function renderSimple(){
     ${sec("近期正式評量紀錄", recentByLesson(everything, true))}
     ${sec("近期練習紀錄", recentByLesson(everything, false))}`;
   const re = () => { const y = window.scrollY; saveT(); renderTeacher(); window.scrollTo(0, y); };   /* 重畫後回到原本捲到的位置 */
-  side.querySelectorAll("[data-tkid2]").forEach(b => b.onclick = () => { T.kid = b.dataset.tkid2; re(); });
+  side.querySelectorAll("[data-tkid2]").forEach(b => b.onclick = () => { T.kid = b.dataset.tkid2; T.simpleGoal = ""; re(); });   /* 換學生就回到整體 */
+  side.querySelectorAll("[data-tgoal2]").forEach(b => b.onclick = () => { T.simpleGoal = b.dataset.tgoal2; re(); });
   box.querySelectorAll("[data-tlsn]").forEach(b => b.onclick = () => { T.simpleLesson = b.dataset.tlsn; re(); });
   box.querySelectorAll("[data-char]").forEach(el => el.onclick = () => openCharLog(el.dataset.kid || T.kid, el.dataset.char));
   bindChart(box);
@@ -338,7 +347,7 @@ function renderTeacher(){
 
 /* 每個分頁上方的「這一頁怎麼用？」：平常收起來，打開後記住（換分頁也維持打開） */
 const TAB_HELP = {
-  one: ["只要選學生，往下捲就看得到：總體紀錄、每天的平均正確率和反應時間（折線圖）、各課前後測正確率、常錯的字、反應最慢的字、容易搞混的字、近期正式評量紀錄和近期練習紀錄。想看別的數字、匯出 Excel，到「進階分析」。", [
+  one: ["只要選學生，往下捲就看得到（學生做過兩種以上評量目標時，左邊多一排「看哪個目標」，預設是全部目標合在一起，可以點某個目標單獨看）：總體紀錄、每天的平均正確率和反應時間（折線圖）、各課前後測正確率、常錯的字、反應最慢的字、容易搞混的字、近期正式評量紀錄和近期練習紀錄。想看別的數字、匯出 Excel，到「進階分析」。", [
     "<b>正確率</b>＝第一次就點對的比例（越高越好）；<b>反應時間</b>＝題目唸完到答對的秒數（越短越熟）。",
     "統計、每天的折線圖和字的清單，是正式評量加練習全部一起算；「各課前後測正確率」的圓點是正式評量的前測、後測，橘色空心菱形是練習，依時間連成一條線。",
     "「各課前後測正確率」上面的課次按鈕可以點，看每一課；任何一個字都可以點，看那個字的每一次作答。"], "one"],
@@ -350,6 +359,7 @@ const TAB_HELP = {
   class: ["比較幾位學生：先點上面的學生（最多 8 位，可以存成組別，組別也能在「學生名單」編輯），每一列是一位學生。", [
     "常錯的字、反應最慢的字、容易搞混的字：每位學生各列出前 5 個；任何一個字都可以點，看那位學生那個字的每一次作答。",
     "最下面是「學生 × 生字」：格子大字＝第一次就答對的比例，小字＝作答次數；藍色越深越好，「—」＝還沒考過。直著看一欄，大家都淺色的字，可能字本身難或教學要調整。",
+    "選到的學生做過兩種以上評量目標時，左邊多一排「看哪個目標」：預設全部目標合在一起，點某個目標就只算那個目標（這個目標沒有紀錄的學生不畫，上面會說明）；不會存檔，下次打開回到全部目標。",
     "組別只存在這台電腦的瀏覽器裡，不會進作答紀錄。"], "class"],
   pivot: ["自己決定怎麼分組比較，做法像 Excel 的樞紐分析表：先選要算的數字（指標），再選怎麼分組（列、欄）。", [
     "不知道怎麼選？先按上方的<b>範例</b>，每個範例都附「這在回答什麼、怎麼看」。",
@@ -805,7 +815,7 @@ const LIST_VIEWS = {
 /* 多位學生（原「全班總表」，2026-10-25 維護者改）：自己點選最多 8 位；組別存在老師自己的瀏覽器（T.groups，只存學生代號），不進作答紀錄 */
 const CLASS_MAX = 8, CLASS_TOP = 5;
 const pickedKids = () => (T.classKids || []).filter(kidBy);
-function classPicker(withData){
+function classPicker(withData, goalIds){
   const sel = new Set(pickedKids()), groups = getGroups();
   const cur = groups.findIndex(g => g.kids.length === sel.size && g.kids.every(c => sel.has(c)));
   return `<div class="trow"><span class="tl">選學生（最多 ${CLASS_MAX} 位）</span>${withData.map(k =>
@@ -813,6 +823,7 @@ function classPicker(withData){
     <div class="trow" style="margin-top:8px"><span class="tl">組別</span>${groups.map((g, i) =>
       `<button class="chip ${i === cur ? "on" : ""}" data-cgrp="${i}" aria-pressed="${i === cur}">${esc(g.name)}</button>`).join("") || `<span class="note" style="margin:0">還沒有組別</span>`}
       <button class="ghost" id="cGrpSave" ${sel.size ? "" : "disabled"}>把目前選的存成組別</button>${cur >= 0 ? `<button class="ghost" id="cGrpDel">刪除「${esc(groups[cur].name)}」</button>` : ""}</div>
+    ${goalIds.length > 1 ? `<div class="trow" style="margin-top:8px"><span class="tl">看哪個目標</span>${chipRow([["", "全部目標"], ...goalIds.map(g => [g, esc(goalName(g))])], T.classGoal, "tgoal3")}</div>` : ""}
     <p class="note" id="cMsg" style="margin:6px 0 0"></p>`;
 }
 /* 每位學生一列的比較表：每格列出這位學生最前面幾個字（和「一位學生」畫面的常錯、最慢、容易搞混同一套算法） */
@@ -917,10 +928,14 @@ const classConfused = (k, rs) => [...groupBy(rs.filter(r => !r.firstCorrect && r
 function renderClass(){
   const withData = kidsWithData(), sel = pickedKids(), picked = withData.filter(k => sel.includes(k.code));
   /* 和「個人」畫面統一：正式評量加練習、全部日期，中途結束的不算（維護者 2026-10-25），所以這一頁不用範圍選單 */
-  const rs = records.filter(r => okRec(r) && sel.includes(r.kid)), kidList = picked.filter(k => rs.some(r => r.kid === k.code));
+  const rsAll = records.filter(r => okRec(r) && sel.includes(r.kid));
+  /* 看哪個目標（維護者 2026-11-11）：預設「全部目標」；選到的學生做過兩種以上目標才出現按鈕；選到的目標已經沒有資料（換了學生）就回到全部 */
+  const goalIds = goalsOf(rsAll);
+  if(!goalIds.includes(T.classGoal)) T.classGoal = "";
+  const rs = rsAll.filter(r => !T.classGoal || r.goal === T.classGoal), kidList = picked.filter(k => rs.some(r => r.kid === k.code));
   $("#tMenu").innerHTML = "";
   const side = $("#tSide");
-  side.innerHTML = classPicker(withData);
+  side.innerHTML = classPicker(withData, goalIds);
   const bindPicker = () => {
     const res = $("#tResult"), re = () => { const y = window.scrollY; saveT(); renderTeacher(); window.scrollTo(0, y); };
     side.querySelectorAll("[data-ckid]").forEach(b => b.onclick = () => {
@@ -930,6 +945,7 @@ function renderClass(){
       else T.classKids = [...cur, c];
       re();
     });
+    side.querySelectorAll("[data-tgoal3]").forEach(b => b.onclick = () => { T.classGoal = b.dataset.tgoal3; re(); });
     res.querySelectorAll("[data-tcl]").forEach(b => b.onclick = () => { T.classLesson = b.dataset.tcl; re(); });
     bindChart(res);
     side.querySelectorAll("[data-cgrp]").forEach(b => b.onclick = () => { T.classKids = getGroups()[+b.dataset.cgrp].kids.filter(kidBy).slice(0, CLASS_MAX); re(); });
@@ -944,7 +960,7 @@ function renderClass(){
   };
   if(!kidList.length){
     tCurrent = null;
-    $("#tResult").innerHTML = `<section class="ssec"><p class="hint" style="margin:0">${picked.length ? "選到的學生還沒有作答紀錄。" : "請先點左邊的學生（最多 " + CLASS_MAX + " 位），這裡就會出現比較。"}</p></section>`;
+    $("#tResult").innerHTML = `<section class="ssec"><p class="hint" style="margin:0">${picked.length ? (T.classGoal ? `選到的學生還沒有「${esc(goalName(T.classGoal))}」的作答紀錄。` : "選到的學生還沒有作答紀錄。") : "請先點左邊的學生（最多 " + CLASS_MAX + " 位），這裡就會出現比較。"}</p></section>`;
     bindPicker(); return;
   }
   /* 字的順序：依課本、課次、課本裡的順序 */
@@ -960,7 +976,9 @@ function renderClass(){
   const rows = []; kidList.forEach(k => chars.forEach(c => { const list = cell.get(k.code + "|" + c); if(list) rows.push({kid:k.code, name:kidLabel(k), char:c, ...accOf(list)}); }));
   const all = accOf(rs);
   tCurrent = null;
-  $("#tResult").innerHTML = classSec("每天的平均正確率", classDaily(kidList, rs, "acc", "")) + classSec("每天的平均反應時間（越低越快）", classDaily(kidList, rs, "sec", ""))
+  const noGoal = T.classGoal ? picked.filter(k => !kidList.includes(k)) : [];   /* 選了某個目標：這個目標沒有紀錄的學生不畫，另外說明 */
+  const goalNote = T.classGoal ? `<section class="ssec"><p class="note" style="margin:0">只看「<b>${esc(goalName(T.classGoal))}</b>」。${noGoal.length ? `這個目標沒有紀錄的學生：${esc(noGoal.map(kidLabel).join("、"))}。` : ""}</p></section>` : "";
+  $("#tResult").innerHTML = goalNote + classSec("每天的平均正確率", classDaily(kidList, rs, "acc", "")) + classSec("每天的平均反應時間（越低越快）", classDaily(kidList, rs, "sec", ""))
     + classSec("每天的流暢性（每分鐘認出幾個字）", classDaily(kidList, rs, "flu", "選到的學生還沒有流暢性的紀錄（計時挑戰）。")) + classSec("各課前後測正確率", classPrePost(kidList, rs))
     + classTable("常錯的字", kidList, rs, classWrong) + classTable("反應最慢的字", kidList, rs, classSlow) + classTable("容易搞混的字（字→常選成）", kidList, rs, classConfused)
     + `<section class="ssec"><h3 class="ttitle">每個字的正確率（學生 × 生字）</h3>
@@ -972,11 +990,14 @@ function renderClass(){
   bindPicker();
   $("#tResult").querySelectorAll("[data-char]").forEach(el => el.onclick = () => openCharLog(el.dataset.kid, el.dataset.char));
   $("#tExport").onclick = () => {
-    const wide = kidList.map(k => Object.fromEntries([["學生", kidLabel(k)], ["全部", fmt("acc", accOf(rs.filter(r => r.kid === k.code)).v)],
+    /* 選了某個目標：檔名、工作表名稱加上目標名稱，每一列也有「評量目標」欄（沒選＝「全部目標」，檔名維持原本的）（維護者 2026-11-11） */
+    const gn = T.classGoal ? goalName(T.classGoal) : "全部目標", tag = T.classGoal ? `_${gn}` : "";
+    const wide = kidList.map(k => Object.fromEntries([["學生", kidLabel(k)], ["評量目標", gn], ["全部", fmt("acc", accOf(rs.filter(r => r.kid === k.code)).v)],
       ...chars.map(c => { const l = cell.get(k.code + "|" + c); return [c, l ? `${accOf(l).v}%（${l.length}）` : ""]; })]));
-    exportSheet(wide, "全班總表", `識字評量_全班總表_${fileDate(Date.now())}.xlsx`, "#tMsg",
-      [{name:"逐格資料", rows: rows.map(r => ({"學生": r.name, "字": r.char, "第一次就答對（%）": r.v, "作答次數": r.n}))}]);
+    exportSheet(wide, T.classGoal ? `全班總表（${gn}）` : "全班總表", `識字評量_全班總表${tag}_${fileDate(Date.now())}.xlsx`, "#tMsg",
+      [{name:"逐格資料", rows: rows.map(r => ({"學生": r.name, "評量目標": gn, "字": r.char, "第一次就答對（%）": r.v, "作答次數": r.n}))}]);
   };
+
 }
 
 /* =========================================================
