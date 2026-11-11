@@ -16,9 +16,9 @@
      X04 丁：亂猜型：聽音選字、聽音補部件、聽音選部件全部隨機點
      X05 戊：學得好：聽音選字正確率約九成（錯的題數太少，看不出類型）；聽音選部件幾乎全對；有計時挑戰
      X06 己：聽音選字普通；聽音補部件、聽音選部件是「忘記部件」（漏選答案部件、選錯時沒有固定的干擾部件）
-     X07 庚：聽音補部件、聽音選部件是「被干擾」（答案都選到，另外多選同一個最常出現的干擾部件）；聽音選字沒做
+     X07 庚：聽音補部件、聽音選部件是「被干擾」（答案都選到，另外多選同一個最常出現的干擾部件；聽音補部件因為干擾部件每題隨機抽，那個部件不在選項時他只能亂選，所以整體判讀仍可能是「忘記」，要看部件別表才看得到被它干擾）；聽音選字沒做
      X08 辛：只做過部件重組，同部件和形近各半（個人頁會顯示「還沒有聽音選字的作答紀錄」）
-     X09 壬：剛開始用：只做了第 1 課的聽音選字前測、幾次練習和一次後測，錯的題數很少（看「題數不夠、再累積約 N 題」的提示）
+     X09 壬：剛開始用：只做了第 1 課的聽音選字前測和一次練習，錯的題數不多、有偏向形近但還沒到顯著（看「再累積約 N 題」的提示）
    ========================================================= */
 const http = require('http');
 const fs = require('fs');
@@ -63,7 +63,7 @@ function generate(seed) {
     { acc: [0.62, 0.78], pref: { 同詞易混: 1, 同音: 1, 形近: 1, 課文字: 1, 其他字: 1 }, goals: ['R3', 'R5', 'R6'], r5: 'forget', r6: 'forget' },
     { acc: [0.5, 0.5], pref: {}, goals: ['R5', 'R6'], r5: 'disturb', r6: 'disturb' },
     { acc: [0.5, 0.5], pref: {}, goals: ['R4'], r4: { 形近: 3, 同部件: 3, 課文字: 1, 其他字: 1 }, r4acc: [0.40, 0.65] },
-    { acc: [0.45, 0.62], pref: { 同詞易混: 2, 同音: 2, 形近: 2, 課文字: 1, 其他字: 1 }, goals: ['R3'], light: true },
+    { acc: [0.45, 0.62], pref: { 同詞易混: 1, 同音: 1, 形近: 4, 課文字: 1, 其他字: 1 }, goals: ['R3'], light: true },
   ];
   /* 「被干擾」的學生固定被同一個部件吸走：先數所有題目的選項，找出最常出現的干擾部件（聽音補部件、聽音選部件各一個） */
   const topDistractor = make => { const cnt = {}; for (const n of Object.keys(LESSONS)) for (const c of charsOf(key(BOOK, n))) { const r = make(c, key(BOOK, n)); if (!r) continue; r.filter(o => o.type !== '答案').forEach(o => cnt[o.ch] = (cnt[o.ch] || 0) + 1); } return Object.entries(cnt).sort((a, b) => b[1] - a[1])[0][0]; };
@@ -122,7 +122,7 @@ function generate(seed) {
       } else if (g === 'R6') {
         const opts = makePartsPickOptions(c, k), ansIdx = opts.map((o, j) => o.type === '答案' ? j : -1).filter(j => j >= 0), disIdx = opts.map((o, j) => o.type === '答案' ? -1 : j).filter(j => j >= 0);
         const beh = prof.r6; let sel = [];
-        if (beh === 'guess') sel = [...opts.keys()].sort(() => rng() - 0.5).slice(0, ansIdx.length);
+        if (beh === 'guess') { const arr = [...opts.keys()]; for (let q = arr.length - 1; q > 0; q--) { const w = Math.floor(rng() * (q + 1)); [arr[q], arr[w]] = [arr[w], arr[q]]; } sel = arr.slice(0, ansIdx.length); }
         else {
           sel = ansIdx.filter(() => rng() < (beh === 'forget' ? 0.55 : beh === 'good' ? 0.96 : 0.95));
           if (!sel.length) sel = [pick(ansIdx)];
@@ -154,9 +154,9 @@ function generate(seed) {
       /* 聽音選字、部件重組：有前測、練習、後測（正式評量）；聽音補部件、聽音選部件只開放練習 */
       for (const g of ['R3', 'R4']) if (prof.goals.includes(g)) {
         runSession(kid, prof, g, n, L.pre, 'formal', '前測', 18, 'acc');
-        (prof.light ? L.practice.slice(0, 2) : L.practice).forEach((d, i) => { if (rng() < 0.9) runSession(kid, prof, g, n, d, 'practice', '', 14 + Math.floor(rng() * 5), 'acc'); });
+        (prof.light ? L.practice.slice(0, 1) : L.practice).forEach((d, i) => { if (rng() < 0.9) runSession(kid, prof, g, n, d, 'practice', '', 14 + Math.floor(rng() * 5), 'acc'); });
         if (prof.flu && g === 'R3') L.practice.slice(0, 2).forEach(d => runSession(kid, prof, g, n, d, 'practice', '', 16 + Math.floor(rng() * 6), 'flu'));
-        (prof.light ? L.post.slice(0, 1) : L.post).forEach((d, i) => runSession(kid, prof, g, n, d, 'formal', '後測', 18, 'acc'));
+        (prof.light ? [] : L.post).forEach((d, i) => runSession(kid, prof, g, n, d, 'formal', '後測', 18, 'acc'));
       }
       for (const g of ['R5', 'R6']) if (prof.goals.includes(g)) L.practice.forEach(d => { if (rng() < 0.85) runSession(kid, prof, g, n, d, 'practice', '', 10 + Math.floor(rng() * 5), 'acc'); });
     }
