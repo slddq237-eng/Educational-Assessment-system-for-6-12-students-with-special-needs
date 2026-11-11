@@ -208,7 +208,12 @@ function examAskW1(it){
 }
 function examAsk(it){
   if(EX.goal === "W1") return `<span class="exq exw1">${examAskW1(it)}</span>`;
-  if(EX.goal === "W3") return `<span class="pieces exq">${wrParts(it.c).map(p => `<span class="ptile">${esc(p)}</span>`).join("")}</span>`;
+  if(EX.goal === "W3"){
+    /* 部件分成兩列（2026-11-11 維護者決定）：上排多一個（5 個部件＝3＋2），兩列疊起來剛好和答案格一樣高；一個部件只有一列 */
+    const ps = wrParts(it.c), k = Math.ceil(ps.length / 2), tile = p => `<span class="ptile">${esc(p)}</span>`;
+    const rows = ps.length > 1 ? [ps.slice(0, k), ps.slice(k)] : [ps];
+    return `<span class="pieces exq">${rows.map(r => `<span class="prow">${r.map(tile).join("")}</span>`).join("")}</span>`;
+  }
   return "";   /* 聽音寫字只印題號（2026-11-10 維護者決定） */
 }
 const nb = t => t.replace(/ /g, "\u00a0");   /* 表頭太長要換行時，只在「、」後面換，「第 1 課」「康軒 五上」不拆開 */
@@ -365,7 +370,7 @@ function examRenderOne(land = false){   /* land：這一版橫排（只有大格
     const qw = Math.ceil(Math.max(...m.map(x => x.W))) + 1;
     P.style.setProperty("--qw", Math.min(qw, cap) + "mm");
   }
-  /* W3 看部件寫字（2026-11-11 維護者決定）：部件卡太寬放不下時先縮小部件卡（最多縮到一半，答案格、老師格不縮）；
+  /* W3 看部件寫字（2026-11-11 維護者決定）：部件分兩列、部件卡大小由字格算（兩列剛好和答案格同高）；還是太寬就再縮小部件卡（最多縮到一半，答案格、老師格不縮）；
      縮到一半還放不下才算 over（大格，或有老師格時，改橫排）。每一列題目欄固定同寬，摺線才對得齊 */
   let over = false;
   if(g === "W3"){
