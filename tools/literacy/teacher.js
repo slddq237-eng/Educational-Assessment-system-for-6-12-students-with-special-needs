@@ -139,8 +139,19 @@ const pbUpper = (qs, k) => Math.min(1, pbDist(qs).slice(Math.max(0, k)).reduce((
 const pbLower = (qs, k) => Math.min(1, pbDist(qs).slice(0, Math.max(0, k + 1)).reduce((a, b) => a + b, 0));   /* 成功 k 次以下的機率 */
 const logFact = (() => { const t = [0]; return n => { for(let i = t.length; i <= n; i++) t[i] = t[i - 1] + Math.log(i); return t[n]; }; })();
 const logComb = (n, k) => logFact(n) - logFact(k) - logFact(n - k);
-/* 超幾何分布（Fisher 精確檢定的單邊）：N 張卡裡有 K 張答案，選了 n 張，其中答案 x 張以上的機率 */
-function hyperUpper(N, K, n, x){ let s = 0; for(let i = Math.max(0, x); i <= Math.min(K, n); i++){ if(n - i > N - K) continue; s += Math.exp(logComb(K, i) + logComb(N - K, n - i) - logComb(N, n)); } return Math.min(1, s); }
+/* 聽音選部件「有沒有分辨力」的檢定（2026-11-11 修正：以前把所有題的卡片合在一起算一次，每題答案數、卡片數不同時，亂選也會顯著；
+   用假資料測出亂選的學生被判成「有分辨力」）。改成每題各自算：這題 N 張卡裡有 K 張答案、學生選了 n 張，亂選時選到的答案數是超幾何分布；
+   再把每一題的分布加起來（卷積），算「全部題選到的答案數至少這麼多」的機率。每題的 n 是學生自己選的，所以全選、少選都不會讓結果偏掉 */
+function hyperDist(N, K, n){
+  const lo = Math.max(0, n - (N - K)), hi = Math.min(K, n), d = new Array(hi + 1).fill(0);
+  for(let i = lo; i <= hi; i++) d[i] = Math.exp(logComb(K, i) + logComb(N - K, n - i) - logComb(N, n));
+  return d;
+}
+const convolve = (a, b) => { const r = new Array(a.length + b.length - 1).fill(0); a.forEach((x, i) => { if(x) b.forEach((y, j) => { r[i + j] += x * y; }); }); return r; };
+function strataUpper(strata, x){   /* strata＝每題 [N, K, n]；x＝實際選到的答案總數；回傳「至少 x 個」的機率 */
+  let d = [1]; for(const [N, K, n] of strata) d = convolve(d, hyperDist(N, K, n));
+  return Math.min(1, d.slice(Math.max(0, x)).reduce((a, b) => a + b, 0));
+}
 const fmtP = p => p < 0.001 ? "p < 0.001" : `p = ${p.toFixed(3)}`;
 const okRec = r => !r.quit;
 const r1 = x => Math.round(x * 10) / 10;   /* 四捨五入到小數 1 位，避免出現 3.9000000000000004 */
@@ -226,7 +237,7 @@ function confusedChars(rs){
    只看「第一次選／第一次送出」：之後學生已經看過對錯回饋，變成排除法，看不出記不記得。只讀紀錄現有的欄位（options、answerSet、firstPick），不改紀錄格式；
    部件都是單一字元，連在一起的字串用 [...字串] 拆開。
    所有「判斷」都要統計上顯著（p < SIG_ALPHA，見上面「統計上顯著」），沒達到就寫「看不出來」：
-   ① 有沒有分辨力：聽音補部件＝答對次數比亂猜（每題 1÷選項數）多；聽音選部件＝選到答案部件的比例比選到干擾部件的比例高（Fisher 精確檢定）。
+   ① 有沒有分辨力：聽音補部件＝答對次數比亂猜（每題 1÷選項數）多；聽音選部件＝選到答案部件的比例比選到干擾部件的比例高（每題各自算超幾何分布再加總，見 strataUpper；不能把所有題的卡片合在一起算）。
       沒達到＝「看不出來」（可能是亂猜，也可能是題數還不夠），不判斷忘記或被干擾。
    ② 忘記部件（有分辨力才判斷）：聽音選部件＝漏選的張數；聽音補部件看不出漏選，選錯的部件**不集中**就算忘記。
    ③ 被干擾：聽音選部件＝多選的張數；聽音補部件＝選錯的是「顯著集中的干擾部件」。
@@ -251,7 +262,7 @@ function partStats(rs){
   const cardsA = sum(t => t.nAns), cardsD = sum(t => t.nDis), hitsA = cardsA - sum(t => t.miss), fas = sum(t => t.over), H = cardsA ? hitsA / cardsA : null, F = cardsD ? fas / cardsD : null;
   /* ① 有沒有分辨力 */
   let pDisc = null;
-  if(n >= PART_MIN) pDisc = isR5 ? pbUpper(trials.map(t => 1 / (t.nDis + 1)), trials.filter(t => !t.miss).length) : hyperUpper(cardsA + cardsD, cardsA, hitsA + fas, hitsA);
+  if(n >= PART_MIN) pDisc = isR5 ? pbUpper(trials.map(t => 1 / (t.nDis + 1)), trials.filter(t => !t.miss).length) : strataUpper(trials.map(t => [t.nAns + t.nDis, t.nAns, t.nAns - t.miss + t.over]), hitsA);
   const discr = pDisc != null && pDisc < SIG_ALPHA;
   /* 部件別 */
   const by = new Map(), P = p => by.get(p) || by.set(p, {p, a: 0, h: 0, e: 0, c: 0, qw: [], cw: 0}).get(p);
