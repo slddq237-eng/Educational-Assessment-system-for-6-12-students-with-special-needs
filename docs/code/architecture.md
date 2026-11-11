@@ -126,7 +126,7 @@
 
 ## 9. 自動產生資料的程式 `docs/scripts/`
 
-`check.js`、`smoke.js`（含 `combo.js` 識字評量組合測試）、`bump.js`、`changelog.js`、`make_lessons.js`、`lessons-src.js`、`make_parts*.py`、`make_mask_fix.js`（遮擋位置調整資料）、`make_mask_tool.js`（遮擋位置調整工具）、`make_bpmf.py`、`make_bpmf_only.py`（寫字 W1 只有注音的字型）、`make_bpmf_read.js`（破音字讀音表）、`make_ruler.py`（寫字考卷的字型尺分線）、`make_kai.py`、`make_conf_candidates.py`：各產生什麼、什麼時候跑，見 `docs/scripts/README.md`（2026-10-24 搬去）。
+`check.js`、`smoke.js`（含 `combo.js` 識字評量組合測試）、`make_fake_records.js`（老師專區測試用的假資料備份檔，不放進 repo 的資料裡）、`bump.js`、`changelog.js`、`make_lessons.js`、`lessons-src.js`、`make_parts*.py`、`make_mask_fix.js`（遮擋位置調整資料）、`make_mask_tool.js`（遮擋位置調整工具）、`make_bpmf.py`、`make_bpmf_only.py`（寫字 W1 只有注音的字型）、`make_bpmf_read.js`（破音字讀音表）、`make_ruler.py`（寫字考卷的字型尺分線）、`make_kai.py`、`make_conf_candidates.py`：各產生什麼、什麼時候跑，見 `docs/scripts/README.md`（2026-10-24 搬去）。
 
 ## 10. 現在架構的特點與注意事項
 
