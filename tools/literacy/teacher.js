@@ -13,8 +13,8 @@
    ========================================================= */
 const TEACH_UI = KEYS.teacher;
 const T = Object.assign({tab:"one", kid:"", metric:"acc", view:"time", axis:"date", split:"lesson", range:"term", from:"", to:"",
-  kind:"formal", goal:"", book:"", lesson:"", gap:"after", top:"300", adv:"charts", simpleLesson:"", simpleGoal:"", classGoal:"", classKids:[], groups:[], classLesson:""}, load(TEACH_UI, {}));
-const saveT = () => store(TEACH_UI, {...T, simpleGoal:"", classGoal:"", groups: getGroups()});   /* 組別由 getGroups／saveGroups 管，這裡不蓋掉；個人頁、多位學生的「看哪個目標」不存，每次打開都回到整體（維護者 2026-11-11） */
+  kind:"formal", goal:"", book:"", lesson:"", gap:"after", top:"300", adv:"charts", simpleLesson:"", simpleGoal:"", classKids:[], groups:[], classLesson:""}, load(TEACH_UI, {}));
+const saveT = () => store(TEACH_UI, {...T, simpleGoal:"", groups: getGroups()});   /* 組別由 getGroups／saveGroups 管，這裡不蓋掉；「評量目標比較」的目標不存，每次打開都回到整體（維護者 2026-11-11） */
 const hasFreq = () => typeof FREQ !== "undefined";
 
 /* 看什麼：trend＝可以依時間／課別／時期看變化；list＝用排序表或分布呈現 */
@@ -179,7 +179,12 @@ function simpleSummary(rs){
 }
 const SIMPLE_CHIPS = 24, SIMPLE_ROWS = 10;
 /* 做過哪些評量目標（依 GOALS 的順序，不認得的舊代號排最後）；「看哪個目標」按鈕用（個人、多位學生，維護者 2026-11-11） */
-const goalsOf = rs => [...new Set(rs.map(r => r.goal))].sort((a, b) => { const i = GOALS.findIndex(g => g.id === a), j = GOALS.findIndex(g => g.id === b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j); });
+/* 舊紀錄的目標代號（2026-10-26 A1 改代號以前）：3＝聽音選字（R3）、4-1＝部件重組（R4），紀錄裡沒有轉換；分析一律先用 goalKey 換成新代號再比（維護者 2026-11-11） */
+const goalKey = g => g === "3" ? "R3" : g === "4-1" ? "R4" : g;
+const isGoal = (r, g) => goalKey(r.goal) === g;
+/* 個人、多位學生預設只看聽音選字（維護者 2026-11-11：最符合識字評量——聽到題目，要知道是哪個字）；其他目標到「評量目標比較」，一次看一位學生 */
+const MAIN_GOAL = "R3";
+const goalsOf = rs => [...new Set(rs.map(r => goalKey(r.goal)))].sort((a, b) => { const i = GOALS.findIndex(g => g.id === a), j = GOALS.findIndex(g => g.id === b); return (i < 0 ? 99 : i) - (j < 0 ? 99 : j); });
 function wrongChars(rs){
   const by = groupBy(rs, r => r.char);
   const list = [...by].map(([c, l]) => ({c, n: l.length, w: l.filter(r => !r.firstCorrect).length})).filter(x => x.w >= 1)
@@ -306,15 +311,6 @@ function partConfusion(rs, kid){
   const ctable = crows.length ? `<h4 class="sgrp">哪個字選錯了哪些部件<span>　點字可以看每一次作答（含給學生選的部件）</span></h4>` + detailTable([["字", r => r.char, true], [st.isR5 ? "被遮的部件" : "漏選的部件", r => r.lack || "—"], [st.isR5 ? "誤選成" : "多選的部件", r => r.extra || "—"], ["次數", r => r.n]], crows) : "";
   return head + ptable + ctable;
 }
-/* 多位學生：每位學生一列的判讀，加上最常忘記和最常被干擾的部件 */
-function classPartsTable(kidList, rs){
-  const rows = kidList.map(k => {
-    const st = partStats(rs.filter(r => r.kid === k.code)), top = (key, f) => st.parts.filter(o => o[key]).sort((a, b) => f(b) - f(a)).slice(0, CLASS_TOP);
-    const fg = top("forget", o => o.a - o.h).map(o => `${esc(o.p)}<small> 選不到 ${o.a - o.h}/${o.a}</small>`).join("　"), ds = top("disturb", o => o.c).map(o => `${esc(o.p)}<small> 誤選 ${o.c}/${o.e}</small>`).join("　");
-    return `<tr><th>${esc(kidLabel(k))}</th><td><b>${esc(st.tag)}</b><br><small>${st.n} 題・選到答案 ${partPct(st.H)}・選到干擾 ${partPct(st.F)}</small></td><td>${fg || `<span class="note" style="margin:0">—</span>`}</td><td>${ds || `<span class="note" style="margin:0">—</span>`}</td></tr>`; }).join("");
-  return `<section class="ssec"><h3 class="ttitle">是忘記部件、被干擾，還是亂猜</h3><p class="note" style="margin:0 0 8px">只看第一次選（送出）。統計上顯著（p < 0.05）才下判斷：選到答案部件明顯多於亂猜才算「有分辨力」，否則寫「看不出來」（可能是亂猜，也可能是題數不夠）；有分辨力時，漏選算忘記、多選干擾部件算被干擾（聽音補部件：選錯的部件顯著集中才算被干擾）。</p>
-    <div class="tablewrap"><table class="rec"><thead><tr><th>學生</th><th>判讀</th><th>最常忘記的部件</th><th>最容易被干擾的部件</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
-}
 /* 近期紀錄（正式評量、練習各一張）：一次評量、一課一列，同一課的放在一起（圖片版面，維護者 2026-10-25）；
    只列最近 10 筆；中途結束的也列出來（灰色、註明「未做完」），但不算進平均 */
 const RECENT_ROWS = 10;
@@ -345,7 +341,7 @@ function recentByLesson(all, formal){
     const body = list.map(x => {
       const r0 = x.rs[0], quit = x.rs.some(r => r.quit), acc = accOf(x.rs), secs = secList(x.rs);
       const chars = [...new Set(x.rs.map(r => r.char))], miss = [...new Set(x.rs.filter(r => !r.firstCorrect).map(r => r.char))];
-      const cells = [shortDay(x.day), goalName(r0.goal), (formal ? (r0.prepost || "—") : recentPlay(r0)) + deviation(r0), `<span class="schars">${esc(chars.join(""))}</span>`,
+      const cells = [shortDay(x.day), goalName(goalKey(r0.goal)), (formal ? (r0.prepost || "—") : recentPlay(r0)) + deviation(r0), `<span class="schars">${esc(chars.join(""))}</span>`,
         `${x.rs.filter(r => r.firstCorrect).length}/${x.rs.length}（${acc.v}%）${quit ? "・未做完" : ""}`, x.rs.reduce((n, r) => n + (r.wrongCount || 0), 0), secs.length ? `${avg(secs)} 秒` : "—", `<span class="schars miss">${esc(miss.join(""))}</span>`];
       return `<tr class="${quit ? "squit" : ""}">${cells.map((c, i) => `<td>${i === 3 || i === 7 ? c : esc(c)}</td>`).join("")}</tr>`;
     }).join("");
@@ -402,34 +398,39 @@ function lessonPrePost(all){
     <p class="note">正確率＝第一次就答對的比例。圓點是正式評量的前測、後測（灰色背景是前測、藍色是後測），橘色空心菱形是練習（不分前後測），全部依時間連成一條線；還沒有前測、後測時也會畫出來。背景只蓋前測、後測那幾格，中間的練習不塗色。同一天做好幾次，每次各占一格，用橫軸下面的括號框起來。${pts.length ? "" : "這裡還沒有前測、後測，目前只有練習。"}${note}${events.length ? "直立線是這課教學結束後的時間：畫在「教學結束、滿 1 週、滿 2 週、滿 1 個月」之後的第一次評量前面（那段時間沒有評量就不畫）。" : ""}</p>`;
 }
 function renderSimple(){
-  const box = $("#tSimple"), side = $("#tSide"), withData = kidsWithData();
-  box.hidden = T.tab !== "one";
+  /* 兩個分頁共用同一個版面：個人＝固定看聽音選字；評量目標比較＝可以選評量目標（維護者 2026-11-11）。
+     聽音選字、部件重組用「選字版面」（選項是字）；聽音補部件、聽音選部件用「選部件版面」（選項是部件，沒有前後測和流暢性） */
+  const box = $("#tSimple"), side = $("#tSide"), withData = kidsWithData(), goalMode = T.tab === "goal";
+  box.hidden = T.tab !== "one" && !goalMode;
   if(box.hidden) return;
   if(!withData.length){ side.innerHTML = ""; box.innerHTML = `<section class="card tpanel"><p class="hint" style="margin:0">還沒有作答紀錄。學生做過評量後，這裡就會出現名字和結果。</p></section>`; return; }
   /* 統計、折線圖、字的清單：正式評量加練習全部一起算（維護者 2026-10-25）；只有前後測是正式評量才有（練習沒有前後測標記）。中途結束的不算 */
-  const kidRecs = records.filter(r => r.kid === T.kid && okRec(r));
-  /* 看哪個目標（維護者 2026-11-11）：預設「全部目標」＝整體；這位學生做過兩種以上目標才出現按鈕；選到的目標沒資料（換學生）就回到整體 */
-  const goalIds = goalsOf(kidRecs);
-  if(!goalIds.includes(T.simpleGoal)) T.simpleGoal = "";
-  const byGoal = r => !T.simpleGoal || r.goal === T.simpleGoal;
-  const everything = records.filter(r => r.kid === T.kid && byGoal(r)), all = everything.filter(okRec);
+  const kidRecs = records.filter(r => r.kid === T.kid && okRec(r)), goalIds = goalsOf(kidRecs);
+  const goal = goalMode ? (goalIds.includes(T.simpleGoal) ? T.simpleGoal : goalIds.includes(MAIN_GOAL) ? MAIN_GOAL : goalIds[0] || MAIN_GOAL) : MAIN_GOAL;
+  if(goalMode) T.simpleGoal = goal;
+  const everything = records.filter(r => r.kid === T.kid && isGoal(r, goal)), all = everything.filter(okRec), partsPage = !!goalCaps(goal).partsAnswer;
   const kid = kidBy(T.kid), sec = (title, body) => `<section class="ssec"><h3 class="ttitle">${title}</h3>${body}</section>`;
   side.innerHTML = `<div class="trow"><span class="tl">看誰</span>${chipRow(withData.map(k => [k.code, esc(kidLabel(k))]), T.kid, "tkid2")}</div>`
-    + (goalIds.length > 1 ? `<div class="trow"><span class="tl">看哪個目標</span>${chipRow([["", "全部目標"], ...goalIds.map(g => [g, esc(goalName(g))])], T.simpleGoal, "tgoal2")}</div>` : "");
-  box.innerHTML = `<section class="ssec"><h2 class="sname">${esc(kid ? kidLabel(kid) : T.kid)}${T.simpleGoal ? `<small style="font-size:18px;color:var(--muted)">　${esc(goalName(T.simpleGoal))}</small>` : ""}</h2></section>
-    ${sec("總體紀錄（正式評量＋練習）", simpleSummary(all))}
-    ${sec("每天的平均正確率", `<div class="tchart">${dailyChart(all, "acc")}</div><p class="note">正確率＝第一次就答對的比例。每個點是那一天所有評量和練習的平均；有標前測、後測的那天，日期後面會註明。</p>`)}
-    ${sec("每天的平均反應時間（越低越快）", `<div class="tchart">${dailyChart(all, "sec")}</div><p class="note">答對的題目，從題目唸完到答對的平均秒數。</p>`)}
-    ${sec("每天的流暢性（每分鐘認出幾個字）", fluencySection(all))}
-    ${sec("各課前後測正確率", lessonPrePost(all))}
-    ${sec("常錯的字", wrongChars(all))}
-    ${sec("反應最慢的字", slowChars(all))}
-    ${T.simpleGoal && isPartsGoal({goal: T.simpleGoal}) ? sec("容易搞混的部件（是忘記部件、被干擾，還是亂猜）", partConfusion(all, T.kid))
-      : sec("容易搞混的字", confusedChars(all) + (all.some(isPartsGoal) ? `<p class="note" style="margin:8px 0 0">聽音補部件、聽音選部件選的是部件，不算在這裡。想看「忘記部件、被干擾、還是亂猜」，請在左邊「看哪個目標」選那個目標。</p>` : ""))}
-    ${sec("近期正式評量紀錄", recentByLesson(everything, true))}
-    ${sec("近期練習紀錄", recentByLesson(everything, false))}`;
+    + (goalMode ? `<div class="trow"><span class="tl">看哪個目標</span>${chipRow(goalIds.map(g => [g, esc(goalName(g))]), goal, "tgoal2")}</div>` : "");
+  const head = `<section class="ssec"><h2 class="sname">${esc(kid ? kidLabel(kid) : T.kid)}<small style="font-size:18px;color:var(--muted)">　${esc(goalName(goal))}</small></h2></section>`;
+  /* 個人頁：說明只看聽音選字，並列出這位學生其他目標各做了幾題，請到「評量目標比較」看 */
+  const others = goalMode ? [] : goalIds.filter(g => g !== MAIN_GOAL).map(g => `${goalName(g)} ${kidRecs.filter(r => isGoal(r, g)).length} 題`);
+  const onlyNote = goalMode ? "" : `<section class="ssec"><p class="note" style="margin:0">這頁只看「${esc(goalName(MAIN_GOAL))}」（聽到題目，從選項中找出是哪個字）。${others.length ? `這位學生還有其他目標的作答：${esc(others.join("、"))}，請到上面的「評量目標比較」看。` : ""}</p></section>`;
+  if(!all.length){
+    box.innerHTML = head + onlyNote + `<section class="ssec"><p class="hint" style="margin:0">這位學生還沒有「${esc(goalName(goal))}」的作答紀錄。</p></section>`;
+  } else {
+    const secSec = metric => metric === "sec" ? `答對的題目，從${goal === "R4" ? "畫面出現" : "題目唸完"}到答對的平均秒數${goal === "R4" ? "（部件重組沒有唸題目，所以不能和聽音選字的反應時間直接比）" : ""}。` : "";
+    const summary = sec("總體紀錄（正式評量＋練習）", simpleSummary(all));
+    const accSec = sec("每天的平均正確率", `<div class="tchart">${dailyChart(all, "acc")}</div><p class="note">正確率＝第一次就答對的比例。每個點是那一天所有評量和練習的平均；有標前測、後測的那天，日期後面會註明。</p>`);
+    const secSecH = sec("每天的平均反應時間（越低越快）", `<div class="tchart">${dailyChart(all, "sec")}</div><p class="note">${secSec("sec")}</p>`);
+    const common = sec("常錯的字", wrongChars(all)) + sec("反應最慢的字", slowChars(all));
+    box.innerHTML = head + onlyNote + (partsPage
+      ? summary + accSec + secSecH + common + sec("容易搞混的部件（是忘記部件、被干擾，還是亂猜）", partConfusion(all, T.kid)) + sec("近期練習紀錄", recentByLesson(everything, false))
+      : summary + accSec + secSecH + sec("每天的流暢性（每分鐘認出幾個字）", fluencySection(all)) + sec("各課前後測正確率", lessonPrePost(all)) + common
+        + sec("容易搞混的字", confusedChars(all)) + sec("近期正式評量紀錄", recentByLesson(everything, true)) + sec("近期練習紀錄", recentByLesson(everything, false)));
+  }
   const re = () => { const y = window.scrollY; saveT(); renderTeacher(); window.scrollTo(0, y); };   /* 重畫後回到原本捲到的位置 */
-  side.querySelectorAll("[data-tkid2]").forEach(b => b.onclick = () => { T.kid = b.dataset.tkid2; T.simpleGoal = ""; re(); });   /* 換學生就回到整體 */
+  side.querySelectorAll("[data-tkid2]").forEach(b => b.onclick = () => { T.kid = b.dataset.tkid2; T.simpleGoal = ""; re(); });   /* 換學生就回到預設的目標 */
   side.querySelectorAll("[data-tgoal2]").forEach(b => b.onclick = () => { T.simpleGoal = b.dataset.tgoal2; re(); });
   box.querySelectorAll("[data-tlsn]").forEach(b => b.onclick = () => { T.simpleLesson = b.dataset.tlsn; re(); });
   box.querySelectorAll("[data-char]").forEach(el => el.onclick = () => openCharLog(el.dataset.kid || T.kid, el.dataset.char));
@@ -437,18 +438,18 @@ function renderSimple(){
 }
 
 function renderTeacher(){
-  /* 三個分頁（維護者 2026-10-25 改名）：個人、全班、進階分析。進階分析裡有兩部分：更多圖表與明細（原本「一位學生」下面的選單）、樞紐分析 */
-  $("#tTabs").innerHTML = chipRow([["one","個人"],["class","多位學生"],["pivot","進階分析"]], T.tab, "ttab");
+  /* 四個分頁：個人、多位學生（都只看聽音選字）、評量目標比較（一次看一位學生、可選目標，2026-11-11）、進階分析。進階分析裡有兩部分：更多圖表與明細（原本「一位學生」下面的選單）、樞紐分析 */
+  $("#tTabs").innerHTML = chipRow([["one","個人"],["class","多位學生"],["goal","評量目標比較"],["pivot","進階分析"]], T.tab, "ttab");
   renderTabHelp();
   $("#tTabs").querySelectorAll("[data-ttab]").forEach(b => b.onclick = () => { T.tab = b.dataset.ttab; saveT(); renderTeacher(); });
   const withData = kidsWithData();
   if(!kidBy(T.kid) && withData.length) T.kid = withData[0].code;
-  const isOne = T.tab === "one", isAdv = T.tab === "pivot", charts = isAdv && T.adv !== "pivot";
-  const sideTab = isOne || T.tab === "class";   /* 個人、多位學生：選學生放左側欄 */
+  const isOne = T.tab === "one" || T.tab === "goal", isAdv = T.tab === "pivot", charts = isAdv && T.adv !== "pivot";
+  const sideTab = isOne || T.tab === "class";   /* 個人、評量目標比較、多位學生：選學生放左側欄 */
   $("#tBody").classList.toggle("hasside", sideTab);
   $("#tSide").hidden = !sideTab;
   $("#tResult").classList.toggle("tflat", T.tab === "class");   /* 多位學生：每個項目各自一張卡片，外層不再包一張大卡片 */
-  $("#tMore").hidden = isOne;   /* 個人：只有上面的簡潔畫面 */
+  $("#tMore").hidden = isOne;   /* 個人、評量目標比較：只有上面的簡潔畫面 */
   $("#tAdvTabs").hidden = !isAdv;
   if(isAdv){
     $("#tAdvTabs").innerHTML = chipRow([["charts","更多圖表與明細"],["pivot","樞紐分析（自己決定怎麼分組比較）"]], charts ? "charts" : "pivot", "tadv");
@@ -466,10 +467,14 @@ function renderTeacher(){
 
 /* 每個分頁上方的「這一頁怎麼用？」：平常收起來，打開後記住（換分頁也維持打開） */
 const TAB_HELP = {
-  one: ["只要選學生，往下捲就看得到（學生做過兩種以上評量目標時，左邊多一排「看哪個目標」，預設是全部目標合在一起，可以點某個目標單獨看）：總體紀錄、每天的平均正確率和反應時間（折線圖）、各課前後測正確率、常錯的字、反應最慢的字、容易搞混的字、近期正式評量紀錄和近期練習紀錄。想看別的數字、匯出 Excel，到「進階分析」。", [
+  one: ["只要選學生，往下捲就看得到（這頁只看「聽音選字」：聽到題目，從選項中找出是哪個字；其他目標到「評量目標比較」看）：總體紀錄、每天的平均正確率和反應時間（折線圖）、各課前後測正確率、常錯的字、反應最慢的字、容易搞混的字、近期正式評量紀錄和近期練習紀錄。想看別的數字、匯出 Excel，到「進階分析」。", [
     "<b>正確率</b>＝第一次就點對的比例（越高越好）；<b>反應時間</b>＝題目唸完到答對的秒數（越短越熟）。",
     "統計、每天的折線圖和字的清單，是正式評量加練習全部一起算；「各課前後測正確率」的圓點是正式評量的前測、後測，橘色空心菱形是練習，依時間連成一條線。",
     "「各課前後測正確率」上面的課次按鈕可以點，看每一課；任何一個字都可以點，看那個字的每一次作答。"], "one"],
+  goal: ["選一位學生、再選評量目標，版面和「個人」一樣。聽音選字、部件重組用「選字」的版面（選項是字）；聽音補部件、聽音選部件用「選部件」的版面（選項是部件，沒有前後測和流暢性，分析的是忘記部件、被干擾，還是亂猜）。", [
+    "不同目標的難度和計時方式不一樣（亂猜時第一次答對：聽音選字約 25%、聽音選部件全對只有約 5～7%；聽音選字從題目唸完才計時，部件重組從畫面出現就計時），所以不要把不同目標的正確率、反應時間直接拿來比。",
+    "「特別容易搞混」「忘記部件」「被干擾」這類判斷，要統計上顯著（p 值小於 0.05）才寫；題數不夠或接近亂猜時一律寫「看不出來」，不是系統壞了。",
+    "聽音補部件、聽音選部件目前只開放練習，有提示和回饋，數字看學生的狀況，不當前後測比較。"], "goal"],
   charts: ["看一位學生的進步，自己選：由上往下選：看誰 → 看什麼 → 怎麼看，下面再選日期和課次範圍。", [
     "<b>正確率</b>＝第一次就點對的比例（越高越好）；<b>反應時間</b>＝題目唸完到答對的秒數（越短越熟）；<b>流暢性</b>＝計時挑戰每分鐘答對幾個。",
     "<b>依前後測比較</b>最直接看有沒有進步：前測 → 後測。沒標前測或後測的評量放在「未標記」。",
@@ -478,7 +483,7 @@ const TAB_HELP = {
   class: ["比較幾位學生：先點上面的學生（最多 8 位，可以存成組別，組別也能在「學生名單」編輯），每一列是一位學生。", [
     "常錯的字、反應最慢的字、容易搞混的字：每位學生各列出前 5 個；任何一個字都可以點，看那位學生那個字的每一次作答。",
     "最下面是「學生 × 生字」：格子大字＝第一次就答對的比例，小字＝作答次數；藍色越深越好，「—」＝還沒考過。直著看一欄，大家都淺色的字，可能字本身難或教學要調整。",
-    "選到的學生做過兩種以上評量目標時，左邊多一排「看哪個目標」：預設全部目標合在一起，點某個目標就只算那個目標（這個目標沒有紀錄的學生不畫，上面會說明）；不會存檔，下次打開回到全部目標。",
+    "這頁和「個人」一樣只看聽音選字；其他目標到「評量目標比較」，一次看一位學生。",
     "「特別容易搞混」「忘記部件」「被干擾」這類判斷，要統計上顯著（p 值小於 0.05）才寫；題數不夠或接近亂猜時一律寫「看不出來」，不是系統壞了。",
     "組別只存在這台電腦的瀏覽器裡，不會進作答紀錄。"], "class"],
   pivot: ["自己決定怎麼分組比較，做法像 Excel 的樞紐分析表：先選要算的數字（指標），再選怎麼分組（列、欄）。", [
@@ -965,7 +970,7 @@ const LIST_VIEWS = {
 /* 多位學生（原「全班總表」，2026-10-25 維護者改）：自己點選最多 8 位；組別存在老師自己的瀏覽器（T.groups，只存學生代號），不進作答紀錄 */
 const CLASS_MAX = 8, CLASS_TOP = 5;
 const pickedKids = () => (T.classKids || []).filter(kidBy);
-function classPicker(withData, goalIds){
+function classPicker(withData){
   const sel = new Set(pickedKids()), groups = getGroups();
   const cur = groups.findIndex(g => g.kids.length === sel.size && g.kids.every(c => sel.has(c)));
   return `<div class="trow"><span class="tl">選學生（最多 ${CLASS_MAX} 位）</span>${withData.map(k =>
@@ -973,7 +978,6 @@ function classPicker(withData, goalIds){
     <div class="trow" style="margin-top:8px"><span class="tl">組別</span>${groups.map((g, i) =>
       `<button class="chip ${i === cur ? "on" : ""}" data-cgrp="${i}" aria-pressed="${i === cur}">${esc(g.name)}</button>`).join("") || `<span class="note" style="margin:0">還沒有組別</span>`}
       <button class="ghost" id="cGrpSave" ${sel.size ? "" : "disabled"}>把目前選的存成組別</button>${cur >= 0 ? `<button class="ghost" id="cGrpDel">刪除「${esc(groups[cur].name)}」</button>` : ""}</div>
-    ${goalIds.length > 1 ? `<div class="trow" style="margin-top:8px"><span class="tl">看哪個目標</span>${chipRow([["", "全部目標"], ...goalIds.map(g => [g, esc(goalName(g))])], T.classGoal, "tgoal3")}</div>` : ""}
     <p class="note" id="cMsg" style="margin:6px 0 0"></p>`;
 }
 /* 每位學生一列的比較表：每格列出這位學生最前面幾個字（和「一位學生」畫面的常錯、最慢、容易搞混同一套算法） */
@@ -1078,14 +1082,11 @@ const classConfused = (k, rs) => [...groupBy(rs.filter(r => !r.firstCorrect && r
 function renderClass(){
   const withData = kidsWithData(), sel = pickedKids(), picked = withData.filter(k => sel.includes(k.code));
   /* 和「個人」畫面統一：正式評量加練習、全部日期，中途結束的不算（維護者 2026-10-25），所以這一頁不用範圍選單 */
-  const rsAll = records.filter(r => okRec(r) && sel.includes(r.kid));
-  /* 看哪個目標（維護者 2026-11-11）：預設「全部目標」；選到的學生做過兩種以上目標才出現按鈕；選到的目標已經沒有資料（換了學生）就回到全部 */
-  const goalIds = goalsOf(rsAll);
-  if(!goalIds.includes(T.classGoal)) T.classGoal = "";
-  const rs = rsAll.filter(r => !T.classGoal || r.goal === T.classGoal), kidList = picked.filter(k => rs.some(r => r.kid === k.code));
+  /* 只看聽音選字（維護者 2026-11-11：和「個人」一樣；其他目標到「評量目標比較」，一次看一位學生）；舊紀錄的目標代號 3 也算聽音選字 */
+  const rs = records.filter(r => okRec(r) && sel.includes(r.kid) && isGoal(r, MAIN_GOAL)), kidList = picked.filter(k => rs.some(r => r.kid === k.code));
   $("#tMenu").innerHTML = "";
   const side = $("#tSide");
-  side.innerHTML = classPicker(withData, goalIds);
+  side.innerHTML = classPicker(withData);
   const bindPicker = () => {
     const res = $("#tResult"), re = () => { const y = window.scrollY; saveT(); renderTeacher(); window.scrollTo(0, y); };
     side.querySelectorAll("[data-ckid]").forEach(b => b.onclick = () => {
@@ -1095,7 +1096,6 @@ function renderClass(){
       else T.classKids = [...cur, c];
       re();
     });
-    side.querySelectorAll("[data-tgoal3]").forEach(b => b.onclick = () => { T.classGoal = b.dataset.tgoal3; re(); });
     res.querySelectorAll("[data-tcl]").forEach(b => b.onclick = () => { T.classLesson = b.dataset.tcl; re(); });
     bindChart(res);
     side.querySelectorAll("[data-cgrp]").forEach(b => b.onclick = () => { T.classKids = getGroups()[+b.dataset.cgrp].kids.filter(kidBy).slice(0, CLASS_MAX); re(); });
@@ -1110,7 +1110,7 @@ function renderClass(){
   };
   if(!kidList.length){
     tCurrent = null;
-    $("#tResult").innerHTML = `<section class="ssec"><p class="hint" style="margin:0">${picked.length ? (T.classGoal ? `選到的學生還沒有「${esc(goalName(T.classGoal))}」的作答紀錄。` : "選到的學生還沒有作答紀錄。") : "請先點左邊的學生（最多 " + CLASS_MAX + " 位），這裡就會出現比較。"}</p></section>`;
+    $("#tResult").innerHTML = `<section class="ssec"><p class="hint" style="margin:0">${picked.length ? `選到的學生還沒有「${esc(goalName(MAIN_GOAL))}」的作答紀錄。其他目標請到「評量目標比較」看。` : "請先點左邊的學生（最多 " + CLASS_MAX + " 位），這裡就會出現比較。"}</p></section>`;
     bindPicker(); return;
   }
   /* 字的順序：依課本、課次、課本裡的順序 */
@@ -1126,11 +1126,11 @@ function renderClass(){
   const rows = []; kidList.forEach(k => chars.forEach(c => { const list = cell.get(k.code + "|" + c); if(list) rows.push({kid:k.code, name:kidLabel(k), char:c, ...accOf(list)}); }));
   const all = accOf(rs);
   tCurrent = null;
-  const noGoal = T.classGoal ? picked.filter(k => !kidList.includes(k)) : [];   /* 選了某個目標：這個目標沒有紀錄的學生不畫，另外說明 */
-  const goalNote = T.classGoal ? `<section class="ssec"><p class="note" style="margin:0">只看「<b>${esc(goalName(T.classGoal))}</b>」。${noGoal.length ? `這個目標沒有紀錄的學生：${esc(noGoal.map(kidLabel).join("、"))}。` : ""}</p></section>` : "";
+  const noGoal = picked.filter(k => !kidList.includes(k));   /* 選到、但沒有聽音選字紀錄的學生不畫，另外說明 */
+  const goalNote = `<section class="ssec"><p class="note" style="margin:0">這頁只看「<b>${esc(goalName(MAIN_GOAL))}</b>」（聽到題目，從選項中找出是哪個字）；其他目標請到「評量目標比較」，一次看一位學生。${noGoal.length ? `沒有聽音選字紀錄的學生：${esc(noGoal.map(kidLabel).join("、"))}。` : ""}</p></section>`;
   $("#tResult").innerHTML = goalNote + classSec("每天的平均正確率", classDaily(kidList, rs, "acc", "")) + classSec("每天的平均反應時間（越低越快）", classDaily(kidList, rs, "sec", ""))
     + classSec("每天的流暢性（每分鐘認出幾個字）", classDaily(kidList, rs, "flu", "選到的學生還沒有流暢性的紀錄（計時挑戰）。")) + classSec("各課前後測正確率", classPrePost(kidList, rs))
-    + classTable("常錯的字", kidList, rs, classWrong) + classTable("反應最慢的字", kidList, rs, classSlow) + (T.classGoal && isPartsGoal({goal: T.classGoal}) ? classPartsTable(kidList, rs) : classTable("容易搞混的字（字→常選成）", kidList, rs, classConfused))
+    + classTable("常錯的字", kidList, rs, classWrong) + classTable("反應最慢的字", kidList, rs, classSlow) + classTable("容易搞混的字（字→常選成）", kidList, rs, classConfused)
     + `<section class="ssec"><h3 class="ttitle">每個字的正確率（學生 × 生字）</h3>
     <div class="tstats"><div class="tstat"><span>學生</span><b>${kidList.length} 位</b><small>正式評量加練習</small></div>
       <div class="tstat"><span>考過的字</span><b>${chars.length} 個</b></div><div class="tstat"><span>這幾位第一次就答對</span><b>${fmt("acc", all.v)}</b><small>${all.n} 題</small></div></div>
@@ -1140,11 +1140,11 @@ function renderClass(){
   bindPicker();
   $("#tResult").querySelectorAll("[data-char]").forEach(el => el.onclick = () => openCharLog(el.dataset.kid, el.dataset.char));
   $("#tExport").onclick = () => {
-    /* 選了某個目標：檔名、工作表名稱加上目標名稱，每一列也有「評量目標」欄（沒選＝「全部目標」，檔名維持原本的）（維護者 2026-11-11） */
-    const gn = T.classGoal ? goalName(T.classGoal) : "全部目標", tag = T.classGoal ? `_${gn}` : "";
+    /* 這頁只有聽音選字，每一列的「評量目標」欄寫目標名稱（維護者 2026-11-11） */
+    const gn = goalName(MAIN_GOAL);
     const wide = kidList.map(k => Object.fromEntries([["學生", kidLabel(k)], ["評量目標", gn], ["全部", fmt("acc", accOf(rs.filter(r => r.kid === k.code)).v)],
       ...chars.map(c => { const l = cell.get(k.code + "|" + c); return [c, l ? `${accOf(l).v}%（${l.length}）` : ""]; })]));
-    exportSheet(wide, T.classGoal ? `全班總表（${gn}）` : "全班總表", `識字評量_全班總表${tag}_${fileDate(Date.now())}.xlsx`, "#tMsg",
+    exportSheet(wide, "全班總表", `識字評量_全班總表_${fileDate(Date.now())}.xlsx`, "#tMsg",
       [{name:"逐格資料", rows: rows.map(r => ({"學生": r.name, "評量目標": gn, "字": r.char, "第一次就答對（%）": r.v, "作答次數": r.n}))}]);
   };
 
