@@ -272,11 +272,11 @@ function examRenderOne(land = false){   /* land：這一版橫排（只有大格
     : g === "W1" ? `<div class="exrow w1${tc}" style="--hint:${it.hint || 1};--hole:${it.hole || 1}">
       <span class="exn">${no}</span><span class="exask">${examAsk(it)}</span>${tcell(it.slots)}
       <span class="exsp"></span><span class="exfold" aria-hidden="true"></span><span class="exfix">${fixCells(it, fixN)}</span></div>`
-    : `<div class="exrow w3${tc}">
+    : `<div class="exrow w3${tc}" style="--pc:${it.pc || 1}">
       <span class="exn">${no}</span><span class="exask">${examAsk(it)}</span><span class="exans">${cellHtml(it.c)}</span>${tcell([it.c])}
       <span class="exsp"></span><span class="exfold" aria-hidden="true"></span><span class="exfix">${fixCells(it, fixN)}</span></div>`;
   const fixHead = `<span class="exfix">訂正（看一看 → 摺起來 → 再訂正）</span>`;   /* 2026-11-10 維護者要求的寫法 */
-  const tlab = teach ? `<span class="exans exteach">正確答案（老師寫）</span>` : "";
+  const tlab = teach ? `<span class="exans exteach">正確答案<br>（老師寫）</span>` : "";
   const colHead = g === "W2" ? `<div class="exrow w2${tc} exlabels"><span class="exn"></span><span class="exans">答案</span>${tlab}<span class="exsp"></span><span class="exfold">摺線</span>${fixHead}</div>`
     : g === "W1" ? `<div class="exrow w1${tc} exlabels"><span class="exn"></span><span class="exask">題目（寫在格子裡）</span>${tlab}<span class="exsp"></span><span class="exfold">摺線</span>${fixHead}</div>`
     : `<div class="exrow w3${tc} exlabels"><span class="exn"></span><span class="exask">題目</span><span class="exans">答案</span>${tlab}<span class="exsp"></span><span class="exfold">摺線</span>${fixHead}</div>`;
@@ -365,21 +365,33 @@ function examRenderOne(land = false){   /* land：這一版橫排（只有大格
     const qw = Math.ceil(Math.max(...m.map(x => x.W))) + 1;
     P.style.setProperty("--qw", Math.min(qw, cap) + "mm");
   }
-  /* W3 看部件寫字：量最寬的部件題目（每一列固定同寬，摺線才對得齊）；題目＋答案格（＋老師格）＋訂正格放不下這一頁就是 over（大格，或有老師格時，改橫排） */
+  /* W3 看部件寫字（2026-11-11 維護者決定）：部件卡太寬放不下時先縮小部件卡（最多縮到一半，答案格、老師格不縮）；
+     縮到一半還放不下才算 over（大格，或有老師格時，改橫排）。每一列題目欄固定同寬，摺線才對得齊 */
   let over = false;
   if(g === "W3"){
     P.style.setProperty("--qw", "max-content"); P.style.setProperty("--fixn", 1);
-    P.innerHTML = `<section class="${sheetCls}">${EX.items.map((it, i) => row(it, i + 1, 1)).join("")}</section>`;
-    const k = pxPerMm(), qw = Math.ceil(Math.max(...[...P.querySelectorAll(".exrow.w3:not(.exlabels) .exask")].map(e => e.getBoundingClientRect().width / k))) + 1;
-    const cap3 = room - fixW(fixN) - 2 - (teach ? 2 : 1) * (mm + 3);
-    over = qw > cap3;
-    P.style.setProperty("--qw", Math.min(qw, cap3) + "mm");
+    for(const it of EX.items) it.pc = 1;
+    const cap3 = room - fixW(fixN) - 2 - (teach ? 2 : 1) * (mm + 3), PAD = 2;   /* PAD：題目欄左邊留 2mm */
+    const measure = () => {
+      P.innerHTML = `<section class="${sheetCls}">${EX.items.map((it, i) => row(it, i + 1, 1)).join("")}</section>`;
+      const k = pxPerMm();
+      return [...P.querySelectorAll(".exrow.w3:not(.exlabels) .exask")].map(e => e.getBoundingClientRect().width / k);
+    };
+    let m = measure();
+    for(let pass = 0; pass < 3; pass++){
+      let ok = true;
+      m.forEach((w, i) => { if(w <= cap3) return; ok = false; const it = EX.items[i]; it.pc = Math.max(.5, it.pc * (cap3 - PAD) / (w - PAD) * .98); });
+      if(ok) break;
+      m = measure();
+    }
+    over = m.some(w => w > cap3 + .5);
+    P.style.setProperty("--qw", Math.min(Math.ceil(Math.max(...m)) + 1, cap3) + "mm");
   }
   P.style.setProperty("--fixn", fixN);
   const html = pagesHtml(fixN);
   const vars = ["--cell", "--aw", "--qw", "--tw", "--fixn"].map(k => [k, P.style.getPropertyValue(k)]).filter(([, v]) => v).map(([k, v]) => `${k}:${v}`).join(";");
   ["--cell", "--aw", "--qw", "--tw", "--fixn"].forEach(k => P.style.removeProperty(k));
-  return {html, vars, land, over, pageN: EX.pageN, fixN, shrunk: EX.items.some(it => (it.hint || 1) < 1 || (it.hole || 1) < 1 || (it.ansScale || 1) < 1)};
+  return {html, vars, land, over, pageN: EX.pageN, fixN, shrunk: EX.items.some(it => (it.hint || 1) < 1 || (it.hole || 1) < 1 || (it.ansScale || 1) < 1), pcShrunk: EX.items.some(it => (it.pc || 1) < 1)};
 }
 const examVerName = (v, land) => `${EXAM_SIZES.find(s => s[0] === v.size)[1]}格（${EXAM_SIZES.find(s => s[0] === v.size)[2]} 公分${land ? "，橫排" : ""}）・${v.ruler ? "字型尺提示" : "十字格"}`;
 /* 每一個版本各排一次（格子大小不同，訂正格數、縮小的題目也不同），依序接在一起，最後放一張答案頁 */
@@ -396,7 +408,7 @@ function examRender(){
   P.innerHTML = done.map(d => `<div class="exver" style="${d.vars}">${d.html}</div>`).join("") + key;
   const merged = EX.picked - EX.items.length;
   const hasLand = done.some(d => d.land);
-  $("#exInfo").textContent = `${hasLand ? "↻ 橫排的考卷（大格直排放不下的題目）：紙是直的、內容轉了 90 度，印好後把紙橫過來看（順時針轉）。" : ""}${EX.items.length} 題；${done.map(d => `${examVerName(d.v, d.land)} ${d.pageN} 頁${d.fixN < EXAM_FIX ? `（訂正格 ${d.fixN} 格）` : ""}`).join("、")}${keyN ? `，另有答案 ${keyN} 頁` : ""}${g === "W2" ? `；考${examOpt.w2 === "word" ? "語詞" : "國字"}` : ""}${merged > 0 ? `；同一個語詞的字合併成一題（${EX.picked} 個字）` : ""}${done.some(d => d.shrunk) ? "；比較長的題目字縮小了一點，才排得下一行" : ""}。單元、課別、考試方法可以直接點文字修改。`;
+  $("#exInfo").textContent = `${hasLand ? "↻ 橫排的考卷（大格直排放不下的題目）：紙是直的、內容轉了 90 度，印好後把紙橫過來看（順時針轉）。" : ""}${EX.items.length} 題；${done.map(d => `${examVerName(d.v, d.land)} ${d.pageN} 頁${d.fixN < EXAM_FIX ? `（訂正格 ${d.fixN} 格）` : ""}`).join("、")}${keyN ? `，另有答案 ${keyN} 頁` : ""}${g === "W2" ? `；考${examOpt.w2 === "word" ? "語詞" : "國字"}` : ""}${merged > 0 ? `；同一個語詞的字合併成一題（${EX.picked} 個字）` : ""}${done.some(d => d.shrunk || d.pcShrunk) ? "；比較長的題目字縮小了一點，才排得下一行" : ""}。單元、課別、考試方法可以直接點文字修改。`;
 }
 $("#exPrint").onclick = () => window.print();
 $("#exBack").onclick = () => { EX = null; showScreen("#setup"); render(); };
