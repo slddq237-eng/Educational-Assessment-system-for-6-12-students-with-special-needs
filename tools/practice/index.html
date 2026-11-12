@@ -9,7 +9,7 @@
   一個字一欄，欄由右到左（和國語習作一樣），每一欄由上到下是學習順序：
     看（正常字）→ 筆順示範（教育部《國字標準字體筆順學習網》的筆順圖，原樣放，不改作）→ 描（淡灰字）2 格 → 褪除 2 格（蓋住部件，學生補寫）→ 獨立練習（空的字形尺）
   格子畫法用 shared/ruler-cell.js（字形尺）；部件分區和字形尺同一份，所以示範、褪除、字形尺三者的分塊一致。
-  這是雛形：只有這一頁，沒有接課本資料、沒有存任何東西；不放進首頁。示範區只留「筆順示範」；部件示範 2026-11-12 維護者決定刪掉。筆順圖放在 stroke/（檔名是國字.png），沒有圖的字顯示「沒有筆順圖」。
+  這是雛形：只有這一頁，沒有接課本資料、沒有存任何東西；不放進首頁。示範區只留「筆順示範」；部件示範 2026-11-12 維護者決定刪掉。筆順圖放在 shared/stroke/（檔名是國字.png），沒有圖的字顯示「沒有筆順圖」。
 -->
 <link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-12c">
 <link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-12c">
@@ -214,7 +214,7 @@ function render(){
   const labels = `<div class="col labels" style="padding-right:0"><div class="sec look"><span class="v">看</span></div>${res ? `<div class="sec res"><span class="v">筆順示範</span></div>` : ""}<div class="sec trace"><span class="v">描</span></div><div class="sec fade"><span class="v">褪除</span></div><div class="sec solo"><span class="v">獨立練習</span></div></div>`;
   const cols = chars.map(c => `<div class="col${zyOn && hasZy(c) ? "" : " nozy"}">
     <div class="sec look">${cellWith(c, "all", 1)}${zyOn && hasZy(c) ? zyBox(c) : ""}</div>
-    ${res ? `<div class="sec res"><div class="box"><img src="stroke/${encodeURIComponent(c)}.png" alt="${c}的筆順" onerror="this.parentNode.classList.add('no');this.replaceWith(Object.assign(document.createElement('span'),{className:'v',textContent:'沒有筆順圖'}))"></div></div>` : ""}
+    ${res ? `<div class="sec res"><div class="box"><img src="../../shared/stroke/${encodeURIComponent(c)}.png" alt="${c}的筆順" onerror="this.parentNode.classList.add('no');this.replaceWith(Object.assign(document.createElement('span'),{className:'v',textContent:'沒有筆順圖'}))"></div></div>` : ""}
     <div class="sec trace">${cellWith(c, "all", .22)}${cellWith(c, "all", .22)}</div>
     <div class="sec fade">${fadeCells(c).join("")}</div>
     <div class="sec solo">${Array.from({length: k}, () => empty(c)).join("")}</div></div>`).join("");
