@@ -23,6 +23,7 @@ const PAGES = [
   'index.html', 'about.html', 'privacy.html',
   'tools/literacy/index.html',   /* 寫字評量（?area=write）在下面「只顯示寫字評量的目標」另外打開 */
   'tools/prep/index.html',
+  'tools/say-test/index.html',   /* 暫時的語音測試頁（測完要移除，連同這一行） */
 ];
 
 /* 部件入口 window.Parts（shared/parts-api.js）：不用瀏覽器，直接載入資料檔檢查（2026-10-31 步驟 3a）。
