@@ -141,44 +141,8 @@ function examAdjRender(){
   box.querySelectorAll("button[data-ch]").forEach(bt => bt.onclick = () => { const it = EX.raw[+bt.dataset.i]; it.vs[bt.dataset.ch] = +bt.dataset.n; examBuild(); examRender(); examAdjRender(); });
 }
 
-/* 一個格子：十字格，或字型尺（結構虛線＋淡色底） */
-const RULER_TINT = ["#eef5fc", "#fdf8e6", "#eef8f0"];   /* 淡藍、淡黃、淡綠（2026-11-10 維護者要求再淺一點；用很淡的不透明色，包圍字裡面那一塊才不會和外框疊成別的顏色） */
-function rulerBlocks(c){
-  /* 每一塊是 [left, top, width, height]（0～1，格子的比例）；線畫在塊和塊的交界 */
-  const s = examOpt.ruler && typeof Parts !== "undefined" ? Parts.struct(c) : "";
-  const inner = (l, t) => [[0, 0, 1, 1], [l, t, .62, .62]];   /* 包圍：外框一塊、裡面一塊 */
-  /* 分線照字的比例（shared/ruler.js，從楷書字型量出來，2026-11-10 維護者要求）；表裡沒有的字從正中間分 */
-  const cut = (n, def) => { const r = typeof RULER !== "undefined" && RULER[c]; return r && r.length === n ? r : def; };
-  const cols = ([a, b]) => b === undefined ? [[0, 0, a, 1], [a, 0, 1 - a, 1]] : [[0, 0, a, 1], [a, 0, b - a, 1], [b, 0, 1 - b, 1]];
-  const rows = ([a, b]) => b === undefined ? [[0, 0, 1, a], [0, a, 1, 1 - a]] : [[0, 0, 1, a], [0, a, 1, b - a], [0, b, 1, 1 - b]];
-  return ({
-    "左右": cols(cut(1, [.5])),
-    "上下": rows(cut(1, [.5])),
-    "左中右": cols(cut(2, [1 / 3, 2 / 3])),
-    "上中下": rows(cut(2, [1 / 3, 2 / 3])),
-    "全包圍": inner(.19, .19),
-    "上方包圍": inner(.19, .38),
-    "下方包圍": inner(.19, 0),
-    "左方包圍": inner(.38, .19),
-    "左上包圍": inner(.38, .38),
-    "左下包圍": inner(.38, 0),
-    "右上包圍": inner(0, .38)
-  })[s] || null;
-}
-function cellHtml(c){
-  const blocks = rulerBlocks(c);
-  if(!blocks) return `<span class="excell cross"></span>`;
-  const pct = x => (x * 100).toFixed(2) + "%";
-  /* 淡色底不畫框；分線只畫在格子裡面（每條畫一次），外框和十字格一樣是黑色實線（2026-11-10 修正：原本每塊都有虛線框，貼在外框內側，外框看起來像不見了） */
-  const lines = new Map(), e = 1e-6;
-  for(const [l, t, w, h] of blocks){
-    if(l > e) lines.set(`v${l.toFixed(3)}${t}`, `<b class="ln v" style="left:${pct(l)};top:${pct(t)};height:${pct(h)}"></b>`);
-    if(l + w < 1 - e) lines.set(`v${(l + w).toFixed(3)}${t}`, `<b class="ln v" style="left:${pct(l + w)};top:${pct(t)};height:${pct(h)}"></b>`);
-    if(t > e) lines.set(`h${t.toFixed(3)}${l}`, `<b class="ln h" style="top:${pct(t)};left:${pct(l)};width:${pct(w)}"></b>`);
-    if(t + h < 1 - e) lines.set(`h${(t + h).toFixed(3)}${l}`, `<b class="ln h" style="top:${pct(t + h)};left:${pct(l)};width:${pct(w)}"></b>`);
-  }
-  return `<span class="excell ruler">${blocks.map(([l, t, w, h], i) => `<i style="left:${pct(l)};top:${pct(t)};width:${pct(w)};height:${pct(h)};background:${RULER_TINT[i]}"></i>`).join("")}${[...lines.values()].join("")}</span>`;
-}
+/* 一個格子：十字格，或字型尺（結構虛線＋淡色底）。畫法搬到 shared/ruler-cell.js（2026-11-12），這裡只決定這一份考卷要不要用字型尺 */
+function cellHtml(c){ return RulerCell.html(c, {ruler: examOpt.ruler}); }
 
 /* 同一個語詞的字合併成一題（2026-11-10 維護者決定）：
    W1 看注音寫國字：「雨天的雨」「雨天的天」分開出，一題的題目會露出另一題的答案，所以同一個語詞裡這次要考的字放在同一題，一題有好幾個空格；
