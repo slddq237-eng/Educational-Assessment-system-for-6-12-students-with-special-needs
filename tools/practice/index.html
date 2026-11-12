@@ -36,11 +36,19 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 .ttl span{font-size:9pt;letter-spacing:0;color:#555}
 .sheet{display:flex;flex-direction:row-reverse;justify-content:flex-start;gap:3mm;align-items:flex-start}
 /* 每一欄的各段高度固定，所以不同字的欄、標籤欄的段落橫向對齊 */
-.sec{display:flex;flex-direction:column;gap:var(--g);margin-bottom:var(--sg)}
+.sec{display:flex;flex-direction:column;gap:var(--g);margin-bottom:var(--sg);position:relative}
 .look{height:var(--cell)}
 .res{height:calc(var(--cell) * 4)}
 .col:not(.labels) .res{width:var(--cell)}
 .trace,.fade{height:calc(var(--cell) * 2 + var(--g))}
+/* 摺線：獨立練習上方一條橫的虛線，延伸到欄和欄中間（每欄左右各多 1.5 公釐，欄距 3 公釐），整頁連成一條；
+   沿線往上摺，蓋住上面的字，再寫獨立練習（遮擋與主動書寫） */
+.fold{height:5mm;margin-bottom:0}
+.fold::before{content:"";position:absolute;left:-1.5mm;right:-1.5mm;top:50%;border-top:1.3px dashed #444}
+.labels .fold{border-left:0}
+.labels .fold::before{right:0}   /* 最右邊、最左邊的欄不要伸出整頁的內容寬度 */
+.col:last-child .fold::before{left:0}
+.fold .fl{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);font-size:6pt;color:#555;background:#fff;text-align:center;letter-spacing:0;line-height:1.2;writing-mode:horizontal-tb;width:auto}
 .solo{height:calc(var(--cell) * var(--k) + var(--g) * (var(--k) - 1))}
 .col{position:relative;width:calc(var(--cell) + var(--zw));display:flex;flex-direction:column}
 .col.nozy{width:var(--cell)}
@@ -245,12 +253,13 @@ function render(){
   const chars = all.slice(0, MAX_CHARS);
   const k = +$("#solo").value, res = $("#res").checked, zyOn = $("#zy").checked;
   document.documentElement.style.setProperty("--k", k);
-  const labels = `<div class="col labels" style="padding-right:0"><div class="sec look"><span class="v">看</span></div>${res ? `<div class="sec res"><span class="v">筆順示範</span></div>` : ""}<div class="sec trace"><span class="v">描</span></div><div class="sec fade"><span class="v">褪除</span></div><div class="sec solo"><span class="v">獨立練習</span></div></div>`;
+  const labels = `<div class="col labels" style="padding-right:0"><div class="sec look"><span class="v">看</span></div>${res ? `<div class="sec res"><span class="v">筆順示範</span></div>` : ""}<div class="sec trace"><span class="v">描</span></div><div class="sec fade"><span class="v">褪除</span></div><div class="sec fold"><span class="fl">摺線</span></div><div class="sec solo"><span class="v">獨立練習</span></div></div>`;
   const col = c => `<div class="col${zyOn && hasZy(c) ? "" : " nozy"}">
     <div class="sec look">${cellWith(c, "all", 1)}${zyOn && hasZy(c) ? zyBox(c) : ""}</div>
     ${res ? `<div class="sec res"><div class="box"><img src="../../shared/stroke/${encodeURIComponent(c)}.png" alt="${c}的筆順" onerror="this.parentNode.classList.add('no');this.replaceWith(Object.assign(document.createElement('span'),{className:'v',textContent:'沒有筆順圖'}))"></div></div>` : ""}
     <div class="sec trace">${cellWith(c, "all", .22)}${cellWith(c, "all", .22)}</div>
     <div class="sec fade">${fadeCells(c).join("")}</div>
+    <div class="sec fold"></div>
     <div class="sec solo">${Array.from({length: k}, () => empty(c)).join("")}</div></div>`;
   const pages = [];
   for(let i = 0; i < chars.length; i += PER_PAGE) pages.push(chars.slice(i, i + PER_PAGE));
@@ -258,7 +267,7 @@ function render(){
   $("#pages").innerHTML = pages.map((cs, i) => `<div class="page">
   <div class="ttl"><b>生字練習簿</b>${SRC.sub ? `<small>${esc(SRC.sub)}</small>` : ""}<span>姓名：＿＿＿＿＿＿　　日期：＿＿＿＿＿＿</span></div>
   <div class="sheet">${labels + cs.map(col).join("")}</div>
-  <div class="src">${FOOT}　　第 ${i + 1} 頁，共 ${pages.length} 頁</div>
+  <div class="src">沿虛線往上摺，蓋住上面的字，再寫獨立練習。　　${FOOT}　　第 ${i + 1} 頁，共 ${pages.length} 頁</div>
 </div>`).join("");
   check(all.length, chars.length, pages.length);
 }
