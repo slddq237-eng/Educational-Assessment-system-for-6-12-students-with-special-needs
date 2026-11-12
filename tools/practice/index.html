@@ -58,11 +58,12 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 <div class="bar">
   <label>生字（最多 8 個）<input type="text" id="chars" value="晴案山" maxlength="8"></label>
   <label>獨立練習格數 <select id="solo"><option>2</option><option>3</option><option>4</option><option selected>5</option><option>6</option><option>7</option><option>8</option></select></label>
+  <label><input type="checkbox" id="zy" checked> 印注音（只印在「看」旁邊，不用寫）</label>
   <label><input type="checkbox" id="res" checked> 筆順示範區（目前只有預留的空框；教育部同意後才有內容）</label>
   <button id="print">列印</button>
   <span id="msg"></span>
 </div>
-<p class="note">雛形：只有一頁，字從上面的格子輸入，沒有接課本資料。欄由右到左（國語習作的寫法）。「褪除」是蓋住一塊部件讓學生補寫（部件的筆畫互相連在一起、切不開的字改成字變淡）；筆順示範要等教育部同意，目前只有預留的空框。注音用字型預設讀音，破音字可能不對。</p>
+<p class="note">雛形：只有一頁，字從上面的格子輸入，沒有接課本資料。欄由右到左（國語習作的寫法）。「褪除」是蓋住一塊部件讓學生補寫（部件的筆畫互相連在一起、切不開的字改成字變淡）；筆順示範要等教育部同意，目前只有預留的空框。注音用字型預設讀音，破音字可能不對；注音只印在「看」那一格旁邊，不放進練習的格子，也不用學生寫（可以取消勾選不印）。</p>
 <div class="page" id="page">
   <div class="ttl">生字練習簿<span>姓名：＿＿＿＿＿＿　　日期：＿＿＿＿＿＿</span></div>
   <div class="sheet" id="sheet"></div>
@@ -187,7 +188,7 @@ function render(){
   const k = +$("#solo").value, res = $("#res").checked;
   document.documentElement.style.setProperty("--k", k);
   const labels = `<div class="col labels" style="padding-right:0"><div class="sec look"><span class="v">看</span></div>${res ? `<div class="sec res"><span class="v">筆順示範</span></div>` : ""}<div class="sec trace"><span class="v">描</span></div><div class="sec fade"><span class="v">褪除</span></div><div class="sec solo"><span class="v">獨立練習</span></div></div>`;
-  const cols = chars.map(c => `<div class="col">${hasZy(c) ? `<span class="zy">${c}</span>` : ""}
+  const cols = chars.map(c => `<div class="col">${$("#zy").checked && hasZy(c) ? `<span class="zy">${c}</span>` : ""}
     <div class="sec look">${cellWith(c, "all", 1)}</div>
     ${res ? `<div class="sec res"><div class="box"><span class="v">筆順示範（預留，教育部同意後才有內容）</span></div></div>` : ""}
     <div class="sec trace">${cellWith(c, "all", .22)}${cellWith(c, "all", .22)}</div>
@@ -204,7 +205,7 @@ function check(){
   $("#msg").textContent = over ? "超過一頁：請減少獨立練習格數" : "放得下一頁";
 }
 $("#res").addEventListener("change", () => { $("#solo").value = $("#res").checked ? 5 : 7; });   /* 筆順示範區要 3 格高，獨立練習相對少放幾格 */
-for(const id of ["#chars", "#solo", "#res"]) $(id).addEventListener("input", () => { loadFonts().then(render); });
+for(const id of ["#chars", "#solo", "#res", "#zy"]) $(id).addEventListener("input", () => { loadFonts().then(render); });
 $("#print").onclick = () => window.print();
 function loadFonts(){
   const t = [...$("#chars").value].join("");
