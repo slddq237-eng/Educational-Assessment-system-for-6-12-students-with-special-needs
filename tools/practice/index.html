@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>生字練習簿（雛形）</title>
+<!--
+  直式生字練習簿雛形（2026-11-12，docs/plans/roadmap-plans.md「寫字學習單」2026-11-12 討論結論）
+  一個字一欄，欄由右到左（和國語習作一樣），每一欄由上到下是學習順序：
+    看（正常字）→ 筆順示範（教育部《國字標準字體筆順學習網》的筆順圖，原樣放，不改作）→ 描（淡灰字）2 格 → 褪除 2 格（蓋住部件，學生補寫）→ 獨立練習（空的字形尺）
+  格子畫法用 shared/ruler-cell.js（字形尺）；部件分區和字形尺同一份，所以示範、褪除、字形尺三者的分塊一致。
+  這是雛形：只有這一頁，沒有接課本資料、沒有存任何東西；不放進首頁。示範區只留「筆順示範」；部件示範 2026-11-12 維護者決定刪掉。筆順圖放在 shared/stroke/（檔名是國字.png），沒有圖的字顯示「沒有筆順圖」。
+-->
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-12c">
+<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-12c">
+<style>
+@font-face{font-family:"BpmfOnly";font-display:swap;src:url(../../shared/fonts/bpmf-only.woff2) format("woff2")}
+:root{--cell:1.8cm;--zw:8mm;--g:1.2mm;--sg:2.5mm;--k:6;--kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft JhengHei",sans-serif;color:#222}
+.bar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid #ccc;padding:10px 16px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;font-size:15px}
+.bar label{display:flex;gap:6px;align-items:center}
+.bar input[type=text]{font-size:18px;width:9em;padding:4px 8px;font-family:var(--kai)}
+.bar select{font-size:15px;padding:3px}
+.bar button{font-size:15px;padding:6px 14px;cursor:pointer}
+.bar textarea{font-size:18px;font-family:var(--kai);vertical-align:middle}
+.lessons{display:flex;flex-wrap:wrap;gap:4px 10px;max-width:520px}
+.lessons label{font-size:14px}
+.bar .warn{color:#b3261e;font-weight:700}
+.bar .ok{color:#2e7d32}
+.note{max-width:210mm;margin:10px auto 0;padding:0 16px;font-size:13px;color:#555;line-height:1.6}
+.page{position:relative;width:210mm;height:297mm;margin:10px auto 30px;padding:10mm 10mm 8mm;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25);overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.src{position:absolute;left:10mm;right:10mm;bottom:4mm;font-size:6.5pt;color:#777}
+.ttl{height:8mm;font-size:12pt;letter-spacing:.15em;display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #999;margin-bottom:3mm}
+.ttl small{font-size:9pt;letter-spacing:.05em;color:#444;margin-left:1em}
+.ttl span{font-size:9pt;letter-spacing:0;color:#555}
+.sheet{display:flex;flex-direction:row-reverse;justify-content:flex-start;gap:3mm;align-items:flex-start}
+/* 每一欄的各段高度固定，所以不同字的欄、標籤欄的段落橫向對齊 */
+.sec{display:flex;flex-direction:column;gap:var(--g);margin-bottom:var(--sg);position:relative}
+.look{height:var(--cell)}
+.res{height:var(--rh, 72mm)}   /* 筆順示範區高度固定 72 公釐（中格的 4 格）：教育部的圖一欄固定高度，每一步約 5 公釐 */
+.col:not(.labels) .res{width:var(--cell)}
+.trace,.fade{height:calc(var(--cell) * 2 + var(--g))}
+/* 摺線：獨立練習上方一條橫的虛線，延伸到欄和欄中間（每欄左右各多 1.5 公釐，欄距 3 公釐），整頁連成一條；
+   沿線往上摺，蓋住上面的字，再寫獨立練習（遮擋與主動書寫） */
+.fold{height:5mm;margin-bottom:0}
+.fold::before{content:"";position:absolute;left:-1.5mm;right:-1.5mm;top:50%;border-top:1.3px dashed #444}
+.labels .fold{border-left:0}
+.labels .fold::before{right:0}   /* 最右邊、最左邊的欄不要伸出整頁的內容寬度 */
+.col:last-child .fold::before{left:0}
+.fold .fl{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);font-size:6pt;color:#555;background:#fff;text-align:center;letter-spacing:0;line-height:1.2;writing-mode:horizontal-tb;width:auto}
+.solo{height:calc(var(--cell) * var(--k) + var(--g) * (var(--k) - 1))}
+.col{position:relative;width:calc(var(--cell) + var(--zw));display:flex;flex-direction:column}
+.col.nozy{width:var(--cell)}
+.sec.look{flex-direction:row;gap:0}
+.labels{width:5mm}
+.labels .sec{align-items:center;justify-content:center;font-size:8pt;color:#666;border-left:1px solid #bbb;line-height:1}
+.v{display:block;width:1.1em;text-align:center;word-break:break-all;line-height:1.25}
+.zb{flex:none;width:var(--zw);height:var(--cell);border:1px solid #888;border-left:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff}
+.zg{font-family:"BpmfOnly";font-size:calc(var(--cell) * .5);line-height:1;white-space:nowrap}   /* 注音字型：字本身看不見，只畫注音；用畫布量出注音的位置再移到格子正中央（zyFit） */
+/* 格子裡的字（淡灰、遮罩）：疊在字形尺格子上，用 clip-path 只露出某一塊部件 */
+.gl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.gi{font-family:var(--kai);font-size:calc(var(--sz, var(--cell)) * .8);line-height:1;color:#000;white-space:nowrap}
+.pi{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.res .box{flex:1;width:100%;border:1px solid #999;display:flex;align-items:center;justify-content:center;font-size:7.5pt;color:#999;overflow:hidden}
+.res .box.no{border-style:dashed}
+.res .box img{height:100%;width:auto;max-width:100%;display:block}   /* 教育部筆順圖原樣縮放（不裁切、不重排） */
+@page{size:A4 portrait;margin:0}
+@media print{
+  body{background:#fff}
+  .bar,.note{display:none}
+  .page{margin:0;box-shadow:none;break-after:page;page-break-after:always}
+  .page:last-child{break-after:auto;page-break-after:auto}
+}
+</style>
+</head>
+<body>
+<div class="bar">
+  <label>課本 <select id="book"></select></label>
+  <span id="lessons" class="lessons"></span>
+  <label>生字（選了課次會自動填入，也可以自己改）<textarea id="chars" rows="2" cols="36">晴案山</textarea></label>
+  <label>格子大小 <select id="size"><option value="s">小格（1.5 公分）</option><option value="m" selected>中格（1.8 公分）</option><option value="l">大格（2.2 公分）</option></select></label>
+  <label>獨立練習格數 <select id="solo"><option value="auto" selected>自動（放滿一頁）</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></label>
+  <label><input type="checkbox" id="zy" checked> 印注音（「看」旁邊的一格，只給看、不用寫）</label>
+  <label><input type="checkbox" id="res" checked> 筆順示範（教育部筆順圖）</label>
+  <button id="print">列印</button>
+  <span id="msg"></span>
+</div>
+<p class="note">雛形：字從課本課次選（選了會自動填入生字，可以再改），格子大小可以選小、中、大（和寫字考卷一樣），一頁放幾個字、獨立練習放幾格都會自動算，多的字自動分頁。欄由右到左（國語習作的寫法）。「褪除」是蓋住一塊部件讓學生補寫（部件的筆畫互相連在一起、切不開的字改成字變淡）；筆順圖取自教育部筆順學習網，原樣縮放。注音用字型預設讀音，破音字可能不對；注音獨立一格放在「看」旁邊，不放進練習的格子，也不用學生寫（可以取消勾選不印）。一頁最多 6 個字。</p>
+<div id="pages"></div>
+
+<!-- 課本資料（shared/lessons.js 會自己載入各本）和注音讀音表、課本名稱（shared/common.js） -->
+<script src="../../shared/lessons.js?v=2026-11-12c"></script>
+<script src="../../shared/bpmf.js?v=2026-11-12c"></script>
+<script src="../../shared/parts.js?v=2026-11-12c"></script>
+<script src="../../shared/parts-layers.js?v=2026-11-12c"></script>
+<script src="../../shared/parts-api.js?v=2026-11-12c"></script>
+<script src="../../shared/ruler.js?v=2026-11-12c"></script>
+<script src="../../shared/ruler-cell.js?v=2026-11-12c"></script>
+<script src="../../shared/common.js?v=2026-11-12c"></script>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+
+/* ---------- 字放多大、放哪裡 ----------
+   shared/ruler.js 的分線是把「字的筆畫外框」對到格子的 6%～94% 量的（docs/scripts/make_ruler.py 的 PAD），
+   所以這裡要用一樣的方式放字，分區才會切在對的地方：用畫布量這個字的筆畫外框，沿著分割方向縮放到 88%（獨體字、包圍字取長的那一邊），再移到格子中央。
+   畫布上照 CSS 的 line-height:1 擺字（基線位置用字型的上下伸展算），量出來的外框就是網頁上字實際的位置。 */
+function glyphCanvas(c, N, f){
+  const cv = document.createElement("canvas"); cv.width = cv.height = N;
+  const g = cv.getContext("2d", {willReadFrequently: true}), fs = N * .8;
+  g.font = `${fs}px TWKai`; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = "#000";
+  const m = g.measureText(c), A = m.fontBoundingBoxAscent, D = m.fontBoundingBoxDescent;
+  if(f) g.setTransform(f.k, 0, 0, f.k, N / 2 + f.tx * N - f.k * N / 2, N / 2 + f.ty * N - f.k * N / 2);
+  g.fillText(c, N / 2, (N - fs) / 2 + (fs - (A + D)) / 2 + A);
+  return g;
+}
+const FIT = {};
+function fit(c){
+  if(FIT[c]) return FIT[c];
+  const N = 256, d = glyphCanvas(c, N).getImageData(0, 0, N, N).data;
+  let x0 = N, y0 = N, x1 = -1, y1 = -1;
+  for(let y = 0; y < N; y++) for(let x = 0; x < N; x++) if(d[(y * N + x) * 4 + 3] > 55){ if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y; }
+  if(x1 < 0) return FIT[c] = {k: 1, tx: 0, ty: 0};
+  const w = (x1 - x0 + 1) / N, h = (y1 - y0 + 1) / N, s = typeof Parts !== "undefined" ? Parts.struct(c) || "" : "";
+  const len = /^左/.test(s) ? w : /^上[中下]/.test(s) ? h : Math.max(w, h);
+  const k = .88 / len, cx = (x0 + x1 + 1) / 2 / N, cy = (y0 + y1 + 1) / 2 / N;
+  return FIT[c] = {k, tx: -(cx - .5) * k, ty: -(cy - .5) * k};
+}
+/* 整個字（文字，列印時是向量，最清楚） */
+function layer(c, opacity){
+  const f = fit(c), u = "var(--sz, var(--cell))";
+  return `<span class="gl" style="${opacity < 1 ? `opacity:${opacity}` : ""}"><span class="gi" style="transform:translate(calc(${u} * ${f.tx.toFixed(4)}), calc(${u} * ${f.ty.toFixed(4)})) scale(${f.k.toFixed(4)})">${c}</span></span>`;
+}
+
+/* ---------- 把字切成部件 ----------
+   不用直線切（直線只有約 13% 的字切得乾淨：左右兩塊的筆畫常常在不同高度伸進對方的範圍）。
+   改成：先找出字裡每一塊相連的筆畫（連通區塊），每塊歸到「重心所在」的部件；
+   只有每一塊的筆畫幾乎（98% 以上）都落在自己部件的範圍裡才算切得開（部件的筆畫互相連在一起的字不切，回傳 null，
+   練習簿改用「字變淡」褪除）。每個部件輸出成一張透明圖片（包含筆畫邊緣的淡色像素）。 */
+let SPLIT = {}, INSIDE_MIN = .98;   /* 每一塊筆畫至少多少比例要落在自己的部件範圍裡 */
+function splitParts(c){
+  if(c in SPLIT) return SPLIT[c];
+  const bl = RulerCell.blocks(c, true);
+  if(!bl) return SPLIT[c] = null;
+  const N = 512, img = glyphCanvas(c, N, fit(c)).getImageData(0, 0, N, N), d = img.data;
+  const sur = bl.length === 2 && bl[0][2] === 1 && bl[0][3] === 1;   /* 包圍：第 0 塊是外框（整格去掉裡面），第 1 塊是裡面 */
+  const inRect = (r, x, y) => x / N >= r[0] && x / N < r[0] + r[2] && y / N >= r[1] && y / N < r[1] + r[3];
+  const where = (x, y) => sur ? (inRect(bl[1], x, y) ? 1 : 0) : bl.findIndex(r => inRect(r, x, y));
+  const lab = new Int32Array(N * N), comps = [];
+  for(let i = 0; i < N * N; i++){
+    if(d[i * 4 + 3] <= 128 || lab[i]) continue;
+    const id = comps.length + 1, st = [i], px = []; lab[i] = id;
+    while(st.length){
+      const q = st.pop(), x = q % N, y = (q / N) | 0; px.push(q);
+      for(let dy = -1; dy <= 1; dy++) for(let dx = -1; dx <= 1; dx++){
+        const nx = x + dx, ny = y + dy; if(nx < 0 || ny < 0 || nx >= N || ny >= N) continue;
+        const j = ny * N + nx; if(d[j * 4 + 3] > 128 && !lab[j]){ lab[j] = id; st.push(j); }
+      }
+    }
+    comps.push(px);
+  }
+  const part = [], mass = Array(bl.length).fill(0);
+  for(const px of comps){
+    let sx = 0, sy = 0; for(const q of px){ sx += q % N; sy += (q / N) | 0; }
+    const p = where(sx / px.length, sy / px.length);
+    if(p < 0) return SPLIT[c] = null;
+    let inside = 0; for(const q of px) if(where(q % N, (q / N) | 0) === p) inside++;
+    if(inside / px.length < INSIDE_MIN) return SPLIT[c] = null;
+    part.push(p); mass[p] += px.length;
+  }
+  const total = mass.reduce((a, b) => a + b, 0);
+  if(!total || mass.some(m => m < total * .06)) return SPLIT[c] = null;
+  const owner = new Int32Array(N * N).fill(-1);
+  comps.forEach((px, i) => { for(const q of px) owner[q] = part[i]; });
+  const outs = bl.map(() => { const cv = document.createElement("canvas"); cv.width = cv.height = N; const g = cv.getContext("2d"); return {cv, g, im: g.createImageData(N, N)}; });
+  for(let y = 0; y < N; y++) for(let x = 0; x < N; x++){
+    const i = y * N + x, a = d[i * 4 + 3]; if(!a) continue;
+    let o = owner[i];
+    for(let dy = -1; dy <= 1 && o < 0; dy++) for(let dx = -1; dx <= 1 && o < 0; dx++){ const nx = x + dx, ny = y + dy; if(nx >= 0 && ny >= 0 && nx < N && ny < N) o = owner[ny * N + nx]; }   /* 邊緣的淡色像素跟著旁邊的筆畫 */
+    if(o >= 0) outs[o].im.data[i * 4 + 3] = a;
+  }
+  return SPLIT[c] = outs.map(o => { o.g.putImageData(o.im, 0, 0); return o.cv.toDataURL("image/png"); });
+}
+const partImg = (url, opacity) => `<img class="pi" src="${url}" alt="" style="${opacity < 1 ? `opacity:${opacity}` : ""}">`;
+
+/* 注音那一格：注音字型（BpmfOnly）畫在字的右半邊，所以先用畫布量出注音的筆畫外框中心，再用 translate 移到格子正中央 */
+const ZY = {};
+function zyFit(c){   /* c 可以是「字＋讀音記號」（破音字用這本課本的讀音） */
+  if(ZY[c]) return ZY[c];
+  const N = 200, fs = 100, cv = document.createElement("canvas"); cv.width = cv.height = N;
+  const g = cv.getContext("2d", {willReadFrequently: true});
+  g.font = `${fs}px BpmfOnly`; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = "#000";
+  const m = g.measureText(c), A = m.fontBoundingBoxAscent, D = m.fontBoundingBoxDescent;
+  g.fillText(c, N / 2, (N - fs) / 2 + (fs - (A + D)) / 2 + A);
+  const d = g.getImageData(0, 0, N, N).data;
+  let x0 = N, y0 = N, x1 = -1, y1 = -1;
+  for(let y = 0; y < N; y++) for(let x = 0; x < N; x++) if(d[(y * N + x) * 4 + 3] > 55){ if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y; }
+  return ZY[c] = x1 < 0 ? {ox: 0, oy: 0} : {ox: (N / 2 - (x0 + x1 + 1) / 2) / fs, oy: (N / 2 - (y0 + y1 + 1) / 2) / fs};
+}
+const zyText = c => typeof Bpmf !== "undefined" && SRC.book[c] ? Bpmf.char(c, SRC.book[c]) : c;   /* 有選課本就用那本的讀音 */
+const zyBox = c => { const s = zyText(c), f = zyFit(s); return `<span class="zb"><span class="zg" style="transform:translate(${f.ox.toFixed(3)}em, ${f.oy.toFixed(3)}em)">${s}</span></span>`; };
+
+/* 這個字有沒有注音（注音字型只收課本生字；沒有的字畫面會退回別的字型，不要顯示） */
+function hasZy(c){
+  const t = f => { const cv = document.createElement("canvas"); cv.width = cv.height = 64; const g = cv.getContext("2d", {willReadFrequently: true}); g.font = f; g.fillText(c, 4, 48); return g.getImageData(0, 0, 64, 64).data.join(); };
+  return t('40px "BpmfOnly", sans-serif') !== t('40px sans-serif');
+}
+
+/* ---------- 每一欄的各個格子 ---------- */
+/* 字形尺格子（共用的 RulerCell）上面疊字：parts 是要露出的部件編號（"all" 是整個字）；opacity 是字的濃度 */
+function cellWith(c, parts, opacity){
+  const html = RulerCell.html(c, {ruler: true}), sp = splitParts(c);
+  const gl = parts === "all" || !sp ? layer(c, opacity) : parts.map(i => partImg(sp[i], opacity)).join("");
+  return html.replace(/<\/span>$/, gl + "</span>");
+}
+const empty = c => RulerCell.html(c, {ruler: true});
+
+/* 褪除兩格：兩塊 → 先蓋第一塊、再蓋第二塊（學生補寫蓋住的那一塊）；三塊 → 先蓋第一塊、再蓋前兩塊；切不開的字 → 字變淡 */
+function fadeCells(c){
+  const sp = splitParts(c);
+  if(!sp) return [cellWith(c, "all", .5), cellWith(c, "all", .2)];
+  const n = sp.length, idx = [...Array(n).keys()];
+  if(n === 2) return [cellWith(c, [1], .3), cellWith(c, [0], .3)];
+  return [cellWith(c, idx.slice(1), .3), cellWith(c, idx.slice(2), .3)];
+}
+/* ---------- 選課次 ---------- */
+const MAX_CHARS = 60;
+/* 格子大小（公釐）：cell 格子邊長（和寫字考卷的小、中、大格一樣）、zw 注音格寬度 */
+const SIZES = {s: {cell: 15, zw: 7}, m: {cell: 18, zw: 8}, l: {cell: 22, zw: 9}};
+const RH = 72, GAP = 3, LABEL_W = 5, PAGE_W = 190, PAGE_H = 266;   /* 筆順示範區高、欄距、標籤欄寬、一頁可用的寬和高（A4 扣邊界，高度是實測的，留 1 公釐餘裕） */
+/* 一頁放幾個字：標籤欄 + n 欄（每欄＝格子＋注音格，欄距 3 公釐）放得下 190 公釐 */
+const perPage = z => Math.max(1, Math.floor((PAGE_W - LABEL_W) / (SIZES[z].cell + SIZES[z].zw + GAP)));
+/* 獨立練習最多幾格：一頁高度 − 看 − 筆順示範 − 描 2 格 − 褪除 2 格 − 摺線 5 公釐 − 各段的間距；格子之間 1.2 公釐 */
+function maxSolo(z, res, zyRoom){
+  const c = SIZES[z].cell, g = 1.2, sg = 2.5;
+  const used = c + (res ? RH : 0) + 2 * (2 * c + g) + 5 + sg * (res ? 4 : 3);
+  return Math.max(1, Math.floor((PAGE_H - used + g) / (c + g)));
+}
+const SRC = {sub: "", book: {}};   /* sub：標題旁的課本、課次；book：每個字用哪一本課本的讀音 */
+function fillBooks(){
+  $("#book").innerHTML = BOOK_ORDER.map(b => `<option value="${b}">${esc(bookName(b))}</option>`).join("");
+  fillLessons();
+}
+function fillLessons(){
+  const b = $("#book").value;
+  $("#lessons").innerHTML = lessonKeys(b).filter(n => (BOOKS[b].lessons[n].write || "").length).map(n =>
+    `<label><input type="checkbox" value="${n}"> ${esc(lessonName(b, n))}（${[...BOOKS[b].lessons[n].write].length}）</label>`).join("");
+}
+/* 把選的課次換成生字：同一個字只留一個，照課次順序 */
+function applyLessons(){
+  const b = $("#book").value, ns = [...document.querySelectorAll("#lessons input:checked")].map(x => x.value);
+  const seen = new Set(), chars = [];
+  SRC.book = {};
+  for(const n of ns) for(const c of BOOKS[b].lessons[n].write || "") if(!seen.has(c)){ seen.add(c); chars.push(c); SRC.book[c] = b; }
+  SRC.sub = ns.length ? `${bookName(b)}　${ns.length === 1 ? lessonName(b, ns[0]) : "第 " + ns.filter(n => n !== "0").join("、") + " 課"}` : "";
+  $("#chars").value = chars.join("");
+  loadFonts().then(render);
+}
+
+/* ---------- 排成好幾頁 ---------- */
+const FOOT = "筆順圖：教育部《國字標準字體筆順學習網》";
+function render(){
+  const all = [...new Set([...$("#chars").value].filter(ch => /\p{Script=Han}/u.test(ch)))];
+  const chars = all.slice(0, MAX_CHARS);
+  const z = $("#size").value, res = $("#res").checked, zyOn = $("#zy").checked;
+  const k = $("#solo").value === "auto" ? Math.min(10, maxSolo(z, res)) : +$("#solo").value;
+  const root = document.documentElement.style;
+  root.setProperty("--k", k); root.setProperty("--cell", SIZES[z].cell + "mm"); root.setProperty("--zw", SIZES[z].zw + "mm"); root.setProperty("--rh", RH + "mm");
+  const PER_PAGE = perPage(z);
+  const labels = `<div class="col labels" style="padding-right:0"><div class="sec look"><span class="v">看</span></div>${res ? `<div class="sec res"><span class="v">筆順示範</span></div>` : ""}<div class="sec trace"><span class="v">描</span></div><div class="sec fade"><span class="v">褪除</span></div><div class="sec fold"><span class="fl">摺線</span></div><div class="sec solo"><span class="v">獨立練習</span></div></div>`;
+  const col = c => `<div class="col${zyOn && hasZy(c) ? "" : " nozy"}">
+    <div class="sec look">${cellWith(c, "all", 1)}${zyOn && hasZy(c) ? zyBox(c) : ""}</div>
+    ${res ? `<div class="sec res"><div class="box"><img src="../../shared/stroke/${encodeURIComponent(c)}.png" alt="${c}的筆順" onerror="this.parentNode.classList.add('no');this.replaceWith(Object.assign(document.createElement('span'),{className:'v',textContent:'沒有筆順圖'}))"></div></div>` : ""}
+    <div class="sec trace">${cellWith(c, "all", .22)}${cellWith(c, "all", .22)}</div>
+    <div class="sec fade">${fadeCells(c).join("")}</div>
+    <div class="sec fold"></div>
+    <div class="sec solo">${Array.from({length: k}, () => empty(c)).join("")}</div></div>`;
+  const pages = [];
+  for(let i = 0; i < chars.length; i += PER_PAGE) pages.push(chars.slice(i, i + PER_PAGE));
+  if(!pages.length) pages.push([]);
+  $("#pages").innerHTML = pages.map((cs, i) => `<div class="page">
+  <div class="ttl"><b>生字練習簿</b>${SRC.sub ? `<small>${esc(SRC.sub)}</small>` : ""}<span>姓名：＿＿＿＿＿＿　　日期：＿＿＿＿＿＿</span></div>
+  <div class="sheet">${labels + cs.map(col).join("")}</div>
+  <div class="src">沿虛線往上摺，蓋住上面的字，再寫獨立練習。　　${FOOT}　　${{s: "小格 1.5", m: "中格 1.8", l: "大格 2.2"}[z]} 公分　　第 ${i + 1} 頁，共 ${pages.length} 頁</div>
+</div>`).join("");
+  check(all.length, chars.length, pages.length, PER_PAGE, k);
+}
+function check(total, shown, n, per, k){
+  const over = [...document.querySelectorAll(".page")].some(page => {
+    const sheet = page.querySelector(".sheet");
+    const room = page.clientHeight - parseFloat(getComputedStyle(page).paddingBottom) - sheet.getBoundingClientRect().top + page.getBoundingClientRect().top;
+    return sheet.scrollHeight > room + 1 || sheet.scrollWidth > sheet.clientWidth + 1;
+  });
+  $("#msg").className = over ? "warn" : "ok";
+  $("#msg").textContent = (over ? "有一頁超過了：請減少獨立練習格數　" : "") + `${shown} 個字、${n} 頁（一頁 ${per} 字、獨立練習 ${k} 格）` + (total > shown ? `（字太多，只排前 ${MAX_CHARS} 個）` : "");
+}
+$("#book").addEventListener("change", () => { fillLessons(); applyLessons(); });
+$("#lessons").addEventListener("change", applyLessons);
+$("#chars").addEventListener("input", () => { SRC.sub = ""; SRC.book = {}; loadFonts().then(render); });   /* 自己改字：標題的課次清掉，讀音回到預設 */
+for(const id of ["#size", "#solo", "#res", "#zy"]) $(id).addEventListener("input", () => { loadFonts().then(render); });
+$("#print").onclick = () => window.print();
+function loadFonts(){
+  const t = [...$("#chars").value].join("");
+  return Promise.all([document.fonts.load("40px TWKai", t), document.fonts.load("40px BpmfOnly", t)]).catch(() => {});
+}
+fillBooks();
+loadFonts().then(render);
+</script>
+</body>
+</html>

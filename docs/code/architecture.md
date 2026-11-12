@@ -42,6 +42,7 @@
 |---|---|
 | `tools/literacy/index.html` | lessons → bpmf → freq → parts → common → sticker-art → themes → rewards → data → setup → records → wordsets → play → collect → gacha → scenes → tablet → app → tour（平板作答不載入 tour，見下方）；teacher → pivot 不在網頁一打開時載入，設定畫面出現後由 `app.js` 的 `loadTeacher` 在背景依序下載（按「老師專區」時還沒好就當場下載，2026-11-06） |
 | `tools/prep/index.html` | lessons → parts → freq → common → prep |
+| `tools/practice/index.html` | lessons → bpmf → parts → parts-layers → parts-api → ruler → ruler-cell → common（一個檔案，程式寫在頁面裡；2026-11-12 雛形） |
 
 - 每個 `<script src>`、`<link>` 後面都有 `?v=日期`，**所有頁面要一樣**；改了任何 js、css 就全部換成新的版本號，老師的瀏覽器才會抓新檔（自動檢查第 3 項）。
 - Excel 元件 `shared/vendor/xlsx-0.18.5.full.min.js` 不在上表：要匯出、匯入 Excel 時才由 `common.js` 的 `loadXlsx()` 載入。QR code 元件 `shared/vendor/qrcode-generator-1.4.4.js` 也一樣，按「產生 QR code」時才由 `tablet.js` 的 `loadQr()` 載入。老師專區 `teacher.js`、`pivot.js` 也是用到才載入（見上表）：**其他檔案不能在網頁一打開時就用這兩個檔的東西**，要用的共用小工具放 `data.js`。
@@ -57,6 +58,7 @@
 | `bpmf.js` | `BPMF_TXT`、`BPMF_CH`、`BPMF_SAY`、`Bpmf`（注音顯示、唸題換字） | 識字評量（`play.js` 的 `sayOf`、選項注音） | **不要手改**，跑 `make_bpmf.py`；讀音例外寫在它的 `CHECKED` |
 | `bpmf-read.js` | `BPMF_READ`（課本生字裡的破音字 → 各個讀音，順序和注音字型的異體字選擇子一樣，2026-11-10） | 識字評量的寫字考卷「調整題目」（`exam.js`，老師自己輸入語詞時點選讀音） | **不要手改**，跑 `make_bpmf_read.js`；新增課本後要重跑 |
 | `ruler.js` | `RULER`（左右、上下、左中右、上中下結構的課本生字 → 分線在格子裡的位置 0～1，從全字庫正楷體量出來，2026-11-10） | 識字評量的寫字考卷（`exam.js` 的字型尺提示） | **不要手改**，跑 `make_ruler.py`；量錯的字加進它的 `RULER_FIX` |
+| `stroke/*.png` | 教育部全筆順圖（每個字一張，檔名是「國字.png」，課本寫字生字 2,113 個，約 5.6 MB；原樣複製、不改圖；2026-11-12） | 生字練習簿（`tools/practice/` 的筆順示範）；之後其他工具要印筆順也讀這裡 | **不要手改、不要重新壓縮**，用 `docs/scripts/make_stroke.py` 從教育部下載的 zip 複製；`check.js` 的 `ALLOW_IMAGE_DIRS` 只放行這個資料夾的 png |
 | `ruler-cell.js`、`ruler-cell.css` | `RulerCell.html(字, {ruler})` 畫一個格子（字型尺或十字格）、`RulerCell.blocks(字, ruler)` 回傳分區；樣式 `.excell`（格子邊長由頁面設 `--cell`）（2026-11-12 從 `exam.js` 搬來，畫面沒變） | 識字評量的寫字考卷（`exam.js` 的 `cellHtml`）；之後的直式練習簿 | 需先載入 `parts-api.js`、`ruler.js`；頁面自己的格子樣式（答案格加粗等）留在頁面 |
 | `freq.js` | `FREQ`（字→排名） | 識字評量（常用字、字頻優先、高字頻）、備課分析 | 從原始檔重新產生 |
 | `parts-api.js` | `window.Parts` 部件資料入口：`read`（從起點層往下讀）、`layer`、`struct`、`mask`、`sub`（電腦自動往下拆一層）；**只有它能讀 `PARTS_AUTO`、`PARTS_LAYERS`**（自動檢查）（2026-10-31） | 識字評量 `data.js`（部件提示、部件重組從第二層讀）、備課分析 `prep.js`（第一層、第二層、拆到最細） | 資料來源或讀取規則的改動只改這裡 |
@@ -72,6 +74,10 @@
 ## 5. 備課分析 `tools/prep/`
 
 `prep.js` 一個檔案：讀 `BOOKS`、部件（`Parts`）、`FREQ`，算部件排行、生字一覽、字頻；畫面狀態存 localStorage；可匯出 Excel。**不讀、不寫任何學生資料。**
+
+## 5b. 直式生字練習簿 `tools/practice/`（2026-11-12 雛形）
+
+只有 `index.html` 一個檔案，**不寫任何資料**，沒有放進首頁；字從課本課次選（讀 `BOOKS`，用 `common.js` 的課本名稱、`bpmf.js` 的讀音），也可以自己改字；格子大小可選小（1.5 公分）、中（1.8）、大（2.2），一頁放幾個字（小 7、中 6、大 5）和獨立練習放幾格都自動算，多的字自動分頁（最多 60 個字）；欄和欄中間有一條橫的摺線（沿線往上摺，蓋住上面的字再寫獨立練習）。一個字一欄、欄由右到左：看（旁邊印注音，只給看、不用寫）、筆順示範（教育部筆順圖原樣縮放，放在 `shared/stroke/`，用 `make_stroke.py` 從教育部下載的 zip 複製，`check.js` 只放行這個資料夾的 png；沒有圖的字顯示「沒有筆順圖」）、描、褪除、獨立練習（部件示範 2026-11-12 維護者決定刪掉）；格子用共用的 `RulerCell`，部件分區用 `RulerCell.blocks`，字放的位置、大小和 `ruler.js` 量分線時一致（頁面裡的 `fit`）。部件的筆畫相連切不開的字（約一半）改用「字變淡」褪除。設計與討論結論見 `docs/plans/roadmap-plans.md`「寫字學習單」。
 
 ## 6. 資料存在哪裡
 
