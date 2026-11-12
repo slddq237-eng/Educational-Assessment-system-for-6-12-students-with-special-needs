@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-12c">
 <style>
 @font-face{font-family:"BpmfOnly";font-display:swap;src:url(../../shared/fonts/bpmf-only.woff2) format("woff2")}
-:root{--cell:1.8cm;--g:1.2mm;--sg:2.5mm;--k:6;--kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;color-scheme:light}
+:root{--cell:1.8cm;--zw:8mm;--g:1.2mm;--sg:2.5mm;--k:6;--kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;color-scheme:light}
 *{box-sizing:border-box}
 body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft JhengHei",sans-serif;color:#222}
 .bar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid #ccc;padding:10px 16px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;font-size:15px}
@@ -34,14 +34,17 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 /* 每一欄的各段高度固定，所以不同字的欄、標籤欄的段落橫向對齊 */
 .sec{display:flex;flex-direction:column;gap:var(--g);margin-bottom:var(--sg)}
 .look{height:var(--cell)}
-.res{height:calc(var(--cell) * 4)}
+.res{height:calc(var(--cell) * 4);width:var(--cell)}
 .trace,.fade{height:calc(var(--cell) * 2 + var(--g))}
 .solo{height:calc(var(--cell) * var(--k) + var(--g) * (var(--k) - 1))}
-.col{position:relative;width:calc(var(--cell) + 6mm);padding-right:6mm}
+.col{position:relative;width:calc(var(--cell) + var(--zw));display:flex;flex-direction:column}
+.col.nozy{width:var(--cell)}
+.sec.look{flex-direction:row;gap:0}
 .labels{width:5mm}
 .labels .sec{align-items:center;justify-content:center;font-size:8pt;color:#666;border-left:1px solid #bbb;line-height:1}
 .v{display:block;width:1.1em;text-align:center;word-break:break-all;line-height:1.25}
-.zy{position:absolute;right:0;top:0;font-family:"BpmfOnly";font-size:calc(var(--cell) * .55);line-height:1;width:6mm;white-space:nowrap}
+.zb{flex:none;width:var(--zw);height:var(--cell);border:1px solid #888;border-left:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff}
+.zg{font-family:"BpmfOnly";font-size:calc(var(--cell) * .5);line-height:1;white-space:nowrap}   /* 注音字型：字本身看不見，只畫注音；用畫布量出注音的位置再移到格子正中央（zyFit） */
 /* 格子裡的字（淡灰、遮罩）：疊在字形尺格子上，用 clip-path 只露出某一塊部件 */
 .gl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .gi{font-family:var(--kai);font-size:calc(var(--sz, var(--cell)) * .8);line-height:1;color:#000;white-space:nowrap}
@@ -59,14 +62,14 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 </head>
 <body>
 <div class="bar">
-  <label>生字（最多 8 個）<input type="text" id="chars" value="晴案山" maxlength="8"></label>
+  <label>生字（最多 6 個，一頁放得下的字數）<input type="text" id="chars" value="晴案山" maxlength="6"></label>
   <label>獨立練習格數 <select id="solo"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
-  <label><input type="checkbox" id="zy" checked> 印注音（只印在「看」旁邊，不用寫）</label>
+  <label><input type="checkbox" id="zy" checked> 印注音（「看」旁邊的一格，只給看、不用寫）</label>
   <label><input type="checkbox" id="res" checked> 筆順示範（教育部筆順圖）</label>
   <button id="print">列印</button>
   <span id="msg"></span>
 </div>
-<p class="note">雛形：只有一頁，字從上面的格子輸入，沒有接課本資料。欄由右到左（國語習作的寫法）。「褪除」是蓋住一塊部件讓學生補寫（部件的筆畫互相連在一起、切不開的字改成字變淡）；筆順圖取自教育部筆順學習網，原樣縮放。注音用字型預設讀音，破音字可能不對；注音只印在「看」那一格旁邊，不放進練習的格子，也不用學生寫（可以取消勾選不印）。</p>
+<p class="note">雛形：只有一頁，字從上面的格子輸入，沒有接課本資料。欄由右到左（國語習作的寫法）。「褪除」是蓋住一塊部件讓學生補寫（部件的筆畫互相連在一起、切不開的字改成字變淡）；筆順圖取自教育部筆順學習網，原樣縮放。注音用字型預設讀音，破音字可能不對；注音獨立一格放在「看」旁邊，不放進練習的格子，也不用學生寫（可以取消勾選不印）。一頁最多 6 個字。</p>
 <div class="page" id="page">
   <div class="ttl">生字練習簿<span>姓名：＿＿＿＿＿＿　　日期：＿＿＿＿＿＿</span></div>
   <div class="sheet" id="sheet"></div>
@@ -164,6 +167,22 @@ function splitParts(c){
 }
 const partImg = (url, opacity) => `<img class="pi" src="${url}" alt="" style="${opacity < 1 ? `opacity:${opacity}` : ""}">`;
 
+/* 注音那一格：注音字型（BpmfOnly）畫在字的右半邊，所以先用畫布量出注音的筆畫外框中心，再用 translate 移到格子正中央 */
+const ZY = {};
+function zyFit(c){
+  if(ZY[c]) return ZY[c];
+  const N = 200, fs = 100, cv = document.createElement("canvas"); cv.width = cv.height = N;
+  const g = cv.getContext("2d", {willReadFrequently: true});
+  g.font = `${fs}px BpmfOnly`; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = "#000";
+  const m = g.measureText(c), A = m.fontBoundingBoxAscent, D = m.fontBoundingBoxDescent;
+  g.fillText(c, N / 2, (N - fs) / 2 + (fs - (A + D)) / 2 + A);
+  const d = g.getImageData(0, 0, N, N).data;
+  let x0 = N, y0 = N, x1 = -1, y1 = -1;
+  for(let y = 0; y < N; y++) for(let x = 0; x < N; x++) if(d[(y * N + x) * 4 + 3] > 55){ if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y; }
+  return ZY[c] = x1 < 0 ? {ox: 0, oy: 0} : {ox: (N / 2 - (x0 + x1 + 1) / 2) / fs, oy: (N / 2 - (y0 + y1 + 1) / 2) / fs};
+}
+const zyBox = c => { const f = zyFit(c); return `<span class="zb"><span class="zg" style="transform:translate(${f.ox.toFixed(3)}em, ${f.oy.toFixed(3)}em)">${c}</span></span>`; };
+
 /* 這個字有沒有注音（注音字型只收課本生字；沒有的字畫面會退回別的字型，不要顯示） */
 function hasZy(c){
   const t = f => { const cv = document.createElement("canvas"); cv.width = cv.height = 64; const g = cv.getContext("2d", {willReadFrequently: true}); g.font = f; g.fillText(c, 4, 48); return g.getImageData(0, 0, 64, 64).data.join(); };
@@ -188,12 +207,12 @@ function fadeCells(c){
   return [cellWith(c, idx.slice(1), .3), cellWith(c, idx.slice(2), .3)];
 }
 function render(){
-  const chars = [...$("#chars").value].filter(ch => /\p{Script=Han}/u.test(ch)).slice(0, 8);
-  const k = +$("#solo").value, res = $("#res").checked;
+  const chars = [...$("#chars").value].filter(ch => /\p{Script=Han}/u.test(ch)).slice(0, 6);
+  const k = +$("#solo").value, res = $("#res").checked, zyOn = $("#zy").checked;
   document.documentElement.style.setProperty("--k", k);
   const labels = `<div class="col labels" style="padding-right:0"><div class="sec look"><span class="v">看</span></div>${res ? `<div class="sec res"><span class="v">筆順示範</span></div>` : ""}<div class="sec trace"><span class="v">描</span></div><div class="sec fade"><span class="v">褪除</span></div><div class="sec solo"><span class="v">獨立練習</span></div></div>`;
-  const cols = chars.map(c => `<div class="col">${$("#zy").checked && hasZy(c) ? `<span class="zy">${c}</span>` : ""}
-    <div class="sec look">${cellWith(c, "all", 1)}</div>
+  const cols = chars.map(c => `<div class="col${zyOn && hasZy(c) ? "" : " nozy"}">
+    <div class="sec look">${cellWith(c, "all", 1)}${zyOn && hasZy(c) ? zyBox(c) : ""}</div>
     ${res ? `<div class="sec res"><div class="box"><img src="stroke/${encodeURIComponent(c)}.png" alt="${c}的筆順" onerror="this.parentNode.classList.add('no');this.replaceWith(Object.assign(document.createElement('span'),{className:'v',textContent:'沒有筆順圖'}))"></div></div>` : ""}
     <div class="sec trace">${cellWith(c, "all", .22)}${cellWith(c, "all", .22)}</div>
     <div class="sec fade">${fadeCells(c).join("")}</div>
@@ -204,9 +223,9 @@ function render(){
 function check(){
   const sheet = $("#sheet"), page = $("#page");
   const room = page.clientHeight - parseFloat(getComputedStyle(page).paddingBottom) - sheet.getBoundingClientRect().top + page.getBoundingClientRect().top;
-  const over = sheet.scrollHeight > room + 1;
+  const over = sheet.scrollHeight > room + 1 || sheet.scrollWidth > sheet.clientWidth + 1;
   $("#msg").className = over ? "warn" : "ok";
-  $("#msg").textContent = over ? "超過一頁：請減少獨立練習格數" : "放得下一頁";
+  $("#msg").textContent = over ? "超過一頁：請減少獨立練習格數或字數" : "放得下一頁";
 }
 $("#res").addEventListener("change", () => { $("#solo").value = $("#res").checked ? 4 : 7; });   /* 筆順示範區要 4 格高，獨立練習相對少放幾格 */
 for(const id of ["#chars", "#solo", "#res", "#zy"]) $(id).addEventListener("input", () => { loadFonts().then(render); });
