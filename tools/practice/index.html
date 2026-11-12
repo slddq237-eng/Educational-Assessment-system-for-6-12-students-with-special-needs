@@ -7,9 +7,9 @@
 <!--
   直式生字練習簿雛形（2026-11-12，docs/plans/roadmap-plans.md「寫字學習單」2026-11-12 討論結論）
   一個字一欄，欄由右到左（和國語習作一樣），每一欄由上到下是學習順序：
-    看（正常字）→ 部件示範（一塊一塊疊起來）→ 描（淡灰字）2 格 → 褪除 2 格（蓋住部件，學生補寫）→ 獨立練習（空的字形尺）
+    看（正常字）→ 筆順示範（預留位置）→ 描（淡灰字）2 格 → 褪除 2 格（蓋住部件，學生補寫）→ 獨立練習（空的字形尺）
   格子畫法用 shared/ruler-cell.js（字形尺）；部件分區和字形尺同一份，所以示範、褪除、字形尺三者的分塊一致。
-  這是雛形：只有這一頁，沒有接課本資料、沒有存任何東西；不放進首頁。筆順示範（逐筆）要等教育部同意，這裡只留預留的位置（勾選才顯示）。
+  這是雛形：只有這一頁，沒有接課本資料、沒有存任何東西；不放進首頁。示範區只留「筆順示範」（逐筆，要等教育部同意，目前只有預留的空框）；部件示範 2026-11-12 維護者決定刪掉。
 -->
 <link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-12c">
 <link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-12c">
@@ -33,7 +33,6 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 /* 每一欄的各段高度固定，所以不同字的欄、標籤欄的段落橫向對齊 */
 .sec{display:flex;flex-direction:column;gap:var(--g);margin-bottom:var(--sg)}
 .look{height:var(--cell)}
-.demo{height:calc(var(--cell) * 1.75);align-items:center}
 .res{height:calc(var(--cell) * 3)}
 .trace,.fade{height:calc(var(--cell) * 2 + var(--g))}
 .solo{height:calc(var(--cell) * var(--k) + var(--g) * (var(--k) - 1))}
@@ -46,8 +45,6 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 .gl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .gi{font-family:var(--kai);font-size:calc(var(--sz, var(--cell)) * .8);line-height:1;color:#000;white-space:nowrap}
 .pi{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.sm{--sz:calc(var(--cell) * .5);position:relative;width:var(--sz);height:var(--sz);border:1px solid #888;background:#fff;overflow:hidden}
-.demo .none{font-size:7.5pt;color:#999}
 .res .box{flex:1;width:100%;border:1px dashed #999;display:flex;align-items:center;justify-content:center;font-size:7.5pt;color:#999}
 @page{size:A4 portrait;margin:0}
 @media print{
@@ -60,12 +57,12 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 <body>
 <div class="bar">
   <label>生字（最多 8 個）<input type="text" id="chars" value="晴案山" maxlength="8"></label>
-  <label>獨立練習格數 <select id="solo"><option>2</option><option>3</option><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option></select></label>
-  <label><input type="checkbox" id="res"> 預留筆順示範區（教育部同意後使用）</label>
+  <label>獨立練習格數 <select id="solo"><option>2</option><option>3</option><option>4</option><option selected>5</option><option>6</option><option>7</option><option>8</option></select></label>
+  <label><input type="checkbox" id="res" checked> 筆順示範區（目前只有預留的空框；教育部同意後才有內容）</label>
   <button id="print">列印</button>
   <span id="msg"></span>
 </div>
-<p class="note">雛形：只有一頁，字從上面的格子輸入，沒有接課本資料。欄由右到左（國語習作的寫法）。「部件示範」是把字的筆畫按部件分塊疊出來的，不是真正的筆順；部件的筆畫互相連在一起、切不開的字，改成字變淡（沒有部件示範）；筆順示範要等教育部同意。注音用字型預設讀音，破音字可能不對。</p>
+<p class="note">雛形：只有一頁，字從上面的格子輸入，沒有接課本資料。欄由右到左（國語習作的寫法）。「褪除」是蓋住一塊部件讓學生補寫（部件的筆畫互相連在一起、切不開的字改成字變淡）；筆順示範要等教育部同意，目前只有預留的空框。注音用字型預設讀音，破音字可能不對。</p>
 <div class="page" id="page">
   <div class="ttl">生字練習簿<span>姓名：＿＿＿＿＿＿　　日期：＿＿＿＿＿＿</span></div>
   <div class="sheet" id="sheet"></div>
@@ -115,7 +112,7 @@ function layer(c, opacity){
    不用直線切（直線只有約 13% 的字切得乾淨：左右兩塊的筆畫常常在不同高度伸進對方的範圍）。
    改成：先找出字裡每一塊相連的筆畫（連通區塊），每塊歸到「重心所在」的部件；
    只有每一塊的筆畫幾乎（98% 以上）都落在自己部件的範圍裡才算切得開（部件的筆畫互相連在一起的字不切，回傳 null，
-   練習簿改用「字變淡」褪除、不做部件示範）。每個部件輸出成一張透明圖片（包含筆畫邊緣的淡色像素）。 */
+   練習簿改用「字變淡」褪除）。每個部件輸出成一張透明圖片（包含筆畫邊緣的淡色像素）。 */
 let SPLIT = {}, INSIDE_MIN = .98;   /* 每一塊筆畫至少多少比例要落在自己的部件範圍裡 */
 function splitParts(c){
   if(c in SPLIT) return SPLIT[c];
@@ -185,22 +182,14 @@ function fadeCells(c){
   if(n === 2) return [cellWith(c, [1], .3), cellWith(c, [0], .3)];
   return [cellWith(c, idx.slice(1), .3), cellWith(c, idx.slice(2), .3)];
 }
-/* 部件示範：一塊一塊疊起來，每一步是一個小格子 */
-function demoHtml(c){
-  const sp = splitParts(c);
-  if(!sp) return `<span class="none v">${RulerCell.blocks(c, true) ? "部件相連，不分塊示範" : "獨體字，不分部件"}</span>`;
-  return sp.map((_, j) => `<span class="sm">${sp.slice(0, j + 1).map(u => partImg(u, 1)).join("")}</span>`).join("");
-}
-
 function render(){
   const chars = [...$("#chars").value].filter(ch => /\p{Script=Han}/u.test(ch)).slice(0, 8);
   const k = +$("#solo").value, res = $("#res").checked;
   document.documentElement.style.setProperty("--k", k);
-  const labels = `<div class="col labels" style="padding-right:0"><div class="sec look"><span class="v">看</span></div><div class="sec demo"><span class="v">部件示範</span></div>${res ? `<div class="sec res"><span class="v">筆順示範</span></div>` : ""}<div class="sec trace"><span class="v">描</span></div><div class="sec fade"><span class="v">褪除</span></div><div class="sec solo"><span class="v">獨立練習</span></div></div>`;
+  const labels = `<div class="col labels" style="padding-right:0"><div class="sec look"><span class="v">看</span></div>${res ? `<div class="sec res"><span class="v">筆順示範</span></div>` : ""}<div class="sec trace"><span class="v">描</span></div><div class="sec fade"><span class="v">褪除</span></div><div class="sec solo"><span class="v">獨立練習</span></div></div>`;
   const cols = chars.map(c => `<div class="col">${hasZy(c) ? `<span class="zy">${c}</span>` : ""}
     <div class="sec look">${cellWith(c, "all", 1)}</div>
-    <div class="sec demo">${demoHtml(c)}</div>
-    ${res ? `<div class="sec res"><div class="box"><span class="v">筆順示範（預留）</span></div></div>` : ""}
+    ${res ? `<div class="sec res"><div class="box"><span class="v">筆順示範（預留，教育部同意後才有內容）</span></div></div>` : ""}
     <div class="sec trace">${cellWith(c, "all", .22)}${cellWith(c, "all", .22)}</div>
     <div class="sec fade">${fadeCells(c).join("")}</div>
     <div class="sec solo">${Array.from({length: k}, () => empty(c)).join("")}</div></div>`).join("");
@@ -214,7 +203,7 @@ function check(){
   $("#msg").className = over ? "warn" : "ok";
   $("#msg").textContent = over ? "超過一頁：請減少獨立練習格數" : "放得下一頁";
 }
-$("#res").addEventListener("change", () => { $("#solo").value = $("#res").checked ? 3 : 6; });   /* 預留筆順示範區要 3 格高，獨立練習相對少放幾格 */
+$("#res").addEventListener("change", () => { $("#solo").value = $("#res").checked ? 5 : 7; });   /* 筆順示範區要 3 格高，獨立練習相對少放幾格 */
 for(const id of ["#chars", "#solo", "#res"]) $(id).addEventListener("input", () => { loadFonts().then(render); });
 $("#print").onclick = () => window.print();
 function loadFonts(){
