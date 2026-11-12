@@ -1,0 +1,9 @@
+/* 字形尺格子的樣式（2026-11-12 從 tools/literacy/index.html 搬來，和 shared/ruler-cell.js 一起用）
+   格子邊長由頁面設定 --cell（例如 1.8cm）；頁面可以用更高優先的選擇器改框線粗細等。 */
+.excell{position:relative;display:inline-block;width:var(--cell);height:var(--cell);box-sizing:border-box;border:1.5px solid #333;background:#fff;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.excell.cross{background:#fff}
+.excell.cross::before,.excell.cross::after{content:"";position:absolute;border-color:#9a9a9a;border-style:dashed;border-width:0}
+.excell.cross::before{left:50%;top:0;bottom:0;border-left-width:1px}
+.excell.cross::after{top:50%;left:0;right:0;border-top-width:1px}
+.excell.ruler i{position:absolute}
+.excell .ln{position:absolute;border:0 dashed #9a9a9a}.excell .ln.v{border-left-width:1px;width:0;margin-left:-.5px}.excell .ln.h{border-top-width:1px;height:0;margin-top:-.5px}
