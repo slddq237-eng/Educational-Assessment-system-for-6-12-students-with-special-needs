@@ -23,12 +23,16 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 .bar input[type=text]{font-size:18px;width:9em;padding:4px 8px;font-family:var(--kai)}
 .bar select{font-size:15px;padding:3px}
 .bar button{font-size:15px;padding:6px 14px;cursor:pointer}
+.bar textarea{font-size:18px;font-family:var(--kai);vertical-align:middle}
+.lessons{display:flex;flex-wrap:wrap;gap:4px 10px;max-width:520px}
+.lessons label{font-size:14px}
 .bar .warn{color:#b3261e;font-weight:700}
 .bar .ok{color:#2e7d32}
 .note{max-width:210mm;margin:10px auto 0;padding:0 16px;font-size:13px;color:#555;line-height:1.6}
 .page{position:relative;width:210mm;height:297mm;margin:10px auto 30px;padding:10mm 10mm 8mm;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25);overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .src{position:absolute;left:10mm;right:10mm;bottom:4mm;font-size:6.5pt;color:#777}
 .ttl{height:8mm;font-size:12pt;letter-spacing:.15em;display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #999;margin-bottom:3mm}
+.ttl small{font-size:9pt;letter-spacing:.05em;color:#444;margin-left:1em}
 .ttl span{font-size:9pt;letter-spacing:0;color:#555}
 .sheet{display:flex;flex-direction:row-reverse;justify-content:flex-start;gap:3mm;align-items:flex-start}
 /* 每一欄的各段高度固定，所以不同字的欄、標籤欄的段落橫向對齊 */
@@ -57,31 +61,34 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 @media print{
   body{background:#fff}
   .bar,.note{display:none}
-  .page{margin:0;box-shadow:none}
+  .page{margin:0;box-shadow:none;break-after:page;page-break-after:always}
+  .page:last-child{break-after:auto;page-break-after:auto}
 }
 </style>
 </head>
 <body>
 <div class="bar">
-  <label>生字（最多 6 個，一頁放得下的字數）<input type="text" id="chars" value="晴案山" maxlength="6"></label>
+  <label>課本 <select id="book"></select></label>
+  <span id="lessons" class="lessons"></span>
+  <label>生字（選了課次會自動填入，也可以自己改；一頁 6 個字）<textarea id="chars" rows="2" cols="36">晴案山</textarea></label>
   <label>獨立練習格數 <select id="solo"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
   <label><input type="checkbox" id="zy" checked> 印注音（「看」旁邊的一格，只給看、不用寫）</label>
   <label><input type="checkbox" id="res" checked> 筆順示範（教育部筆順圖）</label>
   <button id="print">列印</button>
   <span id="msg"></span>
 </div>
-<p class="note">雛形：只有一頁，字從上面的格子輸入，沒有接課本資料。欄由右到左（國語習作的寫法）。「褪除」是蓋住一塊部件讓學生補寫（部件的筆畫互相連在一起、切不開的字改成字變淡）；筆順圖取自教育部筆順學習網，原樣縮放。注音用字型預設讀音，破音字可能不對；注音獨立一格放在「看」旁邊，不放進練習的格子，也不用學生寫（可以取消勾選不印）。一頁最多 6 個字。</p>
-<div class="page" id="page">
-  <div class="ttl">生字練習簿<span>姓名：＿＿＿＿＿＿　　日期：＿＿＿＿＿＿</span></div>
-  <div class="sheet" id="sheet"></div>
-  <div class="src">筆順圖：教育部《國字標準字體筆順學習網》</div>
-</div>
+<p class="note">雛形：字從課本課次選（選了會自動填入生字，可以再改），一頁放 6 個字，多的字自動分頁。欄由右到左（國語習作的寫法）。「褪除」是蓋住一塊部件讓學生補寫（部件的筆畫互相連在一起、切不開的字改成字變淡）；筆順圖取自教育部筆順學習網，原樣縮放。注音用字型預設讀音，破音字可能不對；注音獨立一格放在「看」旁邊，不放進練習的格子，也不用學生寫（可以取消勾選不印）。一頁最多 6 個字。</p>
+<div id="pages"></div>
 
+<!-- 課本資料（shared/lessons.js 會自己載入各本）和注音讀音表、課本名稱（shared/common.js） -->
+<script src="../../shared/lessons.js?v=2026-11-12c"></script>
+<script src="../../shared/bpmf.js?v=2026-11-12c"></script>
 <script src="../../shared/parts.js?v=2026-11-12c"></script>
 <script src="../../shared/parts-layers.js?v=2026-11-12c"></script>
 <script src="../../shared/parts-api.js?v=2026-11-12c"></script>
 <script src="../../shared/ruler.js?v=2026-11-12c"></script>
 <script src="../../shared/ruler-cell.js?v=2026-11-12c"></script>
+<script src="../../shared/common.js?v=2026-11-12c"></script>
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
@@ -170,7 +177,7 @@ const partImg = (url, opacity) => `<img class="pi" src="${url}" alt="" style="${
 
 /* 注音那一格：注音字型（BpmfOnly）畫在字的右半邊，所以先用畫布量出注音的筆畫外框中心，再用 translate 移到格子正中央 */
 const ZY = {};
-function zyFit(c){
+function zyFit(c){   /* c 可以是「字＋讀音記號」（破音字用這本課本的讀音） */
   if(ZY[c]) return ZY[c];
   const N = 200, fs = 100, cv = document.createElement("canvas"); cv.width = cv.height = N;
   const g = cv.getContext("2d", {willReadFrequently: true});
@@ -182,7 +189,8 @@ function zyFit(c){
   for(let y = 0; y < N; y++) for(let x = 0; x < N; x++) if(d[(y * N + x) * 4 + 3] > 55){ if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y; }
   return ZY[c] = x1 < 0 ? {ox: 0, oy: 0} : {ox: (N / 2 - (x0 + x1 + 1) / 2) / fs, oy: (N / 2 - (y0 + y1 + 1) / 2) / fs};
 }
-const zyBox = c => { const f = zyFit(c); return `<span class="zb"><span class="zg" style="transform:translate(${f.ox.toFixed(3)}em, ${f.oy.toFixed(3)}em)">${c}</span></span>`; };
+const zyText = c => typeof Bpmf !== "undefined" && SRC.book[c] ? Bpmf.char(c, SRC.book[c]) : c;   /* 有選課本就用那本的讀音 */
+const zyBox = c => { const s = zyText(c), f = zyFit(s); return `<span class="zb"><span class="zg" style="transform:translate(${f.ox.toFixed(3)}em, ${f.oy.toFixed(3)}em)">${s}</span></span>`; };
 
 /* 這個字有沒有注音（注音字型只收課本生字；沒有的字畫面會退回別的字型，不要顯示） */
 function hasZy(c){
@@ -207,34 +215,73 @@ function fadeCells(c){
   if(n === 2) return [cellWith(c, [1], .3), cellWith(c, [0], .3)];
   return [cellWith(c, idx.slice(1), .3), cellWith(c, idx.slice(2), .3)];
 }
+/* ---------- 選課次 ---------- */
+const PER_PAGE = 6, MAX_CHARS = 60;
+const SRC = {sub: "", book: {}};   /* sub：標題旁的課本、課次；book：每個字用哪一本課本的讀音 */
+function fillBooks(){
+  $("#book").innerHTML = BOOK_ORDER.map(b => `<option value="${b}">${esc(bookName(b))}</option>`).join("");
+  fillLessons();
+}
+function fillLessons(){
+  const b = $("#book").value;
+  $("#lessons").innerHTML = lessonKeys(b).filter(n => (BOOKS[b].lessons[n].write || "").length).map(n =>
+    `<label><input type="checkbox" value="${n}"> ${esc(lessonName(b, n))}（${[...BOOKS[b].lessons[n].write].length}）</label>`).join("");
+}
+/* 把選的課次換成生字：同一個字只留一個，照課次順序 */
+function applyLessons(){
+  const b = $("#book").value, ns = [...document.querySelectorAll("#lessons input:checked")].map(x => x.value);
+  const seen = new Set(), chars = [];
+  SRC.book = {};
+  for(const n of ns) for(const c of BOOKS[b].lessons[n].write || "") if(!seen.has(c)){ seen.add(c); chars.push(c); SRC.book[c] = b; }
+  SRC.sub = ns.length ? `${bookName(b)}　${ns.length === 1 ? lessonName(b, ns[0]) : "第 " + ns.filter(n => n !== "0").join("、") + " 課"}` : "";
+  $("#chars").value = chars.join("");
+  loadFonts().then(render);
+}
+
+/* ---------- 排成好幾頁 ---------- */
+const FOOT = "筆順圖：教育部《國字標準字體筆順學習網》";
 function render(){
-  const chars = [...$("#chars").value].filter(ch => /\p{Script=Han}/u.test(ch)).slice(0, 6);
+  const all = [...new Set([...$("#chars").value].filter(ch => /\p{Script=Han}/u.test(ch)))];
+  const chars = all.slice(0, MAX_CHARS);
   const k = +$("#solo").value, res = $("#res").checked, zyOn = $("#zy").checked;
   document.documentElement.style.setProperty("--k", k);
   const labels = `<div class="col labels" style="padding-right:0"><div class="sec look"><span class="v">看</span></div>${res ? `<div class="sec res"><span class="v">筆順示範</span></div>` : ""}<div class="sec trace"><span class="v">描</span></div><div class="sec fade"><span class="v">褪除</span></div><div class="sec solo"><span class="v">獨立練習</span></div></div>`;
-  const cols = chars.map(c => `<div class="col${zyOn && hasZy(c) ? "" : " nozy"}">
+  const col = c => `<div class="col${zyOn && hasZy(c) ? "" : " nozy"}">
     <div class="sec look">${cellWith(c, "all", 1)}${zyOn && hasZy(c) ? zyBox(c) : ""}</div>
     ${res ? `<div class="sec res"><div class="box"><img src="../../shared/stroke/${encodeURIComponent(c)}.png" alt="${c}的筆順" onerror="this.parentNode.classList.add('no');this.replaceWith(Object.assign(document.createElement('span'),{className:'v',textContent:'沒有筆順圖'}))"></div></div>` : ""}
     <div class="sec trace">${cellWith(c, "all", .22)}${cellWith(c, "all", .22)}</div>
     <div class="sec fade">${fadeCells(c).join("")}</div>
-    <div class="sec solo">${Array.from({length: k}, () => empty(c)).join("")}</div></div>`).join("");
-  $("#sheet").innerHTML = labels + cols;
-  check();
+    <div class="sec solo">${Array.from({length: k}, () => empty(c)).join("")}</div></div>`;
+  const pages = [];
+  for(let i = 0; i < chars.length; i += PER_PAGE) pages.push(chars.slice(i, i + PER_PAGE));
+  if(!pages.length) pages.push([]);
+  $("#pages").innerHTML = pages.map((cs, i) => `<div class="page">
+  <div class="ttl"><b>生字練習簿</b>${SRC.sub ? `<small>${esc(SRC.sub)}</small>` : ""}<span>姓名：＿＿＿＿＿＿　　日期：＿＿＿＿＿＿</span></div>
+  <div class="sheet">${labels + cs.map(col).join("")}</div>
+  <div class="src">${FOOT}　　第 ${i + 1} 頁，共 ${pages.length} 頁</div>
+</div>`).join("");
+  check(all.length, chars.length, pages.length);
 }
-function check(){
-  const sheet = $("#sheet"), page = $("#page");
-  const room = page.clientHeight - parseFloat(getComputedStyle(page).paddingBottom) - sheet.getBoundingClientRect().top + page.getBoundingClientRect().top;
-  const over = sheet.scrollHeight > room + 1 || sheet.scrollWidth > sheet.clientWidth + 1;
+function check(total, shown, n){
+  const over = [...document.querySelectorAll(".page")].some(page => {
+    const sheet = page.querySelector(".sheet");
+    const room = page.clientHeight - parseFloat(getComputedStyle(page).paddingBottom) - sheet.getBoundingClientRect().top + page.getBoundingClientRect().top;
+    return sheet.scrollHeight > room + 1 || sheet.scrollWidth > sheet.clientWidth + 1;
+  });
   $("#msg").className = over ? "warn" : "ok";
-  $("#msg").textContent = over ? "超過一頁：請減少獨立練習格數或字數" : "放得下一頁";
+  $("#msg").textContent = (over ? "有一頁超過了：請減少獨立練習格數　" : "") + `${shown} 個字、${n} 頁` + (total > shown ? `（字太多，只排前 ${MAX_CHARS} 個）` : "");
 }
 $("#res").addEventListener("change", () => { $("#solo").value = $("#res").checked ? 4 : 7; });   /* 筆順示範區要 4 格高，獨立練習相對少放幾格 */
-for(const id of ["#chars", "#solo", "#res", "#zy"]) $(id).addEventListener("input", () => { loadFonts().then(render); });
+$("#book").addEventListener("change", () => { fillLessons(); applyLessons(); });
+$("#lessons").addEventListener("change", applyLessons);
+$("#chars").addEventListener("input", () => { SRC.sub = ""; SRC.book = {}; loadFonts().then(render); });   /* 自己改字：標題的課次清掉，讀音回到預設 */
+for(const id of ["#solo", "#res", "#zy"]) $(id).addEventListener("input", () => { loadFonts().then(render); });
 $("#print").onclick = () => window.print();
 function loadFonts(){
   const t = [...$("#chars").value].join("");
   return Promise.all([document.fonts.load("40px TWKai", t), document.fonts.load("40px BpmfOnly", t)]).catch(() => {});
 }
+fillBooks();
 loadFonts().then(render);
 </script>
 </body>
