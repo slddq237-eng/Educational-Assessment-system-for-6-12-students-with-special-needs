@@ -200,7 +200,7 @@ function render(){
   const cols = chars.map(c => `<div class="col">${hasZy(c) ? `<span class="zy">${c}</span>` : ""}
     <div class="sec look">${cellWith(c, "all", 1)}</div>
     <div class="sec demo">${demoHtml(c)}</div>
-    ${res ? `<div class="sec res"><div class="box">筆順示範（預留）</div></div>` : ""}
+    ${res ? `<div class="sec res"><div class="box"><span class="v">筆順示範（預留）</span></div></div>` : ""}
     <div class="sec trace">${cellWith(c, "all", .22)}${cellWith(c, "all", .22)}</div>
     <div class="sec fade">${fadeCells(c).join("")}</div>
     <div class="sec solo">${Array.from({length: k}, () => empty(c)).join("")}</div></div>`).join("");
