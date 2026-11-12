@@ -17,6 +17,7 @@
 | `make_bpmf.py` | `shared/bpmf.js`、`shared/fonts/bpmf-kai*` | 新增課本、改讀音後 |
 | `make_bpmf_only.py` | `shared/fonts/bpmf-only.woff2`（寫字 W1 看注音寫國字：「字嗨注音而已」字型只取課本生字；字型要先下載，見檔案開頭） | 新增課本後（和 `make_bpmf.py` 一起） |
 | `make_bpmf_read.js` | `shared/bpmf-read.js`（課本生字裡的破音字讀音，寫字考卷「調整題目」用；讀音表要先下載，見檔案開頭） | 新增課本後 |
+| `make_stroke.py` | `tools/practice/stroke/`（練習簿「筆順示範」的教育部筆順圖，只放課本寫字生字，原樣複製；要先有維護者下載的 zip，見檔案開頭） | 新增課本後 |
 | `make_ruler.py` | `shared/ruler.js`（寫字考卷「字型尺提示」的分線位置，從全字庫正楷體量出來；量錯的字加進 `RULER_FIX`） | 新增課本後（在 `make_kai.py` 之後） |
 | `make_kai.py` | `shared/fonts/tw-kai*` | 新增課本、部件，或改了頁面文字後 |
 | `make_conf_candidates.py` | `docs/materials/material-review.xlsx` 的「干擾字候選」頁 | 要請老師挑干擾字時 |

@@ -34,7 +34,8 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 /* 每一欄的各段高度固定，所以不同字的欄、標籤欄的段落橫向對齊 */
 .sec{display:flex;flex-direction:column;gap:var(--g);margin-bottom:var(--sg)}
 .look{height:var(--cell)}
-.res{height:calc(var(--cell) * 4);width:var(--cell)}
+.res{height:calc(var(--cell) * 4)}
+.col:not(.labels) .res{width:var(--cell)}
 .trace,.fade{height:calc(var(--cell) * 2 + var(--g))}
 .solo{height:calc(var(--cell) * var(--k) + var(--g) * (var(--k) - 1))}
 .col{position:relative;width:calc(var(--cell) + var(--zw));display:flex;flex-direction:column}
@@ -73,7 +74,7 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 <div class="page" id="page">
   <div class="ttl">生字練習簿<span>姓名：＿＿＿＿＿＿　　日期：＿＿＿＿＿＿</span></div>
   <div class="sheet" id="sheet"></div>
-  <div class="src">筆順圖：教育部《國字標準字體筆順學習網》（https://stroke-order.learningweb.moe.edu.tw/）</div>
+  <div class="src">筆順圖：教育部《國字標準字體筆順學習網》</div>
 </div>
 
 <script src="../../shared/parts.js?v=2026-11-12c"></script>
