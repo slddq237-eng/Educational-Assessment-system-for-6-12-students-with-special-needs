@@ -21,7 +21,7 @@
 | 網頁字型 Huninn | 各頁面（Google Fonts） | Google Fonts | Google Fonts 線上版（隨 Google 更新，不固定） | SIL OFL 1.1 | 已列入關於我們 |
 | 網頁字型 LXGW WenKai TC（霞鶩文楷） | 不再使用（2026-10-21 最後一個用到的生字賓果移除） | Google Fonts | — | SIL OFL 1.1 | 已停用：字形和教育部標準楷書不同，改用全字庫正楷體 |
 | 標準楷書字型 全字庫正楷體（TW-Kai 98.1） | `shared/fonts/tw-kai-*.woff2`、`tw-kai.css`（所有頁面） | 行政院全字庫 cns11643.gov.tw | 98.1（npm `@fontpkg/tw-kai` 98.1.0） | 政府資料開放授權條款－第 1 版 | 2026-10-21 加入；已列入關於我們；用 `docs/scripts/make_kai.py` 產生 |
-| 筆順圖（練習簿的筆順示範） | `shared/stroke/*.png`（教育部全部 6,063 個字，約 17.5 MB，原樣複製） | 教育部《國字標準字體筆順學習網》 | 維護者 2026-11-12 提供的下載檔 | 網站標示創用 CC 姓名標示－非商業性－禁止改作 3.0 臺灣版；維護者告知教育部回覆信同意筆順示範的引用（不涉及改作）——**信的範圍還沒記進 repo，請維護者補上** | 2026-11-12 加入；已列入關於我們；`make_stroke.py` 產生；`check.js` 只放行這個資料夾 |
+| 筆順圖（練習簿的筆順示範） | `shared/stroke/*.png`（教育部全部 6,063 個字，約 17.5 MB，原樣複製；資料夾裡有 README 寫授權） | 教育部《國字標準字體筆順學習網》 | 維護者 2026-11-12 提供的下載檔 | 創用 CC 姓名標示－非商業性－禁止改作 3.0 臺灣版；教育部 115 年 11 月回信（臺教社(四)字第 1150908930 號）：維持原筆畫形狀與標準筆順、免費無廣告的公益特教用途、標明出處，就不用另辦專案授權（內容見 `design/parts-strokes.md` 第 3 節） | 2026-11-12 加入；已列入關於我們；`make_stroke.py` 產生；`check.js` 只放行這個資料夾 |
 | 字型尺分線位置（寫字考卷） | `shared/ruler.js`（從上面的全字庫正楷體量出每個課本生字部件之間的空隙） | 全字庫正楷體（衍生資料） | 同上 | 政府資料開放授權條款－第 1 版（可以做衍生資料，要標出處；出處已列在關於我們的全字庫那一列） | 2026-11-10 加入 |
 | SheetJS 0.18.5 | `shared/vendor/`（識字評量、備課分析，按匯出時才載入） | SheetJS | 0.18.5 | Apache 2.0（授權全文 `shared/vendor/xlsx-LICENSE.txt`） | 已列入關於我們；2026-10-20 放進 repo |
 | qrcode-generator 1.4.4 | `shared/vendor/qrcode-generator-1.4.4.js`（識字評量平板作答，按「產生 QR code」時才載入） | Kazuhiko Arase（npm `qrcode-generator`） | 1.4.4 | MIT（授權全文 `shared/vendor/qrcode-LICENSE.txt`）；「QR Code」是 DENSO WAVE 的註冊商標 | 2026-10-23 放進 repo；已列入關於我們 |

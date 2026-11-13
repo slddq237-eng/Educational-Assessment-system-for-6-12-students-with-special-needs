@@ -3,8 +3,8 @@
 
 來源：教育部《國字標準字體筆順學習網》（https://stroke-order.learningweb.moe.edu.tw/）的全筆順圖（每個字一張 PNG，
   第 1 筆到最後一筆依序排成一欄；維護者從網站下載，zip 裡的檔名是「國字.png」）。
-做法：zip 裡每一張圖都**原樣複製、不重新壓縮、不裁切、不上色**（教育部的同意範圍是引用、不改作；
-  維護者 2026-11-12 告知教育部回覆信同意筆順示範的引用）。課本寫字生字（shared/lessons*.js 的 write）和不是課本的字都放
+做法：zip 裡每一張圖都**原樣複製、不重新壓縮、不裁切、不上色**（保持原筆畫形狀，符合創用 CC 禁止改作；
+  教育部 115 年 11 月回信同意，見 shared/stroke/README.md、docs/design/parts-strokes.md 第 3 節）。課本寫字生字（shared/lessons*.js 的 write）和不是課本的字都放
   （維護者 2026-11-12 決定：練習簿可以自己貼任何字）；zip 裡沒有的字（例如課本的「粄」）練習簿會顯示「沒有筆順圖」。
 為什麼可以放進 repo：docs/scripts/check.js 的 ALLOW_IMAGE_DIRS 只放行 shared/stroke/ 裡的 .png（別的圖片仍然擋，防止學生照片）。
 出處：關於我們（about.html）和 docs/materials/data-sources.md 都有列；練習簿頁面底部也印出處。
