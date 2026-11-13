@@ -26,7 +26,7 @@
 | 加入新的外部資料（課本、字頻、圖片、聲音、字型、程式元件） | `materials/data-sources.md`（同步更新「關於我們」頁 `about.html`） |
 | 有人提出新想法、要排優先順序 | `plans/roadmap.md`、`plans/idea-triage.md`、`plans/pending.md`；還沒做的計畫細節在 `plans/roadmap-plans.md` |
 | 數學工具、國語數學共用的遊戲玩法（闖關大地圖、攻城對抗、組合拖曳）、AI 出題 | `plans/math-and-games.md`（2026-11-06 討論稿） |
-| 直式生字練習簿（`tools/practice/`）、筆順圖 | `design/practice-design.md`（現況）；筆順圖的授權讀 `materials/data-sources.md` 和 `design/parts-strokes.md` 第 3 節 |
+| 直式生字練習簿（`tools/practice/`）、筆順圖、用教育部筆順資料做新功能 | `design/practice-design.md`（現況）；筆順資料的內容、教育部回信、授權要遵守什麼讀 `materials/stroke-data.md`；部件切分做法讀 `design/parts-strokes.md` |
 | 寫字評量（W1～W3）、寫字入口、螢幕出題、考卷 | `design/writing-design.md`（現況）、`plans/writing-discussion.md`（2026-11-07 討論稿） |
 | 要討論、還沒決定的事 | `plans/pending.md`；A3 正式評量條件讀 `plans/a3-conditions.md`；老師專區簡潔畫面讀 `design/analysis-page-draft.md` |
 | 查「當初為什麼這樣決定」、已完成的實作細節 | `glossary.md` | 詞彙表：A1～A9、B*、C*、D*、E*、R*、W* 代號和常見名詞的白話解釋（2026-11-02 新增） | （新） |
@@ -67,6 +67,7 @@
 | `plans/goal-review-r3.md` | 逐個目標確認分析：第 1 輪聽音選字（五題檢查表、頁面逐區塊檢查、我標出的疑慮、9 位假學生的標準答案、2026-11-12 第 1 輪結論已填），以及其他目標（部件重組、聽音補部件、聽音選部件、還沒開放的目標、寫字）和跨目標要調整的分析清單（2026-11-11 新增） | （新） |
 | `plans/idea-triage.md` | 想法的輕重緩急：一個問題、「難改／好改／不急」判斷表、想法太多時怎麼辦（2026-11-02 新增） | （新） |
 | `plans/math-and-games.md` | 數學工具與共用遊戲玩法（討論稿）：三種新玩法、國語數學分開做遊戲共用、現在程式哪裡綁在國語上、數學題目來源與對齊課本、上架後老師能不能用 AI 出題（2026-11-06 新增） | （新） |
+| `materials/stroke-data.md` | 教育部筆順資料：手上有什麼（6,063 張圖、沒有座標）、教育部回信重點、維護者的理解、信的原文與判斷分開寫、要遵守的條件和出處標在哪裡、之後要做的事（2026-11-13） |
 | `design/practice-design.md` | 直式生字練習簿現況：版面（欄由右到左、看／筆順示範／描／褪除／摺線／獨立練習）、格子大小、筆順圖來源與授權、部件褪除的限制、注音、還沒做的事（2026-11-12） |
 | `design/writing-design.md` | 寫字評量（W1～W3）的現況：螢幕出題（第 1 版）、考卷格式（第 2 版：表頭、格子大小、字型尺、版本、調整題目）（2026-11-10 從 literacy-design.md 搬出） | （新） |
 | `plans/writing-discussion.md` | 寫字評量開工前要決定的事：入口、出題的版本路線、紙本不登錄、設定步驟已定案；每題記什麼、紀錄放哪、正式評量移到第 3 版再定（2026-11-07） | （新） |
