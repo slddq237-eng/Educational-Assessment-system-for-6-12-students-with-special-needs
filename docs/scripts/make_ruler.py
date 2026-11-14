@@ -21,8 +21,9 @@
   只有一個部件不知道時用總筆畫數減出來）→ 按書寫順序把筆畫分給各部件 → 找一條直線，讓「前面的部件跑到線後面的墨」和「後面的部件跑到線前面的墨」最少；
   有多個一樣好的位置取中間。這樣部件的筆畫連在一起、交疊的字也分得出來（舊方法只看空隙，量不到）。
   算不出來的字（沒有筆畫資料、部件對不上、前後部件的位置順序不符、分線離字邊不到 10%、最好的線還是切到超過 30% 的墨）**不確定，不收進 ruler.js**，
-  網頁對沒有分線的字畫十字格，不畫字型尺（寧可不分，也不要分錯；維護者 2026-11-14 決定）。字型量的結果只當「候選」，
-  印在清單裡、可以產生對照圖（第 3 個參數），維護者看過畫面確認是對的字，加進 RULER_OK 才會收進去（怎麼揪錯見 docs/materials/ruler-review.md）。
+  網頁對沒有分線的字畫十字格，不畫字型尺（寧可不分，也不要分錯；維護者 2026-11-14 決定）。這些字的「候選」分線印在清單裡、可以產生對照圖（第 3 個參數）：
+  先用「最細部件分組」（沒有第一層的字，用電腦自動拆法的最細部件分組、用筆畫驗證，見 leaf_cuts；綠線，標 LEAF，切到墨很少而且只有一種合理分法的標 LEAF+），
+  沒有再用字型量的（橘線，標 FONT）。維護者看過畫面確認是對的字，加進 RULER_OK 才會收進去（怎麼揪錯見 docs/materials/ruler-review.md）。
   不使用 g0v 的 missing/ 資料夾（那是 g0v 自己變形組出的新字，不符合教育部回信的「不變形、不創造新字形」）。筆畫資料不放進 repo，只放算出來的分線。
   跟全字庫正楷體對照：教育部筆畫畫出來的字和全字庫正楷體平均重疊 96%，所以分線位置可以直接用在現在的字形尺。
   執行：python3 docs/scripts/make_ruler.py 筆畫資料夾（需要的筆畫檔會自動從 g0v 下載到這個資料夾，要能連網、有 curl）
@@ -31,7 +32,7 @@
 執行（在 repo 最上層）：python3 docs/scripts/make_ruler.py 筆畫資料夾 [對照圖資料夾]
   （不給筆畫資料夾就沒有確定的字，ruler.js 幾乎是空的；給對照圖資料夾會把「不確定的字」畫成對照圖 PNG，放在 repo 外面）
 """
-import collections, glob, io, json, os, subprocess, sys
+import collections, glob, io, itertools, json, os, subprocess, sys
 from fontTools.ttLib import TTFont
 from PIL import Image, ImageDraw, ImageFont
 
@@ -114,10 +115,11 @@ def blob_cuts(ink, axis, n):
 #    部件的筆畫連在一起、交疊的字也分得出來。算不出來的字（沒有筆畫資料、部件對不上、切不開）照舊用上面字型量的結果。
 PARTS = json.loads(subprocess.run(['node', '-e', r'''
 const fs=require("fs");const src=require("./docs/scripts/lessons-src.js")();
-const code=src+";"+["shared/parts.js","shared/parts-layers.js","shared/parts-api.js"].map(f=>fs.readFileSync(f,"utf8")).join(";")+";this.B=BOOKS;this.P=window.Parts;";
+const code=src+";"+["shared/parts.js","shared/parts-layers.js","shared/parts-api.js"].map(f=>fs.readFileSync(f,"utf8")).join(";")+";this.B=BOOKS;this.P=window.Parts;this.PA=PARTS_AUTO;";
 const o={window:{}};new Function("window",code).call(o,o.window);
 const out={};for(const b of Object.values(o.B))for(const L of Object.values(b.lessons))for(const c of (L.write||"")+(L.read||"")){const r=o.P.layer(c,1);out[c]=r?r.parts:null;}
-process.stdout.write(JSON.stringify(out));'''], capture_output=True, text=True, check=True).stdout)
+process.stdout.write(JSON.stringify({layer1:out,auto:o.PA}));'''], capture_output=True, text=True, check=True).stdout)
+AUTO = PARTS['auto']; PARTS = PARTS['layer1']   # AUTO：電腦自動拆法（最細的部件，照書寫順序）
 STROKE_DIR = sys.argv[1] if len(sys.argv) > 1 else os.environ.get('RULER_STROKE_DIR', '')
 MAX_CROSS = .30      # 最好的直線還是切到超過 30% 的墨（部件對錯了，例如筆畫數對不上；部件本來就交疊的字最多 10～25%，看過畫面是對的），不用筆畫的結果
 SSIZE = 512          # 筆畫畫成 512×512 的圖來算
@@ -243,6 +245,52 @@ def radical_table(todo):
     return table
 
 
+def leaf_cuts(c, axis, n, radical):
+    """沒有第一層（部件表沒有、或有一塊打不出來／讀不出聲音）的字：用電腦自動拆法的「最細部件」（照書寫順序），
+       試所有「切在最細部件之間」的分組方式，每一種用筆畫驗證（順序、分線不靠邊、切到的墨），挑切到墨最少的；
+       回傳 (分線們, 切到的墨比例, 和第二名的差) 或 None。差越大越確定（只有一種合理分法）。
+       驗證：拿有第一層的字（答案是用第一層筆畫數算的 1,524 字）來比，切到墨 ≤3% 而且和第二名差 ≥5% 的 1,393 字裡，分線差 ≤0.03 的佔 99.9%（只有「克」「攀」不同）。
+       這些字沒有名字（部件表第一層要求每塊是可讀出聲音的字），只能當字型尺的分線，不能直接當第一層。"""
+    leaves = AUTO.get(c, '').split()
+    st = load_strokes(c)
+    if st is None or len(leaves) < n + 1: return None
+    counts = [stroke_count(x) if stroke_count(x) is not None else radical.get(x) for x in leaves]
+    unk = [i for i, k in enumerate(counts) if k is None]
+    N = len(st)
+    if len(unk) == 1:
+        rest = N - sum(k for k in counts if k is not None)
+        if rest < 1: return None
+        counts[unk[0]] = rest
+    elif unk or sum(counts) != N: return None
+    masks = raster_strokes(st)
+    allm = np.zeros_like(masks[0])
+    for m in masks: allm |= m
+    ys, xs = np.nonzero(allm)
+    a0, a1 = (xs.min(), xs.max() + 1) if axis == 'x' else (ys.min(), ys.max() + 1)
+    found = []
+    for cuts in itertools.combinations(range(1, len(leaves)), n):
+        bounds = (0,) + cuts + (len(leaves),)
+        known = [sum(counts[i:j]) for i, j in zip(bounds, bounds[1:])]
+        groups, k0 = [], 0
+        for k in known:
+            m = np.zeros_like(masks[0])
+            for x in masks[k0:k0 + k]: m |= x
+            groups.append(m); k0 += k
+        pr = [g.sum(0 if axis == 'x' else 1) for g in groups]
+        if any(p.sum() == 0 for p in pr): continue
+        cen = [(p * np.arange(len(p))).sum() / p.sum() for p in pr]
+        if any(cen[j] >= cen[j + 1] for j in range(n)): continue
+        costs, fr = [], []
+        for j in range(n):
+            pos, cost = best_cut(pr[j], pr[j + 1])
+            costs.append(cost); fr.append((pos - a0) / (a1 - a0))
+        if any(f < .10 or f > .90 for f in fr) or any(fr[j + 1] - fr[j] < .10 for j in range(n - 1)) or max(costs) > MAX_CROSS: continue
+        found.append((max(costs), [round(PAD + f * (1 - 2 * PAD), 3) for f in fr]))
+    if not found: return None
+    found.sort(key=lambda x: x[0])
+    return found[0][1], found[0][0], (found[1][0] - found[0][0]) if len(found) > 1 else 1.0
+
+
 SCUTS, SINFO = {}, {'筆畫': 0}
 SFAIL = collections.Counter(); SHIGH = []; SWHY = {}
 if STROKE_DIR:
@@ -260,7 +308,8 @@ else:
     print('沒有指定筆畫資料資料夾（python3 docs/scripts/make_ruler.py 筆畫資料夾路徑）：全部照字型量的結果，比較不準')
 
 out, skipped, how = dict(SCUTS), [], {'blob': 0, 'gap': 0}   # 先放教育部筆畫算出來的（確定）
-CAND = {}   # 不確定的字：字型量的結果（候選，不收進 ruler.js）
+CAND = {}   # 不確定的字：候選分線（最細部件分組算的，沒有就用字型量的；都不收進 ruler.js，要維護者確認）
+CSRC, CLIKELY = {}, {}   # 候選是哪一種算的（leaf＝最細部件分組、font＝字型）、「可能對」
 for c, s in sorted(STRUCT.items()):
     if s not in SPLITS or c not in fonts: continue
     axis, n = SPLITS[s]
@@ -294,7 +343,12 @@ for c, s in sorted(STRUCT.items()):
         if cuts: how['gap'] += 1
     if cuts: cuts = [round(PAD + p * (1 - 2 * PAD), 3) for p in cuts]
     if c in SCUTS: continue
-    CAND[c] = cuts
+    LC = leaf_cuts(c, SPLITS[s][0], SPLITS[s][1], RADICAL) if STROKE_DIR else None
+    if LC and LC[1] <= .10:      # 最細部件分組：候選（綠線）；切到墨 ≤3% 而且和第二名差 ≥5% 的標「可能」，審的時候先看
+        CAND[c] = LC[0]; CSRC[c] = 'leaf'; CLIKELY[c] = LC[1] <= .03 and LC[2] >= .05
+        cuts = LC[0]
+    else:
+        CAND[c] = cuts; CSRC[c] = 'font'
     if cuts and c in RULER_OK: out[c] = cuts   # 維護者看過確認
     elif not cuts: skipped.append(c)
 for c, v in RULER_FIX.items():
@@ -313,6 +367,7 @@ with open(OUT, 'w', encoding='utf-8') as f:
     f.write(head + 'const RULER = ' + json.dumps(out, ensure_ascii=False, separators=(',', ':')) + ';\n')
 total = sum(1 for c, s in STRUCT.items() if s in SPLITS)
 why = collections.Counter(SWHY.get(c, '沒有筆畫資料') for c in UNSURE)
+print(f'候選：最細部件分組 {sum(1 for c in UNSURE if CSRC.get(c) == "leaf")} 個（其中標 LEAF+ 的 {sum(1 for c in UNSURE if CLIKELY.get(c))}）、字型 {sum(1 for c in UNSURE if CSRC.get(c) == "font" and CAND.get(c))} 個、沒有候選 {sum(1 for c in UNSURE if not CAND.get(c))} 個')
 print(f'{OUT}：{len(out)} 個字有分線（教育部筆畫 {SINFO["筆畫"]}、維護者確認 {sum(1 for c in out if c in RULER_OK)}）；左右、上下、左中右、上中下共 {total} 個，其中 {len(UNSURE)} 個不確定、不畫字型尺（原因：{dict(why)}）')
 _by = collections.defaultdict(list)
 for c in UNSURE: _by[SWHY.get(c, '沒有筆畫資料')].append(c)
@@ -326,8 +381,9 @@ if REVIEW_DIR:
     CELL, COLS, ROWS = 200, 6, 5
     print('對照圖的原因代號：' + '；'.join(f'{v} ＝ {k}' for k, v in REASON_CODE.items()))
     lab = ImageFont.load_default()
-    for sheet in range(0, len(UNSURE), COLS * ROWS):
-        chunk = UNSURE[sheet:sheet + COLS * ROWS]
+    ORDER = sorted(UNSURE, key=lambda c: (0 if CLIKELY.get(c) else 1 if CSRC.get(c) == 'leaf' else 2 if CAND.get(c) else 3, c))   # LEAF+ 先看（最可能對），再 LEAF、FONT、沒有候選
+    for sheet in range(0, len(ORDER), COLS * ROWS):
+        chunk = ORDER[sheet:sheet + COLS * ROWS]
         big = Image.new('RGB', (COLS * (CELL + 8) + 8, ROWS * (CELL + 36) + 8), (235, 235, 235))
         for k, c in enumerate(chunk):
             cell = Image.new('RGB', (CELL, CELL + 28), 'white'); dr = ImageDraw.Draw(cell)
@@ -342,13 +398,14 @@ if REVIEW_DIR:
             axis = SPLITS[STRUCT[c]][0]
             for pos in (CAND.get(c) or []):
                 q = int(pos * CELL)
-                dr.line([(q, 0), (q, CELL)] if axis == 'x' else [(0, q), (CELL, q)], fill=(240, 130, 0), width=2)
+                dr.line([(q, 0), (q, CELL)] if axis == 'x' else [(0, q), (CELL, q)], fill=(20, 150, 40) if CSRC.get(c) == 'leaf' else (240, 130, 0), width=2)
             dr.rectangle([0, 0, CELL - 1, CELL - 1], outline=(60, 60, 60))
             # 預設字型沒有中文，標籤只用數字和英文字母（編號、結構、原因代號、候選位置）；字另外縮小貼在標籤上
             st_ = {'左右': 'LR', '上下': 'TB', '左中右': 'LMR', '上中下': 'TMB'}[STRUCT[c]]
             code = REASON_CODE.get(SWHY.get(c, '沒有筆畫資料'), '?')
             dr.text((4, CELL + 3), f'{sheet + k + 1}.', fill=(0, 0, 0), font=lab)
-            dr.text((46, CELL + 3), f'{st_} reason {code}  cand {CAND.get(c)}', fill=(0, 0, 0), font=lab)
+            cand_ = ','.join(f'{float(x):.2f}' for x in (CAND.get(c) or [])) or 'none'
+            dr.text((46, CELL + 3), f'{st_} {code} {"LEAF" + ("+" if CLIKELY.get(c) else "") if CSRC.get(c) == "leaf" else "FONT"} {cand_}', fill=(0, 0, 0), font=lab)
             if c in fonts and bb:
                 sm = g.crop(bb); h_ = 20; sm = sm.resize((max(1, int(sm.width * h_ / sm.height)), h_)); cell.paste(sm, (22, CELL + 1))
             big.paste(cell, (8 + (k % COLS) * (CELL + 8), 8 + (k // COLS) * (CELL + 36)))
