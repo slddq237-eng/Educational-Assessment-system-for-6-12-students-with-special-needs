@@ -24,6 +24,7 @@
   網頁對沒有分線的字畫十字格，不畫字型尺（寧可不分，也不要分錯；維護者 2026-11-14 決定）。這些字的「候選」分線印在清單裡、可以產生對照圖（第 3 個參數）：
   先用「最細部件分組」（沒有第一層的字，用電腦自動拆法的最細部件分組、用筆畫驗證，見 leaf_cuts；綠線，標 LEAF，切到墨很少而且只有一種合理分法的標 LEAF+），
   沒有再用字型量的（橘線，標 FONT）。維護者看過畫面確認是對的字，加進 RULER_OK 才會收進去（怎麼揪錯見 docs/materials/ruler-review.md）。
+  g0v 有幾個字的筆畫資料重複（懂 32 畫、慰 18 畫），外框位置一樣的筆畫只留一個（load_strokes）。
   不使用 g0v 的 missing/ 資料夾（那是 g0v 自己變形組出的新字，不符合教育部回信的「不變形、不創造新字形」）。筆畫資料不放進 repo，只放算出來的分線。
   跟全字庫正楷體對照：教育部筆畫畫出來的字和全字庫正楷體平均重疊 96%，所以分線位置可以直接用在現在的字形尺。
   執行：python3 docs/scripts/make_ruler.py 筆畫資料夾（需要的筆畫檔會自動從 g0v 下載到這個資料夾，要能連網、有 curl）
@@ -54,7 +55,9 @@ SPLITS = {'左右': ('x', 1), '左中右': ('x', 2), '上下': ('y', 1), '上中
 RULER_FIX = {}
 # 人工確認：沒有教育部筆畫可算、只有字型量的結果，維護者看過對照圖確認「分線是對的」的字（一個字串，例如 '案倒件'）；
 # 沒有列在這裡的不確定字，不收進 ruler.js
-RULER_OK = set('')
+# 維護者指定的第一層每塊幾畫（部件名稱查不到筆畫數時用；例如憂＝前 12 畫｜夊 3 畫，2026-11-14；南…業是第三批、焉…齒是第四批）：{字: [第一塊畫數, 第二塊畫數, ...]}
+PART_STROKES = {'焉': [5, 6], '爭': [4, 4], '疊': [15, 7], '盡': [9, 5], '竹': [3, 3], '第': [6, 5], '舞': [8, 6], '製': [8, 7], '豐': [11, 7], '赤': [3, 4], '骨': [6, 4], '備': [2, 10], '器': [6, 4, 6], '帶': [5, 6], '歲': [4, 9], '班': [4, 2, 4], '畏': [5, 4], '薄': [4, 14], '象': [6, 6], '辨': [7, 2, 7], '長': [5, 3], '鬱': [14, 15], '齒': [4, 11], '南': [2, 7], '卷': [3, 5], '喪': [9, 3], '奉': [3, 5], '奧': [10, 3], '對': [11, 3], '慰': [11, 4], '懂': [3, 13], '拳': [4, 6], '望': [7, 4], '業': [5, 8], '憂': [12, 3], '晉': [6, 4], '毫': [5, 6], '牽': [7, 4], '益': [5, 5], '聖': [9, 4], '舉': [11, 6], '豪': [5, 9], '賓': [3, 11], '釜': [4, 6], '黃': [4, 8]}   # 憂是第一批、其餘是對照圖第二批（維護者 2026-11-14 指定「前 N 畫｜其餘」）
+RULER_OK = set('乾佩侃冠制務參哭啟嘗噪堂墊幹弱德愣慚敢散敷旅旋族旗暴曹曾朝棄森款殺沿漢漸然率產磊穀穎簸素縣羈聚聰聽色莫蒜蟲解負責賴足那鐵鑿隙難霜青類飾黍黝亭修具夏害寒尋徵徽愛掌')   # 2026-11-14 維護者看過對照圖第 1～3 張確認「其他都可以」的字（80 個，不含另外指定拆法的 兩嫩候索里午寡帝憂旁）；其中有第一層的字用第一層算，沒有第一層的用「最細部件分組」的候選
 
 # 2. 楷書字型：每個字在哪一個字型檔
 fonts = {}
@@ -143,7 +146,14 @@ _sc = {}
 def load_strokes(ch):
     p = os.path.join(STROKE_DIR, f'{ord(ch):x}.json')
     if not os.path.exists(p): return None
-    if ch not in _sc: _sc[ch] = json.load(open(p, encoding='utf-8'))
+    if ch not in _sc:
+        st = json.load(open(p, encoding='utf-8'))
+        seen, out = set(), []
+        for s in st:          # g0v 有幾個字的筆畫資料重複了（例如懂 32 畫＝16 畫抄兩遍、慰 18 畫＝最後 3 畫重複）：外框位置一樣（座標差不到 8）的筆畫只留第一個
+            xs = [p.get('x', p.get('end', {}).get('x')) for p in s['outline']]; ys = [p.get('y', p.get('end', {}).get('y')) for p in s['outline']]
+            k = tuple(int(v // 8) for v in (min(xs), max(xs), min(ys), max(ys)))
+            if k not in seen: seen.add(k); out.append(s)
+        _sc[ch] = out
     return _sc[ch]
 
 
@@ -186,15 +196,23 @@ def best_cut(pa, pb):
     return int(idx[len(idx) // 2]), cost.min() / max(1, ca[-1] + cb[-1])
 
 
+def piece_count(p, radical=None):
+    """一塊部件幾畫：單一個字用它自己的筆畫數（偏旁用反推的）；[名稱] 部件（部件表第一層可以用名稱補，2026-11-14，例如「亻丨」）是每個字的筆畫數加起來；有一個不知道就回傳 None"""
+    if len(p) == 1:
+        n = stroke_count(p)
+        return n if n is not None else (radical or {}).get(p)
+    cs = [piece_count(x, radical) for x in p]
+    return sum(cs) if all(k is not None for k in cs) else None
+
+
 def stroke_cuts(c, parts, axis, n, radical):
     """回傳 (分線們, 切到的墨最多的那條的比例, 方法) 或 (None, None, 失敗原因)"""
     st = load_strokes(c)
     if st is None: return None, None, '沒有筆畫資料'
     if not parts or len(parts) != n + 1: return None, None, '沒有對應的部件'
     N = len(st)
-    known = [stroke_count(p) for p in parts]
-    for i, p in enumerate(parts):          # 偏旁（氵、亻…）沒有單獨的檔案，用反推出來的筆畫數（見 radical_table）
-        if known[i] is None and p in radical: known[i] = radical[p]
+    known = [piece_count(p, radical) for p in parts]   # 偏旁（氵、亻…）沒有單獨的檔案，用反推出來的筆畫數（見 radical_table）
+    if c in PART_STROKES and len(PART_STROKES[c]) == len(parts) and sum(PART_STROKES[c]) == N: known = list(PART_STROKES[c])   # 維護者指定的優先
     unk = [i for i, k in enumerate(known) if k is None]
     if len(unk) == 1:
         rest = N - sum(k for k in known if k is not None)
@@ -233,9 +251,9 @@ def radical_table(todo):
     for c, parts, axis, n in todo:
         st = load_strokes(c)
         if st is None or not parts or len(parts) != n + 1: continue
-        known = [stroke_count(p) for p in parts]
+        known = [piece_count(p) for p in parts]
         unk = [i for i, k in enumerate(known) if k is None]
-        if len(unk) == 1:
+        if len(unk) == 1 and len(parts[unk[0]]) == 1:    # 只反推單一個字的偏旁（[名稱] 部件不反推）
             rest = len(st) - sum(k for k in known if k is not None)
             if rest >= 1: votes.setdefault(parts[unk[0]], collections.Counter())[rest] += 1
     table = {}
