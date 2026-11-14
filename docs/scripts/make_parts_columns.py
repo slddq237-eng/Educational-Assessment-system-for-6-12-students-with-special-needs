@@ -7,7 +7,8 @@
   2. 產生 shared/parts-layers.js（平台透過 window.Parts 讀這個檔，見 shared/parts-api.js）。
 
 三層（2026-10-31 維護者決定）：
-  第一層  按結構拆成 2～3 個「可讀出聲音」的部件（部件是一個字，或是部首變體，見「部首變體對照」頁）
+  第一層  按結構拆成 2～3 個「可讀出聲音」的部件（部件是一個字，或是部首變體，見「部首變體對照」頁）；
+          人工手動可以用 [名稱] 補打不出來、讀不出聲音的部件（2026-11-14 維護者決定，例如「[亻丨] [攵木]」，括號裡的幾個字算一塊）
   第二層  可教學角度拆到最細：拆到部首就停，不拆成單一筆畫或罕用字；同一部件出現幾次寫幾次（森＝木 木 木）
   第三層  開源部件（cjkvi-ids）拆到最細，只存最底層（拼起來剛好是字，不含中間層）
 每層讀取時「人工手動 → 電腦」；人工手動欄有填、狀態是已確認或待確認（空白當待確認）才算；狀態「待討論」不寫進平台。
@@ -168,7 +169,7 @@ yellow, green, none, red = (PatternFill('solid', fgColor='FBF1DC'), PatternFill(
 note = {'結構': '電腦從 cjkvi-ids 判斷第一層的排列方式；不對請寫在右邊「老師修正：結構」',
         '老師修正：結構': '老師填：從下拉選單選；有填就用這個。遮擋題會用結構決定遮哪一塊',
         '第一層（電腦）': '電腦自動：按結構拆成 2～3 個可讀出聲音的部件，黃色＝待老師確認；拆不出來的留空，需要檢查欄會寫原因',
-        '第一層（人工手動）': '老師填：部件可以用空格、頓號或＋分開，也可以直接連寫（氵青），每個字元算一塊；順序照結構（左右＝左在前；上下＝上在前；包圍＝外層在前、裡面在後），例如「氵 青」。程式重算時不會動',
+        '第一層（人工手動）': '老師填：部件可以用空格、頓號或＋分開，也可以直接連寫（氵青），每個字元算一塊；順序照結構（左右＝左在前；上下＝上在前；包圍＝外層在前、裡面在後），例如「氵 青」。部件打不出來、讀不出聲音時用方括號寫名稱，括號裡的幾個字算一塊，例如「[亻丨] [攵木]」。程式重算時不會動',
         '第一層狀態': '老師填（下拉選單）：已確認／待確認／待討論。人工手動欄有填、狀態空白當待確認；待討論不寫進平台',
         '第二層（電腦）': '電腦自動：可教學角度拆到最細（拆到部首就停，不拆成單一筆畫或罕用字），黃色＝待老師確認',
         '第二層（人工手動）': '老師填：部件可以用空格、頓號或＋分開，也可以直接連寫，例如「足 耳 耳 耳」或「足耳耳耳」；想當成獨體字不拆就寫字自己。程式重算時不會動',
@@ -186,9 +187,23 @@ for j, h in enumerate(H, 1):
     ws.column_dimensions[openpyxl.utils.get_column_letter(j)].width = WIDTH[h]
     if h in note: c.comment = Comment(note[h], 'Claude')
 CJK = re.compile(r'[\u2E80-\u2FDF\u31C0-\u31EF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\U00020000-\U0003FFFF]')
-def tokens(v):   # 人工手動欄：每個字元算一塊，空格（半形、全形）、＋、頓號、逗號都略過，所以連寫也可以（氵青）；有字母、括號等不是部件的字元就回傳空（格式不對）
-    cs = chars_of(v) if v not in (None, '') else []
-    return cs if all(CJK.match(c) for c in cs) else []
+def tokens(v):   # 人工手動欄：每個字元算一塊，空格（半形、全形）、頓號、逗號都略過，所以連寫也可以（氵青）；
+    # 方括號裡的是「名稱」部件（2026-11-14 維護者決定：第一層的部件打不出來、讀不出聲音時，可以用名稱補），括號裡的幾個字算一塊，例如「[亻丨] [攵木]」；
+    # 有字母、不成對的括號等不是部件的字元就回傳空（格式不對）
+    if v in (None, ''): return []
+    s, out, i = str(v), [], 0
+    while i < len(s):
+        ch = s[i]
+        if ch in '[［':
+            j = next((k for k in range(i + 1, len(s)) if s[k] in ']］'), None)
+            if j is None: return []
+            name = chars_of(s[i + 1:j])
+            if not name or not all(CJK.match(c) for c in name): return []
+            out.append(''.join(name)); i = j + 1
+        elif re.match(r'[／/、,，;；\s]', ch): i += 1
+        elif CJK.match(ch): out.append(ch); i += 1
+        else: return []
+    return out
 def status_of(cell, has): return (str(cell).strip() if cell not in (None, '') else '待確認') if has else (str(cell).strip() if cell else '')
 for r in range(2, ws.max_row + 1):
     c = ws.cell(r, 1).value
@@ -213,10 +228,10 @@ for r in range(2, ws.max_row + 1):
         st = status_of(stv, has)
         if st and st not in STATUS: bad.append(f'{c}（{key}狀態）：「{stv}」不是已確認／待確認／待討論'); st = ''
         t = tokens(man) if has else []
-        valid = has and st != '待討論' and t and all(len(x) == 1 for x in t) and (
+        valid = has and st != '待討論' and t and (all(len(x) == 1 for x in t) or strict) and (   # 第一層可以有名稱部件（[亻丨] 這種，不只一個字）；第二層一塊一個字
             (len(t) in (2, 3)) if strict else (len(t) >= 1 and (len(t) > 1 or t[0] == c)))
         if has and not valid:
-            if st != '待討論': bad.append(f'{c}（{key}人工手動）：「{man}」格式不對（每塊一個字，用空格分開；第一層要 2～3 塊）'); reasons.append(f'{key}人工手動格式不對，沒有寫進平台')
+            if st != '待討論': bad.append(f'{c}（{key}人工手動）：「{man}」格式不對（每塊一個字，用空格分開；第一層要 2～3 塊，部件打不出來可以寫 [名稱]）'); reasons.append(f'{key}人工手動格式不對，沒有寫進平台')
         d = {}
         if auto: d['a'] = ' '.join(auto)
         if valid: d['m'] = ' '.join(t)

@@ -186,15 +186,22 @@ def best_cut(pa, pb):
     return int(idx[len(idx) // 2]), cost.min() / max(1, ca[-1] + cb[-1])
 
 
+def piece_count(p, radical=None):
+    """一塊部件幾畫：單一個字用它自己的筆畫數（偏旁用反推的）；[名稱] 部件（部件表第一層可以用名稱補，2026-11-14，例如「亻丨」）是每個字的筆畫數加起來；有一個不知道就回傳 None"""
+    if len(p) == 1:
+        n = stroke_count(p)
+        return n if n is not None else (radical or {}).get(p)
+    cs = [piece_count(x, radical) for x in p]
+    return sum(cs) if all(k is not None for k in cs) else None
+
+
 def stroke_cuts(c, parts, axis, n, radical):
     """回傳 (分線們, 切到的墨最多的那條的比例, 方法) 或 (None, None, 失敗原因)"""
     st = load_strokes(c)
     if st is None: return None, None, '沒有筆畫資料'
     if not parts or len(parts) != n + 1: return None, None, '沒有對應的部件'
     N = len(st)
-    known = [stroke_count(p) for p in parts]
-    for i, p in enumerate(parts):          # 偏旁（氵、亻…）沒有單獨的檔案，用反推出來的筆畫數（見 radical_table）
-        if known[i] is None and p in radical: known[i] = radical[p]
+    known = [piece_count(p, radical) for p in parts]   # 偏旁（氵、亻…）沒有單獨的檔案，用反推出來的筆畫數（見 radical_table）
     unk = [i for i, k in enumerate(known) if k is None]
     if len(unk) == 1:
         rest = N - sum(k for k in known if k is not None)
@@ -233,9 +240,9 @@ def radical_table(todo):
     for c, parts, axis, n in todo:
         st = load_strokes(c)
         if st is None or not parts or len(parts) != n + 1: continue
-        known = [stroke_count(p) for p in parts]
+        known = [piece_count(p) for p in parts]
         unk = [i for i, k in enumerate(known) if k is None]
-        if len(unk) == 1:
+        if len(unk) == 1 and len(parts[unk[0]]) == 1:    # 只反推單一個字的偏旁（[名稱] 部件不反推）
             rest = len(st) - sum(k for k in known if k is not None)
             if rest >= 1: votes.setdefault(parts[unk[0]], collections.Counter())[rest] += 1
     table = {}
