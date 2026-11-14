@@ -54,7 +54,9 @@ SPLITS = {'左右': ('x', 1), '左中右': ('x', 2), '上下': ('y', 1), '上中
 RULER_FIX = {}
 # 人工確認：沒有教育部筆畫可算、只有字型量的結果，維護者看過對照圖確認「分線是對的」的字（一個字串，例如 '案倒件'）；
 # 沒有列在這裡的不確定字，不收進 ruler.js
-RULER_OK = set('')
+# 維護者指定的第一層每塊幾畫（部件名稱查不到筆畫數時用；例如憂＝前 12 畫｜夊 3 畫，2026-11-14）：{字: [第一塊畫數, 第二塊畫數, ...]}
+PART_STROKES = {'憂': [12, 3]}
+RULER_OK = set('乾佩侃冠制務參哭啟嘗噪堂墊幹弱德愣慚敢散敷旅旋族旗暴曹曾朝棄森款殺沿漢漸然率產磊穀穎簸素縣羈聚聰聽色莫蒜蟲解負責賴足那鐵鑿隙難霜青類飾黍黝亭修具夏害寒尋徵徽愛掌')   # 2026-11-14 維護者看過對照圖第 1～3 張確認「其他都可以」的字（80 個，不含另外指定拆法的 兩嫩候索里午寡帝憂旁）；其中有第一層的字用第一層算，沒有第一層的用「最細部件分組」的候選
 
 # 2. 楷書字型：每個字在哪一個字型檔
 fonts = {}
@@ -202,6 +204,7 @@ def stroke_cuts(c, parts, axis, n, radical):
     if not parts or len(parts) != n + 1: return None, None, '沒有對應的部件'
     N = len(st)
     known = [piece_count(p, radical) for p in parts]   # 偏旁（氵、亻…）沒有單獨的檔案，用反推出來的筆畫數（見 radical_table）
+    if c in PART_STROKES and len(PART_STROKES[c]) == len(parts) and sum(PART_STROKES[c]) == N: known = list(PART_STROKES[c])   # 維護者指定的優先
     unk = [i for i, k in enumerate(known) if k is None]
     if len(unk) == 1:
         rest = N - sum(k for k in known if k is not None)

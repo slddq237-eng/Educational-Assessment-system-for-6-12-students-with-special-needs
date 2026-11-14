@@ -242,7 +242,7 @@ for r in range(2, ws.max_row + 1):
     for n in (1, 2):
         if n in layers: data[str(n)] = layers[n]
     eff1 = layers[(1, 'eff')]
-    mk_auto = mask_auto(struct, l1 or eff1) if (l1 or eff1) else None
+    mk_auto = (mask_auto(struct, eff1) if eff1 else None) or (mask_auto(struct, l1) if l1 else None)   # 先看實際生效的第一層（人工手動優先；2026-11-14：嫩這種老師改成 3 塊的字原本算不出遮第幾塊），算不出來再照電腦的第一層（和原本一樣）
     mk_man = g('正式評量遮第幾塊（人工手動）')
     mk = mk_auto
     if mk_man not in (None, ''):
