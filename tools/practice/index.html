@@ -11,8 +11,8 @@
   格子畫法用 shared/ruler-cell.js（字形尺）；部件分區和字形尺同一份，所以示範、褪除、字形尺三者的分塊一致。
   這是雛形：只有這一頁，沒有接課本資料、沒有存任何東西；不放進首頁。示範區只留「筆順示範」；部件示範 2026-11-12 維護者決定刪掉。筆順圖放在 shared/stroke/（檔名是國字.png），沒有圖的字顯示「沒有筆順圖」。
 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-14">
-<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-14">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-14b">
+<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-14b">
 <style>
 @font-face{font-family:"BpmfOnly";font-display:swap;src:url(../../shared/fonts/bpmf-only.woff2) format("woff2")}
 :root{--cell:1.8cm;--zw:8mm;--g:1.2mm;--sg:2.5mm;--k:6;--kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;color-scheme:light}
@@ -90,14 +90,14 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 <div id="pages"></div>
 
 <!-- 課本資料（shared/lessons.js 會自己載入各本）和注音讀音表、課本名稱（shared/common.js） -->
-<script src="../../shared/lessons.js?v=2026-11-14"></script>
-<script src="../../shared/bpmf.js?v=2026-11-14"></script>
-<script src="../../shared/parts.js?v=2026-11-14"></script>
-<script src="../../shared/parts-layers.js?v=2026-11-14"></script>
-<script src="../../shared/parts-api.js?v=2026-11-14"></script>
-<script src="../../shared/ruler.js?v=2026-11-14"></script>
-<script src="../../shared/ruler-cell.js?v=2026-11-14"></script>
-<script src="../../shared/common.js?v=2026-11-14"></script>
+<script src="../../shared/lessons.js?v=2026-11-14b"></script>
+<script src="../../shared/bpmf.js?v=2026-11-14b"></script>
+<script src="../../shared/parts.js?v=2026-11-14b"></script>
+<script src="../../shared/parts-layers.js?v=2026-11-14b"></script>
+<script src="../../shared/parts-api.js?v=2026-11-14b"></script>
+<script src="../../shared/ruler.js?v=2026-11-14b"></script>
+<script src="../../shared/ruler-cell.js?v=2026-11-14b"></script>
+<script src="../../shared/common.js?v=2026-11-14b"></script>
 <script>
 "use strict";
 const $ = s => document.querySelector(s);

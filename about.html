@@ -10,7 +10,7 @@
 <!-- Google 字型背景載入（2026-11-10 發布前測試）：學校網路不回應時，原本整頁要等 30 秒以上才出現；沒載到就先用電腦內建字型 -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" media="print" onload="this.media='all'">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="shared/fonts/tw-kai.css?v=2026-11-14">
+<link rel="stylesheet" href="shared/fonts/tw-kai.css?v=2026-11-14b">
 <style>
 /* 關於我們：平台介紹、資料來源與出處。內容對應 docs/materials/data-sources.md「資料來源與授權清單」
    和規格書「資料來源、授權與隱私」表一；加入新的外部資料時，這一頁要一起改。
@@ -105,7 +105,7 @@ td:first-child{font-weight:700}
         <td>Huninn（jf 粉圓體），由 <a href="https://fonts.google.com/" target="_blank" rel="noopener">Google Fonts</a> 提供</td>
         <td>SIL OFL 1.1</td></tr>
       <tr><td>字型尺的分線位置</td><td>寫字考卷、練習簿的字型尺（左右、上下的分線）</td>
-        <td>依教育部《國字標準字體筆順學習網》的筆畫資料（經 <a href="https://github.com/g0v/zh-stroke-data" target="_blank" rel="noopener">g0v zh-stroke-data</a> 整理）算出每個部件的範圍，只放算出來的位置數字，不含筆畫</td>
+        <td>依教育部《國字標準字體筆順學習網》的筆畫資料（經 <a href="https://github.com/g0v/zh-stroke-data" target="_blank" rel="noopener">g0v zh-stroke-data</a> 整理）算出每個部件的範圍（算不出來的字不畫字型尺），只放算出來的位置數字，不含筆畫</td>
         <td>教育部回信同意（免費、無廣告的公益特教教學，標明出處）</td></tr>
       <tr><td>標準楷書字型</td><td>題目、選項、生字等楷書字</td>
         <td>行政院「<a href="https://www.cns11643.gov.tw/" target="_blank" rel="noopener">全字庫</a>正楷體」（TW-Kai），只收錄平台用到的字，放在本網站裡</td>

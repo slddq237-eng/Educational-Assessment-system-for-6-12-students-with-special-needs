@@ -22,7 +22,7 @@
 | 網頁字型 LXGW WenKai TC（霞鶩文楷） | 不再使用（2026-10-21 最後一個用到的生字賓果移除） | Google Fonts | — | SIL OFL 1.1 | 已停用：字形和教育部標準楷書不同，改用全字庫正楷體 |
 | 標準楷書字型 全字庫正楷體（TW-Kai 98.1） | `shared/fonts/tw-kai-*.woff2`、`tw-kai.css`（所有頁面） | 行政院全字庫 cns11643.gov.tw | 98.1（npm `@fontpkg/tw-kai` 98.1.0） | 政府資料開放授權條款－第 1 版 | 2026-10-21 加入；已列入關於我們；用 `docs/scripts/make_kai.py` 產生 |
 | 筆順圖（練習簿的筆順示範） | `shared/stroke/*.png`（課本寫字生字，2,113 個，約 5.6 MB；教育部全筆順圖原樣複製，不裁切、不上色） | 教育部《國字標準字體筆順學習網》stroke-order.learningweb.moe.edu.tw | 維護者 2026-11-12 提供的下載檔（6,063 張） | 網站標示創用 CC 姓名標示－非商業性－禁止改作 3.0 臺灣版；維護者 2026-11-12 告知教育部回覆信同意筆順示範的引用（不涉及改作）——**信的內容還沒記進 repo，請維護者補上同意的範圍** | 2026-11-12 加入；已列入關於我們；用 `docs/scripts/make_stroke.py` 產生；`check.js` 的 ALLOW_IMAGE_DIRS 只放行這個資料夾 |
-| 字型尺分線位置 | `shared/ruler.js`（只有算出來的分線位置，不含筆畫） | 教育部筆畫（g0v 整理）＋全字庫正楷體 | 同上 | 教育部回信同意（見 `materials/stroke-data.md`）；全字庫：政府資料開放授權條款第 1 版 | 2026-11-10 加入；2026-11-14 改用筆畫算（`make_ruler.py`） |
+| 字型尺分線位置 | `shared/ruler.js`（只有算出來的分線位置，不含筆畫） | 教育部筆畫（g0v 整理）＋全字庫正楷體 | 同上 | 教育部回信同意（見 `materials/stroke-data.md`）；全字庫：政府資料開放授權條款第 1 版 | 2026-11-10 加入；2026-11-14 改用筆畫算，不確定的字不收（`make_ruler.py`） |
 | SheetJS 0.18.5 | `shared/vendor/`（識字評量、備課分析，按匯出時才載入） | SheetJS | 0.18.5 | Apache 2.0（授權全文 `shared/vendor/xlsx-LICENSE.txt`） | 已列入關於我們；2026-10-20 放進 repo |
 | qrcode-generator 1.4.4 | `shared/vendor/qrcode-generator-1.4.4.js`（識字評量平板作答，按「產生 QR code」時才載入） | Kazuhiko Arase（npm `qrcode-generator`） | 1.4.4 | MIT（授權全文 `shared/vendor/qrcode-LICENSE.txt`）；「QR Code」是 DENSO WAVE 的註冊商標 | 2026-10-23 放進 repo；已列入關於我們 |
 | 注音字型（識字評量） | `shared/fonts/`、`shared/bpmf.js` | ButTaiwan/bpmfvs（字嗨注音標楷） | bpmfvs commit fa20c2b（2026-03-27） | 漢字 CC BY 4.0、其餘 SIL OFL 1.1 | 2026-10-20 加入；已列入關於我們 |

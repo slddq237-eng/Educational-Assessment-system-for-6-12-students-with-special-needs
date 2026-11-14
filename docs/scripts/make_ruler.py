@@ -20,13 +20,16 @@
   用「另一個部件有檔案」的字反推：清＝氵＋青，青 8 畫、清 11 畫，所以氵 3 畫；至少 2 個字、80% 以上結論一樣才採用；
   只有一個部件不知道時用總筆畫數減出來）→ 按書寫順序把筆畫分給各部件 → 找一條直線，讓「前面的部件跑到線後面的墨」和「後面的部件跑到線前面的墨」最少；
   有多個一樣好的位置取中間。這樣部件的筆畫連在一起、交疊的字也分得出來（舊方法只看空隙，量不到）。
-  算不出來的字（沒有筆畫資料、部件對不上、前後部件的位置順序不符、分線離字邊不到 10%、最好的線還是切到超過 30% 的墨）照舊用字型量的結果。
+  算不出來的字（沒有筆畫資料、部件對不上、前後部件的位置順序不符、分線離字邊不到 10%、最好的線還是切到超過 30% 的墨）**不確定，不收進 ruler.js**，
+  網頁對沒有分線的字畫十字格，不畫字型尺（寧可不分，也不要分錯；維護者 2026-11-14 決定）。字型量的結果只當「候選」，
+  印在清單裡、可以產生對照圖（第 3 個參數），維護者看過畫面確認是對的字，加進 RULER_OK 才會收進去（怎麼揪錯見 docs/materials/ruler-review.md）。
   不使用 g0v 的 missing/ 資料夾（那是 g0v 自己變形組出的新字，不符合教育部回信的「不變形、不創造新字形」）。筆畫資料不放進 repo，只放算出來的分線。
   跟全字庫正楷體對照：教育部筆畫畫出來的字和全字庫正楷體平均重疊 96%，所以分線位置可以直接用在現在的字形尺。
   執行：python3 docs/scripts/make_ruler.py 筆畫資料夾（需要的筆畫檔會自動從 g0v 下載到這個資料夾，要能連網、有 curl）
 
 需要：Python 3、fonttools、brotli、Pillow、numpy、scipy、Node.js、curl（pip install fonttools brotli pillow numpy scipy）
-執行（在 repo 最上層）：python3 docs/scripts/make_ruler.py 筆畫資料夾（不給資料夾就只用字型量的結果）
+執行（在 repo 最上層）：python3 docs/scripts/make_ruler.py 筆畫資料夾 [對照圖資料夾]
+  （不給筆畫資料夾就沒有確定的字，ruler.js 幾乎是空的；給對照圖資料夾會把「不確定的字」畫成對照圖 PNG，放在 repo 外面）
 """
 import collections, glob, io, json, os, subprocess, sys
 from fontTools.ttLib import TTFont
@@ -45,9 +48,12 @@ const out={};for(const b of Object.values(o.B))for(const L of Object.values(b.le
 process.stdout.write(JSON.stringify(out));'''
 STRUCT = json.loads(subprocess.run(['node', '-e', JS], capture_output=True, text=True, check=True).stdout)
 SPLITS = {'左右': ('x', 1), '左中右': ('x', 2), '上下': ('y', 1), '上中下': ('y', 2)}
-# 人工修正：自動量錯的字（例如「否」量到「不」的中間），直接寫分線在格子裡的位置（0～1）；寫 None 表示照正中間分。
-# 老師回報量錯的字就加在這裡，重新執行一次。
+# 人工修正：自動算錯的字，直接寫分線在格子裡的位置（0～1，三分的字寫兩個）；寫 None 表示這個字不畫字型尺（十字格）
+# 老師回報比例不對的字就加在這裡，重新執行一次。
 RULER_FIX = {}
+# 人工確認：沒有教育部筆畫可算、只有字型量的結果，維護者看過對照圖確認「分線是對的」的字（一個字串，例如 '案倒件'）；
+# 沒有列在這裡的不確定字，不收進 ruler.js
+RULER_OK = set('')
 
 # 2. 楷書字型：每個字在哪一個字型檔
 fonts = {}
@@ -238,7 +244,7 @@ def radical_table(todo):
 
 
 SCUTS, SINFO = {}, {'筆畫': 0}
-SFAIL = collections.Counter(); SHIGH = []
+SFAIL = collections.Counter(); SHIGH = []; SWHY = {}
 if STROKE_DIR:
     todo = [(c, PARTS.get(c), SPLITS[s][0], SPLITS[s][1]) for c, s in STRUCT.items() if s in SPLITS]
     need = {c for c, parts, _, _ in todo} | {p for _, parts, _, _ in todo for p in (parts or []) if len(p) == 1}
@@ -246,14 +252,15 @@ if STROKE_DIR:
     RADICAL = radical_table(todo)
     for c, parts, axis, n in todo:
         cuts, cost, how_ = stroke_cuts(c, parts, axis, n, RADICAL)
-        if cuts is None: SFAIL[how_] += 1
-        elif cost > MAX_CROSS: SHIGH.append((c, round(cost * 100, 1))); SFAIL['切到太多墨（>30%）'] += 1
+        if cuts is None: SFAIL[how_] += 1; SWHY[c] = how_
+        elif cost > MAX_CROSS: SHIGH.append((c, round(cost * 100, 1))); SFAIL['切到太多墨（>30%）'] += 1; SWHY[c] = '切到太多墨（>30%）'
         else: SCUTS[c] = cuts; SINFO['筆畫'] += 1
     print(f'教育部筆畫（{STROKE_DIR}）：用筆畫算出 {len(SCUTS)} 個字；用不了的 {sum(SFAIL.values())} 個，原因：{dict(SFAIL)}；偏旁筆畫數反推 {len(RADICAL)} 個')
 else:
     print('沒有指定筆畫資料資料夾（python3 docs/scripts/make_ruler.py 筆畫資料夾路徑）：全部照字型量的結果，比較不準')
 
-out, skipped, how = {}, [], {'blob': 0, 'gap': 0}
+out, skipped, how = dict(SCUTS), [], {'blob': 0, 'gap': 0}   # 先放教育部筆畫算出來的（確定）
+CAND = {}   # 不確定的字：字型量的結果（候選，不收進 ruler.js）
 for c, s in sorted(STRUCT.items()):
     if s not in SPLITS or c not in fonts: continue
     axis, n = SPLITS[s]
@@ -286,20 +293,64 @@ for c, s in sorted(STRUCT.items()):
             cuts.append(pos)
         if cuts: how['gap'] += 1
     if cuts: cuts = [round(PAD + p * (1 - 2 * PAD), 3) for p in cuts]
-    if c in SCUTS: cuts = SCUTS[c]
-    if c in RULER_FIX: cuts = RULER_FIX[c]
-    if cuts: out[c] = cuts
-    else: skipped.append(c)
+    if c in SCUTS: continue
+    CAND[c] = cuts
+    if cuts and c in RULER_OK: out[c] = cuts   # 維護者看過確認
+    elif not cuts: skipped.append(c)
+for c, v in RULER_FIX.items():
+    if v: out[c] = v
+    else: out.pop(c, None)
+UNSURE = sorted(c for c, s in STRUCT.items() if s in SPLITS and c not in out)   # 不確定的字：網頁畫十字格
 
 head = '''/* =========================================================
    字型尺分線位置表（自動產生，不要手改；新增課本後請 Claude 重新執行 docs/scripts/make_ruler.py）
    寫字考卷（tools/literacy/exam.js）的「字型尺提示」：左右、上下、左中右、上中下結構的字，分線照字的比例畫。
    數字是分線在格子裡的位置（0～1，左到右或上到下）。主要用教育部筆畫資料（2026-11-14，教育部《國字標準字體筆順學習網》，經 g0v zh-stroke-data 整理）
-   算出每個部件的範圍；算不出來的字用全字庫正楷體（政府資料開放授權條款第 1 版）量出來。
-   沒有收的字（筆畫交疊找不到空隙）網頁照樣從正中間分。
+   算出每個部件的範圍。算不出來、不確定的字不收（網頁畫十字格，不畫字型尺）；不確定的字清單和怎麼揪錯見 docs/materials/ruler-review.md。
    ========================================================= */
 '''
 with open(OUT, 'w', encoding='utf-8') as f:
     f.write(head + 'const RULER = ' + json.dumps(out, ensure_ascii=False, separators=(',', ':')) + ';\n')
 total = sum(1 for c, s in STRUCT.items() if s in SPLITS)
-print(f'{OUT}：{len(out)} 個字（教育部筆畫 {SINFO["筆畫"]}、字型連通區塊分群 {how["blob"]}、字型找空隙 {how["gap"]}；左右、上下、左中右、上中下共 {total} 個；找不到空隙改用正中間的 {len(skipped)} 個，例如 {"".join(skipped[:20])}）')
+why = collections.Counter(SWHY.get(c, '沒有筆畫資料') for c in UNSURE)
+print(f'{OUT}：{len(out)} 個字有分線（教育部筆畫 {SINFO["筆畫"]}、維護者確認 {sum(1 for c in out if c in RULER_OK)}）；左右、上下、左中右、上中下共 {total} 個，其中 {len(UNSURE)} 個不確定、不畫字型尺（原因：{dict(why)}）')
+_by = collections.defaultdict(list)
+for c in UNSURE: _by[SWHY.get(c, '沒有筆畫資料')].append(c)
+for r_, cs_ in sorted(_by.items(), key=lambda kv: -len(kv[1])): print(f'不確定（{r_}，{len(cs_)} 個）：' + ''.join(cs_))
+
+REASON_CODE = {'沒有對應的部件': 'A', '沒有筆畫資料': 'B', '兩個以上部件不知道幾畫': 'C', '部件筆畫數對不上': 'D', '分線太靠邊或太近（部件分不開）': 'E', '切到太多墨（>30%）': 'F'}
+REVIEW_DIR = sys.argv[2] if len(sys.argv) > 2 else ''
+if REVIEW_DIR:
+    # 對照圖：每張 30 個字（6 欄 × 5 列）；橘線＝字型量的候選位置（不一定對），沒有候選的不畫線；字下面寫字、候選位置、不確定的原因
+    os.makedirs(REVIEW_DIR, exist_ok=True)
+    CELL, COLS, ROWS = 200, 6, 5
+    print('對照圖的原因代號：' + '；'.join(f'{v} ＝ {k}' for k, v in REASON_CODE.items()))
+    lab = ImageFont.load_default()
+    for sheet in range(0, len(UNSURE), COLS * ROWS):
+        chunk = UNSURE[sheet:sheet + COLS * ROWS]
+        big = Image.new('RGB', (COLS * (CELL + 8) + 8, ROWS * (CELL + 36) + 8), (235, 235, 235))
+        for k, c in enumerate(chunk):
+            cell = Image.new('RGB', (CELL, CELL + 28), 'white'); dr = ImageDraw.Draw(cell)
+            if c in fonts:
+                g = Image.new('L', (SIZE, SIZE), 255)
+                ImageDraw.Draw(g).text((SIZE / 2, SIZE / 2), c, font=fonts[c], fill=0, anchor='mm')
+                bb = g.point(lambda v: 255 if v < 200 else 0).getbbox()
+                if bb:
+                    gl = g.crop(bb); sc = CELL * (1 - 2 * PAD) / max(gl.size)
+                    gl = gl.resize((max(1, int(gl.width * sc)), max(1, int(gl.height * sc))))
+                    cell.paste(gl, ((CELL - gl.width) // 2, (CELL - gl.height) // 2))
+            axis = SPLITS[STRUCT[c]][0]
+            for pos in (CAND.get(c) or []):
+                q = int(pos * CELL)
+                dr.line([(q, 0), (q, CELL)] if axis == 'x' else [(0, q), (CELL, q)], fill=(240, 130, 0), width=2)
+            dr.rectangle([0, 0, CELL - 1, CELL - 1], outline=(60, 60, 60))
+            # 預設字型沒有中文，標籤只用數字和英文字母（編號、結構、原因代號、候選位置）；字另外縮小貼在標籤上
+            st_ = {'左右': 'LR', '上下': 'TB', '左中右': 'LMR', '上中下': 'TMB'}[STRUCT[c]]
+            code = REASON_CODE.get(SWHY.get(c, '沒有筆畫資料'), '?')
+            dr.text((4, CELL + 3), f'{sheet + k + 1}.', fill=(0, 0, 0), font=lab)
+            dr.text((46, CELL + 3), f'{st_} reason {code}  cand {CAND.get(c)}', fill=(0, 0, 0), font=lab)
+            if c in fonts and bb:
+                sm = g.crop(bb); h_ = 20; sm = sm.resize((max(1, int(sm.width * h_ / sm.height)), h_)); cell.paste(sm, (22, CELL + 1))
+            big.paste(cell, (8 + (k % COLS) * (CELL + 8), 8 + (k // COLS) * (CELL + 36)))
+        big.save(os.path.join(REVIEW_DIR, f'ruler-review-{sheet // (COLS * ROWS) + 1:02d}.png'))
+    print(f'對照圖：{REVIEW_DIR}（{(len(UNSURE) + COLS * ROWS - 1) // (COLS * ROWS)} 張）')
