@@ -58,7 +58,7 @@
 | `bpmf.js` | `BPMF_TXT`、`BPMF_CH`、`BPMF_SAY`、`Bpmf`（注音顯示、唸題換字） | 識字評量（`play.js` 的 `sayOf`、選項注音） | **不要手改**，跑 `make_bpmf.py`；讀音例外寫在它的 `CHECKED` |
 | `bpmf-read.js` | `BPMF_READ`（課本生字裡的破音字 → 各個讀音，順序和注音字型的異體字選擇子一樣，2026-11-10） | 識字評量的寫字考卷「調整題目」（`exam.js`，老師自己輸入語詞時點選讀音） | **不要手改**，跑 `make_bpmf_read.js`；新增課本後要重跑 |
 | `ruler.js` | `RULER`（左右、上下、左中右、上中下結構的課本生字 → 分線在格子裡的位置 0～1；2026-11-14 起用教育部筆畫資料算，只收確定的字（1,524 個），不確定的字沒有，網頁畫十字格） | 識字評量的寫字考卷（`exam.js` 的字型尺提示）、生字練習簿（`RulerCell`、部件褪除） | **不要手改**，跑 `make_ruler.py`；量錯的字加進它的 `RULER_FIX` |
-| `stroke/*.png` | 教育部全筆順圖（每個字一張，檔名是「國字.png」，課本寫字生字 2,113 個，約 5.6 MB；原樣複製、不改圖；2026-11-12） | 生字練習簿（`tools/practice/` 的筆順示範）；之後其他工具要印筆順也讀這裡 | **不要手改、不要重新壓縮**，用 `docs/scripts/make_stroke.py` 從教育部下載的 zip 複製；`check.js` 的 `ALLOW_IMAGE_DIRS` 只放行這個資料夾的 png |
+| `stroke/*.png` | 教育部全筆順圖（每個字一張，檔名是「國字.png」，全部 6,063 個字（含非課本字），約 17.5 MB；原樣複製、不改圖；2026-11-12） | 生字練習簿（`tools/practice/` 的筆順示範）；之後其他工具要印筆順也讀這裡 | **不要手改、不要重新壓縮**，用 `docs/scripts/make_stroke.py` 從教育部下載的 zip 複製；`check.js` 的 `ALLOW_IMAGE_DIRS` 只放行這個資料夾的 png；授權細節見 `materials/stroke-data.md` |
 | `ruler-cell.js`、`ruler-cell.css` | `RulerCell.html(字, {ruler})` 畫一個格子（字型尺或十字格）、`RulerCell.blocks(字, ruler)` 回傳分區；樣式 `.excell`（格子邊長由頁面設 `--cell`）（2026-11-12 從 `exam.js` 搬來，畫面沒變） | 識字評量的寫字考卷（`exam.js` 的 `cellHtml`）；之後的直式練習簿 | 需先載入 `parts-api.js`、`ruler.js`；頁面自己的格子樣式（答案格加粗等）留在頁面 |
 | `freq.js` | `FREQ`（字→排名） | 識字評量（常用字、字頻優先、高字頻）、備課分析 | 從原始檔重新產生 |
 | `parts-api.js` | `window.Parts` 部件資料入口：`read`（從起點層往下讀）、`layer`、`struct`、`mask`、`sub`（電腦自動往下拆一層）；**只有它能讀 `PARTS_AUTO`、`PARTS_LAYERS`**（自動檢查）（2026-10-31） | 識字評量 `data.js`（部件提示、部件重組從第二層讀）、備課分析 `prep.js`（第一層、第二層、拆到最細） | 資料來源或讀取規則的改動只改這裡 |

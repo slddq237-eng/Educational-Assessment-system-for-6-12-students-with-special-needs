@@ -17,8 +17,8 @@
 | `make_bpmf.py` | `shared/bpmf.js`、`shared/fonts/bpmf-kai*` | 新增課本、改讀音後 |
 | `make_bpmf_only.py` | `shared/fonts/bpmf-only.woff2`（寫字 W1 看注音寫國字：「字嗨注音而已」字型只取課本生字；字型要先下載，見檔案開頭） | 新增課本後（和 `make_bpmf.py` 一起） |
 | `make_bpmf_read.js` | `shared/bpmf-read.js`（課本生字裡的破音字讀音，寫字考卷「調整題目」用；讀音表要先下載，見檔案開頭） | 新增課本後 |
-| `make_stroke.py` | `shared/stroke/`（練習簿「筆順示範」的教育部筆順圖，只放課本寫字生字，原樣複製；要先有維護者下載的 zip，見檔案開頭） | 新增課本後 |
 | `make_ruler.py 筆畫資料夾 [對照圖資料夾]` | `shared/ruler.js`（寫字考卷、練習簿「字型尺」的分線位置；用教育部筆畫資料（g0v zh-stroke-data，需要的檔案會自動下載到筆畫資料夾，要能連網、有 curl）算每個部件的範圍，算不出來的字**不收**（網頁畫十字格），並印出不確定的字清單、可以產生對照圖（候選分線：最細部件分組的綠線排前面、字型量的橘線）；量錯的字加進 `RULER_FIX`、看過確認對的加進 `RULER_OK`；揪錯方法見 `materials/ruler-review.md`） | 新增課本後（在 `make_kai.py` 之後）；部件表改了也要重跑 |
+| `make_stroke.py` | `shared/stroke/`（練習簿「筆順示範」的教育部筆順圖，zip 裡的全部原樣複製；要先有維護者下載的 zip，見檔案開頭） | 教育部更新圖、換新的 zip 時 |
 | `make_kai.py` | `shared/fonts/tw-kai*` | 新增課本、部件，或改了頁面文字後 |
 | `make_conf_candidates.py` | `docs/materials/material-review.xlsx` 的「干擾字候選」頁 | 要請老師挑干擾字時 |
 | `bump.js` | 改所有網頁的版本號 `?v=`（今天的日期，同一天第二次起加 b、c…）（2026-10-24 加） | 改了網頁會載入的 js、css 後 |
