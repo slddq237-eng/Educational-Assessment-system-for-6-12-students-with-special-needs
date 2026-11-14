@@ -11,8 +11,8 @@
   格子畫法用 shared/ruler-cell.js（字形尺）；部件分區和字形尺同一份，所以示範、褪除、字形尺三者的分塊一致。
   這是雛形：只有這一頁，沒有接課本資料、沒有存任何東西；不放進首頁。示範區只留「筆順示範」；部件示範 2026-11-12 維護者決定刪掉。筆順圖放在 shared/stroke/（檔名是國字.png），沒有圖的字顯示「沒有筆順圖」。
 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-14h">
-<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-14h">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-14i">
+<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-14i">
 <style>
 @font-face{font-family:"BpmfOnly";font-display:swap;src:url(../../shared/fonts/bpmf-only.woff2) format("woff2")}
 :root{--cell:1.8cm;--zw:8mm;--g:1.2mm;--sg:2.5mm;--k:6;--kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;color-scheme:light}
@@ -26,6 +26,9 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 .bar textarea{font-size:18px;font-family:var(--kai);vertical-align:middle}
 .lessons{display:flex;flex-wrap:wrap;gap:4px 10px;max-width:520px}
 .lessons label{font-size:14px}
+.picks{display:flex;flex-wrap:wrap;gap:2px 6px;max-width:620px;align-items:center;font-size:13px}
+.picks label{font-size:20px;font-family:var(--kai);gap:2px;border:1px solid #bbb;border-radius:4px;padding:0 4px;cursor:pointer}
+.picks button{font-size:13px;padding:2px 8px}
 .bar .warn{color:#b3261e;font-weight:700}
 .bar .ok{color:#2e7d32}
 .note{max-width:210mm;margin:10px auto 0;padding:0 16px;font-size:13px;color:#555;line-height:1.6}
@@ -34,6 +37,7 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 .ttl{height:8mm;font-size:12pt;letter-spacing:.15em;display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #999;margin-bottom:3mm}
 .ttl small{font-size:9pt;letter-spacing:.05em;color:#444;margin-left:1em}
 .ttl span{font-size:9pt;letter-spacing:0;color:#555}
+.ttl span.nm{font-size:10.5pt;white-space:nowrap}
 .sheet{display:flex;flex-direction:row-reverse;justify-content:flex-start;gap:3mm;align-items:flex-start}
 /* 每一欄的各段高度固定，所以不同字的欄、標籤欄的段落橫向對齊 */
 .sec{display:flex;flex-direction:column;gap:var(--g);margin-bottom:var(--sg);position:relative}
@@ -78,11 +82,13 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 <div class="bar">
   <label>課本 <select id="book"></select></label>
   <span id="lessons" class="lessons"></span>
+  <span id="picks" class="picks"></span>
   <label>生字（選了課次會自動填入，也可以自己改）<textarea id="chars" rows="2" cols="36">晴案山</textarea></label>
   <label>格子大小 <select id="size"><option value="s">小格（1.5 公分）</option><option value="m" selected>中格（1.8 公分）</option><option value="l">大格（2.2 公分）</option></select></label>
   <label>獨立練習格數 <select id="solo"><option value="auto" selected>自動（放滿一頁）</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></label>
   <label><input type="checkbox" id="zy" checked> 印注音（「看」旁邊的一格，只給看、不用寫）</label>
   <label><input type="checkbox" id="res" checked> 筆順示範（教育部筆順圖）</label>
+  <label><input type="checkbox" id="nm" checked> 印班級、座號、姓名欄（學生自己寫）</label>
   <button id="print">列印</button>
   <span id="msg"></span>
 </div>
@@ -90,14 +96,14 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 <div id="pages"></div>
 
 <!-- 課本資料（shared/lessons.js 會自己載入各本）和注音讀音表、課本名稱（shared/common.js） -->
-<script src="../../shared/lessons.js?v=2026-11-14h"></script>
-<script src="../../shared/bpmf.js?v=2026-11-14h"></script>
-<script src="../../shared/parts.js?v=2026-11-14h"></script>
-<script src="../../shared/parts-layers.js?v=2026-11-14h"></script>
-<script src="../../shared/parts-api.js?v=2026-11-14h"></script>
-<script src="../../shared/ruler.js?v=2026-11-14h"></script>
-<script src="../../shared/ruler-cell.js?v=2026-11-14h"></script>
-<script src="../../shared/common.js?v=2026-11-14h"></script>
+<script src="../../shared/lessons.js?v=2026-11-14i"></script>
+<script src="../../shared/bpmf.js?v=2026-11-14i"></script>
+<script src="../../shared/parts.js?v=2026-11-14i"></script>
+<script src="../../shared/parts-layers.js?v=2026-11-14i"></script>
+<script src="../../shared/parts-api.js?v=2026-11-14i"></script>
+<script src="../../shared/ruler.js?v=2026-11-14i"></script>
+<script src="../../shared/ruler-cell.js?v=2026-11-14i"></script>
+<script src="../../shared/common.js?v=2026-11-14i"></script>
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
@@ -254,7 +260,12 @@ function applyLessons(){
   SRC.book = {};
   for(const n of ns) for(const c of BOOKS[b].lessons[n].write || "") if(!seen.has(c)){ seen.add(c); chars.push(c); SRC.book[c] = b; }
   SRC.sub = ns.length ? `${bookName(b)}　${ns.length === 1 ? lessonName(b, ns[0]) : "第 " + ns.filter(n => n !== "0").join("、") + " 課"}` : "";
-  $("#chars").value = chars.join("");
+  $("#picks").innerHTML = chars.length ? `<span>要練哪些字（取消勾選就不印）：</span>` + chars.map(c => `<label><input type="checkbox" value="${c}" checked>${c}</label>`).join("") + `<button type="button" data-all="1">全選</button><button type="button" data-all="0">全不選</button>` : "";
+  syncChars();
+}
+/* 老師在「要練哪些字」勾選：只留勾選的字，照課次順序放進生字欄 */
+function syncChars(){
+  $("#chars").value = [...document.querySelectorAll("#picks input:checked")].map(x => x.value).join("");
   loadFonts().then(render);
 }
 
@@ -263,7 +274,7 @@ const FOOT = "筆順圖：教育部《國字標準字體筆順學習網》";
 function render(){
   const all = [...new Set([...$("#chars").value].filter(ch => /\p{Script=Han}/u.test(ch)))];
   const chars = all.slice(0, MAX_CHARS);
-  const z = $("#size").value, res = $("#res").checked, zyOn = $("#zy").checked;
+  const z = $("#size").value, res = $("#res").checked, zyOn = $("#zy").checked, nm = $("#nm").checked;
   const k = $("#solo").value === "auto" ? Math.min(10, maxSolo(z, res)) : +$("#solo").value;
   const root = document.documentElement.style;
   root.setProperty("--k", k); root.setProperty("--cell", SIZES[z].cell + "mm"); root.setProperty("--zw", SIZES[z].zw + "mm"); root.setProperty("--rh", RH + "mm");
@@ -280,7 +291,7 @@ function render(){
   for(let i = 0; i < chars.length; i += PER_PAGE) pages.push(chars.slice(i, i + PER_PAGE));
   if(!pages.length) pages.push([]);
   $("#pages").innerHTML = pages.map((cs, i) => `<div class="page">
-  <div class="ttl"><b>生字練習簿</b>${SRC.sub ? `<small>${esc(SRC.sub)}</small>` : ""}<span>姓名：＿＿＿＿＿＿　　日期：＿＿＿＿＿＿</span></div>
+  <div class="ttl"><b>生字練習簿</b>${SRC.sub ? `<small>${esc(SRC.sub)}</small>` : ""}${nm ? `<span class="nm">班級＿＿＿＿　座號＿＿＿＿　姓名＿＿＿＿＿＿＿＿</span>` : `<span>日期：＿＿＿＿＿＿</span>`}</div>
   <div class="sheet">${labels + cs.map(col).join("")}</div>
   <div class="src">沿虛線往上摺，蓋住上面的字，再寫獨立練習。　　${FOOT}　　${{s: "小格 1.5", m: "中格 1.8", l: "大格 2.2"}[z]} 公分　　第 ${i + 1} 頁，共 ${pages.length} 頁</div>
 </div>`).join("");
@@ -297,8 +308,10 @@ function check(total, shown, n, per, k){
 }
 $("#book").addEventListener("change", () => { fillLessons(); applyLessons(); });
 $("#lessons").addEventListener("change", applyLessons);
-$("#chars").addEventListener("input", () => { SRC.sub = ""; SRC.book = {}; loadFonts().then(render); });   /* 自己改字：標題的課次清掉，讀音回到預設 */
-for(const id of ["#size", "#solo", "#res", "#zy"]) $(id).addEventListener("input", () => { loadFonts().then(render); });
+$("#picks").addEventListener("change", syncChars);
+$("#picks").addEventListener("click", e => { const a = e.target.dataset && e.target.dataset.all; if(a === undefined) return; document.querySelectorAll("#picks input").forEach(x => x.checked = a === "1"); syncChars(); });
+$("#chars").addEventListener("input", () => { SRC.sub = ""; SRC.book = {}; $("#picks").innerHTML = ""; loadFonts().then(render); });   /* 自己改字：標題的課次清掉，讀音回到預設 */
+for(const id of ["#size", "#solo", "#res", "#zy", "#nm"]) $(id).addEventListener("input", () => { loadFonts().then(render); });
 $("#print").onclick = () => window.print();
 function loadFonts(){
   const t = [...$("#chars").value].join("");
