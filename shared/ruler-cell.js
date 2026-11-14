@@ -3,7 +3,7 @@
    RulerCell.html(字, {ruler})：回傳一個格子的 HTML。ruler 為真且字是左右、上下、左中右、上中下或包圍結構時，
      畫虛線分區加淡色底（字形尺）；否則畫十字格。樣式在 shared/ruler-cell.css，格子邊長由頁面設定 --cell。
    RulerCell.blocks(字, ruler)：只回傳分區，每塊是 [left, top, width, height]（0～1，格子的比例）；沒有分區回傳 null。
-   分線位置照 shared/ruler.js 的 RULER（從全字庫正楷體量出來，2026-11-10 維護者要求）；表裡沒有的字從正中間分。
+   分線位置照 shared/ruler.js 的 RULER（主要用教育部筆畫資料算，2026-11-14）；左右、上下、左中右、上中下的字表裡沒有（不確定、不收）就不畫字型尺，畫十字格。
    需要先載入 shared/parts-api.js（Parts.struct 判斷結構）和 shared/ruler.js；沒載入時一律畫十字格。
    ========================================================= */
 const RulerCell = (() => {
@@ -13,8 +13,12 @@ const RulerCell = (() => {
     /* 每一塊是 [left, top, width, height]（0～1，格子的比例）；線畫在塊和塊的交界 */
     const s = ruler && typeof Parts !== "undefined" ? Parts.struct(c) : "";
     const inner = (l, t) => [[0, 0, 1, 1], [l, t, .62, .62]];   /* 包圍：外框一塊、裡面一塊 */
-    /* 分線照字的比例（shared/ruler.js，從楷書字型量出來，2026-11-10 維護者要求）；表裡沒有的字從正中間分 */
-    const cut = (n, def) => { const r = typeof RULER !== "undefined" && RULER[c]; return r && r.length === n ? r : def; };
+    /* 分線照字的比例（shared/ruler.js，主要用教育部筆畫資料算，2026-11-14）；左右、上下、左中右、上中下的字表裡沒有就不畫字型尺 */
+    const r = typeof RULER !== "undefined" && RULER[c];
+    /* 左右、上下、左中右、上中下：表裡沒有這個字的分線（不確定、不收）就不畫字型尺，用十字格（寧可不分，也不要分錯；2026-11-14 維護者決定） */
+    const need = {"左右": 1, "上下": 1, "左中右": 2, "上中下": 2}[s];
+    if(need && !(r && r.length === need)) return null;
+    const cut = (n, def) => r && r.length === n ? r : def;
     const cols = ([a, b]) => b === undefined ? [[0, 0, a, 1], [a, 0, 1 - a, 1]] : [[0, 0, a, 1], [a, 0, b - a, 1], [b, 0, 1 - b, 1]];
     const rows = ([a, b]) => b === undefined ? [[0, 0, 1, a], [0, a, 1, 1 - a]] : [[0, 0, 1, a], [0, a, 1, b - a], [0, b, 1, 1 - b]];
     return ({
