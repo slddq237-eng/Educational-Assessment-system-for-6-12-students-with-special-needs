@@ -11,8 +11,8 @@
   格子畫法用 shared/ruler-cell.js（字形尺）；部件分區和字形尺同一份，所以示範、褪除、字形尺三者的分塊一致。
   這是雛形：只有這一頁，沒有接課本資料、沒有存任何東西；不放進首頁。示範區只留「筆順示範」；部件示範 2026-11-12 維護者決定刪掉。筆順圖放在 shared/stroke/（檔名是國字.png），沒有圖的字顯示「沒有筆順圖」。
 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-16">
-<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-16">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-16b">
+<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-16b">
 <style>
 @font-face{font-family:"BpmfOnly";font-display:swap;src:url(../../shared/fonts/bpmf-only.woff2) format("woff2")}
 :root{--cell:1.8cm;--zw:8mm;--g:1.2mm;--sg:2.5mm;--k:6;--kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;color-scheme:light}
@@ -44,7 +44,8 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 .look{height:var(--cell)}
 .res{height:var(--rh, 72mm)}   /* 筆順示範區高度固定 72 公釐（中格的 4 格）：教育部的圖一欄固定高度，每一步約 5 公釐 */
 .col:not(.labels) .res{width:var(--cell)}
-.trace,.fade{height:calc(var(--cell) * 2 + var(--g))}
+.trace{height:calc(var(--cell) * 2 + var(--g))}
+.fade{height:calc(var(--cell) * var(--fn, 2) + var(--g) * (var(--fn, 2) - 1))}
 /* 摺線：獨立練習上方一條橫的虛線，延伸到欄和欄中間（每欄左右各多 1.5 公釐，欄距 3 公釐），整頁連成一條；
    沿線往上摺，蓋住上面的字，再寫獨立練習（遮擋與主動書寫） */
 .fold{height:5mm;margin-bottom:0}
@@ -85,10 +86,11 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
   <span id="lessons" class="lessons"></span>
   <span id="picks" class="picks"></span>
   <label>生字（選了課次會自動填入，也可以自己改）<textarea id="chars" rows="2" cols="36">晴案山</textarea></label>
+  <label>版型 <select id="mode"><option value="std" selected>標準：描 2、褪除 2、獨立練習</option><option value="word">精簡：描 2、褪除 1、獨立練習（多一格）</option></select></label>
   <label>格子大小 <select id="size"><option value="s">小格（1.5 公分）</option><option value="m" selected>中格（1.8 公分）</option><option value="l">大格（2.2 公分）</option></select></label>
   <label>獨立練習格數 <select id="solo"><option value="auto" selected>自動（放滿一頁）</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></label>
   <label><input type="checkbox" id="zy" checked> 印注音（「看」旁邊的一格，只給看、不用寫）</label>
-  <label><input type="checkbox" id="zw"> 獨立練習每格旁留注音格（學生自己寫注音）</label>
+  <label><input type="checkbox" id="zw"> 描、褪除、獨立練習每格旁留注音格（學生自己寫注音）</label>
   <label><input type="checkbox" id="res" checked> 筆順示範（教育部筆順圖）</label>
   <label><input type="checkbox" id="nm" checked> 印班級、座號、姓名欄（學生自己寫）</label>
   <button id="print">列印</button>
@@ -98,14 +100,14 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 <div id="pages"></div>
 
 <!-- 課本資料（shared/lessons.js 會自己載入各本）和注音讀音表、課本名稱（shared/common.js） -->
-<script src="../../shared/lessons.js?v=2026-11-16"></script>
-<script src="../../shared/bpmf.js?v=2026-11-16"></script>
-<script src="../../shared/parts.js?v=2026-11-16"></script>
-<script src="../../shared/parts-layers.js?v=2026-11-16"></script>
-<script src="../../shared/parts-api.js?v=2026-11-16"></script>
-<script src="../../shared/ruler.js?v=2026-11-16"></script>
-<script src="../../shared/ruler-cell.js?v=2026-11-16"></script>
-<script src="../../shared/common.js?v=2026-11-16"></script>
+<script src="../../shared/lessons.js?v=2026-11-16b"></script>
+<script src="../../shared/bpmf.js?v=2026-11-16b"></script>
+<script src="../../shared/parts.js?v=2026-11-16b"></script>
+<script src="../../shared/parts-layers.js?v=2026-11-16b"></script>
+<script src="../../shared/parts-api.js?v=2026-11-16b"></script>
+<script src="../../shared/ruler.js?v=2026-11-16b"></script>
+<script src="../../shared/ruler-cell.js?v=2026-11-16b"></script>
+<script src="../../shared/common.js?v=2026-11-16b"></script>
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
@@ -144,9 +146,11 @@ function layer(c, opacity){
 /* ---------- 把字切成部件 ----------
    不用直線切（直線只有約 13% 的字切得乾淨：左右兩塊的筆畫常常在不同高度伸進對方的範圍）。
    改成：先找出字裡每一塊相連的筆畫（連通區塊），每塊歸到「重心所在」的部件；
-   只有每一塊的筆畫幾乎（98% 以上）都落在自己部件的範圍裡才算切得開（部件的筆畫互相連在一起的字不切，回傳 null，
-   練習簿改用「字變淡」褪除）。每個部件輸出成一張透明圖片（包含筆畫邊緣的淡色像素）。 */
-let SPLIT = {}, INSIDE_MIN = .98;   /* 每一塊筆畫至少多少比例要落在自己的部件範圍裡 */
+   每一塊的筆畫幾乎（98% 以上）都落在自己部件的範圍裡才直接歸給那個部件。
+   部件的筆畫互相連在一起的字（例如統、業）：改沿字形尺的分線把連在一起的那一塊直接切開（分線是「切到的墨最少」的位置），
+   切到的墨（連在一起那塊落在另一邊的像素）佔全字不到 CUT_MAX 才算切得開；超過就回傳 null，練習簿改用「字變淡」褪除。
+   每個部件輸出成一張透明圖片（包含筆畫邊緣的淡色像素）。 */
+let SPLIT = {}, INSIDE_MIN = .98, CUT_MAX = .1, CUTINK = {};   /* 每一塊筆畫至少多少比例要落在自己的部件範圍裡；沿線切開時最多切到多少比例的墨 */
 function splitParts(c){
   if(c in SPLIT) return SPLIT[c];
   const bl = RulerCell.blocks(c, true);
@@ -168,19 +172,29 @@ function splitParts(c){
     }
     comps.push(px);
   }
-  const part = [], mass = Array(bl.length).fill(0);
+  const part = [], mass = Array(bl.length).fill(0); let cutInk = 0;
   for(const px of comps){
     let sx = 0, sy = 0; for(const q of px){ sx += q % N; sy += (q / N) | 0; }
     const p = where(sx / px.length, sy / px.length);
-    if(p < 0) return SPLIT[c] = null;
-    let inside = 0; for(const q of px) if(where(q % N, (q / N) | 0) === p) inside++;
-    if(inside / px.length < INSIDE_MIN) return SPLIT[c] = null;
+    let inside = 0; if(p >= 0) for(const q of px) if(where(q % N, (q / N) | 0) === p) inside++;
+    if(p < 0 || inside / px.length < INSIDE_MIN){   /* 連在一起的一塊：沿分線逐像素切開，記下切到多少 */
+      part.push(-1);
+      for(const q of px){   /* 分線上實際碰到的墨：相鄰的兩個墨點分屬不同部件的次數 */
+        const x = q % N, y = (q / N) | 0, w0 = where(x, y); mass[Math.max(0, w0)]++;
+        if(x + 1 < N && lab[q + 1] === lab[q] && where(x + 1, y) !== w0) cutInk++;
+        if(y + 1 < N && lab[q + N] === lab[q] && where(x, y + 1) !== w0) cutInk++;
+      }
+      continue;
+    }
     part.push(p); mass[p] += px.length;
   }
+  const total0 = comps.reduce((a, px) => a + px.length, 0);
+  CUTINK[c] = cutInk / N;   /* 切線長度（以字格邊長為 1）：一條筆畫橫切大約 0.05～0.08 */
+  if(CUTINK[c] > CUT_MAX) return SPLIT[c] = null;
   const total = mass.reduce((a, b) => a + b, 0);
   if(!total || mass.some(m => m < total * .06)) return SPLIT[c] = null;
   const owner = new Int32Array(N * N).fill(-1);
-  comps.forEach((px, i) => { for(const q of px) owner[q] = part[i]; });
+  comps.forEach((px, i) => { for(const q of px) owner[q] = part[i] >= 0 ? part[i] : where(q % N, (q / N) | 0); });
   const outs = bl.map(() => { const cv = document.createElement("canvas"); cv.width = cv.height = N; const g = cv.getContext("2d"); return {cv, g, im: g.createImageData(N, N)}; });
   for(let y = 0; y < N; y++) for(let x = 0; x < N; x++){
     const i = y * N + x, a = d[i * 4 + 3]; if(!a) continue;
@@ -224,13 +238,13 @@ function cellWith(c, parts, opacity){
 }
 const empty = c => RulerCell.html(c, {ruler: true});
 
-/* 褪除兩格：兩塊 → 先蓋第一塊、再蓋第二塊（學生補寫蓋住的那一塊）；三塊 → 先蓋第一塊、再蓋前兩塊；切不開的字 → 字變淡 */
+/* 褪除兩格，照部件出現（書寫）的順序逆向褪除（2026-11-16 維護者決定）：兩塊 → 先蓋最後一塊、再蓋第一塊（例如清：第一格留水、補青；第二格留青、補水）；三塊 → 先蓋最後一塊、再蓋後兩塊；切不開的字 → 字變淡 */
 function fadeCells(c){
   const sp = splitParts(c);
   if(!sp) return [cellWith(c, "all", .5), cellWith(c, "all", .2)];
   const n = sp.length, idx = [...Array(n).keys()];
-  if(n === 2) return [cellWith(c, [1], .3), cellWith(c, [0], .3)];
-  return [cellWith(c, idx.slice(1), .3), cellWith(c, idx.slice(2), .3)];
+  if(n === 2) return [cellWith(c, [0], .3), cellWith(c, [1], .3)];
+  return [cellWith(c, idx.slice(0, n - 1), .3), cellWith(c, idx.slice(0, n - 2), .3)];
 }
 /* ---------- 選課次 ---------- */
 const MAX_CHARS = 60;
@@ -277,18 +291,21 @@ function render(){
   const all = [...new Set([...$("#chars").value].filter(ch => /\p{Script=Han}/u.test(ch)))];
   const chars = all.slice(0, MAX_CHARS);
   const z = $("#size").value, res = $("#res").checked, zyOn = $("#zy").checked, nm = $("#nm").checked, zw = $("#zw").checked;
-  const k = $("#solo").value === "auto" ? Math.min(10, maxSolo(z, res)) : +$("#solo").value;
+  const wordMode = $("#mode").value === "word";
+  const k = $("#solo").value === "auto" ? Math.min(10, maxSolo(z, res) + (wordMode ? 1 : 0)) : +$("#solo").value;   /* 精簡版型褪除少一格，獨立練習多一格 */
   const root = document.documentElement.style;
   root.setProperty("--k", k); root.setProperty("--cell", SIZES[z].cell + "mm"); root.setProperty("--zw", SIZES[z].zw + "mm"); root.setProperty("--rh", RH + "mm");
   const PER_PAGE = perPage(z);
   const labels = `<div class="col labels" style="padding-right:0"><div class="sec look"><span class="v">看</span></div>${res ? `<div class="sec res"><span class="v">筆順示範</span></div>` : ""}<div class="sec trace"><span class="v">描</span></div><div class="sec fade"><span class="v">褪除</span></div><div class="sec fold"><span class="fl">摺線</span></div><div class="sec solo"><span class="v">獨立練習</span></div></div>`;
+  root.setProperty("--fn", wordMode ? 1 : 2);
+  const wz = h => zw ? `<div class="srow">${h}<span class="zb"></span></div>` : h;   /* 學生寫注音：每格右邊多一個空白注音格 */
   const col = c => `<div class="col${(zyOn && hasZy(c)) || zw ? "" : " nozy"}">
     <div class="sec look">${cellWith(c, "all", 1)}${zyOn && hasZy(c) ? zyBox(c) : ""}</div>
     ${res ? `<div class="sec res"><div class="box"><img src="../../shared/stroke/${encodeURIComponent(c)}.png" alt="${c}的筆順" onerror="this.parentNode.classList.add('no');this.replaceWith(Object.assign(document.createElement('span'),{className:'v',textContent:'沒有筆順圖'}))"></div></div>` : ""}
-    <div class="sec trace">${cellWith(c, "all", .22)}${cellWith(c, "all", .22)}</div>
-    <div class="sec fade">${fadeCells(c).join("")}</div>
+    <div class="sec trace">${wz(cellWith(c, "all", .22))}${wz(cellWith(c, "all", .22))}</div>
+    <div class="sec fade">${(wordMode ? fadeCells(c).slice(0, 1) : fadeCells(c)).map(wz).join("")}</div>
     <div class="sec fold"></div>
-    <div class="sec solo">${Array.from({length: k}, () => zw ? `<div class="srow">${empty(c)}<span class="zb"></span></div>` : empty(c)).join("")}</div></div>`;
+    <div class="sec solo">${Array.from({length: k}, (_, i) => wz(i === 0 ? empty(c) : `<span class="excell cross"></span>`)).join("")}</div></div>`;   /* 獨立練習：固定只有第一格是字形尺，其餘都是十字格 */
   const pages = [];
   for(let i = 0; i < chars.length; i += PER_PAGE) pages.push(chars.slice(i, i + PER_PAGE));
   if(!pages.length) pages.push([]);
@@ -313,7 +330,7 @@ $("#lessons").addEventListener("change", applyLessons);
 $("#picks").addEventListener("change", syncChars);
 $("#picks").addEventListener("click", e => { const a = e.target.dataset && e.target.dataset.all; if(a === undefined) return; document.querySelectorAll("#picks input").forEach(x => x.checked = a === "1"); syncChars(); });
 $("#chars").addEventListener("input", () => { SRC.sub = ""; SRC.book = {}; $("#picks").innerHTML = ""; loadFonts().then(render); });   /* 自己改字：標題的課次清掉，讀音回到預設 */
-for(const id of ["#size", "#solo", "#res", "#zy", "#nm", "#zw"]) $(id).addEventListener("input", () => { loadFonts().then(render); });
+for(const id of ["#size", "#solo", "#res", "#zy", "#nm", "#zw", "#mode"]) $(id).addEventListener("input", () => { loadFonts().then(render); });
 $("#print").onclick = () => window.print();
 function loadFonts(){
   const t = [...$("#chars").value].join("");
