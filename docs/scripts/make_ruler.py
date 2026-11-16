@@ -205,6 +205,9 @@ def piece_count(p, radical=None):
     return sum(cs) if all(k is not None for k in cs) else None
 
 
+PSIZE, LEAFSIZE = {}, {}   # 字 → 各部件的筆畫數（stroke_cuts 算的、最細部件分組算的）
+
+
 def stroke_cuts(c, parts, axis, n, radical):
     """回傳 (分線們, 切到的墨最多的那條的比例, 方法) 或 (None, None, 失敗原因)"""
     st = load_strokes(c)
@@ -241,6 +244,7 @@ def stroke_cuts(c, parts, axis, n, radical):
     # 分線太靠邊（離字的邊緣不到 10%）、或三分的字兩條線太近：表示其中一個部件根本沒有分出來（例如「失」的丿穿過整個字），不用
     if any(f < .10 or f > .90 for f in fr) or any(fr[j + 1] - fr[j] < .10 for j in range(n - 1)):
         return None, None, '分線太靠邊或太近（部件分不開）'
+    PSIZE[c] = list(known)   # 每個部件幾畫（照書寫順序，第一個部件寫前幾筆…），給 shared/stroke-parts.js 用
     return cuts, max(costs), 'ok'
 
 
@@ -303,9 +307,10 @@ def leaf_cuts(c, axis, n, radical):
             pos, cost = best_cut(pr[j], pr[j + 1])
             costs.append(cost); fr.append((pos - a0) / (a1 - a0))
         if any(f < .10 or f > .90 for f in fr) or any(fr[j + 1] - fr[j] < .10 for j in range(n - 1)) or max(costs) > MAX_CROSS: continue
-        found.append((max(costs), [round(PAD + f * (1 - 2 * PAD), 3) for f in fr]))
+        found.append((max(costs), [round(PAD + f * (1 - 2 * PAD), 3) for f in fr], known))
     if not found: return None
     found.sort(key=lambda x: x[0])
+    LEAFSIZE[c] = found[0][2]
     return found[0][1], found[0][0], (found[1][0] - found[0][0]) if len(found) > 1 else 1.0
 
 
@@ -429,3 +434,53 @@ if REVIEW_DIR:
             big.paste(cell, (8 + (k % COLS) * (CELL + 8), 8 + (k // COLS) * (CELL + 36)))
         big.save(os.path.join(REVIEW_DIR, f'ruler-review-{sheet // (COLS * ROWS) + 1:02d}.png'))
     print(f'對照圖：{REVIEW_DIR}（{(len(UNSURE) + COLS * ROWS - 1) // (COLS * ROWS)} 張）')
+
+
+# ---------- shared/stroke-parts.js：依筆畫褪除用的資料（2026-11-16，維護者決定 g0v 資料可以放進 repo）----------
+# 每個字：b＝全部筆畫的外框 [x0,y0,x1,y1]（座標 0～512，y 向下）、p＝每個部件的筆畫外形（SVG 路徑，筆畫外形原樣，沒有變形）。
+# 部件的筆畫數：字形尺分線用的那組（教育部筆畫、維護者指定、或維護者確認的最細部件分組）。
+QU = 4   # 座標用 1/4 精度（0～512）：格子 2 公分時差不到 0.04 公釐，肉眼看不出來；檔案小很多
+
+
+def stroke_path(st):
+    """每一筆的外框轉成 SVG 路徑：M 起點（絕對座標）、之後用相對座標的 l、q（只有數字，沒有逗號），一筆畫完用 z 封口"""
+    d = []
+    q = lambda v: round(v / QU)
+    for s_ in st:
+        cx = cy = 0
+        for cmd in s_['outline']:
+            if cmd['type'] == 'M':
+                cx, cy = q(cmd['x']), q(cmd['y']); d.append(f"M{cx} {cy}")
+            elif cmd['type'] == 'L':
+                x, y = q(cmd['x']), q(cmd['y']); d.append(f"l{x - cx} {y - cy}"); cx, cy = x, y
+            else:
+                bx, by, ex, ey = q(cmd['begin']['x']), q(cmd['begin']['y']), q(cmd['end']['x']), q(cmd['end']['y'])
+                d.append(f"q{bx - cx} {by - cy} {ex - cx} {ey - cy}"); cx, cy = ex, ey
+        d.append('z')
+    return ''.join(d).replace(' -', '-')
+
+
+
+if STROKE_DIR:
+    SP_OUT = 'shared/stroke-parts.js'
+    sp_data, sp_skip = {}, []
+    for c in sorted(out):
+        sizes = PSIZE.get(c) if c in SCUTS else (LEAFSIZE.get(c) if c in RULER_OK else None)
+        st = load_strokes(c)
+        if c in PART_STROKES and st and sum(PART_STROKES[c]) == len(st): sizes = list(PART_STROKES[c])
+        if not sizes or not st or sum(sizes) != len(st): sp_skip.append(c); continue
+        pts = [pt for s_ in st for pt in flatten(s_['outline'], 2)]
+        xs_, ys_ = [x for x, _ in pts], [y for _, y in pts]
+        groups, i0 = [], 0
+        for k in sizes: groups.append(stroke_path(st[i0:i0 + k])); i0 += k
+        sp_data[c] = {'b': [round(min(xs_) / QU), round(min(ys_) / QU), round(max(xs_) / QU), round(max(ys_) / QU)], 'p': groups}
+    sp_head = '''/* =========================================================
+   依筆畫褪除用的部件筆畫外形（自動產生，不要手改；重新產生：python3 docs/scripts/make_ruler.py 筆畫資料夾）
+   每個字：b＝全部筆畫的外框 [左,上,右,下]（座標 0～512，y 向下）、p＝每個部件的筆畫外形（SVG 路徑，照書寫順序，第一個部件在前）。
+   來源：教育部《國字標準字體筆順學習網》的筆畫，經 g0v zh-stroke-data 轉成座標；筆畫外形原樣，沒有變形、沒有新造字形
+   （授權與出處見 docs/materials/stroke-data.md、shared/stroke/README.md）。只放字形尺有分線、而且部件筆畫數確定的字；練習簿的部件褪除用。
+   ========================================================= */
+'''
+    with open(SP_OUT, 'w', encoding='utf-8') as f:
+        f.write(sp_head + 'const STROKE_PARTS = ' + json.dumps(sp_data, ensure_ascii=False, separators=(',', ':')) + ';\n')
+    print(f'{SP_OUT}：{len(sp_data)} 個字（{os.path.getsize(SP_OUT) / 1e6:.1f} MB）；有分線但部件筆畫數不明、沒收的 {len(sp_skip)} 個：' + ''.join(sp_skip))
