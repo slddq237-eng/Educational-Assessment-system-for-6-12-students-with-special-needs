@@ -11,8 +11,8 @@
   格子畫法用 shared/ruler-cell.js（字形尺）；部件分區和字形尺同一份，所以示範、褪除、字形尺三者的分塊一致。
   這是雛形：只有這一頁，沒有接課本資料、沒有存任何東西；不放進首頁。示範區只留「筆順示範」；部件示範 2026-11-12 維護者決定刪掉。筆順圖放在 shared/stroke/（檔名是國字.png），沒有圖的字顯示「沒有筆順圖」。
 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-16f">
-<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-16f">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-16g">
+<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-16g">
 <style>
 @font-face{font-family:"BpmfOnly";font-display:swap;src:url(../../shared/fonts/bpmf-only.woff2) format("woff2")}
 :root{--cell:1.8cm;--zw:8mm;--g:1.2mm;--sg:2.5mm;--k:6;--kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;color-scheme:light}
@@ -101,14 +101,14 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 <div id="pages"></div>
 
 <!-- 課本資料（shared/lessons.js 會自己載入各本）和注音讀音表、課本名稱（shared/common.js） -->
-<script src="../../shared/lessons.js?v=2026-11-16f"></script>
-<script src="../../shared/bpmf.js?v=2026-11-16f"></script>
-<script src="../../shared/parts.js?v=2026-11-16f"></script>
-<script src="../../shared/parts-layers.js?v=2026-11-16f"></script>
-<script src="../../shared/parts-api.js?v=2026-11-16f"></script>
-<script src="../../shared/ruler.js?v=2026-11-16f"></script>
-<script src="../../shared/ruler-cell.js?v=2026-11-16f"></script>
-<script src="../../shared/common.js?v=2026-11-16f"></script>
+<script src="../../shared/lessons.js?v=2026-11-16g"></script>
+<script src="../../shared/bpmf.js?v=2026-11-16g"></script>
+<script src="../../shared/parts.js?v=2026-11-16g"></script>
+<script src="../../shared/parts-layers.js?v=2026-11-16g"></script>
+<script src="../../shared/parts-api.js?v=2026-11-16g"></script>
+<script src="../../shared/ruler.js?v=2026-11-16g"></script>
+<script src="../../shared/ruler-cell.js?v=2026-11-16g"></script>
+<script src="../../shared/common.js?v=2026-11-16g"></script>
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
@@ -147,9 +147,11 @@ function layer(c, opacity){
 /* ---------- 把字切成部件 ----------
    不用直線切（直線只有約 13% 的字切得乾淨：左右兩塊的筆畫常常在不同高度伸進對方的範圍）。
    改成：先找出字裡每一塊相連的筆畫（連通區塊），每塊歸到「重心所在」的部件；
-   只有每一塊的筆畫幾乎（98% 以上）都落在自己部件的範圍裡才算切得開（部件的筆畫互相連在一起的字不切，回傳 null，
-   練習簿改用「字變淡」褪除）。每個部件輸出成一張透明圖片（包含筆畫邊緣的淡色像素）。 */
-let SPLIT = {}, INSIDE_MIN = .98;   /* 每一塊筆畫至少多少比例要落在自己的部件範圍裡 */
+   每一塊的筆畫幾乎（98% 以上）都落在自己部件的範圍裡才直接歸給那個部件。
+   部件的筆畫互相連在一起的字（例如統、業）：改沿字形尺的分線把連在一起的那一塊直接切開（分線是「切到的墨最少」的位置），
+   切到的墨（連在一起那塊落在另一邊的像素）佔全字不到 CUT_MAX 才算切得開；超過就回傳 null，練習簿改用「字變淡」褪除。
+   每個部件輸出成一張透明圖片（包含筆畫邊緣的淡色像素）。 */
+let SPLIT = {}, INSIDE_MIN = .98, CUT_MAX = .1, CUTINK = {};   /* 每一塊筆畫至少多少比例要落在自己的部件範圍裡；沿線切開時最多切到多少比例的墨 */
 function splitParts(c){
   if(c in SPLIT) return SPLIT[c];
   const bl = RulerCell.blocks(c, true);
@@ -171,19 +173,29 @@ function splitParts(c){
     }
     comps.push(px);
   }
-  const part = [], mass = Array(bl.length).fill(0);
+  const part = [], mass = Array(bl.length).fill(0); let cutInk = 0;
   for(const px of comps){
     let sx = 0, sy = 0; for(const q of px){ sx += q % N; sy += (q / N) | 0; }
     const p = where(sx / px.length, sy / px.length);
-    if(p < 0) return SPLIT[c] = null;
-    let inside = 0; for(const q of px) if(where(q % N, (q / N) | 0) === p) inside++;
-    if(inside / px.length < INSIDE_MIN) return SPLIT[c] = null;
+    let inside = 0; if(p >= 0) for(const q of px) if(where(q % N, (q / N) | 0) === p) inside++;
+    if(p < 0 || inside / px.length < INSIDE_MIN){   /* 連在一起的一塊：沿分線逐像素切開，記下切到多少 */
+      part.push(-1);
+      for(const q of px){   /* 分線上實際碰到的墨：相鄰的兩個墨點分屬不同部件的次數 */
+        const x = q % N, y = (q / N) | 0, w0 = where(x, y); mass[Math.max(0, w0)]++;
+        if(x + 1 < N && lab[q + 1] === lab[q] && where(x + 1, y) !== w0) cutInk++;
+        if(y + 1 < N && lab[q + N] === lab[q] && where(x, y + 1) !== w0) cutInk++;
+      }
+      continue;
+    }
     part.push(p); mass[p] += px.length;
   }
+  const total0 = comps.reduce((a, px) => a + px.length, 0);
+  CUTINK[c] = cutInk / N;   /* 切線長度（以字格邊長為 1）：一條筆畫橫切大約 0.05～0.08 */
+  if(CUTINK[c] > CUT_MAX) return SPLIT[c] = null;
   const total = mass.reduce((a, b) => a + b, 0);
   if(!total || mass.some(m => m < total * .06)) return SPLIT[c] = null;
   const owner = new Int32Array(N * N).fill(-1);
-  comps.forEach((px, i) => { for(const q of px) owner[q] = part[i]; });
+  comps.forEach((px, i) => { for(const q of px) owner[q] = part[i] >= 0 ? part[i] : where(q % N, (q / N) | 0); });
   const outs = bl.map(() => { const cv = document.createElement("canvas"); cv.width = cv.height = N; const g = cv.getContext("2d"); return {cv, g, im: g.createImageData(N, N)}; });
   for(let y = 0; y < N; y++) for(let x = 0; x < N; x++){
     const i = y * N + x, a = d[i * 4 + 3]; if(!a) continue;
