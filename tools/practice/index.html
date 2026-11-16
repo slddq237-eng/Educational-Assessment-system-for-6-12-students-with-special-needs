@@ -11,8 +11,8 @@
   格子畫法用 shared/ruler-cell.js（字形尺）；部件分區和字形尺同一份，所以示範、褪除、字形尺三者的分塊一致。
   這是雛形：只有這一頁，沒有接課本資料、沒有存任何東西；不放進首頁。示範區只留「筆順示範」；部件示範 2026-11-12 維護者決定刪掉。筆順圖放在 shared/stroke/（檔名是國字.png），沒有圖的字顯示「沒有筆順圖」。
 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-16b">
-<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-16b">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-16c">
+<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-16c">
 <style>
 @font-face{font-family:"BpmfOnly";font-display:swap;src:url(../../shared/fonts/bpmf-only.woff2) format("woff2")}
 :root{--cell:1.8cm;--zw:8mm;--g:1.2mm;--sg:2.5mm;--k:6;--kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;color-scheme:light}
@@ -100,14 +100,14 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 <div id="pages"></div>
 
 <!-- 課本資料（shared/lessons.js 會自己載入各本）和注音讀音表、課本名稱（shared/common.js） -->
-<script src="../../shared/lessons.js?v=2026-11-16b"></script>
-<script src="../../shared/bpmf.js?v=2026-11-16b"></script>
-<script src="../../shared/parts.js?v=2026-11-16b"></script>
-<script src="../../shared/parts-layers.js?v=2026-11-16b"></script>
-<script src="../../shared/parts-api.js?v=2026-11-16b"></script>
-<script src="../../shared/ruler.js?v=2026-11-16b"></script>
-<script src="../../shared/ruler-cell.js?v=2026-11-16b"></script>
-<script src="../../shared/common.js?v=2026-11-16b"></script>
+<script src="../../shared/lessons.js?v=2026-11-16c"></script>
+<script src="../../shared/bpmf.js?v=2026-11-16c"></script>
+<script src="../../shared/parts.js?v=2026-11-16c"></script>
+<script src="../../shared/parts-layers.js?v=2026-11-16c"></script>
+<script src="../../shared/parts-api.js?v=2026-11-16c"></script>
+<script src="../../shared/ruler.js?v=2026-11-16c"></script>
+<script src="../../shared/ruler-cell.js?v=2026-11-16c"></script>
+<script src="../../shared/common.js?v=2026-11-16c"></script>
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
@@ -155,6 +155,8 @@ function splitParts(c){
   if(c in SPLIT) return SPLIT[c];
   const bl = RulerCell.blocks(c, true);
   if(!bl) return SPLIT[c] = null;
+  const sp = typeof STROKE_PARTS !== "undefined" && STROKE_PARTS[c];   /* 有教育部筆畫的字：每一筆屬於哪個部件是確定的，直接用筆畫（見 strokeParts） */
+  if(sp && sp.p.length === bl.length) return SPLIT[c] = strokeParts(c, sp);
   const N = 512, img = glyphCanvas(c, N, fit(c)).getImageData(0, 0, N, N), d = img.data;
   const sur = bl.length === 2 && bl[0][2] === 1 && bl[0][3] === 1;   /* 包圍：第 0 塊是外框（整格去掉裡面），第 1 塊是裡面 */
   const inRect = (r, x, y) => x / N >= r[0] && x / N < r[0] + r[2] && y / N >= r[1] && y / N < r[1] + r[3];
@@ -204,7 +206,23 @@ function splitParts(c){
   }
   return SPLIT[c] = outs.map(o => { o.g.putImageData(o.im, 0, 0); return o.cv.toDataURL("image/png"); });
 }
-const partImg = (url, opacity) => `<img class="pi" src="${url}" alt="" style="${opacity < 1 ? `opacity:${opacity}` : ""}">`;
+/* 依筆畫褪除：每個部件一張 SVG，筆畫外形原樣（shared/stroke-parts.js，座標 0～512）；放的大小、位置和 fit() 的規則一樣（字的外框沿分割方向縮放到 88%、置中） */
+function strokeParts(c, sp){
+  const [x0, y0, x1, y1] = sp.b, w = x1 - x0, h = y1 - y0, st = typeof Parts !== "undefined" ? Parts.struct(c) || "" : "";
+  const len = /^左/.test(st) ? w : /^上[中下]/.test(st) ? h : Math.max(w, h), k = .88 / len;
+  const tf = `matrix(${k} 0 0 ${k} ${.5 - (x0 + x1) / 2 * k} ${.5 - (y0 + y1) / 2 * k})`;
+  return sp.p.map(d => ({d, tf}));
+}
+let spLoading = null;
+function loadStrokeParts(){   /* 筆畫外形檔很大（約 4 MB），開網頁時先不載，用到才載；載不到就用字型切的備案 */
+  if(typeof STROKE_PARTS !== "undefined") return Promise.resolve();
+  return spLoading = spLoading || new Promise(res => {
+    const el = document.createElement("script"); el.src = "../../shared/stroke-parts.js?v=2026-11-16c";
+    el.onload = el.onerror = () => { SPLIT = {}; res(); };
+    document.head.appendChild(el);
+  });
+}
+const partImg = (u, opacity) => typeof u !== "string" ? `<svg class="pi" viewBox="0 0 1 1" style="${opacity < 1 ? `opacity:${opacity}` : ""}"><path d="${u.d}" transform="${u.tf}" fill="#000"/></svg>` : `<img class="pi" src="${u}" alt="" style="${opacity < 1 ? `opacity:${opacity}` : ""}">`;
 
 /* 注音那一格：注音字型（BpmfOnly）畫在字的右半邊，所以先用畫布量出注音的筆畫外框中心，再用 translate 移到格子正中央 */
 const ZY = {};
@@ -334,7 +352,7 @@ for(const id of ["#size", "#solo", "#res", "#zy", "#nm", "#zw", "#mode"]) $(id).
 $("#print").onclick = () => window.print();
 function loadFonts(){
   const t = [...$("#chars").value].join("");
-  return Promise.all([document.fonts.load("40px TWKai", t), document.fonts.load("40px BpmfOnly", t)]).catch(() => {});
+  return Promise.all([document.fonts.load("40px TWKai", t), document.fonts.load("40px BpmfOnly", t), loadStrokeParts()]).catch(() => {});
 }
 fillBooks();
 loadFonts().then(render);
