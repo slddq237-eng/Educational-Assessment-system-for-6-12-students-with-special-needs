@@ -11,8 +11,8 @@
   格子畫法用 shared/ruler-cell.js（字形尺）；部件分區和字形尺同一份，所以示範、褪除、字形尺三者的分塊一致。
   這是雛形：只有這一頁，沒有接課本資料、沒有存任何東西；不放進首頁。示範區只留「筆順示範」；部件示範 2026-11-12 維護者決定刪掉。筆順圖放在 shared/stroke/（檔名是國字.png），沒有圖的字顯示「沒有筆順圖」。
 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-16e">
-<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-16e">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-16f">
+<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-16f">
 <style>
 @font-face{font-family:"BpmfOnly";font-display:swap;src:url(../../shared/fonts/bpmf-only.woff2) format("woff2")}
 :root{--cell:1.8cm;--zw:8mm;--g:1.2mm;--sg:2.5mm;--k:6;--kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;color-scheme:light}
@@ -101,14 +101,14 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 <div id="pages"></div>
 
 <!-- 課本資料（shared/lessons.js 會自己載入各本）和注音讀音表、課本名稱（shared/common.js） -->
-<script src="../../shared/lessons.js?v=2026-11-16e"></script>
-<script src="../../shared/bpmf.js?v=2026-11-16e"></script>
-<script src="../../shared/parts.js?v=2026-11-16e"></script>
-<script src="../../shared/parts-layers.js?v=2026-11-16e"></script>
-<script src="../../shared/parts-api.js?v=2026-11-16e"></script>
-<script src="../../shared/ruler.js?v=2026-11-16e"></script>
-<script src="../../shared/ruler-cell.js?v=2026-11-16e"></script>
-<script src="../../shared/common.js?v=2026-11-16e"></script>
+<script src="../../shared/lessons.js?v=2026-11-16f"></script>
+<script src="../../shared/bpmf.js?v=2026-11-16f"></script>
+<script src="../../shared/parts.js?v=2026-11-16f"></script>
+<script src="../../shared/parts-layers.js?v=2026-11-16f"></script>
+<script src="../../shared/parts-api.js?v=2026-11-16f"></script>
+<script src="../../shared/ruler.js?v=2026-11-16f"></script>
+<script src="../../shared/ruler-cell.js?v=2026-11-16f"></script>
+<script src="../../shared/common.js?v=2026-11-16f"></script>
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
@@ -227,13 +227,13 @@ function cellWith(c, parts, opacity){
 }
 const empty = c => RulerCell.html(c, {ruler: true});
 
-/* 褪除兩格：兩塊 → 先蓋第一塊、再蓋第二塊（學生補寫蓋住的那一塊）；三塊 → 先蓋第一塊、再蓋前兩塊；切不開的字 → 字變淡 */
+/* 褪除兩格，照部件出現（書寫）的順序逆向褪除（2026-11-16 維護者決定）：兩塊 → 先蓋最後一塊、再蓋第一塊（例如清：第一格留水、補青；第二格留青、補水）；三塊 → 先蓋最後一塊、再蓋後兩塊；切不開的字 → 字變淡 */
 function fadeCells(c){
   const sp = splitParts(c);
   if(!sp) return [cellWith(c, "all", .5), cellWith(c, "all", .2)];
   const n = sp.length, idx = [...Array(n).keys()];
-  if(n === 2) return [cellWith(c, [1], .3), cellWith(c, [0], .3)];
-  return [cellWith(c, idx.slice(1), .3), cellWith(c, idx.slice(2), .3)];
+  if(n === 2) return [cellWith(c, [0], .3), cellWith(c, [1], .3)];
+  return [cellWith(c, idx.slice(0, n - 1), .3), cellWith(c, idx.slice(0, n - 2), .3)];
 }
 /* ---------- 選課次 ---------- */
 const MAX_CHARS = 60;
@@ -243,6 +243,12 @@ const RH = 72, GAP = 3, LABEL_W = 5, PAGE_W = 190, PAGE_H = 266;   /* 筆順示�
 /* 一頁放幾個字：標籤欄 + n 欄（每欄＝格子＋注音格，欄距 3 公釐）放得下 190 公釐 */
 const perPage = z => Math.max(1, Math.floor((PAGE_W - LABEL_W) / (SIZES[z].cell + SIZES[z].zw + GAP)));
 /* 獨立練習最多幾格：一頁高度 − 看 − 筆順示範 − 描 2 格 − 褪除 2 格 − 摺線 5 公釐 − 各段的間距；格子之間 1.2 公釐 */
+/* 精簡版型：看、筆順示範、描 2、褪除 1、摺線、獨立 2 之後，頁面剩下幾格給造詞（至少 1 格、最多 8 格） */
+function wordRoom(z, res){
+  const c = SIZES[z].cell, g = 1.2, sg = 2.5;
+  const used = c + (res ? RH : 0) + (2 * c + g) + c + 5 + (2 * c + g) + sg * (res ? 5 : 4);
+  return Math.max(1, Math.min(8, Math.floor((PAGE_H - used + g) / (c + g))));
+}
 function maxSolo(z, res, zyRoom){
   const c = SIZES[z].cell, g = 1.2, sg = 2.5;
   const used = c + (res ? RH : 0) + 2 * (2 * c + g) + 5 + sg * (res ? 4 : 3);
@@ -281,13 +287,13 @@ function render(){
   const chars = all.slice(0, MAX_CHARS);
   const z = $("#size").value, res = $("#res").checked, zyOn = $("#zy").checked, nm = $("#nm").checked, zw = $("#zw").checked;
   const wordMode = $("#mode").value === "word";
-  const k = wordMode ? 1 : $("#solo").value === "auto" ? Math.min(10, maxSolo(z, res)) : +$("#solo").value;
+  const k = wordMode ? 2 : $("#solo").value === "auto" ? Math.min(10, maxSolo(z, res)) : +$("#solo").value;
   const root = document.documentElement.style;
   root.setProperty("--k", k); root.setProperty("--cell", SIZES[z].cell + "mm"); root.setProperty("--zw", SIZES[z].zw + "mm"); root.setProperty("--rh", RH + "mm");
   const PER_PAGE = perPage(z);
-  const labels = `<div class="col labels" style="padding-right:0"><div class="sec look"><span class="v">看</span></div>${res ? `<div class="sec res"><span class="v">筆順示範</span></div>` : ""}<div class="sec trace"><span class="v">描</span></div><div class="sec fade"><span class="v">褪除</span></div><div class="sec fold"><span class="fl">摺線</span></div><div class="sec solo"><span class="v">${wordMode ? "獨立" : "獨立練習"}</span></div>${wordMode ? `<div class="sec word"><span class="v">造詞</span></div>` : ""}</div>`;
-  const WN = 2;   /* 造詞區：每個字 2 格十字格（不用字形尺，因為詞裡不只這一個字），不印語詞，學生自己造詞 */
-  root.setProperty("--fn", wordMode ? 1 : 2); root.setProperty("--wn", WN);
+  const labels = `<div class="col labels" style="padding-right:0"><div class="sec look"><span class="v">看</span></div>${res ? `<div class="sec res"><span class="v">筆順示範</span></div>` : ""}<div class="sec trace"><span class="v">描</span></div><div class="sec fade"><span class="v">褪除</span></div><div class="sec fold"><span class="fl">摺線</span></div><div class="sec solo"><span class="v">獨立練習</span></div>${wordMode ? `<div class="sec word"><span class="v">造詞</span></div>` : ""}</div>`;
+  const WN = wordMode ? wordRoom(z, res) : 0;   /* 造詞區：頁面剩下的空間都是十字格（不用字形尺，因為詞裡不只這一個字），不印語詞，學生自己造詞 */
+  root.setProperty("--fn", wordMode ? 1 : 2); root.setProperty("--wn", Math.max(WN, 1));
   const wz = h => zw ? `<div class="srow">${h}<span class="zb"></span></div>` : h;   /* 學生寫注音：每格右邊多一個空白注音格 */
   const wordSec = c => `<div class="sec word">${Array.from({length: WN}, () => wz(`<span class="excell cross"></span>`)).join("")}</div>`;
   const col = c => `<div class="col${(zyOn && hasZy(c)) || zw ? "" : " nozy"}">
