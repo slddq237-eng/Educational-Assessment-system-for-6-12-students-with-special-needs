@@ -44,9 +44,10 @@ PAD = .06   # 字的外框對到格子的 6%～94%
 # 1. 課本生字和它們的結構（用 Node 執行網頁同一份資料）
 JS = r'''
 const fs=require("fs");const src=require("./docs/scripts/lessons-src.js")();
-const code=src+";"+["shared/parts.js","shared/parts-layers.js","shared/parts-api.js"].map(f=>fs.readFileSync(f,"utf8")).join(";")+";this.B=BOOKS;this.P=window.Parts;";
+const code=src+";"+["shared/parts.js","shared/parts-layers.js","shared/parts-api.js"].map(f=>fs.readFileSync(f,"utf8")).join(";")+";this.B=BOOKS;this.P=window.Parts;this.PL=PARTS_LAYERS;";
 const o={window:{}};new Function("window",code).call(o,o.window);
 const out={};for(const b of Object.values(o.B))for(const L of Object.values(b.lessons))for(const c of (L.write||"")+(L.read||""))out[c]=o.P.struct(c)||"";
+for(const c of Object.keys(o.PL))out[c]=o.P.struct(c)||"";   /* 部件表裡不在課本的字也算（練習簿可以自己貼字，2026-11-16） */
 process.stdout.write(JSON.stringify(out));'''
 STRUCT = json.loads(subprocess.run(['node', '-e', JS], capture_output=True, text=True, check=True).stdout)
 SPLITS = {'左右': ('x', 1), '左中右': ('x', 2), '上下': ('y', 1), '上中下': ('y', 2)}
@@ -118,9 +119,10 @@ def blob_cuts(ink, axis, n):
 #    部件的筆畫連在一起、交疊的字也分得出來。算不出來的字（沒有筆畫資料、部件對不上、切不開）照舊用上面字型量的結果。
 PARTS = json.loads(subprocess.run(['node', '-e', r'''
 const fs=require("fs");const src=require("./docs/scripts/lessons-src.js")();
-const code=src+";"+["shared/parts.js","shared/parts-layers.js","shared/parts-api.js"].map(f=>fs.readFileSync(f,"utf8")).join(";")+";this.B=BOOKS;this.P=window.Parts;this.PA=PARTS_AUTO;";
+const code=src+";"+["shared/parts.js","shared/parts-layers.js","shared/parts-api.js"].map(f=>fs.readFileSync(f,"utf8")).join(";")+";this.B=BOOKS;this.P=window.Parts;this.PA=PARTS_AUTO;this.PL=PARTS_LAYERS;";
 const o={window:{}};new Function("window",code).call(o,o.window);
 const out={};for(const b of Object.values(o.B))for(const L of Object.values(b.lessons))for(const c of (L.write||"")+(L.read||"")){const r=o.P.layer(c,1);out[c]=r?r.parts:null;}
+for(const c of Object.keys(o.PL)){if(c in out)continue;const r=o.P.layer(c,1);out[c]=r?r.parts:null;}
 process.stdout.write(JSON.stringify({layer1:out,auto:o.PA}));'''], capture_output=True, text=True, check=True).stdout)
 AUTO = PARTS['auto']; PARTS = PARTS['layer1']   # AUTO：電腦自動拆法（最細的部件，照書寫順序）
 STROKE_DIR = sys.argv[1] if len(sys.argv) > 1 else os.environ.get('RULER_STROKE_DIR', '')
