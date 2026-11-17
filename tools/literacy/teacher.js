@@ -846,9 +846,17 @@ function lineChart(pts, o){
   /* 最後一點標數字（只標一個，其餘看表格或移上去看）；前一點太近就不標，避免疊在一起 */
   const lp = ok[ok.length - 1], lp0 = ok[ok.length - 2];
   if(lp && (!lp0 || X(lp.x) - X(lp0.x) > 44)) g += `<text class="endlabel" x="${Math.min(X(lp.x), SVGW - R - 4)}" y="${Y(lp.v) - 12}" text-anchor="${X(lp.x) > SVGW - 80 ? "end" : "middle"}">${fmt(o.metric, lp.v)}</text>`;
-  /* 橫軸標籤：和前一個標籤至少隔 48 像素才標，日期靠很近時不會疊在一起 */
-  let lastX = -1e9;
-  g += (o.axisPts || pts).map(p => { const x = X(p.x), t = o.xLabel(p.x); if(!t || x - lastX < 48) return ""; lastX = x; return `<text class="ax" x="${x}" y="${H - 14}" text-anchor="middle">${esc(t)}</text>`; }).join("");
+  /* 橫軸標籤：和前一個標籤至少隔 48 像素才標，日期靠很近時不會疊在一起。
+     最後一個點一定標（最新的日期最重要，2026-11-17 維護者回報 11/17 有點卻沒有日期）：太靠近前面的標籤時，拿掉前面的（第一個標籤保留） */
+  const labs = [];
+  (o.axisPts || pts).forEach(p => { const x = X(p.x), t = o.xLabel(p.x); if(t && (!labs.length || x - labs[labs.length - 1].x >= 48)) labs.push({x, t}); });
+  const lastP = [...(o.axisPts || pts)].reverse().find(p => o.xLabel(p.x));
+  if(lastP && labs.length && labs[labs.length - 1].x !== X(lastP.x)){
+    const x = X(lastP.x);
+    while(labs.length > 1 && x - labs[labs.length - 1].x < 48) labs.pop();
+    if(x - labs[labs.length - 1].x >= 48) labs.push({x, t: o.xLabel(lastP.x)});
+  }
+  g += labs.map(l => `<text class="ax" x="${l.x}" y="${H - 14}" text-anchor="middle">${esc(l.t)}</text>`).join("");
   if(o.xName) g += `<text class="ax" x="${SVGW - R}" y="${H - 1}" text-anchor="end">${esc(o.xName)}</text>`;
   return `<div class="chartbox"><svg viewBox="0 0 ${SVGW} ${H}" role="img" aria-label="折線圖，數字請看下方明細表">${g}<line class="cross" y1="${Tp}" y2="${Tp + ih}" hidden/></svg><div class="ttip" hidden></div></div>`;
 }
