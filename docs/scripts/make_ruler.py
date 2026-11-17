@@ -44,9 +44,10 @@ PAD = .06   # 字的外框對到格子的 6%～94%
 # 1. 課本生字和它們的結構（用 Node 執行網頁同一份資料）
 JS = r'''
 const fs=require("fs");const src=require("./docs/scripts/lessons-src.js")();
-const code=src+";"+["shared/parts.js","shared/parts-layers.js","shared/parts-api.js"].map(f=>fs.readFileSync(f,"utf8")).join(";")+";this.B=BOOKS;this.P=window.Parts;";
+const code=src+";"+["shared/parts.js","shared/parts-layers.js","shared/parts-api.js"].map(f=>fs.readFileSync(f,"utf8")).join(";")+";this.B=BOOKS;this.P=window.Parts;this.PL=PARTS_LAYERS;";
 const o={window:{}};new Function("window",code).call(o,o.window);
 const out={};for(const b of Object.values(o.B))for(const L of Object.values(b.lessons))for(const c of (L.write||"")+(L.read||""))out[c]=o.P.struct(c)||"";
+for(const c of Object.keys(o.PL))out[c]=o.P.struct(c)||"";   /* 部件表裡不在課本的字也算（練習簿可以自己貼字，2026-11-16） */
 process.stdout.write(JSON.stringify(out));'''
 STRUCT = json.loads(subprocess.run(['node', '-e', JS], capture_output=True, text=True, check=True).stdout)
 SPLITS = {'左右': ('x', 1), '左中右': ('x', 2), '上下': ('y', 1), '上中下': ('y', 2)}
@@ -56,7 +57,7 @@ RULER_FIX = {}
 # 人工確認：沒有教育部筆畫可算、只有字型量的結果，維護者看過對照圖確認「分線是對的」的字（一個字串，例如 '案倒件'）；
 # 沒有列在這裡的不確定字，不收進 ruler.js
 # 維護者指定的第一層每塊幾畫（部件名稱查不到筆畫數時用；例如憂＝前 12 畫｜夊 3 畫，2026-11-14；南…業是第三批、焉…齒是第四批）：{字: [第一塊畫數, 第二塊畫數, ...]}
-PART_STROKES = {'焉': [5, 6], '爭': [4, 4], '疊': [15, 7], '盡': [9, 5], '竹': [3, 3], '第': [6, 5], '舞': [8, 6], '製': [8, 7], '豐': [11, 7], '赤': [3, 4], '骨': [6, 4], '備': [2, 10], '器': [6, 4, 6], '帶': [5, 6], '歲': [4, 9], '班': [4, 2, 4], '畏': [5, 4], '薄': [4, 14], '象': [6, 6], '辨': [7, 2, 7], '長': [5, 3], '鬱': [14, 15], '齒': [4, 11], '南': [2, 7], '卷': [3, 5], '喪': [9, 3], '奉': [3, 5], '奧': [10, 3], '對': [11, 3], '慰': [11, 4], '懂': [3, 13], '拳': [4, 6], '望': [7, 4], '業': [5, 8], '憂': [12, 3], '晉': [6, 4], '毫': [5, 6], '牽': [7, 4], '益': [5, 5], '聖': [9, 4], '舉': [11, 6], '豪': [5, 9], '賓': [3, 11], '釜': [4, 6], '黃': [4, 8]}   # 憂是第一批、其餘是對照圖第二批（維護者 2026-11-14 指定「前 N 畫｜其餘」）
+PART_STROKES = {'乞': [2, 1], '亂': [12, 1], '侯': [2, 7], '免': [2, 5], '典': [6, 2], '前': [3, 6], '劉': [13, 2], '北': [3, 2], '印': [4, 2], '即': [5, 2], '商': [4, 7], '善': [9, 3], '單': [6, 6], '嚴': [6, 14], '壽': [3, 4, 7], '夜': [2, 6], '妻': [5, 3], '寬': [7, 8], '專': [8, 3], '尚': [3, 5], '師': [6, 4], '幻': [3, 1], '徊': [3, 6], '焉': [5, 6], '爭': [4, 4], '疊': [15, 7], '盡': [9, 5], '竹': [3, 3], '第': [6, 5], '舞': [8, 6], '製': [8, 7], '豐': [11, 7], '赤': [3, 4], '骨': [6, 4], '備': [2, 10], '器': [6, 4, 6], '帶': [5, 6], '歲': [4, 9], '班': [4, 2, 4], '畏': [5, 4], '薄': [4, 14], '象': [6, 6], '辨': [7, 2, 7], '長': [5, 3], '鬱': [14, 15], '齒': [4, 11], '南': [2, 7], '卷': [3, 5], '喪': [9, 3], '奉': [3, 5], '奧': [10, 3], '對': [11, 3], '慰': [11, 4], '懂': [3, 13], '拳': [4, 6], '望': [7, 4], '業': [5, 8], '憂': [12, 3], '晉': [6, 4], '毫': [5, 6], '牽': [7, 4], '益': [5, 5], '聖': [9, 4], '舉': [11, 6], '豪': [5, 9], '賓': [3, 11], '釜': [4, 6], '黃': [4, 8]}   # 憂是第一批、其餘是對照圖第二批（維護者 2026-11-14 指定「前 N 畫｜其餘」）
 RULER_OK = set('乾佩侃冠制務參哭啟嘗噪堂墊幹弱德愣慚敢散敷旅旋族旗暴曹曾朝棄森款殺沿漢漸然率產磊穀穎簸素縣羈聚聰聽色莫蒜蟲解負責賴足那鐵鑿隙難霜青類飾黍黝亭修具夏害寒尋徵徽愛掌')   # 2026-11-14 維護者看過對照圖第 1～3 張確認「其他都可以」的字（80 個，不含另外指定拆法的 兩嫩候索里午寡帝憂旁）；其中有第一層的字用第一層算，沒有第一層的用「最細部件分組」的候選
 
 # 2. 楷書字型：每個字在哪一個字型檔
@@ -118,9 +119,10 @@ def blob_cuts(ink, axis, n):
 #    部件的筆畫連在一起、交疊的字也分得出來。算不出來的字（沒有筆畫資料、部件對不上、切不開）照舊用上面字型量的結果。
 PARTS = json.loads(subprocess.run(['node', '-e', r'''
 const fs=require("fs");const src=require("./docs/scripts/lessons-src.js")();
-const code=src+";"+["shared/parts.js","shared/parts-layers.js","shared/parts-api.js"].map(f=>fs.readFileSync(f,"utf8")).join(";")+";this.B=BOOKS;this.P=window.Parts;this.PA=PARTS_AUTO;";
+const code=src+";"+["shared/parts.js","shared/parts-layers.js","shared/parts-api.js"].map(f=>fs.readFileSync(f,"utf8")).join(";")+";this.B=BOOKS;this.P=window.Parts;this.PA=PARTS_AUTO;this.PL=PARTS_LAYERS;";
 const o={window:{}};new Function("window",code).call(o,o.window);
 const out={};for(const b of Object.values(o.B))for(const L of Object.values(b.lessons))for(const c of (L.write||"")+(L.read||"")){const r=o.P.layer(c,1);out[c]=r?r.parts:null;}
+for(const c of Object.keys(o.PL)){if(c in out)continue;const r=o.P.layer(c,1);out[c]=r?r.parts:null;}
 process.stdout.write(JSON.stringify({layer1:out,auto:o.PA}));'''], capture_output=True, text=True, check=True).stdout)
 AUTO = PARTS['auto']; PARTS = PARTS['layer1']   # AUTO：電腦自動拆法（最細的部件，照書寫順序）
 STROKE_DIR = sys.argv[1] if len(sys.argv) > 1 else os.environ.get('RULER_STROKE_DIR', '')
