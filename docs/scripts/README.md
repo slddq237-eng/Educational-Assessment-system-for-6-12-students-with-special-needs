@@ -13,6 +13,7 @@
 | `make_parts.py` | `shared/parts.js`、`docs/materials/parts-table.xlsx` | 新增課本後 |
 | `make_parts_columns.py` | `docs/materials/parts-table.xlsx` 的電腦欄位（結構、第一～三層、正式評量遮第幾塊、需要檢查，整欄重算，老師填的綠色欄位不動）、`shared/parts-layers.js`（部件三層資料，平台之後讀）；需要 cjkvi-ids 的 `ids.txt` 和 pinyin-data 的 `pinyin.txt`（2026-10-28 加，2026-10-31 改成三層） | `make_parts.py` 之後；改了部件表之後 |
 | `make_mask_fix.js` | `tools/literacy/mask-fix.js`（聽音補部件的遮擋位置調整資料） | 維護者用調整工具調好、下載的 json 放到 `docs/materials/mask-fix.json` 之後 |
+| `make_mask_from_strokes.py` | 用教育部筆畫算遮擋位置（輸出 json，要合併進 `docs/materials/mask-fix.json` 再跑 `make_mask_fix.js`） | 第一層改了、遮擋提醒「第一層部件已經和調整當時不同」時（2026-11-17 新增，14 個字用過） |
 | `make_mask_tool.js`（範本 `mask-tool-template.txt`；下載的 json 有 `ps` 和「基於版本」，工具在 repo 結果更新時提醒並能三方合併） | 單機的「遮擋位置調整工具」HTML（約 6MB，不放進 repo；要有 Playwright） | 要調整遮擋位置時；部件表（第一層拆法）改了之後要重新產生 |
 | `make_bpmf.py` | `shared/bpmf.js`、`shared/fonts/bpmf-kai*` | 新增課本、改讀音後 |
 | `make_bpmf_only.py` | `shared/fonts/bpmf-only.woff2`（寫字 W1 看注音寫國字：「字嗨注音而已」字型只取課本生字；字型要先下載，見檔案開頭） | 新增課本後（和 `make_bpmf.py` 一起） |
