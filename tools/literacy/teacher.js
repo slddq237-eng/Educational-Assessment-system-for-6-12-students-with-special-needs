@@ -166,7 +166,7 @@ function dailyChart(rs, metric){
   const g = groupBy(rs, dayOf), days = [...g.keys()].sort(), first = days[0];
   const fn = metric === "acc" ? accOf : metric === "sec" ? secOf : fluOf, at = {};
   const pts = days.map(d => { const list = g.get(d), t = tagText(list), x = daysBetween(first, d); at[x] = shortDay(d); return {x, day: d, label: shortDay(d) + (t ? `（${t}）` : ""), rs: list, ...fn(list)}; });
-  return lineChart(pts, {metric, noPhase: true, xLabel: x => at[x] || "", xName: ""});
+  return lineChart(pts, {metric, noPhase: true, xLabel: x => at[x] || "", xName: "", scroll: true});
 }
 /* 流暢性（計時挑戰、流暢性模式）：每一回合＝一位學生做完一次，每分鐘第一次就答對幾個；一天一個點，正式評量和練習的回合全部算 */
 function fluencySection(all){
@@ -800,7 +800,7 @@ function phaseLegend(pts){
    一條線（單一學生、單一指標），2px 線、8px 點；背景顏色＝時期，時期改變的地方畫虛線（2026-10-24 起不在圖上寫時期名稱，看上方圖例）；
    直線＝教學安排開始日。滑鼠或鍵盤移到點上會顯示數字；不到 3 題的點畫空心。
    o.domain＝共用的橫軸範圍、o.ymax＝共用的縱軸最大值、o.title＝小圖標題、o.compact＝矮一點（每課分開時用）、o.noPhase＝不畫時期（全部課合計） */
-const SVGW = 760;
+const SVGW = 760, SCROLL_GAP = 56, SCROLL_MAX = 30000, SCROLL_MIN_SCALE = 0.85;   /* 可滑動的圖：相鄰兩個日期至少隔 56（和圖一樣的單位），最寬 30000；手機上最少照原尺寸的 85% 畫，不縮到看不清楚 */
 function niceMax(v){ if(v <= 5) return 5; const p = Math.pow(10, Math.floor(Math.log10(v))); for(const m of [1, 2, 2.5, 5, 10]) if(m * p >= v) return m * p; return 10 * p; }
 /* 縱軸刻度：分成 4 格，每格是 1、2、5 的整數倍（例如 0、1、2、3、4 秒），不會出現 1.3、3.8 這種數字 */
 function niceTicks(v){
@@ -811,12 +811,18 @@ function niceTicks(v){
 /* 橫軸標籤縮短：日期只留月/日，月份寫成「9 月」 */
 const shortAxis = s => { s = String(s); let m = s.match(/^\d{4}-(\d{2})-(\d{2})/); if(m) return `${+m[1]}/${+m[2]}`; m = s.match(/^\d{4}-(\d{2})$/); return m ? `${+m[1]} 月` : s.slice(0, 8); };
 function lineChart(pts, o){
-  const H = o.compact ? (o.xName ? 214 : 204) : 300, L = 52, R = 20, Tp = o.compact ? 28 : 22, B = o.compact ? (o.xName ? 42 : 32) : 38, iw = SVGW - L - R, ih = H - Tp - B;
+  const H = o.compact ? (o.xName ? 214 : 204) : 300, L = 52, R = 20, Tp = o.compact ? 28 : 22, B = o.compact ? (o.xName ? 42 : 32) : 38, ih = H - Tp - B;
+  let iw = SVGW - L - R;
   const ys = pts.map(p => p.v).filter(v => v != null).concat((o.extra || []).map(p => p.v).filter(v => v != null));
   const ticks = o.metric === "acc" ? [0, 25, 50, 75, 100] : niceTicks((o.ymax != null ? o.ymax : Math.max(...ys)) * 1.05), max = ticks[4];
   const xs = pts.map(p => p.x).concat((o.events || []).map(e => e.x), (o.extra || []).map(p => p.x));
   const edge = (o.extra || []).length ? 0.5 : 0;   /* 有練習點（每次評量一格）時左右各留半格，頭尾的點不會貼在邊框上 */
   const [x0, x1] = o.domain || [Math.min(...xs) - edge, Math.max(...xs) + edge], span = x1 - x0 || 1;
+  /* 可滑動（o.scroll，每天一個點的圖，2026-11-17 維護者要求）：每個日期都要標，相鄰兩天至少隔 SCROLL_GAP；放不下時圖變寬、可以左右滑動，左邊刻度固定 */
+  const ux = [...new Set(xs)].sort((a, b) => a - b), minGap = Math.min(...ux.slice(1).map((v, i) => v - ux[i]));
+  const wide = o.scroll && ux.length > 1 ? Math.min(SCROLL_MAX, Math.ceil(L + R + span * SCROLL_GAP / minGap)) : 0;
+  const W = wide > SVGW ? wide : SVGW;
+  if(W > SVGW) iw = W - L - R;
   const X = x => !o.domain && new Set(xs).size === 1 ? L + iw / 2 : L + (x - x0) / span * iw, Y = v => Tp + ih - v / max * ih;
   const unit = o.metric === "acc" ? "%" : o.metric === "sec" ? " 秒" : "";
   /* 時期：背景色塊（先畫，在格線和線的下面）＋改變處的虛線；第一段和最後一段在點的外面留半格，碰到圖的邊就到邊 */
@@ -827,11 +833,11 @@ function lineChart(pts, o){
     const first = pts[s.from], lastP = pts[s.to];
     /* slotBands（每次評量一格、中間夾練習時）：背景只從這個時期的第一格蓋到最後一格，夾在前測和後測中間的練習不塗色（維護者 2026-11-03） */
     const a = o.slotBands ? Math.max(L, X(first.x - 0.5)) : i ? (X(pts[s.from - 1].x) + X(first.x)) / 2 : (first.x <= x0 ? L : Math.max(L, X(first.x) - pad));
-    const b = o.slotBands ? Math.min(SVGW - R, X(lastP.x + 0.5)) : i < segs.length - 1 ? (X(lastP.x) + X(pts[s.to + 1].x)) / 2 : (lastP.x >= x1 ? SVGW - R : Math.min(SVGW - R, X(lastP.x) + pad));
+    const b = o.slotBands ? Math.min(W - R, X(lastP.x + 0.5)) : i < segs.length - 1 ? (X(lastP.x) + X(pts[s.to + 1].x)) / 2 : (lastP.x >= x1 ? W - R : Math.min(W - R, X(lastP.x) + pad));
     g += `<rect class="band ${phaseCls(s.phase)}" x="${a.toFixed(1)}" y="${Tp}" width="${Math.max(0, b - a).toFixed(1)}" height="${ih}"><title>${esc(s.phase)}</title></rect>`;
     if(i) lines += `<line class="phaseline" x1="${a}" x2="${a}" y1="${Tp}" y2="${Tp + ih}"/>`;
   });
-  g += ticks.map(t => `<line class="grid" x1="${L}" x2="${SVGW - R}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${L - 8}" y="${Y(t) + 4}" text-anchor="end">${t}${unit}</text>`).join("") + lines;
+  g += ticks.map(t => `<line class="grid" x1="${L}" x2="${W - R}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${L - 8}" y="${Y(t) + 4}" text-anchor="end">${t}${unit}</text>`).join("") + lines;
   if(o.title) g += `<text class="paneltitle" x="${L}" y="${Tp - 9}">${esc(o.title)}</text>`;
   (o.events || []).forEach(e => { const x = X(e.x); g += `<line class="event ${e.cls || ""}" x1="${x}" x2="${x}" y1="${Tp}" y2="${Tp + ih}"/><text class="eventname ${e.cls || ""}" x="${x + 4}" y="${Tp + ih - 6}">${esc(e.label)}</text>`; });
   g += dayBraces(o.dayGroups, X, Tp + ih, H);
@@ -845,12 +851,24 @@ function lineChart(pts, o){
     g += `<path class="pdot" d="M${cx} ${cy - 7}L${cx + 7} ${cy}L${cx} ${cy + 7}L${cx - 7} ${cy}Z" tabindex="0" data-tip="${esc(p.tip)}"/>`; });
   /* 最後一點標數字（只標一個，其餘看表格或移上去看）；前一點太近就不標，避免疊在一起 */
   const lp = ok[ok.length - 1], lp0 = ok[ok.length - 2];
-  if(lp && (!lp0 || X(lp.x) - X(lp0.x) > 44)) g += `<text class="endlabel" x="${Math.min(X(lp.x), SVGW - R - 4)}" y="${Y(lp.v) - 12}" text-anchor="${X(lp.x) > SVGW - 80 ? "end" : "middle"}">${fmt(o.metric, lp.v)}</text>`;
-  /* 橫軸標籤：和前一個標籤至少隔 48 像素才標，日期靠很近時不會疊在一起 */
-  let lastX = -1e9;
-  g += (o.axisPts || pts).map(p => { const x = X(p.x), t = o.xLabel(p.x); if(!t || x - lastX < 48) return ""; lastX = x; return `<text class="ax" x="${x}" y="${H - 14}" text-anchor="middle">${esc(t)}</text>`; }).join("");
-  if(o.xName) g += `<text class="ax" x="${SVGW - R}" y="${H - 1}" text-anchor="end">${esc(o.xName)}</text>`;
-  return `<div class="chartbox"><svg viewBox="0 0 ${SVGW} ${H}" role="img" aria-label="折線圖，數字請看下方明細表">${g}<line class="cross" y1="${Tp}" y2="${Tp + ih}" hidden/></svg><div class="ttip" hidden></div></div>`;
+  if(lp && (!lp0 || X(lp.x) - X(lp0.x) > 44)) g += `<text class="endlabel" x="${Math.min(X(lp.x), W - R - 4)}" y="${Y(lp.v) - 12}" text-anchor="${X(lp.x) > W - 80 ? "end" : "middle"}">${fmt(o.metric, lp.v)}</text>`;
+  /* 橫軸標籤：和前一個標籤至少隔 48 像素才標，日期靠很近時不會疊在一起。
+     最後一個點一定標（最新的日期最重要，2026-11-17 維護者回報 11/17 有點卻沒有日期）：太靠近前面的標籤時，拿掉前面的（第一個標籤保留） */
+  const labs = [];
+  (o.axisPts || pts).forEach(p => { const x = X(p.x), t = o.xLabel(p.x); if(t && (!labs.length || x - labs[labs.length - 1].x >= 48)) labs.push({x, t}); });
+  const lastP = [...(o.axisPts || pts)].reverse().find(p => o.xLabel(p.x));
+  if(lastP && labs.length && labs[labs.length - 1].x !== X(lastP.x)){
+    const x = X(lastP.x);
+    while(labs.length > 1 && x - labs[labs.length - 1].x < 48) labs.pop();
+    if(x - labs[labs.length - 1].x >= 48) labs.push({x, t: o.xLabel(lastP.x)});
+  }
+  g += labs.map(l => `<text class="ax" x="${l.x}" y="${H - 14}" text-anchor="middle">${esc(l.t)}</text>`).join("");
+  if(o.xName) g += `<text class="ax" x="${W - R}" y="${H - 1}" text-anchor="end">${esc(o.xName)}</text>`;
+  const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="折線圖，數字請看下方明細表"${W > SVGW ? ` style="width:max(${(W / SVGW * 100).toFixed(2)}%, ${Math.round(W * SCROLL_MIN_SCALE)}px)"` : ""}>${g}<line class="cross" y1="${Tp}" y2="${Tp + ih}" hidden/></svg>`;
+  if(W <= SVGW) return `<div class="chartbox">${svg}<div class="ttip" hidden></div></div>`;
+  /* 變寬的圖：放在可以左右滑動的框裡（打開時捲到最右邊＝最新的日期，見 bindChart），左邊另外疊一張固定不動的刻度 */
+  const yfix = `<svg class="yfix" viewBox="0 0 ${L} ${H}" style="width:max(${(L / SVGW * 100).toFixed(2)}%, ${Math.round(L * SCROLL_MIN_SCALE)}px)" aria-hidden="true">${ticks.map(t => `<text class="ax" x="${L - 8}" y="${Y(t) + 4}" text-anchor="end">${t}${unit}</text>`).join("")}</svg>`;
+  return `<div class="chartbox"><div class="xscroll" tabindex="0" aria-label="可以左右滑動看每一天">${svg}</div>${yfix}<div class="ttip" hidden></div></div><p class="scrollhint">← 日期比較多，可以左右滑動看更早的日期</p>`;
 }
 /* ---------- 圖：橫條圖（依課別、依時期、分布） ---------- */
 function barChart(rows, o){
@@ -869,6 +887,7 @@ function barChart(rows, o){
 }
 /* 滑鼠／鍵盤提示：折線圖找最近的點，橫條圖整列都可以碰 */
 function bindChart(root){
+  root.querySelectorAll(".chartbox .xscroll").forEach(sc => { sc.scrollLeft = sc.scrollWidth; });   /* 可滑動的圖一打開先看最新的日期 */
   root.querySelectorAll(".chartbox").forEach(box => {
     const tip = box.querySelector(".ttip"), svg = box.querySelector("svg"), cross = box.querySelector(".cross");
     const show = (el, cx) => {
