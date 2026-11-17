@@ -12,11 +12,13 @@ const RulerCell = (() => {
   function blocks(c, ruler){
     /* 每一塊是 [left, top, width, height]（0～1，格子的比例）；線畫在塊和塊的交界 */
     const s = ruler && typeof Parts !== "undefined" ? Parts.struct(c) : "";
-    const inner = (l, t) => [[0, 0, 1, 1], [l, t, .62, .62]];   /* 包圍：外框一塊、裡面一塊 */
+    const inner = (l, t, w = .62, h = .62) => [[0, 0, 1, 1], [l, t, w, h]];   /* 包圍：外框一塊、裡面一塊 */
     /* 分線照字的比例（shared/ruler.js，主要用教育部筆畫資料算，2026-11-14）；左右、上下、左中右、上中下的字表裡沒有就不畫字型尺 */
     const r = typeof RULER !== "undefined" && RULER[c];
     /* 左右、上下、左中右、上中下：表裡沒有這個字的分線（不確定、不收）就不畫字型尺，用十字格（寧可不分，也不要分錯；2026-11-14 維護者決定） */
     const need = {"左右": 1, "上下": 1, "左中右": 2, "上中下": 2}[s];
+    /* 包圍字：表裡有 [左, 上, 寬, 高]（裡面那一塊的方框，教育部筆畫算的，2026-11-17）就用，沒有就用固定的預設比例 */
+    const sq = s.includes("包圍") && r && r.length === 4 ? r : null;
     if(need && !(r && r.length === need)) return null;
     const cut = (n, def) => r && r.length === n ? r : def;
     const cols = ([a, b]) => b === undefined ? [[0, 0, a, 1], [a, 0, 1 - a, 1]] : [[0, 0, a, 1], [a, 0, b - a, 1], [b, 0, 1 - b, 1]];
@@ -26,13 +28,13 @@ const RulerCell = (() => {
       "上下": rows(cut(1, [.5])),
       "左中右": cols(cut(2, [1 / 3, 2 / 3])),
       "上中下": rows(cut(2, [1 / 3, 2 / 3])),
-      "全包圍": inner(.19, .19),
-      "上方包圍": inner(.19, .38),
-      "下方包圍": inner(.19, 0),
-      "左方包圍": inner(.38, .19),
-      "左上包圍": inner(.38, .38),
-      "左下包圍": inner(.38, 0),
-      "右上包圍": inner(0, .38)
+      "全包圍": sq ? inner(...sq) : inner(.19, .19),
+      "上方包圍": sq ? inner(...sq) : inner(.19, .38),
+      "下方包圍": sq ? inner(...sq) : inner(.19, 0),
+      "左方包圍": sq ? inner(...sq) : inner(.38, .19),
+      "左上包圍": sq ? inner(...sq) : inner(.38, .38),
+      "左下包圍": sq ? inner(...sq) : inner(.38, 0),
+      "右上包圍": sq ? inner(...sq) : inner(0, .38)
     })[s] || null;
   }
 

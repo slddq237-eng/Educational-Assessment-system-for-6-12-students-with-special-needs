@@ -57,7 +57,7 @@ RULER_FIX = {}
 # 人工確認：沒有教育部筆畫可算、只有字型量的結果，維護者看過對照圖確認「分線是對的」的字（一個字串，例如 '案倒件'）；
 # 沒有列在這裡的不確定字，不收進 ruler.js
 # 維護者指定的第一層每塊幾畫（部件名稱查不到筆畫數時用；例如憂＝前 12 畫｜夊 3 畫，2026-11-14；南…業是第三批、焉…齒是第四批）：{字: [第一塊畫數, 第二塊畫數, ...]}
-PART_STROKES = {'從': [3, 8], '惠': [8, 4], '拜': [4, 5], '既': [5, 4], '書': [6, 4], '朗': [6, 4], '條': [3, 8], '歸': [10, 8], '段': [5, 4], '毒': [4, 4], '溼': [3, 10], '漫': [3, 12], '無': [8, 4], '留': [5, 5], '畫': [6, 5, 1], '當': [8, 5], '發': [5, 7], '監': [9, 5], '直': [2, 6], '竊': [5, 18], '競': [10, 10], '算': [11, 3], '纂': [11, 9], '臨': [6, 11], '華': [4, 8], '虧': [14, 3], '衡': [3, 10, 3], '表': [4, 4], '裳': [8, 6], '貌': [7, 7], '貴': [5, 7], '賞': [8, 7], '門': [4, 4], '鬥': [5, 5], '鹽': [19, 5], '黑': [8, 4], '齊': [10, 4], '龍': [9, 7], '乞': [2, 1], '亂': [12, 1], '侯': [2, 7], '免': [2, 5], '典': [6, 2], '前': [3, 6], '劉': [13, 2], '北': [3, 2], '印': [4, 2], '即': [5, 2], '商': [4, 7], '善': [9, 3], '單': [6, 6], '嚴': [6, 14], '壽': [3, 4, 7], '夜': [2, 6], '妻': [5, 3], '寬': [7, 8], '專': [8, 3], '尚': [3, 5], '師': [6, 4], '幻': [3, 1], '徊': [3, 6], '焉': [5, 6], '爭': [4, 4], '疊': [15, 7], '盡': [9, 5], '竹': [3, 3], '第': [6, 5], '舞': [8, 6], '製': [8, 7], '豐': [11, 7], '赤': [3, 4], '骨': [6, 4], '備': [2, 10], '器': [6, 4, 6], '帶': [5, 6], '歲': [4, 9], '班': [4, 2, 4], '畏': [5, 4], '薄': [4, 14], '象': [6, 6], '辨': [7, 2, 7], '長': [5, 3], '鬱': [14, 15], '齒': [4, 11], '南': [2, 7], '卷': [3, 5], '喪': [9, 3], '奉': [3, 5], '奧': [10, 3], '對': [11, 3], '慰': [11, 4], '懂': [3, 13], '拳': [4, 6], '望': [7, 4], '業': [5, 8], '憂': [12, 3], '晉': [6, 4], '毫': [5, 6], '牽': [7, 4], '益': [5, 5], '聖': [9, 4], '舉': [11, 6], '豪': [5, 9], '賓': [3, 11], '釜': [4, 6], '黃': [4, 8]}   # 憂是第一批、其餘是對照圖第二批（維護者 2026-11-14 指定「前 N 畫｜其餘」）
+PART_STROKES = {'從': [3, 8], '惠': [8, 4], '拜': [4, 5], '既': [5, 4], '書': [6, 4], '朗': [6, 4], '條': [3, 8], '歸': [10, 8], '段': [5, 4], '毒': [4, 4], '溼': [3, 10], '漫': [3, 12], '無': [8, 4], '留': [5, 5], '畫': [6, 5, 1], '當': [8, 5], '發': [5, 7], '監': [9, 5], '直': [2, 6], '竊': [5, 18], '競': [10, 10], '算': [11, 3], '纂': [11, 9], '臨': [6, 11], '華': [4, 8], '虧': [14, 3], '衡': [3, 10, 3], '表': [4, 4], '裳': [8, 6], '貌': [7, 7], '貴': [5, 7], '賞': [8, 7], '門': [4, 4], '鬥': [5, 5], '鹽': [19, 5], '黑': [8, 4], '齊': [10, 4], '龍': [9, 7], '乞': [2, 1], '亂': [12, 1], '侯': [2, 7], '免': [2, 5], '典': [6, 2], '前': [3, 6], '劉': [13, 2], '北': [3, 2], '印': [4, 2], '即': [5, 2], '商': [4, 7], '善': [9, 3], '單': [6, 6], '嚴': [6, 14], '壽': [3, 4, 7], '夜': [2, 6], '妻': [5, 3], '寬': [7, 8], '專': [8, 3], '尚': [3, 5], '師': [6, 4], '幻': [3, 1], '徊': [3, 6], '焉': [5, 6], '爭': [4, 4], '疊': [15, 7], '盡': [9, 5], '竹': [3, 3], '第': [6, 5], '舞': [8, 6], '製': [8, 7], '豐': [11, 7], '赤': [3, 4], '骨': [6, 4], '備': [2, 10], '器': [6, 4, 6], '帶': [5, 6], '歲': [4, 9], '班': [4, 2, 4], '畏': [5, 4], '薄': [4, 13], '象': [6, 6], '辨': [7, 2, 7], '長': [5, 3], '鬱': [14, 15], '齒': [4, 11], '南': [2, 7], '卷': [3, 5], '喪': [9, 3], '奉': [3, 5], '奧': [10, 3], '對': [11, 3], '慰': [11, 4], '懂': [3, 13], '拳': [4, 6], '望': [7, 4], '業': [5, 8], '憂': [12, 3], '晉': [6, 4], '毫': [5, 6], '牽': [7, 4], '益': [5, 5], '聖': [9, 4], '舉': [11, 6], '豪': [5, 9], '賓': [3, 11], '釜': [4, 6], '黃': [4, 8]}   # 憂是第一批、其餘是對照圖第二批（維護者 2026-11-14 指定「前 N 畫｜其餘」）
 RULER_OK = set('乾佩侃冠制務參哭啟嘗噪堂墊幹弱德愣慚敢散敷旅旋族旗暴曹曾朝棄森款殺沿漢漸然率產磊穀穎簸素縣羈聚聰聽色莫蒜蟲解負責賴足那鐵鑿隙難霜青類飾黍黝亭修具夏害寒尋徵徽愛掌')   # 2026-11-14 維護者看過對照圖第 1～3 張確認「其他都可以」的字（80 個，不含另外指定拆法的 兩嫩候索里午寡帝憂旁）；其中有第一層的字用第一層算，沒有第一層的用「最細部件分組」的候選
 
 # 2. 楷書字型：每個字在哪一個字型檔
@@ -316,23 +316,86 @@ def leaf_cuts(c, axis, n, radical):
     return found[0][1], found[0][0], (found[1][0] - found[0][0]) if len(found) > 1 else 1.0
 
 
+# ---------- 包圍字（2026-11-17，先做左下包圍）：裡面那一塊的方框 ----------
+# 外層（辶、走…）包住裡面那一塊：裡面是一個方框，貼著格子沒被外層佔住的邊。
+# 左下包圍：外層在左邊和下面，裡面是右上角的方框 [左, 上, 寬, 高]（0～1，格子的比例；上＝0、右邊貼 1）。
+# 外層和裡面誰先寫不一定（辶最後寫，走先寫）：兩種都試，挑「外層的墨掉進方框裡、裡面的墨掉到方框外」最少的。
+SURR = {'左下包圍': ('l', 'b')}      # 結構 → 外層在哪幾邊（l 左、r 右、t 上、b 下）
+SRECT, SRANGE, SORDER = {}, {}, {}   # 字 → 方框；字 → 各部件的筆畫範圍（部件表的順序）；字 → 各部件的書寫順位（0＝最先寫）
+SURR_MAX_COST = .12                  # 最好的方框還是有超過 12% 的墨放錯邊：部件對錯了或不是這種包圍，不收
+
+
+def surround_rect(c, parts, struct, radical):
+    """回傳 (方框, 放錯的墨比例, 各部件的筆畫範圍, 各部件的書寫順位) 或 (None, 失敗原因, None, None)"""
+    st = load_strokes(c)
+    if st is None: return None, '沒有筆畫資料', None, None
+    if not parts or len(parts) != 2: return None, '沒有對應的部件（要 2 塊：外層、裡面）', None, None
+    N = len(st)
+    known = [piece_count(p, radical) for p in parts]
+    if c in PART_STROKES and len(PART_STROKES[c]) == 2 and sum(PART_STROKES[c]) == N: known = list(PART_STROKES[c])
+    unk = [i for i, k in enumerate(known) if k is None]
+    if len(unk) == 1: known[unk[0]] = N - sum(k for k in known if k is not None)
+    if None in known or sum(known) != N or min(known) < 1: return None, '部件筆畫數對不上', None, None
+    masks = raster_strokes(st)
+    outer_n, inner_n = known                        # 部件表第一個是外層、第二個是裡面
+    sides = SURR[struct]
+    best = None
+    for outer_first in (True, False):
+        o_idx = range(0, outer_n) if outer_first else range(inner_n, N)
+        i_idx = range(outer_n, N) if outer_first else range(0, inner_n)
+        om = np.zeros_like(masks[0]); im = np.zeros_like(masks[0])
+        for i in o_idx: om |= masks[i]
+        for i in i_idx: im |= masks[i]
+        allm = om | im; ys, xs = np.nonzero(allm)
+        x0, x1, y0, y1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
+        # 方框：左下包圍＝右上角，左邊界 xc、下邊界 yc 可以動；用累計和很快算出每個 (xc, yc) 的放錯量
+        oc = np.pad(np.cumsum(np.cumsum(om, 0), 1), ((1, 0), (1, 0))); ic = np.pad(np.cumsum(np.cumsum(im, 0), 1), ((1, 0), (1, 0)))
+        def box(c_, x_a, x_b, y_a, y_b): return c_[y_b, x_b] - c_[y_a, x_b] - c_[y_b, x_a] + c_[y_a, x_a]
+        tot_i = im.sum(); step = 4; res = None
+        for xc in range(x0, x1, step):
+            for yc in range(y0 + step, y1 + 1, step):   # 方框 = [xc, x1) × [y0, yc)
+                bad = box(oc, xc, x1, y0, yc) + (tot_i - box(ic, xc, x1, y0, yc))
+                if res is None or bad < res[0]: res = (bad, xc, yc)
+        cost = res[0] / max(1, allm.sum()); _, xc, yc = res
+        # 換成格子的比例：字的外框長邊對到 88%、置中（和練習簿放字的方式一樣，shared/ruler-cell.js 的格子）
+        k = .88 / max(x1 - x0, y1 - y0); cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        l = min(1, max(0, .5 + (xc - cx) * k)); h = min(1, max(0, .5 + (yc - cy) * k))
+        cand = (cost, [round(l, 3), 0, round(1 - l, 3), round(h, 3)], outer_first)
+        if best is None or cand[0] < best[0]: best = cand
+    cost, rect, outer_first = best
+    if cost > SURR_MAX_COST: return None, f'放錯的墨太多（{cost * 100:.0f}%）', None, None
+    rng = [(0, outer_n), (outer_n, N)] if outer_first else [(inner_n, N), (0, inner_n)]
+    order = [0, 1] if outer_first else [1, 0]
+    return rect, cost, rng, order
+
+
 SCUTS, SINFO = {}, {'筆畫': 0}
 SFAIL = collections.Counter(); SHIGH = []; SWHY = {}
 if STROKE_DIR:
     todo = [(c, PARTS.get(c), SPLITS[s][0], SPLITS[s][1]) for c, s in STRUCT.items() if s in SPLITS]
     need = {c for c, parts, _, _ in todo} | {p for _, parts, _, _ in todo for p in (parts or []) if len(p) == 1}
     fetch_strokes(sorted(need))
+    todo_s = [(c, PARTS.get(c), None, 1) for c, s in STRUCT.items() if s in SURR]
+    fetch_strokes(sorted({c for c, parts, _, _ in todo_s} | {p for _, parts, _, _ in todo_s for p in (parts or []) if len(p) == 1}))
     RADICAL = radical_table(todo)
+    RADICAL_S = radical_table(todo + todo_s)   # 包圍字（辶、走…）另外一張偏旁表，不影響原本左右、上下的字
     for c, parts, axis, n in todo:
         cuts, cost, how_ = stroke_cuts(c, parts, axis, n, RADICAL)
         if cuts is None: SFAIL[how_] += 1; SWHY[c] = how_
         elif cost > MAX_CROSS: SHIGH.append((c, round(cost * 100, 1))); SFAIL['切到太多墨（>30%）'] += 1; SWHY[c] = '切到太多墨（>30%）'
         else: SCUTS[c] = cuts; SINFO['筆畫'] += 1
+    SSKIP = {}
+    for c, parts, _, _ in todo_s:
+        rect, cost, rng, order = surround_rect(c, parts, STRUCT[c], RADICAL_S)
+        if rect is None: SSKIP[c] = cost
+        else: SRECT[c] = rect; SRANGE[c] = rng; SORDER[c] = order
+    print(f'包圍字（{"、".join(SURR)}）：用筆畫算出 {len(SRECT)} 個字的方框；用不了的 {len(SSKIP)} 個：' + '、'.join(f'{c}（{w}）' for c, w in SSKIP.items()))
     print(f'教育部筆畫（{STROKE_DIR}）：用筆畫算出 {len(SCUTS)} 個字；用不了的 {sum(SFAIL.values())} 個，原因：{dict(SFAIL)}；偏旁筆畫數反推 {len(RADICAL)} 個')
 else:
     print('沒有指定筆畫資料資料夾（python3 docs/scripts/make_ruler.py 筆畫資料夾路徑）：全部照字型量的結果，比較不準')
 
 out, skipped, how = dict(SCUTS), [], {'blob': 0, 'gap': 0}   # 先放教育部筆畫算出來的（確定）
+out.update(SRECT)   # 包圍字：裡面那一塊的方框 [左, 上, 寬, 高]
 CAND = {}   # 不確定的字：候選分線（最細部件分組算的，沒有就用字型量的；都不收進 ruler.js，要維護者確認）
 CSRC, CLIKELY = {}, {}   # 候選是哪一種算的（leaf＝最細部件分組、font＝字型）、「可能對」
 for c, s in sorted(STRUCT.items()):
@@ -467,8 +530,14 @@ if STROKE_DIR:
     SP_OUT = 'shared/stroke-parts.js'
     sp_data, sp_skip = {}, []
     for c in sorted(out):
-        sizes = PSIZE.get(c) if c in SCUTS else (LEAFSIZE.get(c) if c in RULER_OK else None)
         st = load_strokes(c)
+        if c in SRECT:   # 包圍字：部件表順序（外層、裡面）；o＝各部件的書寫順位（0＝最先寫），褪除要照書寫順序
+            pts = [pt for s_ in st for pt in flatten(s_['outline'], 2)]
+            xs_, ys_ = [x for x, _ in pts], [y for _, y in pts]
+            sp_data[c] = {'b': [round(min(xs_) / QU), round(min(ys_) / QU), round(max(xs_) / QU), round(max(ys_) / QU)],
+                          'p': [stroke_path(st[a:b]) for a, b in SRANGE[c]], 'o': SORDER[c]}
+            continue
+        sizes = PSIZE.get(c) if c in SCUTS else (LEAFSIZE.get(c) if c in RULER_OK else None)
         if c in PART_STROKES and st and sum(PART_STROKES[c]) == len(st): sizes = list(PART_STROKES[c])
         if not sizes or not st or sum(sizes) != len(st): sp_skip.append(c); continue
         pts = [pt for s_ in st for pt in flatten(s_['outline'], 2)]
