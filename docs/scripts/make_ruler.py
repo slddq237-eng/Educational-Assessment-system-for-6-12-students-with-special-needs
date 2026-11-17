@@ -320,7 +320,7 @@ def leaf_cuts(c, axis, n, radical):
 # 外層（辶、走…）包住裡面那一塊：裡面是一個方框，貼著格子沒被外層佔住的邊。
 # 左下包圍：外層在左邊和下面，裡面是右上角的方框 [左, 上, 寬, 高]（0～1，格子的比例；上＝0、右邊貼 1）。
 # 外層和裡面誰先寫不一定（辶最後寫，走先寫）：兩種都試，挑「外層的墨掉進方框裡、裡面的墨掉到方框外」最少的。
-SURR = {'左下包圍': ('l', 'b')}      # 結構 → 外層在哪幾邊（l 左、r 右、t 上、b 下）
+SURR = {'左下包圍': ('l', 'b'), '左上包圍': ('l', 't')}      # 結構 → 外層在哪幾邊（l 左、r 右、t 上、b 下）
 SRECT, SRANGE, SORDER = {}, {}, {}   # 字 → 方框；字 → 各部件的筆畫範圍（部件表的順序）；字 → 各部件的書寫順位（0＝最先寫）
 SURR_MAX_COST = .12                  # 最好的方框還是有超過 12% 的墨放錯邊：部件對錯了或不是這種包圍，不收
 
@@ -338,7 +338,7 @@ def surround_rect(c, parts, struct, radical):
     if None in known or sum(known) != N or min(known) < 1: return None, '部件筆畫數對不上', None, None
     masks = raster_strokes(st)
     outer_n, inner_n = known                        # 部件表第一個是外層、第二個是裡面
-    sides = SURR[struct]
+    sides = SURR[struct]                            # 外層在哪幾邊：這幾個邊界的位置可以動（方框貼著外層）；其他邊貼著字的外框
     best = None
     for outer_first in (True, False):
         o_idx = range(0, outer_n) if outer_first else range(inner_n, N)
@@ -348,25 +348,33 @@ def surround_rect(c, parts, struct, radical):
         for i in i_idx: im |= masks[i]
         allm = om | im; ys, xs = np.nonzero(allm)
         x0, x1, y0, y1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
-        # 方框：左下包圍＝右上角，左邊界 xc、下邊界 yc 可以動；用累計和很快算出每個 (xc, yc) 的放錯量
+        # 用累計和很快算出每個方框的放錯量：外層的墨掉進方框裡 ＋ 裡面的墨掉到方框外
         oc = np.pad(np.cumsum(np.cumsum(om, 0), 1), ((1, 0), (1, 0))); ic = np.pad(np.cumsum(np.cumsum(im, 0), 1), ((1, 0), (1, 0)))
-        def box(c_, x_a, x_b, y_a, y_b): return c_[y_b, x_b] - c_[y_a, x_b] - c_[y_b, x_a] + c_[y_a, x_a]
-        tot_i = im.sum(); step = 4; res = None
-        for xc in range(x0, x1, step):
-            for yc in range(y0 + step, y1 + 1, step):   # 方框 = [xc, x1) × [y0, yc)
-                bad = box(oc, xc, x1, y0, yc) + (tot_i - box(ic, xc, x1, y0, yc))
-                if res is None or bad < res[0]: res = (bad, xc, yc)
-        cost = res[0] / max(1, allm.sum()); _, xc, yc = res
-        # 換成格子的比例：字的外框長邊對到 88%、置中（和練習簿放字的方式一樣，shared/ruler-cell.js 的格子）
+        def box(c_, xa, xb, ya, yb): return c_[yb, xb] - c_[ya, xb] - c_[yb, xa] + c_[ya, xa]
+        tot_i = im.sum(); step = 4
+        rng = {'l': range(x0, x1, step) if 'l' in sides else [x0], 't': range(y0, y1, step) if 't' in sides else [y0],
+               'r': range(x0 + step, x1 + 1, step) if 'r' in sides else [x1], 'b': range(y0 + step, y1 + 1, step) if 'b' in sides else [y1]}
+        res = None
+        for xl in rng['l']:
+            for yt in rng['t']:
+                for xr in rng['r']:
+                    for yb in rng['b']:
+                        if xr <= xl or yb <= yt: continue
+                        bad = box(oc, xl, xr, yt, yb) + (tot_i - box(ic, xl, xr, yt, yb))
+                        if res is None or bad < res[0]: res = (bad, xl, yt, xr, yb)
+        cost = res[0] / max(1, allm.sum()); _, xl, yt, xr, yb = res
+        # 換成格子的比例：字的外框長邊對到 88%、置中（和練習簿放字的方式一樣，shared/ruler-cell.js 的格子）；沒有外層的那幾邊貼著格子邊（0 或 1）
         k = .88 / max(x1 - x0, y1 - y0); cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
-        l = min(1, max(0, .5 + (xc - cx) * k)); h = min(1, max(0, .5 + (yc - cy) * k))
-        cand = (cost, [round(l, 3), 0, round(1 - l, 3), round(h, 3)], outer_first)
+        mx = lambda v: min(1, max(0, .5 + (v - cx) * k)); my = lambda v: min(1, max(0, .5 + (v - cy) * k))
+        L = mx(xl) if 'l' in sides else 0; T = my(yt) if 't' in sides else 0
+        R = mx(xr) if 'r' in sides else 1; B = my(yb) if 'b' in sides else 1
+        cand = (cost, [round(L, 3), round(T, 3), round(R - L, 3), round(B - T, 3)], outer_first)
         if best is None or cand[0] < best[0]: best = cand
     cost, rect, outer_first = best
     if cost > SURR_MAX_COST: return None, f'放錯的墨太多（{cost * 100:.0f}%）', None, None
-    rng = [(0, outer_n), (outer_n, N)] if outer_first else [(inner_n, N), (0, inner_n)]
+    rng_ = [(0, outer_n), (outer_n, N)] if outer_first else [(inner_n, N), (0, inner_n)]
     order = [0, 1] if outer_first else [1, 0]
-    return rect, cost, rng, order
+    return rect, cost, rng_, order
 
 
 SCUTS, SINFO = {}, {'筆畫': 0}
