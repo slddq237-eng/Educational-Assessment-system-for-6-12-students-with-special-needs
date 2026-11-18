@@ -37,7 +37,7 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 .ttl{height:8mm;font-size:12pt;letter-spacing:.15em;display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #999;margin-bottom:3mm}
 .ttl small{font-size:9pt;letter-spacing:.05em;color:#444;margin-left:1em}
 .ttl span{font-size:9pt;letter-spacing:0;color:#555}
-.ttl span.nm{font-size:10.5pt;white-space:nowrap}
+.ttl span.nm{font-size:10pt;white-space:nowrap}
 .sheet{display:flex;flex-direction:row-reverse;justify-content:flex-start;gap:3mm;align-items:flex-start}
 /* 每一欄的各段高度固定，所以不同字的欄、標籤欄的段落橫向對齊 */
 .sec{display:flex;flex-direction:column;gap:var(--g);margin-bottom:var(--sg);position:relative}
@@ -89,14 +89,13 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
   <label>版型 <select id="mode"><option value="std" selected>標準：描 2、褪除 2、獨立練習</option><option value="word">精簡：描 2、褪除 1、獨立練習（多一格）</option></select></label>
   <label>格子大小 <select id="size"><option value="s">小格（1.5 公分）</option><option value="m" selected>中格（1.8 公分）</option><option value="l">大格（2.2 公分）</option></select></label>
   <label>獨立練習格數 <select id="solo"><option value="auto" selected>自動（放滿一頁）</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></label>
-  <label><input type="checkbox" id="zy" checked> 印注音（「看」旁邊的一格，只給看、不用寫）</label>
-  <label><input type="checkbox" id="zw"> 描、褪除、獨立練習每格旁留注音格（學生自己寫注音）</label>
+  <label>注音 <select id="zyfmt"><option value="look" selected>看旁邊印注音（只給看、不用寫）</option><option value="lookw">看旁邊印注音，描、褪除、獨立練習每格旁留空白注音格（學生寫）</option><option value="blank">全部空白：看旁邊也是空白格，每格旁都留空白注音格（學生描寫或寫）</option><option value="none">不印注音</option></select></label>
   <label><input type="checkbox" id="res" checked> 筆順示範（教育部筆順圖）</label>
   <label><input type="checkbox" id="nm" checked> 印班級、座號、姓名欄（學生自己寫）</label>
   <button id="print">列印</button>
   <span id="msg"></span>
 </div>
-<p class="note">雛形：字從課本課次選（選了會自動填入生字，可以再改），格子大小可以選小、中、大（和寫字考卷一樣），一頁放幾個字、獨立練習放幾格都會自動算，多的字自動分頁。欄由右到左（國語習作的寫法）。「褪除」是蓋住一塊部件讓學生補寫（部件的筆畫互相連在一起、切不開的字改成字變淡）；筆順圖取自教育部筆順學習網，原樣縮放。注音用字型預設讀音，破音字可能不對；注音獨立一格放在「看」旁邊，不放進練習的格子，也不用學生寫（可以取消勾選不印）。一頁最多 6 個字。</p>
+<p class="note">雛形：字從課本課次選（選了會自動填入生字，可以再改），格子大小可以選小、中、大（和寫字考卷一樣），一頁放幾個字、獨立練習放幾格都會自動算，多的字自動分頁。欄由右到左（國語習作的寫法）。「褪除」是蓋住一塊部件讓學生補寫（部件的筆畫互相連在一起、切不開的字改成字變淡）；筆順圖取自教育部筆順學習網，原樣縮放。注音用字型預設讀音，破音字可能不對；注音預設獨立一格放在「看」旁邊，不放進練習的格子，也不用學生寫；「注音」選單可改成每格旁留空白注音格，或全部空白（看旁邊也空白）讓學生寫，也可以不印。一頁最多 6 個字。</p>
 <div id="pages"></div>
 
 <!-- 課本資料（shared/lessons.js 會自己載入各本）和注音讀音表、課本名稱（shared/common.js） -->
@@ -310,7 +309,7 @@ const FOOT = "筆順圖：教育部《國字標準字體筆順學習網》";
 function render(){
   const all = [...new Set([...$("#chars").value].filter(ch => /\p{Script=Han}/u.test(ch)))];
   const chars = all.slice(0, MAX_CHARS);
-  const z = $("#size").value, res = $("#res").checked, zyOn = $("#zy").checked, nm = $("#nm").checked, zw = $("#zw").checked;
+  const z = $("#size").value, res = $("#res").checked, zf = $("#zyfmt").value, zyOn = zf === "look" || zf === "lookw", nm = $("#nm").checked, zw = zf === "lookw" || zf === "blank", zyBlank = zf === "blank";   /* zyOn：看旁邊印注音；zw：每格旁留空白注音格；zyBlank：看旁邊也是空白格 */
   const wordMode = $("#mode").value === "word";
   const k = $("#solo").value === "auto" ? Math.min(10, maxSolo(z, res) + (wordMode ? 1 : 0)) : +$("#solo").value;   /* 精簡版型褪除少一格，獨立練習多一格 */
   const root = document.documentElement.style;
@@ -320,7 +319,7 @@ function render(){
   root.setProperty("--fn", wordMode ? 1 : 2);
   const wz = h => zw ? `<div class="srow">${h}<span class="zb"></span></div>` : h;   /* 學生寫注音：每格右邊多一個空白注音格 */
   const col = c => `<div class="col${(zyOn && hasZy(c)) || zw ? "" : " nozy"}">
-    <div class="sec look">${cellWith(c, "all", 1)}${zyOn && hasZy(c) ? zyBox(c) : ""}</div>
+    <div class="sec look">${cellWith(c, "all", 1)}${zyOn && hasZy(c) ? zyBox(c) : zyBlank ? `<span class="zb"></span>` : ""}</div>
     ${res ? `<div class="sec res"><div class="box"><img src="../../shared/stroke/${encodeURIComponent(c)}.png" alt="${c}的筆順" onerror="this.parentNode.classList.add('no');this.replaceWith(Object.assign(document.createElement('span'),{className:'v',textContent:'沒有筆順圖'}))"></div></div>` : ""}
     <div class="sec trace">${wz(cellWith(c, "all", .22))}${wz(cellWith(c, "all", .22))}</div>
     <div class="sec fade">${(wordMode ? fadeCells(c).slice(0, 1) : fadeCells(c)).map(wz).join("")}</div>
@@ -330,7 +329,7 @@ function render(){
   for(let i = 0; i < chars.length; i += PER_PAGE) pages.push(chars.slice(i, i + PER_PAGE));
   if(!pages.length) pages.push([]);
   $("#pages").innerHTML = pages.map((cs, i) => `<div class="page">
-  <div class="ttl"><b>生字練習簿</b>${SRC.sub ? `<small>${esc(SRC.sub)}</small>` : ""}${nm ? `<span class="nm">班級＿＿＿＿　座號＿＿＿＿　姓名＿＿＿＿＿＿＿＿</span>` : `<span>日期：＿＿＿＿＿＿</span>`}</div>
+  <div class="ttl"><b>生字練習簿</b>${SRC.sub ? `<small>${esc(SRC.sub)}</small>` : ""}${nm ? `<span class="nm">班級＿＿＿　座號＿＿＿　姓名＿＿＿＿＿＿　日期＿＿＿＿＿</span>` : `<span>日期：＿＿＿＿＿＿</span>`}</div>
   <div class="sheet">${labels + cs.map(col).join("")}</div>
   <div class="src">沿虛線往上摺，蓋住上面的字，再寫獨立練習。　　${FOOT}　　${{s: "小格 1.5", m: "中格 1.8", l: "大格 2.2"}[z]} 公分　　第 ${i + 1} 頁，共 ${pages.length} 頁</div>
 </div>`).join("");
@@ -350,7 +349,7 @@ $("#lessons").addEventListener("change", applyLessons);
 $("#picks").addEventListener("change", syncChars);
 $("#picks").addEventListener("click", e => { const a = e.target.dataset && e.target.dataset.all; if(a === undefined) return; document.querySelectorAll("#picks input").forEach(x => x.checked = a === "1"); syncChars(); });
 $("#chars").addEventListener("input", () => { SRC.sub = ""; SRC.book = {}; $("#picks").innerHTML = ""; loadFonts().then(render); });   /* 自己改字：標題的課次清掉，讀音回到預設 */
-for(const id of ["#size", "#solo", "#res", "#zy", "#nm", "#zw", "#mode"]) $(id).addEventListener("input", () => { loadFonts().then(render); });
+for(const id of ["#size", "#solo", "#res", "#zyfmt", "#nm", "#mode"]) $(id).addEventListener("input", () => { loadFonts().then(render); });
 $("#print").onclick = () => window.print();
 function loadFonts(){
   const t = [...$("#chars").value].join("");
