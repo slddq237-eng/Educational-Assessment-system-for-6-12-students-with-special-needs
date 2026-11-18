@@ -353,12 +353,26 @@ def surround_poly(im, om, kcc, bands, margin):
         if abs(r - merged[-1][2]) < .05: merged[-1][1] = y1; merged[-1][2] = max(r, merged[-1][2])
         else: merged.append([y0, y1, r])
     rows = merged
-    T = max(0, rows[0][0] - margin)
+    inv = lambda v, c: c + (v - .5) / k
+    def lowest_outer(xf1, yf0, yf1):
+        """左邊貼格子邊、右邊到 xf1、y 在 yf0～yf1 之間的範圍裡，外層最下面那一點的 y（格子的比例）；沒有外層的墨回傳 None"""
+        xa, xb = max(0, int(inv(0, cx))), max(0, int(inv(xf1, cx))); ya, yb = max(0, int(inv(yf0, cy))), max(0, int(inv(yf1, cy)))
+        ys_ = np.nonzero(om[ya:yb, xa:xb].any(1))[0]
+        return None if not len(ys_) else my(ya + ys_.max() + 1) + .004
+    # 不要切到外層（維護者 2026-11-18：不要切到勹）：每一段的上緣如果碰到外層的墨，就往下移到外層下面
+    tops = []
+    for n, (y0, y1, r) in enumerate(rows):
+        top = max(0, y0 - margin) if n == 0 else y0
+        low = lowest_outer(min(1, r), top, y1)
+        if low is not None and low > top: top = low
+        tops.append(top)
+    keep = [n for n, (row, t) in enumerate(zip(rows, tops)) if t < row[1] - .01 or n == len(rows) - 1]
+    rows = [rows[n] for n in keep]; tops = [tops[n] for n in keep]
+    T = tops[0]
     pts = [[0, T]]
-    for i, (y0, y1, r) in enumerate(rows):
-        r = min(1, r)
-        if pts[-1][0] != r or i == 0: pts.append([r, T if i == 0 else y0])
-        pts.append([r, 1 if i == len(rows) - 1 else y1])
+    for n, (y0, y1, r) in enumerate(rows):
+        r = min(1, r); top = T if n == 0 else tops[n]
+        pts.append([r, top]); pts.append([r, 1 if n == len(rows) - 1 else tops[n + 1]])
     pts.append([0, 1])
     out_ = []
     for x, y in pts:
