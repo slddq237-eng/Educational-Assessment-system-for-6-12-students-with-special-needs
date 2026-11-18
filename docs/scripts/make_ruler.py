@@ -321,7 +321,7 @@ def leaf_cuts(c, axis, n, radical):
 # 左下包圍：外層在左邊和下面，裡面是右上角的方框 [左, 上, 寬, 高]（0～1，格子的比例；上＝0、右邊貼 1）。
 # 外層和裡面誰先寫不一定（辶最後寫，走先寫）：兩種都試，挑「外層的墨掉進方框裡、裡面的墨掉到方框外」最少的。
 SURR = {'左下包圍': ('l', 'b'), '左上包圍': ('l', 't'), '右上包圍': ('r', 't'), '上方包圍': ('l', 't', 'r'),
-        '左方包圍': ('l', 't', 'b'), '下方包圍': ('l', 'b', 'r')}      # 結構 → 外層在哪幾邊（l 左、r 右、t 上、b 下）
+        '左方包圍': ('l', 't', 'b'), '下方包圍': ('l', 'b', 'r'), '全包圍': ('l', 't', 'r', 'b')}      # 結構 → 外層在哪幾邊（l 左、r 右、t 上、b 下）
 SRECT, SRANGE, SORDER = {}, {}, {}   # 字 → 方框；字 → 各部件的筆畫範圍（部件表的順序）；字 → 各部件的書寫順位（0＝最先寫）
 # 維護者指定的部件筆畫（可以不連續）：字 → [外層的筆畫範圍們, 裡面的筆畫範圍們]，範圍是（第幾畫起, 第幾畫止），從 0 算、止不含
 # 載、戴、裁：「𢦏」＝第 1～3 畫（十）＋最後 3 畫（戈），中間是車／異／衣（維護者 2026-11-17 指定載；戴、裁照同一規則，待確認）
@@ -348,7 +348,9 @@ def surround_rect(c, parts, struct, radical):
     masks = raster_strokes(st)
     outer_n, inner_n = known                        # 部件表第一個是外層、第二個是裡面
     # 要試的分法：每個選項＝（外層的筆畫編號們, 裡面的筆畫編號們）；維護者指定的（PART_RANGES）只有一種
-    if c in PART_RANGES:
+    if c not in PART_RANGES and struct == '全包圍' and parts[0] == '囗' and N >= 5:   # 囗：先寫豎和橫折（前 2 畫），裡面寫完最後才封口（最後 1 畫）
+        og, ig = list(range(0, 2)) + [N - 1], list(range(2, N - 1)); options = [(og, ig)]
+    elif c in PART_RANGES:
         og, ig = [[i for a, b in rg for i in range(a, b)] for rg in PART_RANGES[c]]
         if sorted(og + ig) != list(range(N)): return None, 'PART_RANGES 的筆畫沒有剛好分完', None, None
         options = [(og, ig)]
@@ -365,18 +367,15 @@ def surround_rect(c, parts, struct, radical):
         x0, x1, y0, y1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
         # 用累計和很快算出每個方框的放錯量：外層的墨掉進方框裡 ＋ 裡面的墨掉到方框外
         oc = np.pad(np.cumsum(np.cumsum(om, 0), 1), ((1, 0), (1, 0))); ic = np.pad(np.cumsum(np.cumsum(im, 0), 1), ((1, 0), (1, 0)))
-        def box(c_, xa, xb, ya, yb): return c_[yb, xb] - c_[ya, xb] - c_[yb, xa] + c_[ya, xa]
-        tot_i = im.sum(); step = 4 if len(sides) <= 2 else 8   # 外層有三邊時要找三個邊界，格子放粗一點才算得快
+        def box(c_, xa, xb, ya, yb): return c_[yb, xb] - c_[ya, xb] - c_[yb, xa] + c_[ya, xa]   # xa 等可以是陣列
+        tot_i = im.sum(); step = {1: 4, 2: 4, 3: 8, 4: 12}[len(sides)]   # 外層的邊越多，要找的邊界越多，格子放粗一點才算得快
         rng = {'l': range(x0, x1, step) if 'l' in sides else [x0], 't': range(y0, y1, step) if 't' in sides else [y0],
                'r': range(x0 + step, x1 + 1, step) if 'r' in sides else [x1], 'b': range(y0 + step, y1 + 1, step) if 'b' in sides else [y1]}
-        res = None
-        for xl in rng['l']:
-            for yt in rng['t']:
-                for xr in rng['r']:
-                    for yb in rng['b']:
-                        if xr <= xl or yb <= yt: continue
-                        bad = box(oc, xl, xr, yt, yb) + (tot_i - box(ic, xl, xr, yt, yb))
-                        if res is None or bad < res[0]: res = (bad, xl, yt, xr, yb)
+        XL, YT, XR, YB = np.meshgrid(np.array(rng['l']), np.array(rng['t']), np.array(rng['r']), np.array(rng['b']), indexing='ij')
+        bad = box(oc, XL, XR, YT, YB) + (tot_i - box(ic, XL, XR, YT, YB))   # 每一種方框的放錯量，一次算完
+        bad = np.where((XR > XL) & (YB > YT), bad, np.iinfo(np.int64).max)
+        k_ = int(np.argmin(bad)); ij = np.unravel_index(k_, bad.shape)    # 並列時取迴圈最前面那個（和原本的巢狀迴圈一樣）
+        res = (int(bad[ij]), int(XL[ij]), int(YT[ij]), int(XR[ij]), int(YB[ij]))
         cost = res[0] / max(1, allm.sum()); _, xl, yt, xr, yb = res
         # 換成格子的比例：字的外框長邊對到 88%、置中（和練習簿放字的方式一樣，shared/ruler-cell.js 的格子）；沒有外層的那幾邊貼著格子邊（0 或 1）
         k = .88 / max(x1 - x0, y1 - y0); cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
