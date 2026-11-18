@@ -18,7 +18,10 @@ const RulerCell = (() => {
     /* 左右、上下、左中右、上中下：表裡沒有這個字的分線（不確定、不收）就不畫字型尺，用十字格（寧可不分，也不要分錯；2026-11-14 維護者決定） */
     const need = {"左右": 1, "上下": 1, "左中右": 2, "上中下": 2}[s];
     /* 包圍字：表裡有 [左, 上, 寬, 高]（裡面那一塊的方框，教育部筆畫算的，2026-11-17）就用，沒有就用固定的預設比例 */
-    const sq = s.includes("包圍") && r && r.length === 4 ? r : null;
+    /* 多邊形（維護者 2026-11-18 的例外，目前只有「包」）：r 是 [[x,y],…]；blocks 回傳它的外框方框，畫的時候 html() 另外畫多邊形 */
+    const poly = s.includes("包圍") && Array.isArray(r) && r.length >= 3 && Array.isArray(r[0]) ? r : null;
+    const pb = poly ? (xs => (ys => [Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)])(poly.map(p => p[1])))(poly.map(p => p[0])) : null;
+    const sq = pb || (s.includes("包圍") && r && r.length === 4 && typeof r[0] === "number" ? r : null);
     if(need && !(r && r.length === need)) return null;
     const cut = (n, def) => r && r.length === n ? r : def;
     const cols = ([a, b]) => b === undefined ? [[0, 0, a, 1], [a, 0, 1 - a, 1]] : [[0, 0, a, 1], [a, 0, b - a, 1], [b, 0, 1 - b, 1]];
@@ -41,6 +44,8 @@ const RulerCell = (() => {
   function html(c, opt){
     const bl = blocks(c, !!(opt && opt.ruler));
     if(!bl) return `<span class="excell cross"></span>`;
+    const pg = typeof RULER !== "undefined" && RULER[c];
+    if(opt && opt.ruler && Array.isArray(pg) && pg.length >= 3 && Array.isArray(pg[0])) return polyHtml(pg);
     const pct = x => (x * 100).toFixed(2) + "%";
     /* 淡色底不畫框；分線只畫在格子裡面（每條畫一次），外框和十字格一樣是黑色實線（2026-11-10 修正：原本每塊都有虛線框，貼在外框內側，外框看起來像不見了） */
     const lines = new Map(), e = 1e-6;
@@ -51,6 +56,14 @@ const RulerCell = (() => {
       if(t + h < 1 - e) lines.set(`h${(t + h).toFixed(3)}${l}`, `<b class="ln h" style="top:${pct(t + h)};left:${pct(l)};width:${pct(w)}"></b>`);
     }
     return `<span class="excell ruler">${bl.map(([l, t, w, h], i) => `<i style="left:${pct(l)};top:${pct(t)};width:${pct(w)};height:${pct(h)};background:${TINT[i]}"></i>`).join("")}${[...lines.values()].join("")}</span>`;
+  }
+
+  /* 多邊形的格子：整格淡藍（外層）、多邊形淡黃（裡面），多邊形的邊畫虛線（貼著格子邊的不畫） */
+  function polyHtml(poly){
+    const onEdge = (a, b) => [0, 1].some(v => (a[0] === v && b[0] === v) || (a[1] === v && b[1] === v));
+    let d = "";
+    for(let i = 0; i < poly.length; i++){ const a = poly[i], b = poly[(i + 1) % poly.length]; if(!onEdge(a, b)) d += `M${a[0]} ${a[1]}L${b[0]} ${b[1]}`; }
+    return `<span class="excell ruler"><i style="left:0;top:0;width:100%;height:100%;background:${TINT[0]}"></i><svg class="rpoly" viewBox="0 0 1 1" preserveAspectRatio="none"><polygon points="${poly.map(p => p.join(",")).join(" ")}" fill="${TINT[1]}"/><path d="${d}"/></svg></span>`;
   }
 
   return { blocks, html };
