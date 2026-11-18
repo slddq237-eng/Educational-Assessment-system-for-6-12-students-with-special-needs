@@ -76,10 +76,10 @@ def book_chars(b):
 # check.js 讀這份清單，只對「字型有、但子集沒收」的字提醒（2026-11-11 加）
 used = set()
 for f in glob.glob('**/*.html', recursive=True) + glob.glob('tools/**/*.js', recursive=True): used |= {c for c in strip_comments(read(f)) if ord(c) >= 0x2E80}
-for t in (lessons_src(), read('shared/parts.js'), read('shared/parts-layers.js')): used |= {c for c in t if ord(c) >= 0x2E80}
+for t in (lessons_src(), read('shared/parts.js'), read('shared/parts-layers.js'), read('shared/char-info.js')): used |= {c for c in t if ord(c) >= 0x2E80}
 skipped = sorted(c for c in used if ord(c) not in CMAP and not c.isspace())
 groups, seen = [], set()
-for g in [pages] + [book_chars(b) for b in order] + [ordered(lessons_src()), ordered(read('shared/parts.js')), ordered(read('shared/parts-layers.js'))]:
+for g in [pages] + [book_chars(b) for b in order] + [ordered(lessons_src()), ordered(read('shared/parts.js')), ordered(read('shared/parts-layers.js')), ordered(read('shared/char-info.js'))]:   # char-info.js：練習簿的部首（辵、艸等）
     g = [c for c in g if c not in seen]; seen |= set(g)
     groups += [g[i:i + CHUNK] for i in range(0, len(g), CHUNK)]
 
