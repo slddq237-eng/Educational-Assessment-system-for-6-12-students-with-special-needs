@@ -324,7 +324,9 @@ SURR = {'左下包圍': ('l', 'b'), '左上包圍': ('l', 't'), '右上包圍': 
 SRECT, SRANGE, SORDER = {}, {}, {}   # 字 → 方框；字 → 各部件的筆畫範圍（部件表的順序）；字 → 各部件的書寫順位（0＝最先寫）
 # 維護者指定的部件筆畫（可以不連續）：字 → [外層的筆畫範圍們, 裡面的筆畫範圍們]，範圍是（第幾畫起, 第幾畫止），從 0 算、止不含
 # 載、戴、裁：「𢦏」＝第 1～3 畫（十）＋最後 3 畫（戈），中間是車／異／衣（維護者 2026-11-17 指定載；戴、裁照同一規則，待確認）
-PART_RANGES = {'載': [[(0, 3), (10, 13)], [(3, 10)]], '戴': [[(0, 3), (14, 17)], [(3, 14)]], '裁': [[(0, 3), (9, 12)], [(3, 9)]]}
+PART_RANGES = {'載': [[(0, 3), (10, 13)], [(3, 10)]], '戴': [[(0, 3), (14, 17)], [(3, 14)]], '裁': [[(0, 3), (9, 12)], [(3, 9)]],
+               # 維護者 2026-11-18 指定（第幾畫從 1 算）：式＝弋 1、5～6 畫＋工 2～4 畫；可＝丁 1、5 畫＋口 2～4 畫；感＝1～2、11～13 畫＋3～10 畫；威＝1～2、7～9 畫＋3～6 畫；同＝1～2 畫＋3～6 畫
+               '式': [[(0, 1), (4, 6)], [(1, 4)]], '可': [[(0, 1), (4, 5)], [(1, 4)]], '感': [[(0, 2), (10, 13)], [(2, 10)]], '威': [[(0, 2), (6, 9)], [(2, 6)]], '同': [[(0, 2)], [(2, 6)]]}
 SURR_MAX_COST = .12                  # 最好的方框還是有超過 12% 的墨放錯邊：部件對錯了或不是這種包圍，不收
 
 
@@ -338,7 +340,8 @@ def surround_rect(c, parts, struct, radical):
     if c in PART_STROKES and len(PART_STROKES[c]) == 2 and sum(PART_STROKES[c]) == N: known = list(PART_STROKES[c])
     unk = [i for i, k in enumerate(known) if k is None]
     if len(unk) == 1: known[unk[0]] = N - sum(k for k in known if k is not None)
-    if None in known or sum(known) != N or min(known) < 1: return None, '部件筆畫數對不上', None, None
+    if c in PART_RANGES: known = [1, 1]   # 維護者指定筆畫的字：不用部件筆畫數
+    elif None in known or sum(known) != N or min(known) < 1: return None, '部件筆畫數對不上', None, None
     masks = raster_strokes(st)
     outer_n, inner_n = known                        # 部件表第一個是外層、第二個是裡面
     # 要試的分法：每個選項＝（外層的筆畫編號們, 裡面的筆畫編號們）；維護者指定的（PART_RANGES）只有一種
