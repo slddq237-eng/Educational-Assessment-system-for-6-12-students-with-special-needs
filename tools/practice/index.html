@@ -11,8 +11,8 @@
   格子畫法用 shared/ruler-cell.js（字形尺）；部件分區和字形尺同一份，所以示範、褪除、字形尺三者的分塊一致。
   這是雛形：只有這一頁，沒有接課本資料、沒有存任何東西；不放進首頁。示範區只留「筆順示範」；部件示範 2026-11-12 維護者決定刪掉。筆順圖放在 shared/stroke/（檔名是國字.png），沒有圖的字顯示「沒有筆順圖」。
 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-18e">
-<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-18e">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-18f">
+<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-18f">
 <style>
 @font-face{font-family:"BpmfOnly";font-display:swap;src:url(../../shared/fonts/bpmf-only.woff2) format("woff2")}
 :root{--cell:1.8cm;--zw:8mm;--g:1.2mm;--sg:2.5mm;--k:6;--kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;color-scheme:light}
@@ -93,7 +93,7 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
   <label>格子大小 <select id="size"><option value="s">小格（1.5 公分）</option><option value="m" selected>中格（1.8 公分）</option><option value="l">大格（2.2 公分）</option></select></label>
   <label>獨立練習格數 <select id="solo"><option value="auto" selected>自動（放滿一頁）</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></label>
   <label>注音 <select id="zyfmt"><option value="look" selected>看旁邊印注音（只給看、不用寫）</option><option value="lookw">看旁邊印注音，描、褪除、獨立練習每格旁留空白注音格（學生寫）</option><option value="blank">全部空白：看旁邊也是空白格，每格旁都留空白注音格（學生描寫或寫）</option><option value="none">不印注音</option></select></label>
-  <label>筆劃、部首 <select id="info"><option value="on" selected>印出（教育部資料）</option><option value="blank">空白（學生自己填）</option><option value="off">不印</option></select></label>
+  <label><input type="checkbox" id="info" checked> 印筆劃、部首（教育部資料）</label>
   <label><input type="checkbox" id="res" checked> 筆順示範（教育部筆順圖）</label>
   <label><input type="checkbox" id="nm" checked> 印班級、座號、姓名欄（學生自己寫）</label>
   <button id="print">列印</button>
@@ -103,15 +103,15 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 <div id="pages"></div>
 
 <!-- 課本資料（shared/lessons.js 會自己載入各本）和注音讀音表、課本名稱（shared/common.js） -->
-<script src="../../shared/lessons.js?v=2026-11-18e"></script>
-<script src="../../shared/char-info.js?v=2026-11-18e"></script>
-<script src="../../shared/bpmf.js?v=2026-11-18e"></script>
-<script src="../../shared/parts.js?v=2026-11-18e"></script>
-<script src="../../shared/parts-layers.js?v=2026-11-18e"></script>
-<script src="../../shared/parts-api.js?v=2026-11-18e"></script>
-<script src="../../shared/ruler.js?v=2026-11-18e"></script>
-<script src="../../shared/ruler-cell.js?v=2026-11-18e"></script>
-<script src="../../shared/common.js?v=2026-11-18e"></script>
+<script src="../../shared/lessons.js?v=2026-11-18f"></script>
+<script src="../../shared/char-info.js?v=2026-11-18f"></script>
+<script src="../../shared/bpmf.js?v=2026-11-18f"></script>
+<script src="../../shared/parts.js?v=2026-11-18f"></script>
+<script src="../../shared/parts-layers.js?v=2026-11-18f"></script>
+<script src="../../shared/parts-api.js?v=2026-11-18f"></script>
+<script src="../../shared/ruler.js?v=2026-11-18f"></script>
+<script src="../../shared/ruler-cell.js?v=2026-11-18f"></script>
+<script src="../../shared/common.js?v=2026-11-18f"></script>
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
@@ -223,7 +223,7 @@ let spLoading = null;
 function loadStrokeParts(){   /* 筆畫外形檔很大（約 4 MB），開網頁時先不載，用到才載；載不到就用字型切的備案 */
   if(typeof STROKE_PARTS !== "undefined") return Promise.resolve();
   return spLoading = spLoading || new Promise(res => {
-    const el = document.createElement("script"); el.src = "../../shared/stroke-parts.js?v=2026-11-18e";
+    const el = document.createElement("script"); el.src = "../../shared/stroke-parts.js?v=2026-11-18f";
     el.onload = el.onerror = () => { SPLIT = {}; res(); };
     document.head.appendChild(el);
   });
@@ -319,17 +319,17 @@ function render(){
   const all = [...new Set([...$("#chars").value].filter(ch => /\p{Script=Han}/u.test(ch)))];
   const chars = all.slice(0, MAX_CHARS);
   const z = $("#size").value, res = $("#res").checked, zf = $("#zyfmt").value, zyOn = zf === "look" || zf === "lookw", nm = $("#nm").checked, zw = zf === "lookw" || zf === "blank", zyBlank = zf === "blank";   /* zyOn：看旁邊印注音；zw：每格旁留空白注音格；zyBlank：看旁邊也是空白格 */
-  const info = $("#info").value, wordMode = $("#mode").value === "word";
-  const k = $("#solo").value === "auto" ? Math.min(10, maxSolo(z, res, info !== "off") + (wordMode ? 1 : 0)) : +$("#solo").value;   /* 精簡版型褪除少一格，獨立練習多一格 */
+  const info = $("#info").checked, wordMode = $("#mode").value === "word";
+  const k = $("#solo").value === "auto" ? Math.min(10, maxSolo(z, res, info) + (wordMode ? 1 : 0)) : +$("#solo").value;   /* 精簡版型褪除少一格，獨立練習多一格 */
   const root = document.documentElement.style;
   root.setProperty("--k", k); root.setProperty("--cell", SIZES[z].cell + "mm"); root.setProperty("--zw", SIZES[z].zw + "mm"); root.setProperty("--rh", RH + "mm");
   const PER_PAGE = perPage(z);
-  const labels = `<div class="col labels" style="padding-right:0"><div class="sec look"><span class="v">看</span></div>${info !== "off" ? `<div class="sec info"><span class="v" style="font-size:6pt;width:auto">筆劃<br>部首</span></div>` : ""}${res ? `<div class="sec res"><span class="v">筆順示範</span></div>` : ""}<div class="sec trace"><span class="v">描</span></div><div class="sec fade"><span class="v">褪除</span></div><div class="sec fold"><span class="fl">摺線</span></div><div class="sec solo"><span class="v">獨立練習</span></div></div>`;
+  const labels = `<div class="col labels" style="padding-right:0"><div class="sec look"><span class="v">看</span></div>${info ? `<div class="sec info"><span class="v" style="font-size:6pt;width:auto">筆劃<br>部首</span></div>` : ""}${res ? `<div class="sec res"><span class="v">筆順示範</span></div>` : ""}<div class="sec trace"><span class="v">描</span></div><div class="sec fade"><span class="v">褪除</span></div><div class="sec fold"><span class="fl">摺線</span></div><div class="sec solo"><span class="v">獨立練習</span></div></div>`;
   root.setProperty("--fn", wordMode ? 1 : 2);
   const wz = h => zw ? `<div class="srow">${h}<span class="zb"></span></div>` : h;   /* 學生寫注音：每格右邊多一個空白注音格 */
   const col = c => `<div class="col${(zyOn && hasZy(c)) || zw ? "" : " nozy"}">
     <div class="sec look">${cellWith(c, "all", 1)}${zyOn && hasZy(c) ? zyBox(c) : zyBlank ? `<span class="zb"></span>` : ""}</div>
-    ${info !== "off" ? `<div class="sec info"><div class="ir">${info === "on" ? esc(infoOf(c)[0]) : "　"}畫</div><div class="ir">${info === "on" ? esc(infoOf(c)[1]) : "　"}部</div></div>` : ""}
+    ${info ? `<div class="sec info"><div class="ir">${esc(infoOf(c)[0])}畫</div><div class="ir">${esc(infoOf(c)[1])}部</div></div>` : ""}
     ${res ? `<div class="sec res"><div class="box"><img src="../../shared/stroke/${encodeURIComponent(c)}.png" alt="${c}的筆順" onerror="this.parentNode.classList.add('no');this.replaceWith(Object.assign(document.createElement('span'),{className:'v',textContent:'沒有筆順圖'}))"></div></div>` : ""}
     <div class="sec trace">${wz(cellWith(c, "all", .22))}${wz(cellWith(c, "all", .22))}</div>
     <div class="sec fade">${(wordMode ? fadeCells(c).slice(0, 1) : fadeCells(c)).map(wz).join("")}</div>
@@ -341,7 +341,7 @@ function render(){
   $("#pages").innerHTML = pages.map((cs, i) => `<div class="page">
   <div class="ttl"><b>生字練習簿</b>${SRC.sub ? `<small>${esc(SRC.sub)}</small>` : ""}${nm ? `<span class="nm">班級＿＿＿　座號＿＿＿　姓名＿＿＿＿＿＿　日期＿＿＿＿＿</span>` : `<span>日期：＿＿＿＿＿＿</span>`}</div>
   <div class="sheet">${labels + cs.map(col).join("")}</div>
-  <div class="src">沿虛線往上摺，蓋住上面的字，再寫獨立練習。　　${FOOT}${info === "on" ? "　" + FOOT_INFO : ""}　　${{s: "小格 1.5", m: "中格 1.8", l: "大格 2.2"}[z]} 公分　　第 ${i + 1} 頁，共 ${pages.length} 頁</div>
+  <div class="src">沿虛線往上摺，蓋住上面的字，再寫獨立練習。　　${FOOT}${info ? "　" + FOOT_INFO : ""}　　${{s: "小格 1.5", m: "中格 1.8", l: "大格 2.2"}[z]} 公分　　第 ${i + 1} 頁，共 ${pages.length} 頁</div>
 </div>`).join("");
   check(all.length, chars.length, pages.length, PER_PAGE, k);
 }
