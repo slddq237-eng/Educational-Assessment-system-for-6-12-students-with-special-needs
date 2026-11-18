@@ -320,7 +320,7 @@ def leaf_cuts(c, axis, n, radical):
 # 外層（辶、走…）包住裡面那一塊：裡面是一個方框，貼著格子沒被外層佔住的邊。
 # 左下包圍：外層在左邊和下面，裡面是右上角的方框 [左, 上, 寬, 高]（0～1，格子的比例；上＝0、右邊貼 1）。
 # 外層和裡面誰先寫不一定（辶最後寫，走先寫）：兩種都試，挑「外層的墨掉進方框裡、裡面的墨掉到方框外」最少的。
-SURR = {'左下包圍': ('l', 'b'), '左上包圍': ('l', 't'), '右上包圍': ('r', 't')}      # 結構 → 外層在哪幾邊（l 左、r 右、t 上、b 下）
+SURR = {'左下包圍': ('l', 'b'), '左上包圍': ('l', 't'), '右上包圍': ('r', 't'), '上方包圍': ('l', 't', 'r')}      # 結構 → 外層在哪幾邊（l 左、r 右、t 上、b 下）
 SRECT, SRANGE, SORDER = {}, {}, {}   # 字 → 方框；字 → 各部件的筆畫範圍（部件表的順序）；字 → 各部件的書寫順位（0＝最先寫）
 # 維護者指定的部件筆畫（可以不連續）：字 → [外層的筆畫範圍們, 裡面的筆畫範圍們]，範圍是（第幾畫起, 第幾畫止），從 0 算、止不含
 # 載、戴、裁：「𢦏」＝第 1～3 畫（十）＋最後 3 畫（戈），中間是車／異／衣（維護者 2026-11-17 指定載；戴、裁照同一規則，待確認）
@@ -360,7 +360,7 @@ def surround_rect(c, parts, struct, radical):
         # 用累計和很快算出每個方框的放錯量：外層的墨掉進方框裡 ＋ 裡面的墨掉到方框外
         oc = np.pad(np.cumsum(np.cumsum(om, 0), 1), ((1, 0), (1, 0))); ic = np.pad(np.cumsum(np.cumsum(im, 0), 1), ((1, 0), (1, 0)))
         def box(c_, xa, xb, ya, yb): return c_[yb, xb] - c_[ya, xb] - c_[yb, xa] + c_[ya, xa]
-        tot_i = im.sum(); step = 4
+        tot_i = im.sum(); step = 4 if len(sides) <= 2 else 8   # 外層有三邊時要找三個邊界，格子放粗一點才算得快
         rng = {'l': range(x0, x1, step) if 'l' in sides else [x0], 't': range(y0, y1, step) if 't' in sides else [y0],
                'r': range(x0 + step, x1 + 1, step) if 'r' in sides else [x1], 'b': range(y0 + step, y1 + 1, step) if 'b' in sides else [y1]}
         res = None
@@ -381,6 +381,9 @@ def surround_rect(c, parts, struct, radical):
         if best is None or cand[0] < best[0]: best = cand
     cost, rect, outer_first = best[0], best[1], best[2]
     if cost > SURR_MAX_COST: return None, f'放錯的墨太多（{cost * 100:.0f}%）', None, None
+    L_, T_, W_, H_ = rect                            # 外層包住的每一邊，方框離格子邊至少 8%，不然外層其實沒有包住那一邊（例如感、威：戈的撇穿過整個字）
+    if ('l' in sides and L_ < .08) or ('t' in sides and T_ < .08) or ('r' in sides and L_ + W_ > .92) or ('b' in sides and T_ + H_ > .92):
+        return None, '外層沒有包住這一邊（方框貼著格子邊）', None, None
     og, ig = best[3], best[4]
     order = [0, 1] if min(og) < min(ig) else [1, 0]
     return rect, cost, [og, ig], order
