@@ -322,6 +322,9 @@ def leaf_cuts(c, axis, n, radical):
 # 外層和裡面誰先寫不一定（辶最後寫，走先寫）：兩種都試，挑「外層的墨掉進方框裡、裡面的墨掉到方框外」最少的。
 SURR = {'左下包圍': ('l', 'b'), '左上包圍': ('l', 't'), '右上包圍': ('r', 't')}      # 結構 → 外層在哪幾邊（l 左、r 右、t 上、b 下）
 SRECT, SRANGE, SORDER = {}, {}, {}   # 字 → 方框；字 → 各部件的筆畫範圍（部件表的順序）；字 → 各部件的書寫順位（0＝最先寫）
+# 維護者指定的部件筆畫（可以不連續）：字 → [外層的筆畫範圍們, 裡面的筆畫範圍們]，範圍是（第幾畫起, 第幾畫止），從 0 算、止不含
+# 載、戴、裁：「𢦏」＝第 1～3 畫（十）＋最後 3 畫（戈），中間是車／異／衣（維護者 2026-11-17 指定載；戴、裁照同一規則，待確認）
+PART_RANGES = {'載': [[(0, 3), (10, 13)], [(3, 10)]], '戴': [[(0, 3), (14, 17)], [(3, 14)]], '裁': [[(0, 3), (9, 12)], [(3, 9)]]}
 SURR_MAX_COST = .12                  # 最好的方框還是有超過 12% 的墨放錯邊：部件對錯了或不是這種包圍，不收
 
 
@@ -338,11 +341,17 @@ def surround_rect(c, parts, struct, radical):
     if None in known or sum(known) != N or min(known) < 1: return None, '部件筆畫數對不上', None, None
     masks = raster_strokes(st)
     outer_n, inner_n = known                        # 部件表第一個是外層、第二個是裡面
+    # 要試的分法：每個選項＝（外層的筆畫編號們, 裡面的筆畫編號們）；維護者指定的（PART_RANGES）只有一種
+    if c in PART_RANGES:
+        og, ig = [[i for a, b in rg for i in range(a, b)] for rg in PART_RANGES[c]]
+        if sorted(og + ig) != list(range(N)): return None, 'PART_RANGES 的筆畫沒有剛好分完', None, None
+        options = [(og, ig)]
+    else:
+        options = [(list(range(0, outer_n)), list(range(outer_n, N))), (list(range(inner_n, N)), list(range(0, inner_n)))]
     sides = SURR[struct]                            # 外層在哪幾邊：這幾個邊界的位置可以動（方框貼著外層）；其他邊貼著字的外框
     best = None
-    for outer_first in (True, False):
-        o_idx = range(0, outer_n) if outer_first else range(inner_n, N)
-        i_idx = range(outer_n, N) if outer_first else range(0, inner_n)
+    for o_idx, i_idx in options:
+        outer_first = min(o_idx) < min(i_idx)
         om = np.zeros_like(masks[0]); im = np.zeros_like(masks[0])
         for i in o_idx: om |= masks[i]
         for i in i_idx: im |= masks[i]
@@ -368,13 +377,13 @@ def surround_rect(c, parts, struct, radical):
         mx = lambda v: min(1, max(0, .5 + (v - cx) * k)); my = lambda v: min(1, max(0, .5 + (v - cy) * k))
         L = mx(xl) if 'l' in sides else 0; T = my(yt) if 't' in sides else 0
         R = mx(xr) if 'r' in sides else 1; B = my(yb) if 'b' in sides else 1
-        cand = (cost, [round(L, 3), round(T, 3), round(R - L, 3), round(B - T, 3)], outer_first)
+        cand = (cost, [round(L, 3), round(T, 3), round(R - L, 3), round(B - T, 3)], outer_first, o_idx, i_idx)
         if best is None or cand[0] < best[0]: best = cand
-    cost, rect, outer_first = best
+    cost, rect, outer_first = best[0], best[1], best[2]
     if cost > SURR_MAX_COST: return None, f'放錯的墨太多（{cost * 100:.0f}%）', None, None
-    rng_ = [(0, outer_n), (outer_n, N)] if outer_first else [(inner_n, N), (0, inner_n)]
-    order = [0, 1] if outer_first else [1, 0]
-    return rect, cost, rng_, order
+    og, ig = best[3], best[4]
+    order = [0, 1] if min(og) < min(ig) else [1, 0]
+    return rect, cost, [og, ig], order
 
 
 SCUTS, SINFO = {}, {'筆畫': 0}
@@ -543,7 +552,7 @@ if STROKE_DIR:
             pts = [pt for s_ in st for pt in flatten(s_['outline'], 2)]
             xs_, ys_ = [x for x, _ in pts], [y for _, y in pts]
             sp_data[c] = {'b': [round(min(xs_) / QU), round(min(ys_) / QU), round(max(xs_) / QU), round(max(ys_) / QU)],
-                          'p': [stroke_path(st[a:b]) for a, b in SRANGE[c]], 'o': SORDER[c]}
+                          'p': [stroke_path([st[i] for i in g]) for g in SRANGE[c]], 'o': SORDER[c]}
             continue
         sizes = PSIZE.get(c) if c in SCUTS else (LEAFSIZE.get(c) if c in RULER_OK else None)
         if c in PART_STROKES and st and sum(PART_STROKES[c]) == len(st): sizes = list(PART_STROKES[c])
