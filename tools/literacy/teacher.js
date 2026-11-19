@@ -800,7 +800,7 @@ function phaseLegend(pts){
    一條線（單一學生、單一指標），2px 線、8px 點；背景顏色＝時期，時期改變的地方畫虛線（2026-10-24 起不在圖上寫時期名稱，看上方圖例）；
    直線＝教學安排開始日。滑鼠或鍵盤移到點上會顯示數字；不到 3 題的點畫空心。
    o.domain＝共用的橫軸範圍、o.ymax＝共用的縱軸最大值、o.title＝小圖標題、o.compact＝矮一點（每課分開時用）、o.noPhase＝不畫時期（全部課合計） */
-const SVGW = 760, SCROLL_GAP = 56, SCROLL_MAX = 30000, SCROLL_MIN_SCALE = 0.85;   /* 可滑動的圖：相鄰兩個日期至少隔 56（和圖一樣的單位），最寬 30000；手機上最少照原尺寸的 85% 畫，不縮到看不清楚 */
+const SVGW = 760, SCROLL_GAP = 56, SCROLL_MAX = 30000, SCROLL_MIN_SCALE = 0.85, SCROLL_PADL = 28;   /* 可滑動的圖：相鄰兩個日期至少隔 56（和圖一樣的單位），最寬 30000；手機上最少照原尺寸的 85% 畫，不縮到看不清楚 */
 function niceMax(v){ if(v <= 5) return 5; const p = Math.pow(10, Math.floor(Math.log10(v))); for(const m of [1, 2, 2.5, 5, 10]) if(m * p >= v) return m * p; return 10 * p; }
 /* 縱軸刻度：分成 4 格，每格是 1、2、5 的整數倍（例如 0、1、2、3、4 秒），不會出現 1.3、3.8 這種數字 */
 function niceTicks(v){
@@ -820,10 +820,11 @@ function lineChart(pts, o){
   const [x0, x1] = o.domain || [Math.min(...xs) - edge, Math.max(...xs) + edge], span = x1 - x0 || 1;
   /* 可滑動（o.scroll，每天一個點的圖，2026-11-17 維護者要求）：每個日期都要標，相鄰兩天至少隔 SCROLL_GAP；放不下時圖變寬、可以左右滑動，左邊刻度固定 */
   const ux = [...new Set(xs)].sort((a, b) => a - b), minGap = Math.min(...ux.slice(1).map((v, i) => v - ux[i]));
-  const wide = o.scroll && ux.length > 1 ? Math.min(SCROLL_MAX, Math.ceil(L + R + span * SCROLL_GAP / minGap)) : 0;
+  const wide = o.scroll && ux.length > 1 ? Math.min(SCROLL_MAX, Math.ceil(L + R + SCROLL_PADL + span * SCROLL_GAP / minGap)) : 0;
   const W = wide > SVGW ? wide : SVGW;
   if(W > SVGW) iw = W - L - R;
-  const X = x => !o.domain && new Set(xs).size === 1 ? L + iw / 2 : L + (x - x0) / span * iw, Y = v => Tp + ih - v / max * ih;
+  const padL = W > SVGW ? SCROLL_PADL : 0;   /* 可滑動的圖：第一個點往右挪，最舊的日期和點不會被左邊固定的刻度蓋住（2026-11-19 維護者回報） */
+  const X = x => !o.domain && new Set(xs).size === 1 ? L + iw / 2 : L + padL + (x - x0) / span * (iw - padL), Y = v => Tp + ih - v / max * ih;
   const unit = o.metric === "acc" ? "%" : o.metric === "sec" ? " 秒" : "";
   /* 時期：背景色塊（先畫，在格線和線的下面）＋改變處的虛線；第一段和最後一段在點的外面留半格，碰到圖的邊就到邊 */
   let g = "", lines = "";
