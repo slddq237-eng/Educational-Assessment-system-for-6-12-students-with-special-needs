@@ -210,10 +210,10 @@ function splitParts(c){
   }
   return SPLIT[c] = outs.map(o => { o.g.putImageData(o.im, 0, 0); return o.cv.toDataURL("image/png"); });
 }
-/* 依筆畫褪除：每個部件一張 SVG，筆畫外形原樣（shared/stroke-parts.js，座標 0～512）；放的大小、位置和 fit() 的規則一樣（字的外框沿分割方向縮放到 88%、置中） */
+/* 依筆畫褪除：每個部件一張 SVG，筆畫外形原樣（shared/stroke-parts.js，座標 0～512）；放的大小、位置和 fit() 的規則一樣（字的外框長邊縮放到 88%、置中） */
 function strokeParts(c, sp){
-  const [x0, y0, x1, y1] = sp.b, w = x1 - x0, h = y1 - y0, st = typeof Parts !== "undefined" ? Parts.struct(c) || "" : "";
-  const len = /^左/.test(st) ? w : /^上[中下]/.test(st) ? h : Math.max(w, h), k = .88 / len;
+  const [x0, y0, x1, y1] = sp.b, w = x1 - x0, h = y1 - y0;
+  const k = .88 / Math.max(w, h);   /* 和 fit() 一樣一律長邊 88%，否則部件圖和整字大小不同（2026-11-20 修） */
   const tf = `matrix(${k} 0 0 ${k} ${.5 - (x0 + x1) / 2 * k} ${.5 - (y0 + y1) / 2 * k})`;
   const parts = sp.p.map(d => ({d, tf}));
   parts.ord = sp.o || null;   /* 各部件的書寫順位（0＝最先寫）；包圍字（辶最後寫、走先寫）才有，左右、上下的字就是部件表的順序 */
