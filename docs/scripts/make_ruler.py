@@ -335,6 +335,52 @@ PART_RANGES = {'載': [[(0, 3), (10, 13)], [(3, 10)]], '戴': [[(0, 3), (14, 17)
                # 維護者 2026-11-18 指定（包圍字清單 B、C 類）：鳳＝前 2 畫｜其餘；栽＝第 1～3 畫＋第 8～10 畫｜第 4～7 畫；屆＝前 3 畫｜第 4～8 畫；癌＝前 5 畫｜其餘；危＝前 4 畫｜其餘；厭＝前 2 畫｜其餘；迴＝前 6 畫（回，先寫）｜其餘 4 畫（辶，後寫，所以辶是外層；維護者先說前 5 畫、後改前 6 畫）；包＝前 2 畫｜其餘
                '鳳': [[(0, 2)], [(2, 14)]], '栽': [[(0, 3), (7, 10)], [(3, 7)]], '屆': [[(0, 3)], [(3, 8)]], '癌': [[(0, 5)], [(5, 17)]],
                '危': [[(0, 4)], [(4, 6)]], '厭': [[(0, 2)], [(2, 14)]], '迴': [[(6, 10)], [(0, 6)]], '包': [[(0, 2)], [(2, 5)]]}
+SURR_POLY = {'包': (4, .025)}   # 維護者 2026-11-18：包的巳可以用多邊形包住、盡量不要包到上面的勹。字 → （橫切幾條帶, 每邊多留的比例）；只支援右上包圍（外層在右、上，裡面開口在左、下）
+
+
+def surround_poly(im, om, kcc, bands, margin):
+    """右上包圍的裡面那一塊 → 階梯形多邊形 [[x, y], …]（格子的比例 0～1，順時針）：
+       左邊、下面貼格子邊；上面在裡面最上面的筆畫上方多留一點；右邊每一條帶照那一條帶裡面最右邊的筆畫（多留一點），所以上面窄、下面寬，不會包到上面的外層"""
+    k, cx, cy = kcc
+    ys, xs = np.nonzero(im); ya, yb = ys.min(), ys.max() + 1
+    mx = lambda v: min(1, max(0, .5 + (v - cx) * k)); my = lambda v: min(1, max(0, .5 + (v - cy) * k))
+    edges = np.linspace(ya, yb, bands + 1).astype(int); rows = []
+    for a, b in zip(edges, edges[1:]):
+        sub = im[a:b]
+        if sub.any(): rows.append((my(a), my(b), mx(np.nonzero(sub.any(0))[0].max() + 1) + margin))
+    merged = [list(rows[0])]
+    for y0, y1, r in rows[1:]:          # 台階相差不到 5% 的合併（取比較寬的），形狀簡單一點
+        if abs(r - merged[-1][2]) < .05: merged[-1][1] = y1; merged[-1][2] = max(r, merged[-1][2])
+        else: merged.append([y0, y1, r])
+    rows = merged
+    inv = lambda v, c: c + (v - .5) / k
+    def lowest_outer(xf1, yf0, yf1):
+        """左邊貼格子邊、右邊到 xf1、y 在 yf0～yf1 之間的範圍裡，外層最下面那一點的 y（格子的比例）；沒有外層的墨回傳 None"""
+        xa, xb = max(0, int(inv(0, cx))), max(0, int(inv(xf1, cx))); ya, yb = max(0, int(inv(yf0, cy))), max(0, int(inv(yf1, cy)))
+        ys_ = np.nonzero(om[ya:yb, xa:xb].any(1))[0]
+        return None if not len(ys_) else my(ya + ys_.max() + 1) + .004
+    # 不要切到外層（維護者 2026-11-18：不要切到勹）：每一段的上緣如果碰到外層的墨，就往下移到外層下面
+    tops = []
+    for n, (y0, y1, r) in enumerate(rows):
+        top = max(0, y0 - margin) if n == 0 else y0
+        low = lowest_outer(min(1, r), top, y1)
+        if low is not None and low > top: top = low
+        tops.append(top)
+    keep = [n for n, (row, t) in enumerate(zip(rows, tops)) if t < row[1] - .01 or n == len(rows) - 1]
+    rows = [rows[n] for n in keep]; tops = [tops[n] for n in keep]
+    T = tops[0]
+    pts = [[0, T]]
+    for n, (y0, y1, r) in enumerate(rows):
+        r = min(1, r); top = T if n == 0 else tops[n]
+        pts.append([r, top]); pts.append([r, 1 if n == len(rows) - 1 else tops[n + 1]])
+    pts.append([0, 1])
+    out_ = []
+    for x, y in pts:
+        q = [round(x, 3), round(y, 3)]
+        if not out_ or out_[-1] != q: out_.append(q)
+    return out_
+
+
 SURR_COST_OVERRIDE = {'包': .15}   # 維護者指定過筆畫、方框看起來合理、但放錯的比例剛好超過門檻的字（包：巳的尾巴伸出勹外面，14%）
 SURR_MAX_COST = .12                  # 最好的方框還是有超過 12% 的墨放錯邊：部件對錯了或不是這種包圍，不收
 
@@ -388,7 +434,7 @@ def surround_rect(c, parts, struct, radical):
         mx = lambda v: min(1, max(0, .5 + (v - cx) * k)); my = lambda v: min(1, max(0, .5 + (v - cy) * k))
         L = mx(xl) if 'l' in sides else 0; T = my(yt) if 't' in sides else 0
         R = mx(xr) if 'r' in sides else 1; B = my(yb) if 'b' in sides else 1
-        cand = (cost, [round(L, 3), round(T, 3), round(R - L, 3), round(B - T, 3)], outer_first, o_idx, i_idx)
+        cand = (cost, [round(L, 3), round(T, 3), round(R - L, 3), round(B - T, 3)], outer_first, o_idx, i_idx, im, om, (k, cx, cy))
         if best is None or cand[0] < best[0]: best = cand
     cost, rect, outer_first = best[0], best[1], best[2]
     if cost > SURR_COST_OVERRIDE.get(c, SURR_MAX_COST): return None, f'放錯的墨太多（{cost * 100:.0f}%）', None, None
@@ -397,6 +443,8 @@ def surround_rect(c, parts, struct, radical):
         return None, '外層沒有包住這一邊（方框貼著格子邊）', None, None
     og, ig = best[3], best[4]
     order = [0, 1] if min(og) < min(ig) else [1, 0]
+    if c in SURR_POLY and struct == '右上包圍':   # 維護者指定的例外：裡面那一塊用多邊形（階梯形），不要包到外層
+        rect = surround_poly(best[5], best[6], best[7], *SURR_POLY[c])
     return rect, cost, [og, ig], order
 
 

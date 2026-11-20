@@ -45,6 +45,7 @@ Claude 從 `docs/history/`、`docs/changelog/`、`docs/plans/pending.md` 整理�
 ## 索引（一行一則，最新的在上面）
 
 - `2026-11-14-layer1-names.md`（2026-11-14，有效）：部件表第一層可以用「[名稱]」補打不出來、讀不出聲音的部件，先補字形尺最可能對的 49 字
+- `2026-11-18-surround-polygon-bao.md`（2026-11-18，有效）：包圍字維持方框，只有「包」一個字例外用多邊形（階梯形）
 - `2026-11-17-surround-rect-not-polygon.md`（2026-11-17，有效）：包圍字「裡面那一塊」的字形尺維持方框，不改多邊形（試做過寬鬆版，維護者決定不用）
 - `2026-11-16-stroke-parts-in-repo.md`（2026-11-16，有效）：g0v 筆畫資料可以放進 repo；`shared/stroke-parts.js` 放部件筆畫外形，練習簿的部件褪除改依筆畫
 - `2026-11-14-use-g0v-strokes.md`（2026-11-14，有效）：筆畫座標資料用 g0v zh-stroke-data，授權依教育部回信、排除 missing 資料夾、放進 repo 前先下載檢查
