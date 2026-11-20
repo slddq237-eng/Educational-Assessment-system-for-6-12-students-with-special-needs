@@ -99,6 +99,8 @@ function examCands(it){
 }
 /* 語詞裡的字有沒有注音字型（自己輸入的字可能不在網站的注音字型裡，就不會有注音） */
 const hasBpmf = ch => document.fonts && [...document.fonts].some(f => f.family.replace(/["']/g, "") === "BpmfKai" && rangeHits(f.unicodeRange, new Set([ch.codePointAt(0)])));
+/* 楷書字型（題目、答案頁的字）有沒有收這個字；沒收的字會顯示成系統預設字型，字形可能不對 */
+const hasKai = ch => !document.fonts || ![...document.fonts].some(f => f.family.replace(/["']/g, "") === "TWKai") || [...document.fonts].some(f => f.family.replace(/["']/g, "") === "TWKai" && rangeHits(f.unicodeRange, new Set([ch.codePointAt(0)])));
 function examAdjRender(){
   const box = $("#exAdjBody"), sum = $("#exAdj summary");
   if(!box || !EX) return;
@@ -116,14 +118,45 @@ function examAdjRender(){
         return `<span class="exread"><b>${esc(ch)}</b>${rs.map((r, n) => `<button class="chip ${n === cur ? "on" : ""}" data-i="${i}" data-ch="${esc(ch)}" data-n="${n}">${esc(r)}</button>`).join("")}</span>`; }).join("");
       const noFont = showRead && it.w ? [...it.w].filter(ch => /\p{Script=Han}/u.test(ch) && ch !== it.c && !hasBpmf(ch)) : [];
       const out = EX.excluded.includes(it);
-      return `<tr class="${out || it.drop ? "out" : ""}"><td><input type="checkbox" data-drop="${i}" ${it.drop ? "checked" : ""} aria-label="不考「${esc(it.c)}」"></td><td class="c">${esc(it.c)}<small>${esc(lessonName(...splitKey(it.k)))}</small></td>
+      return `<tr class="${out || it.drop ? "out" : ""}"><td><input type="checkbox" data-drop="${i}" ${it.drop ? "checked" : ""} aria-label="不考「${esc(it.c)}」"></td><td class="c"><input type="text" class="exchar" data-c="${i}" value="${esc(it.c)}" maxlength="2" aria-label="第 ${i + 1} 題要寫的字" title="可以改成別的字">${hasKai(it.c) ? "" : `<small class="warn">「${esc(it.c)}」不在網站的楷書字型裡，題目和答案頁可能不是楷書字形</small>`}${it.c0 ? `<small>自己改的（課本是「${esc(it.c0)}」）</small>` : it.added ? `<small>自己加的</small>` : `<small>${esc(lessonName(...splitKey(it.k)))}</small>`}</td>
         <td><select data-i="${i}">${cands.map(w => `<option ${w === it.w ? "selected" : ""} value="${esc(w)}">${esc(w)}${w === it.w0 ? "（課本）" : ""}${hanLen(w) >= EXAM_LONG ? "（太長，不出題）" : ""}</option>`).join("")}<option value="" ${custom ? "selected" : ""}>自己輸入…</option></select>
           ${custom ? `<input type="text" data-i="${i}" value="${esc(it.w)}" maxlength="8" placeholder="輸入有「${esc(it.c)}」的語詞" style="width:9em">` : ""}
           ${noFont.length ? `<small class="warn">「${esc(noFont.join(""))}」不在注音字型裡，沒有注音</small>` : ""}</td>
         ${showRead ? `<td>${reads || (it.w ? "—" : "")}</td>` : ""}
         <td>${it.drop ? `<small class="warn">不考</small>` : out ? `<small class="warn">沒有出題</small>` : ""}</td></tr>`;
     }).join("")}</table>
-    <p class="note" id="exAdjMsg" style="margin:6px 0 0"></p>`;
+    <p style="margin:8px 0 0">自己加一題：<input type="text" id="exAddC" maxlength="2" placeholder="一個字" style="width:5em"> <button class="ghost" id="exAdd">加進題目</button></p>
+    <p class="note" id="exAdjMsg" style="margin:6px 0 0">字欄可以直接改成別的字（一次一個國字），語詞會換成課本裡有這個字的語詞，也可以再自己輸入。</p>`;
+  const msg = t => $("#exAdjMsg").textContent = t;
+  /* 換字／加字：只收一個國字；看部件寫字要拆得開；要先下載這個字的字型才重畫 */
+  const okChar = ch => {
+    if([...ch].length !== 1 || !/\p{Script=Han}/u.test(ch)) return msg("請輸入一個國字。"), false;
+    if(g === "W3" && !wrParts(ch).length) return msg(`「${ch}」拆不開部件，看部件寫字沒辦法出這個字。`), false;
+    msg(hasKai(ch) ? "" : `「${ch}」不在網站的楷書字型裡，沒有字形可以顯示，題目和答案頁可能不是楷書。`);
+    return true;
+  };
+  const firstWord = (ch, b) => { const w = wordOf(ch, b); return w && hanLen(w) < EXAM_LONG ? w : (examCands({c: ch, w0: ""})[0] || ""); };
+  const refresh = (chars) => {
+    examBuild();
+    const texts = {TWKai: chars + EX.raw.map(x => x.w + wrParts(x.c).join("")).join(""), BpmfKai: EX.raw.map(x => x.w ? Bpmf.text(x.w) : "").join(""), BpmfOnly: g === "W1" ? EX.raw.map(wrTarget).join("") : ""};
+    loadFonts(fontsToLoad(texts), () => {}, 4000).then(() => { examRender(); examAdjRender(); });
+  };
+  box.querySelectorAll("input[data-c]").forEach(inp => inp.onchange = () => {
+    const it = EX.raw[+inp.dataset.c], ch = inp.value.trim();
+    if(ch === it.c) return;
+    if(!okChar(ch)){ inp.value = it.c; return; }
+    if(!it.c0 && !it.added) it.c0 = it.c;
+    if(it.c0 === ch) delete it.c0;
+    it.c = ch; it.w0 = firstWord(ch, it.b); it.w = it.w0; it.vs = {};
+    refresh(ch);
+  });
+  $("#exAdd").onclick = () => {
+    const ch = $("#exAddC").value.trim(), last = EX.raw[EX.raw.length - 1];
+    if(!okChar(ch)) return;
+    const w = firstWord(ch, last.b);
+    EX.raw.push({c: ch, k: last.k, b: last.b, w, w0: w, vs: {}, added: true});
+    refresh(ch);
+  };
   const apply = (it, w) => {
     if(w && !w.includes(it.c)) return $("#exAdjMsg").textContent = `語詞裡要有「${it.c}」。`;
     if(hanLen(w) >= EXAM_LONG) return $("#exAdjMsg").textContent = `語詞要 ${EXAM_LONG - 1} 個字以內，才排得進一行。`;
