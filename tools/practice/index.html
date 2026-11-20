@@ -11,8 +11,8 @@
   格子畫法用 shared/ruler-cell.js（字形尺）；部件分區和字形尺同一份，所以示範、褪除、字形尺三者的分塊一致。
   這是雛形：只有這一頁，沒有接課本資料、沒有存任何東西；不放進首頁。示範區只留「筆順示範」；部件示範 2026-11-12 維護者決定刪掉。筆順圖放在 shared/stroke/（檔名是國字.png），沒有圖的字顯示「沒有筆順圖」。
 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-20i">
-<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-20i">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-20j">
+<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-20j">
 <style>
 @font-face{font-family:"BpmfOnly";font-display:swap;src:url(../../shared/fonts/bpmf-only.woff2) format("woff2")}
 :root{--cell:1.8cm;--zw:8mm;--g:1.2mm;--sg:2.5mm;--k:6;--kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;color-scheme:light}
@@ -69,7 +69,7 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 .zg{font-family:"BpmfOnly";font-size:calc(var(--cell) * .5);line-height:1;white-space:nowrap}   /* 注音字型：字本身看不見，只畫注音；用畫布量出注音的位置再移到格子正中央（zyFit） */
 /* 格子裡的字（淡灰、遮罩）：疊在字形尺格子上，用 clip-path 只露出某一塊部件 */
 .gl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.gi{font-family:var(--kai);font-size:calc(var(--sz, var(--cell)) * .8);line-height:1;color:#000;white-space:nowrap}
+.gs{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}.gs text{font-family:var(--kai);fill:#000;white-space:pre}
 .pi{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .res .box{flex:1;width:100%;border:1px solid #999;display:flex;align-items:center;justify-content:center;font-size:7.5pt;color:#999;overflow:hidden}
 .res .box.no{border-style:dashed}
@@ -103,15 +103,15 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 <div id="pages"></div>
 
 <!-- 課本資料（shared/lessons.js 會自己載入各本）和注音讀音表、課本名稱（shared/common.js） -->
-<script src="../../shared/lessons.js?v=2026-11-20i"></script>
-<script src="../../shared/char-info.js?v=2026-11-20i"></script>
-<script src="../../shared/bpmf.js?v=2026-11-20i"></script>
-<script src="../../shared/parts.js?v=2026-11-20i"></script>
-<script src="../../shared/parts-layers.js?v=2026-11-20i"></script>
-<script src="../../shared/parts-api.js?v=2026-11-20i"></script>
-<script src="../../shared/ruler.js?v=2026-11-20i"></script>
-<script src="../../shared/ruler-cell.js?v=2026-11-20i"></script>
-<script src="../../shared/common.js?v=2026-11-20i"></script>
+<script src="../../shared/lessons.js?v=2026-11-20j"></script>
+<script src="../../shared/char-info.js?v=2026-11-20j"></script>
+<script src="../../shared/bpmf.js?v=2026-11-20j"></script>
+<script src="../../shared/parts.js?v=2026-11-20j"></script>
+<script src="../../shared/parts-layers.js?v=2026-11-20j"></script>
+<script src="../../shared/parts-api.js?v=2026-11-20j"></script>
+<script src="../../shared/ruler.js?v=2026-11-20j"></script>
+<script src="../../shared/ruler-cell.js?v=2026-11-20j"></script>
+<script src="../../shared/common.js?v=2026-11-20j"></script>
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
@@ -119,14 +119,16 @@ const $ = s => document.querySelector(s);
 /* ---------- 字放多大、放哪裡 ----------
    shared/ruler.js 的分線是把「字的筆畫外框」對到格子的 6%～94% 量的（docs/scripts/make_ruler.py 的 PAD），
    所以這裡要用一樣的方式放字，分區才會切在對的地方：用畫布量這個字的筆畫外框，長邊縮放到 88%，再移到格子中央。
-   畫布上照 CSS 的 line-height:1 擺字（基線位置用字型的上下伸展算），量出來的外框就是網頁上字實際的位置。 */
+   畫布和網頁（SVG 文字）用同一個基線（BASE）擺字，量出來的外框就是網頁上字實際的位置。 */
+/* 字放在「基線在格子 72% 處、水平置中」（BASE）：畫布和網頁上的 SVG 文字用同一個基線，不靠字型的上下伸展（ascent/descent）算位置——
+   瀏覽器、作業系統對字型的上下伸展算法不一樣（常見是整個字偏上或偏下），靠它會讓畫布量到的位置和網頁上實際的位置不同（2026-11-20 改）。 */
+const BASE = .72;   /* 基線 72%：字（字型大小 80%）的頂端離格子上緣約 6%、底端離下緣約 20%，量字的畫布不會切到字 */
 function glyphCanvas(c, N, f){
   const cv = document.createElement("canvas"); cv.width = cv.height = N;
   const g = cv.getContext("2d", {willReadFrequently: true}), fs = N * .8;
   g.font = `${fs}px TWKai`; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = "#000";
-  const m = g.measureText(c), A = m.fontBoundingBoxAscent, D = m.fontBoundingBoxDescent;
   if(f) g.setTransform(f.k, 0, 0, f.k, N / 2 + f.tx * N - f.k * N / 2, N / 2 + f.ty * N - f.k * N / 2);
-  g.fillText(c, N / 2, (N - fs) / 2 + (fs - (A + D)) / 2 + A);
+  g.fillText(c, N / 2, N * BASE);
   return g;
 }
 const FIT = {};
@@ -143,8 +145,12 @@ function fit(c){
 }
 /* 整個字（文字，列印時是向量，最清楚） */
 function layer(c, opacity){
-  const f = fit(c), u = "var(--sz, var(--cell))";
-  return `<span class="gl" style="${opacity < 1 ? `opacity:${opacity}` : ""}"><span class="gi" style="transform:translate(calc(${u} * ${f.tx.toFixed(4)}), calc(${u} * ${f.ty.toFixed(4)})) scale(${f.k.toFixed(4)})">${c}</span></span>`;
+  /* 有教育部筆畫的字（shared/stroke-parts.js，字形尺有分線的字）：整個字也用教育部筆畫畫，和部件圖、筆順圖同一種畫法同一個縮放，位置大小不靠字型（2026-11-20 維護者要求） */
+  const sp = typeof STROKE_PARTS !== "undefined" && STROKE_PARTS[c];
+  if(sp) return `<span class="gl" style="${opacity < 1 ? `opacity:${opacity}` : ""}"><svg class="gs" viewBox="0 0 1 1"><path d="${sp.p.join("")}" transform="${strokeParts(c, sp)[0].tf}" fill="#000"/></svg></span>`;
+  const f = fit(c), esc = {"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c] || c;
+  /* SVG 文字：座標 0～100、字大小 80（格子的 80%）、基線 BASE、水平置中；先縮放（以格子中心為準）再平移，和畫布 fit() 量的一樣。列印時還是向量 */
+  return `<span class="gl" style="${opacity < 1 ? `opacity:${opacity}` : ""}"><svg class="gs" viewBox="0 0 100 100"><text x="50" y="${BASE * 100}" font-size="80" text-anchor="middle" transform="translate(${(f.tx * 100).toFixed(3)} ${(f.ty * 100).toFixed(3)}) translate(50 50) scale(${f.k.toFixed(4)}) translate(-50 -50)">${esc}</text></svg></span>`;
 }
 
 /* ---------- 把字切成部件 ----------
@@ -223,7 +229,7 @@ let spLoading = null;
 function loadStrokeParts(){   /* 筆畫外形檔很大（約 4 MB），開網頁時先不載，用到才載；載不到就用字型切的備案 */
   if(typeof STROKE_PARTS !== "undefined") return Promise.resolve();
   return spLoading = spLoading || new Promise(res => {
-    const el = document.createElement("script"); el.src = "../../shared/stroke-parts.js?v=2026-11-20i";
+    const el = document.createElement("script"); el.src = "../../shared/stroke-parts.js?v=2026-11-20j";
     el.onload = el.onerror = () => { SPLIT = {}; res(); };
     document.head.appendChild(el);
   });
