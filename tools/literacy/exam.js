@@ -99,6 +99,8 @@ function examCands(it){
 }
 /* 語詞裡的字有沒有注音字型（自己輸入的字可能不在網站的注音字型裡，就不會有注音） */
 const hasBpmf = ch => document.fonts && [...document.fonts].some(f => f.family.replace(/["']/g, "") === "BpmfKai" && rangeHits(f.unicodeRange, new Set([ch.codePointAt(0)])));
+/* 楷書字型（題目、答案頁的字）有沒有收這個字；沒收的字會顯示成系統預設字型，字形可能不對 */
+const hasKai = ch => !document.fonts || ![...document.fonts].some(f => f.family.replace(/["']/g, "") === "TWKai") || [...document.fonts].some(f => f.family.replace(/["']/g, "") === "TWKai" && rangeHits(f.unicodeRange, new Set([ch.codePointAt(0)])));
 function examAdjRender(){
   const box = $("#exAdjBody"), sum = $("#exAdj summary");
   if(!box || !EX) return;
@@ -116,7 +118,7 @@ function examAdjRender(){
         return `<span class="exread"><b>${esc(ch)}</b>${rs.map((r, n) => `<button class="chip ${n === cur ? "on" : ""}" data-i="${i}" data-ch="${esc(ch)}" data-n="${n}">${esc(r)}</button>`).join("")}</span>`; }).join("");
       const noFont = showRead && it.w ? [...it.w].filter(ch => /\p{Script=Han}/u.test(ch) && ch !== it.c && !hasBpmf(ch)) : [];
       const out = EX.excluded.includes(it);
-      return `<tr class="${out || it.drop ? "out" : ""}"><td><input type="checkbox" data-drop="${i}" ${it.drop ? "checked" : ""} aria-label="不考「${esc(it.c)}」"></td><td class="c"><input type="text" class="exchar" data-c="${i}" value="${esc(it.c)}" maxlength="2" aria-label="第 ${i + 1} 題要寫的字" title="可以改成別的字">${it.c0 ? `<small>自己改的（課本是「${esc(it.c0)}」）</small>` : it.added ? `<small>自己加的</small>` : `<small>${esc(lessonName(...splitKey(it.k)))}</small>`}</td>
+      return `<tr class="${out || it.drop ? "out" : ""}"><td><input type="checkbox" data-drop="${i}" ${it.drop ? "checked" : ""} aria-label="不考「${esc(it.c)}」"></td><td class="c"><input type="text" class="exchar" data-c="${i}" value="${esc(it.c)}" maxlength="2" aria-label="第 ${i + 1} 題要寫的字" title="可以改成別的字">${hasKai(it.c) ? "" : `<small class="warn">「${esc(it.c)}」不在網站的楷書字型裡，題目和答案頁可能不是楷書字形</small>`}${it.c0 ? `<small>自己改的（課本是「${esc(it.c0)}」）</small>` : it.added ? `<small>自己加的</small>` : `<small>${esc(lessonName(...splitKey(it.k)))}</small>`}</td>
         <td><select data-i="${i}">${cands.map(w => `<option ${w === it.w ? "selected" : ""} value="${esc(w)}">${esc(w)}${w === it.w0 ? "（課本）" : ""}${hanLen(w) >= EXAM_LONG ? "（太長，不出題）" : ""}</option>`).join("")}<option value="" ${custom ? "selected" : ""}>自己輸入…</option></select>
           ${custom ? `<input type="text" data-i="${i}" value="${esc(it.w)}" maxlength="8" placeholder="輸入有「${esc(it.c)}」的語詞" style="width:9em">` : ""}
           ${noFont.length ? `<small class="warn">「${esc(noFont.join(""))}」不在注音字型裡，沒有注音</small>` : ""}</td>
@@ -130,6 +132,7 @@ function examAdjRender(){
   const okChar = ch => {
     if([...ch].length !== 1 || !/\p{Script=Han}/u.test(ch)) return msg("請輸入一個國字。"), false;
     if(g === "W3" && !wrParts(ch).length) return msg(`「${ch}」拆不開部件，看部件寫字沒辦法出這個字。`), false;
+    msg(hasKai(ch) ? "" : `「${ch}」不在網站的楷書字型裡，沒有字形可以顯示，題目和答案頁可能不是楷書。`);
     return true;
   };
   const firstWord = (ch, b) => { const w = wordOf(ch, b); return w && hanLen(w) < EXAM_LONG ? w : (examCands({c: ch, w0: ""})[0] || ""); };
