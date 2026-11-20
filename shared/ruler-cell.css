@@ -2,6 +2,8 @@
    格子邊長由頁面設定 --cell（例如 1.8cm）；頁面可以用更高優先的選擇器改框線粗細等。 */
 .excell{position:relative;display:inline-block;width:var(--cell);height:var(--cell);box-sizing:border-box;border:1.5px solid #333;background:#fff;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .excell.cross{background:#fff}
+.excell .rpoly{position:absolute;left:0;top:0;width:100%;height:100%}   /* 多邊形格子（包） */
+.excell .rpoly path{fill:none;stroke:#9a9a9a;stroke-width:1;stroke-dasharray:3 2;vector-effect:non-scaling-stroke}
 .excell.cross::before,.excell.cross::after{content:"";position:absolute;border-color:#9a9a9a;border-style:dashed;border-width:0}
 .excell.cross::before{left:50%;top:0;bottom:0;border-left-width:1px}
 .excell.cross::after{top:50%;left:0;right:0;border-top-width:1px}
