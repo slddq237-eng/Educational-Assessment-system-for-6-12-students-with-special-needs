@@ -39,7 +39,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 OUT = 'shared/ruler.js'
 SIZE = 256
-PAD = .06   # 字的外框對到格子的 6%～94%
+PAD = .06   # 算分線時，沿分割方向字的外框對到格子的 6%～94%（最後會換算成「長邊 88%」的框，見 longside_ratio）
 
 # 1. 課本生字和它們的結構（用 Node 執行網頁同一份資料）
 JS = r'''
@@ -542,6 +542,22 @@ for c, v in RULER_FIX.items():
     if v: out[c] = v
     else: out.pop(c, None)
 UNSURE = sorted(c for c, s in STRUCT.items() if s in SPLITS and c not in out)   # 不確定的字：網頁畫十字格
+
+# 放字的方式統一成「字的外框長邊對到格子的 88%、置中」（2026-11-20，練習簿和寫字考卷都這樣放）。
+# 上面算分線時是假設「沿分割方向的外框對到 6%～94%」，字又高又瘦（左右字）或又寬又扁（上下字）時，
+# 另一邊會超出格子被切到；所以最後把分線從那個框換算到長邊 88% 的框：新位置 = 0.5 + (舊位置 - 0.5) × (分割方向的長度 ÷ 長邊)。
+# 分割方向就是長邊的字不變。包圍字、交疊字本來就是長邊 88%，不用換算。
+def longside_ratio(c, axis):
+    st = load_strokes(c)
+    if not st: return 1.0
+    pts = [pt for s_ in st for pt in flatten(s_['outline'], 2)]
+    w = max(x for x, _ in pts) - min(x for x, _ in pts); h = max(y for _, y in pts) - min(y for _, y in pts)
+    return min(1.0, (w if axis == 'x' else h) / max(w, h))
+if STROKE_DIR:
+    for c in list(out):
+        if STRUCT.get(c) in SPLITS and out[c] and isinstance(out[c][0], (int, float)):
+            r_ = longside_ratio(c, SPLITS[STRUCT[c]][0])
+            out[c] = [round(.5 + (v - .5) * r_, 3) for v in out[c]]
 
 head = '''/* =========================================================
    字型尺分線位置表（自動產生，不要手改；新增課本後請 Claude 重新執行 docs/scripts/make_ruler.py）
