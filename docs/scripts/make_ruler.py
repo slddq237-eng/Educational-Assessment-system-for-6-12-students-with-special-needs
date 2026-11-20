@@ -335,6 +335,11 @@ PART_RANGES = {'載': [[(0, 3), (10, 13)], [(3, 10)]], '戴': [[(0, 3), (14, 17)
                # 維護者 2026-11-18 指定（包圍字清單 B、C 類）：鳳＝前 2 畫｜其餘；栽＝第 1～3 畫＋第 8～10 畫｜第 4～7 畫；屆＝前 3 畫｜第 4～8 畫；癌＝前 5 畫｜其餘；危＝前 4 畫｜其餘；厭＝前 2 畫｜其餘；迴＝前 6 畫（回，先寫）｜其餘 4 畫（辶，後寫，所以辶是外層；維護者先說前 5 畫、後改前 6 畫）；包＝前 2 畫｜其餘
                '鳳': [[(0, 2)], [(2, 14)]], '栽': [[(0, 3), (7, 10)], [(3, 7)]], '屆': [[(0, 3)], [(3, 8)]], '癌': [[(0, 5)], [(5, 17)]],
                '危': [[(0, 4)], [(4, 6)]], '厭': [[(0, 2)], [(2, 14)]], '迴': [[(6, 10)], [(0, 6)]], '包': [[(0, 2)], [(2, 5)]]}
+# 交疊字（部件互相穿過，沒有「外層包裡面」）：每個部件一個方框，方框會重疊。維護者 2026-11-18 指定每個部件的筆畫（從 0 算，止不含；可以不連續；可以三個部件）
+OVERLAP = {'斥': [[(0, 4)], [(4, 5)]], '谷': [[(0, 4)], [(4, 7)]]}   # 乖乘坐夾幽爽原本也指定了三個部件，維護者後來改成不拆（改成獨體字），所以不在這裡
+OVL_MARGIN = .02   # 每個部件的方框比它的筆畫外框多留的比例
+
+
 SURR_POLY = {'包': (4, .025)}   # 維護者 2026-11-18：包的巳可以用多邊形包住、盡量不要包到上面的勹。字 → （橫切幾條帶, 每邊多留的比例）；只支援右上包圍（外層在右、上，裡面開口在左、下）
 
 
@@ -468,6 +473,21 @@ if STROKE_DIR:
         rect, cost, rng, order = surround_rect(c, parts, STRUCT[c], RADICAL_S)
         if rect is None: SSKIP[c] = cost
         else: SRECT[c] = rect; SRANGE[c] = rng; SORDER[c] = order
+    for c, rngs in OVERLAP.items():   # 交疊字：每個部件的筆畫外框 → 方框（格子的比例）
+        st = load_strokes(c)
+        if not st or sorted(i for rg in rngs for a, b in rg for i in range(a, b)) != list(range(len(st))): print(f'交疊字 {c}：沒有筆畫資料或筆畫沒有剛好分完，略過'); continue
+        allp = [p for s_ in st for p in flatten(s_['outline'], 2)]
+        x0, x1 = min(p[0] for p in allp), max(p[0] for p in allp); y0, y1 = min(p[1] for p in allp), max(p[1] for p in allp)
+        k = .88 / max(x1 - x0, y1 - y0); cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        rects, groups = [], []
+        for rg in rngs:
+            idx = [i for a, b in rg for i in range(a, b)]; groups.append(idx)
+            pts = [p for i in idx for p in flatten(st[i]['outline'], 2)]
+            l, r = [min(1, max(0, .5 + (v - cx) * k)) for v in (min(p[0] for p in pts) - OVL_MARGIN / k, max(p[0] for p in pts) + OVL_MARGIN / k)]
+            t, b = [min(1, max(0, .5 + (v - cy) * k)) for v in (min(p[1] for p in pts) - OVL_MARGIN / k, max(p[1] for p in pts) + OVL_MARGIN / k)]
+            rects.append([round(l, 3), round(t, 3), round(r - l, 3), round(b - t, 3)])
+        SRECT[c] = rects; SRANGE[c] = groups
+        firsts = [min(g) for g in groups]; SORDER[c] = [sorted(firsts).index(f) for f in firsts]   # 各部件的書寫順位（第一筆誰先）
     print(f'包圍字（{"、".join(SURR)}）：用筆畫算出 {len(SRECT)} 個字的方框；用不了的 {len(SSKIP)} 個：' + '、'.join(f'{c}（{w}）' for c, w in SSKIP.items()))
     print(f'教育部筆畫（{STROKE_DIR}）：用筆畫算出 {len(SCUTS)} 個字；用不了的 {sum(SFAIL.values())} 個，原因：{dict(SFAIL)}；偏旁筆畫數反推 {len(RADICAL)} 個')
 else:
