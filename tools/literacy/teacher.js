@@ -418,7 +418,8 @@ function afterEvents(end, days){
   const byIdx = new Map();
   [[0, "教學結束"], [7, "1 週"], [14, "2 週"], [30, "1 個月"]].forEach(([d, name]) => {
     const i = days.findIndex(day => daysBetween(end, day) >= d);
-    if(i > 0) byIdx.set(i, [...(byIdx.get(i) || []), name]);
+    /* 同一次評量同時滿 1 週和 2 週（沒有另外一次 2 週的資料）時，只標最短的那個（2026-11-20 維護者要求）；教學結束照常標 */
+    if(i > 0 && !(name !== "教學結束" && (byIdx.get(i) || []).some(n => n !== "教學結束"))) byIdx.set(i, [...(byIdx.get(i) || []), name]);
   });
   /* 標籤分行（2026-11-20 維護者要求：文字不要擠在一起）：「教學結束」「教學後」「1 週」…各占一行，由下往上疊，用 \n 分隔（evText 負責畫） */
   return [...byIdx].map(([i, names]) => { const rest = names.filter(n => n !== "教學結束"); return {x: i - 0.5, cls: "after", label: [...(rest.length < names.length ? ["教學結束"] : []), ...(rest.length ? ["教學後", ...rest] : [])].join("\n")}; });
