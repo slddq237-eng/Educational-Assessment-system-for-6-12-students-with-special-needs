@@ -408,14 +408,21 @@ function recentByLesson(all, formal){
 /* 各課前後測正確率（維護者 2026-10-25）：每個點是一次標了前測或後測的正式評量，灰色背景＝前測、藍色＝後測；
    點上面的課次可以只看那一課（這一欄是唯一需要手動點的地方），預設看全部課合計。依「學生 × 課次」配對（A8 第 12 點） */
 function lessonOrder(a, b){ const [ba, na] = splitKey(a), [bb, nb] = splitKey(b); return BOOK_ORDER.indexOf(ba) - BOOK_ORDER.indexOf(bb) || (+na - +nb); }
+/* 直立線旁的文字：label 裡的 \n 是換行；多行時最後一行貼在底部，其餘往上疊（每行 15） */
+function evText(e, x, yBase){
+  const ls = String(e.label).split("\n"), n = ls.length;
+  return ls.map((t, k) => `<text class="eventname ${e.cls || ""}" x="${x + 4}" y="${yBase - (n - 1 - k) * 15}">${esc(t)}</text>`).join("");
+}
 /* 教學結束後的時間線：橫軸是「每次評量一格」，所以線畫在兩格中間（第 i 格前面＝i - 0.5）；那段時間沒有評量就不畫。days＝每一格的日期（由早到晚） */
 function afterEvents(end, days){
   const byIdx = new Map();
   [[0, "教學結束"], [7, "1 週"], [14, "2 週"], [30, "1 個月"]].forEach(([d, name]) => {
     const i = days.findIndex(day => daysBetween(end, day) >= d);
-    if(i > 0) byIdx.set(i, [...(byIdx.get(i) || []), name]);
+    /* 同一次評量同時滿 1 週和 2 週（沒有另外一次 2 週的資料）時，只標最短的那個（2026-11-20 維護者要求）；教學結束照常標 */
+    if(i > 0 && !(name !== "教學結束" && (byIdx.get(i) || []).some(n => n !== "教學結束"))) byIdx.set(i, [...(byIdx.get(i) || []), name]);
   });
-  return [...byIdx].map(([i, names]) => ({x: i - 0.5, cls: "after", label: [...names.filter(n => n === "教學結束"), ...(names.some(n => n !== "教學結束") ? ["教學後 " + names.filter(n => n !== "教學結束").join("・")] : [])].join("・")}));
+  /* 標籤分行（2026-11-20 維護者要求：文字不要擠在一起）：「教學結束」「教學後」「1 週」…各占一行，由下往上疊，用 \n 分隔（evText 負責畫） */
+  return [...byIdx].map(([i, names]) => { const rest = names.filter(n => n !== "教學結束"); return {x: i - 0.5, cls: "after", label: [...(rest.length < names.length ? ["教學結束"] : []), ...(rest.length ? ["教學後", ...rest] : [])].join("\n")}; });
 }
 function lessonPrePost(all){
   const formal = all.filter(r => r.kind === "formal"), tagged = formal.filter(r => r.prepost), prac = all.filter(r => r.kind !== "formal");
@@ -800,7 +807,7 @@ function phaseLegend(pts){
    一條線（單一學生、單一指標），2px 線、8px 點；背景顏色＝時期，時期改變的地方畫虛線（2026-10-24 起不在圖上寫時期名稱，看上方圖例）；
    直線＝教學安排開始日。滑鼠或鍵盤移到點上會顯示數字；不到 3 題的點畫空心。
    o.domain＝共用的橫軸範圍、o.ymax＝共用的縱軸最大值、o.title＝小圖標題、o.compact＝矮一點（每課分開時用）、o.noPhase＝不畫時期（全部課合計） */
-const SVGW = 760, SCROLL_GAP = 56, SCROLL_MAX = 30000, SCROLL_MIN_SCALE = 0.85;   /* 可滑動的圖：相鄰兩個日期至少隔 56（和圖一樣的單位），最寬 30000；手機上最少照原尺寸的 85% 畫，不縮到看不清楚 */
+const SVGW = 760, SCROLL_GAP = 56, SCROLL_MAX = 30000, SCROLL_MIN_SCALE = 0.85, SCROLL_PADL = 28;   /* 可滑動的圖：相鄰兩個日期至少隔 56（和圖一樣的單位），最寬 30000；手機上最少照原尺寸的 85% 畫，不縮到看不清楚 */
 function niceMax(v){ if(v <= 5) return 5; const p = Math.pow(10, Math.floor(Math.log10(v))); for(const m of [1, 2, 2.5, 5, 10]) if(m * p >= v) return m * p; return 10 * p; }
 /* 縱軸刻度：分成 4 格，每格是 1、2、5 的整數倍（例如 0、1、2、3、4 秒），不會出現 1.3、3.8 這種數字 */
 function niceTicks(v){
@@ -820,10 +827,11 @@ function lineChart(pts, o){
   const [x0, x1] = o.domain || [Math.min(...xs) - edge, Math.max(...xs) + edge], span = x1 - x0 || 1;
   /* 可滑動（o.scroll，每天一個點的圖，2026-11-17 維護者要求）：每個日期都要標，相鄰兩天至少隔 SCROLL_GAP；放不下時圖變寬、可以左右滑動，左邊刻度固定 */
   const ux = [...new Set(xs)].sort((a, b) => a - b), minGap = Math.min(...ux.slice(1).map((v, i) => v - ux[i]));
-  const wide = o.scroll && ux.length > 1 ? Math.min(SCROLL_MAX, Math.ceil(L + R + span * SCROLL_GAP / minGap)) : 0;
+  const wide = o.scroll && ux.length > 1 ? Math.min(SCROLL_MAX, Math.ceil(L + R + SCROLL_PADL + span * SCROLL_GAP / minGap)) : 0;
   const W = wide > SVGW ? wide : SVGW;
   if(W > SVGW) iw = W - L - R;
-  const X = x => !o.domain && new Set(xs).size === 1 ? L + iw / 2 : L + (x - x0) / span * iw, Y = v => Tp + ih - v / max * ih;
+  const padL = W > SVGW ? SCROLL_PADL : 0;   /* 可滑動的圖：第一個點往右挪，最舊的日期和點不會被左邊固定的刻度蓋住（2026-11-19 維護者回報） */
+  const X = x => !o.domain && new Set(xs).size === 1 ? L + iw / 2 : L + padL + (x - x0) / span * (iw - padL), Y = v => Tp + ih - v / max * ih;
   const unit = o.metric === "acc" ? "%" : o.metric === "sec" ? " 秒" : "";
   /* 時期：背景色塊（先畫，在格線和線的下面）＋改變處的虛線；第一段和最後一段在點的外面留半格，碰到圖的邊就到邊 */
   let g = "", lines = "";
@@ -839,7 +847,7 @@ function lineChart(pts, o){
   });
   g += ticks.map(t => `<line class="grid" x1="${L}" x2="${W - R}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${L - 8}" y="${Y(t) + 4}" text-anchor="end">${t}${unit}</text>`).join("") + lines;
   if(o.title) g += `<text class="paneltitle" x="${L}" y="${Tp - 9}">${esc(o.title)}</text>`;
-  (o.events || []).forEach(e => { const x = X(e.x); g += `<line class="event ${e.cls || ""}" x1="${x}" x2="${x}" y1="${Tp}" y2="${Tp + ih}"/><text class="eventname ${e.cls || ""}" x="${x + 4}" y="${Tp + ih - 6}">${esc(e.label)}</text>`; });
+  (o.events || []).forEach(e => { const x = X(e.x); g += `<line class="event ${e.cls || ""}" x1="${x}" x2="${x}" y1="${Tp}" y2="${Tp + ih}"/>${evText(e, x, Tp + ih - 6)}`; });
   g += dayBraces(o.dayGroups, X, Tp + ih, H);
   /* 線與點（數值是空的點不畫） */
   const ok = pts.filter(p => p.v != null);
@@ -1119,7 +1127,7 @@ function multiLine(series, o){
       from = i + 1; } });
   }
   g += ticks.map(t => `<line class="grid" x1="${L}" x2="${SVGW - R}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${L - 8}" y="${Y(t) + 4}" text-anchor="end">${t}${unit}</text>`).join("");
-  (o.events || []).forEach(e => { const x = X(e.x); g += `<line class="event ${e.cls || ""}" x1="${x}" x2="${x}" y1="${Tp}" y2="${Tp + ih}"/><text class="eventname ${e.cls || ""}" x="${x + 4}" y="${Tp + ih - 6}">${esc(e.label)}</text>`; });
+  (o.events || []).forEach(e => { const x = X(e.x); g += `<line class="event ${e.cls || ""}" x1="${x}" x2="${x}" y1="${Tp}" y2="${Tp + ih}"/>${evText(e, x, Tp + ih - 6)}`; });
   g += dayBraces(o.dayGroups, X, Tp + ih, H);
   series.forEach(s => {
     /* p.prac＝練習：同顏色的空心菱形，和其他點依時間連成同一條線（各課前後測圖用，維護者 2026-11-03） */
