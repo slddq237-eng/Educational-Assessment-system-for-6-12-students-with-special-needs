@@ -408,6 +408,11 @@ function recentByLesson(all, formal){
 /* 各課前後測正確率（維護者 2026-10-25）：每個點是一次標了前測或後測的正式評量，灰色背景＝前測、藍色＝後測；
    點上面的課次可以只看那一課（這一欄是唯一需要手動點的地方），預設看全部課合計。依「學生 × 課次」配對（A8 第 12 點） */
 function lessonOrder(a, b){ const [ba, na] = splitKey(a), [bb, nb] = splitKey(b); return BOOK_ORDER.indexOf(ba) - BOOK_ORDER.indexOf(bb) || (+na - +nb); }
+/* 直立線旁的文字：label 裡的 \n 是換行；多行時最後一行貼在底部，其餘往上疊（每行 15） */
+function evText(e, x, yBase){
+  const ls = String(e.label).split("\n"), n = ls.length;
+  return ls.map((t, k) => `<text class="eventname ${e.cls || ""}" x="${x + 4}" y="${yBase - (n - 1 - k) * 15}">${esc(t)}</text>`).join("");
+}
 /* 教學結束後的時間線：橫軸是「每次評量一格」，所以線畫在兩格中間（第 i 格前面＝i - 0.5）；那段時間沒有評量就不畫。days＝每一格的日期（由早到晚） */
 function afterEvents(end, days){
   const byIdx = new Map();
@@ -415,7 +420,8 @@ function afterEvents(end, days){
     const i = days.findIndex(day => daysBetween(end, day) >= d);
     if(i > 0) byIdx.set(i, [...(byIdx.get(i) || []), name]);
   });
-  return [...byIdx].map(([i, names]) => ({x: i - 0.5, cls: "after", label: [...names.filter(n => n === "教學結束"), ...(names.some(n => n !== "教學結束") ? ["教學後 " + names.filter(n => n !== "教學結束").join("・")] : [])].join("・")}));
+  /* 標籤分行（2026-11-20 維護者要求：文字不要擠在一起）：「教學結束」「教學後」「1 週」…各占一行，由下往上疊，用 \n 分隔（evText 負責畫） */
+  return [...byIdx].map(([i, names]) => { const rest = names.filter(n => n !== "教學結束"); return {x: i - 0.5, cls: "after", label: [...(rest.length < names.length ? ["教學結束"] : []), ...(rest.length ? ["教學後", ...rest] : [])].join("\n")}; });
 }
 function lessonPrePost(all){
   const formal = all.filter(r => r.kind === "formal"), tagged = formal.filter(r => r.prepost), prac = all.filter(r => r.kind !== "formal");
@@ -840,7 +846,7 @@ function lineChart(pts, o){
   });
   g += ticks.map(t => `<line class="grid" x1="${L}" x2="${W - R}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${L - 8}" y="${Y(t) + 4}" text-anchor="end">${t}${unit}</text>`).join("") + lines;
   if(o.title) g += `<text class="paneltitle" x="${L}" y="${Tp - 9}">${esc(o.title)}</text>`;
-  (o.events || []).forEach(e => { const x = X(e.x); g += `<line class="event ${e.cls || ""}" x1="${x}" x2="${x}" y1="${Tp}" y2="${Tp + ih}"/><text class="eventname ${e.cls || ""}" x="${x + 4}" y="${Tp + ih - 6}">${esc(e.label)}</text>`; });
+  (o.events || []).forEach(e => { const x = X(e.x); g += `<line class="event ${e.cls || ""}" x1="${x}" x2="${x}" y1="${Tp}" y2="${Tp + ih}"/>${evText(e, x, Tp + ih - 6)}`; });
   g += dayBraces(o.dayGroups, X, Tp + ih, H);
   /* 線與點（數值是空的點不畫） */
   const ok = pts.filter(p => p.v != null);
@@ -1120,7 +1126,7 @@ function multiLine(series, o){
       from = i + 1; } });
   }
   g += ticks.map(t => `<line class="grid" x1="${L}" x2="${SVGW - R}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${L - 8}" y="${Y(t) + 4}" text-anchor="end">${t}${unit}</text>`).join("");
-  (o.events || []).forEach(e => { const x = X(e.x); g += `<line class="event ${e.cls || ""}" x1="${x}" x2="${x}" y1="${Tp}" y2="${Tp + ih}"/><text class="eventname ${e.cls || ""}" x="${x + 4}" y="${Tp + ih - 6}">${esc(e.label)}</text>`; });
+  (o.events || []).forEach(e => { const x = X(e.x); g += `<line class="event ${e.cls || ""}" x1="${x}" x2="${x}" y1="${Tp}" y2="${Tp + ih}"/>${evText(e, x, Tp + ih - 6)}`; });
   g += dayBraces(o.dayGroups, X, Tp + ih, H);
   series.forEach(s => {
     /* p.prac＝練習：同顏色的空心菱形，和其他點依時間連成同一條線（各課前後測圖用，維護者 2026-11-03） */
