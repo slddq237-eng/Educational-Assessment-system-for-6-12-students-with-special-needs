@@ -39,7 +39,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 OUT = 'shared/ruler.js'
 SIZE = 256
-PAD = .06   # 字的外框對到格子的 6%～94%
+PAD = .06   # 算分線時，沿分割方向字的外框對到格子的 6%～94%（最後會換算成「長邊 88%」的框，見 longside_ratio）
 
 # 1. 課本生字和它們的結構（用 Node 執行網頁同一份資料）
 JS = r'''
@@ -57,7 +57,7 @@ RULER_FIX = {}
 # 人工確認：沒有教育部筆畫可算、只有字型量的結果，維護者看過對照圖確認「分線是對的」的字（一個字串，例如 '案倒件'）；
 # 沒有列在這裡的不確定字，不收進 ruler.js
 # 維護者指定的第一層每塊幾畫（部件名稱查不到筆畫數時用；例如憂＝前 12 畫｜夊 3 畫，2026-11-14；南…業是第三批、焉…齒是第四批）：{字: [第一塊畫數, 第二塊畫數, ...]}
-PART_STROKES = {'從': [3, 8], '惠': [8, 4], '拜': [4, 5], '既': [5, 4], '書': [6, 4], '朗': [6, 4], '條': [3, 8], '歸': [10, 8], '段': [5, 4], '毒': [4, 4], '溼': [3, 10], '漫': [3, 12], '無': [8, 4], '留': [5, 5], '畫': [6, 5, 1], '當': [8, 5], '發': [5, 7], '監': [9, 5], '直': [2, 6], '竊': [5, 18], '競': [10, 10], '算': [11, 3], '纂': [11, 9], '臨': [6, 11], '華': [4, 8], '虧': [14, 3], '衡': [3, 10, 3], '表': [4, 4], '裳': [8, 6], '貌': [7, 7], '貴': [5, 7], '賞': [8, 7], '門': [4, 4], '鬥': [5, 5], '鹽': [19, 5], '黑': [8, 4], '齊': [10, 4], '龍': [9, 7], '乞': [2, 1], '亂': [12, 1], '侯': [2, 7], '免': [2, 5], '典': [6, 2], '前': [3, 6], '劉': [13, 2], '北': [3, 2], '印': [4, 2], '即': [5, 2], '商': [4, 7], '善': [9, 3], '單': [6, 6], '嚴': [6, 14], '壽': [3, 4, 7], '夜': [2, 6], '妻': [5, 3], '寬': [7, 8], '專': [8, 3], '尚': [3, 5], '師': [6, 4], '幻': [3, 1], '徊': [3, 6], '焉': [5, 6], '爭': [4, 4], '疊': [15, 7], '盡': [9, 5], '竹': [3, 3], '第': [6, 5], '舞': [8, 6], '製': [8, 7], '豐': [11, 7], '赤': [3, 4], '骨': [6, 4], '備': [2, 10], '器': [6, 4, 6], '帶': [5, 6], '歲': [4, 9], '班': [4, 2, 4], '畏': [5, 4], '薄': [4, 13], '象': [6, 6], '辨': [7, 2, 7], '長': [5, 3], '鬱': [14, 15], '齒': [4, 11], '南': [2, 7], '卷': [3, 5], '喪': [9, 3], '奉': [3, 5], '奧': [10, 3], '對': [11, 3], '慰': [11, 4], '懂': [3, 13], '拳': [4, 6], '望': [7, 4], '業': [5, 8], '憂': [12, 3], '晉': [6, 4], '毫': [5, 6], '牽': [7, 4], '益': [5, 5], '聖': [9, 4], '舉': [11, 6], '豪': [5, 9], '賓': [3, 11], '釜': [4, 6], '黃': [4, 8]}   # 憂是第一批、其餘是對照圖第二批（維護者 2026-11-14 指定「前 N 畫｜其餘」）
+PART_STROKES = {'癌': [5, 12], '從': [3, 8], '惠': [8, 4], '拜': [4, 5], '既': [5, 4], '書': [6, 4], '朗': [6, 4], '條': [3, 8], '歸': [10, 8], '段': [5, 4], '毒': [4, 4], '溼': [3, 10], '漫': [3, 12], '無': [8, 4], '留': [5, 5], '畫': [6, 5, 1], '當': [8, 5], '發': [5, 7], '監': [9, 5], '直': [2, 6], '竊': [5, 18], '競': [10, 10], '算': [11, 3], '纂': [11, 9], '臨': [6, 11], '華': [4, 8], '虧': [14, 3], '衡': [3, 10, 3], '表': [4, 4], '裳': [8, 6], '貌': [7, 7], '貴': [5, 7], '賞': [8, 7], '門': [4, 4], '鬥': [5, 5], '鹽': [19, 5], '黑': [8, 4], '齊': [10, 4], '龍': [9, 7], '乞': [2, 1], '亂': [12, 1], '侯': [2, 7], '免': [2, 5], '典': [6, 2], '前': [3, 6], '劉': [13, 2], '北': [3, 2], '印': [4, 2], '即': [5, 2], '商': [4, 7], '善': [9, 3], '單': [6, 6], '嚴': [6, 14], '壽': [3, 4, 7], '夜': [2, 6], '妻': [5, 3], '寬': [7, 8], '專': [8, 3], '尚': [3, 5], '師': [6, 4], '幻': [3, 1], '徊': [3, 6], '焉': [5, 6], '爭': [4, 4], '疊': [15, 7], '盡': [9, 5], '竹': [3, 3], '第': [6, 5], '舞': [8, 6], '製': [8, 7], '豐': [11, 7], '赤': [3, 4], '骨': [6, 4], '備': [2, 10], '器': [6, 4, 6], '帶': [5, 6], '歲': [4, 9], '班': [4, 2, 4], '畏': [5, 4], '薄': [4, 13], '象': [6, 6], '辨': [7, 2, 7], '長': [5, 3], '鬱': [14, 15], '齒': [4, 11], '南': [2, 7], '卷': [3, 5], '喪': [9, 3], '奉': [3, 5], '奧': [10, 3], '對': [11, 3], '慰': [11, 4], '懂': [3, 13], '拳': [4, 6], '望': [7, 4], '業': [5, 8], '憂': [12, 3], '晉': [6, 4], '毫': [5, 6], '牽': [7, 4], '益': [5, 5], '聖': [9, 4], '舉': [11, 6], '豪': [5, 9], '賓': [3, 11], '釜': [4, 6], '黃': [4, 8]}   # 憂是第一批、其餘是對照圖第二批（維護者 2026-11-14 指定「前 N 畫｜其餘」）
 RULER_OK = set('乾佩侃冠制務參哭啟嘗噪堂墊幹弱德愣慚敢散敷旅旋族旗暴曹曾朝棄森款殺沿漢漸然率產磊穀穎簸素縣羈聚聰聽色莫蒜蟲解負責賴足那鐵鑿隙難霜青類飾黍黝亭修具夏害寒尋徵徽愛掌')   # 2026-11-14 維護者看過對照圖第 1～3 張確認「其他都可以」的字（80 個，不含另外指定拆法的 兩嫩候索里午寡帝憂旁）；其中有第一層的字用第一層算，沒有第一層的用「最細部件分組」的候選
 
 # 2. 楷書字型：每個字在哪一個字型檔
@@ -320,11 +320,73 @@ def leaf_cuts(c, axis, n, radical):
 # 外層（辶、走…）包住裡面那一塊：裡面是一個方框，貼著格子沒被外層佔住的邊。
 # 左下包圍：外層在左邊和下面，裡面是右上角的方框 [左, 上, 寬, 高]（0～1，格子的比例；上＝0、右邊貼 1）。
 # 外層和裡面誰先寫不一定（辶最後寫，走先寫）：兩種都試，挑「外層的墨掉進方框裡、裡面的墨掉到方框外」最少的。
-SURR = {'左下包圍': ('l', 'b'), '左上包圍': ('l', 't'), '右上包圍': ('r', 't'), '上方包圍': ('l', 't', 'r')}      # 結構 → 外層在哪幾邊（l 左、r 右、t 上、b 下）
+SURR = {'左下包圍': ('l', 'b'), '左上包圍': ('l', 't'), '右上包圍': ('r', 't'), '上方包圍': ('l', 't', 'r'),
+        '左方包圍': ('l', 't', 'b'), '下方包圍': ('l', 'b', 'r'), '全包圍': ('l', 't', 'r', 'b')}      # 結構 → 外層在哪幾邊（l 左、r 右、t 上、b 下）
 SRECT, SRANGE, SORDER = {}, {}, {}   # 字 → 方框；字 → 各部件的筆畫範圍（部件表的順序）；字 → 各部件的書寫順位（0＝最先寫）
 # 維護者指定的部件筆畫（可以不連續）：字 → [外層的筆畫範圍們, 裡面的筆畫範圍們]，範圍是（第幾畫起, 第幾畫止），從 0 算、止不含
 # 載、戴、裁：「𢦏」＝第 1～3 畫（十）＋最後 3 畫（戈），中間是車／異／衣（維護者 2026-11-17 指定載；戴、裁照同一規則，待確認）
-PART_RANGES = {'載': [[(0, 3), (10, 13)], [(3, 10)]], '戴': [[(0, 3), (14, 17)], [(3, 14)]], '裁': [[(0, 3), (9, 12)], [(3, 9)]]}
+PART_RANGES = {'載': [[(0, 3), (10, 13)], [(3, 10)]], '戴': [[(0, 3), (14, 17)], [(3, 14)]], '裁': [[(0, 3), (9, 12)], [(3, 9)]],
+               # 維護者 2026-11-18 指定（第幾畫從 1 算）：式＝弋 1、5～6 畫＋工 2～4 畫；可＝丁 1、5 畫＋口 2～4 畫；感＝1～2、11～13 畫＋3～10 畫；威＝1～2、7～9 畫＋3～6 畫；同＝1～2 畫＋3～6 畫
+               '式': [[(0, 1), (4, 6)], [(1, 4)]], '可': [[(0, 1), (4, 5)], [(1, 4)]], '感': [[(0, 2), (10, 13)], [(2, 10)]], '威': [[(0, 2), (6, 9)], [(2, 6)]], '同': [[(0, 2)], [(2, 6)]],
+               # 區：匸＝第 1 畫（上面的橫）＋第 11 畫（左邊的豎和下面的橫，最後才寫），中間第 2～10 畫是品（Claude 看筆畫編號圖指定，2026-11-18，待維護者確認）
+               '區': [[(0, 1), (10, 11)], [(1, 10)]],
+               # 維護者 2026-11-18 指定（包圍字清單 A 類）：向＝前 3 畫｜其餘；周＝前 5 畫｜其餘；與＝前 12 畫｜其餘〔第 13～14 畫是底下兩隻腳，不是外層，算出來放錯 18%，不收〕；鼎＝前 5 畫｜其餘（外層是後面的 6～13 畫）；囪＝第 1～3 畫＋第 7 畫｜第 4～6 畫
+               '向': [[(0, 3)], [(3, 6)]], '周': [[(0, 5)], [(5, 8)]], '與': [[(0, 12)], [(12, 14)]], '鼎': [[(5, 13)], [(0, 5)]], '囪': [[(0, 3), (6, 7)], [(3, 6)]],
+               # 維護者 2026-11-18 指定（包圍字清單 B、C 類）：鳳＝前 2 畫｜其餘；栽＝第 1～3 畫＋第 8～10 畫｜第 4～7 畫；屆＝前 3 畫｜第 4～8 畫；癌＝前 5 畫｜其餘；危＝前 4 畫｜其餘；厭＝前 2 畫｜其餘；迴＝前 6 畫（回，先寫）｜其餘 4 畫（辶，後寫，所以辶是外層；維護者先說前 5 畫、後改前 6 畫）；包＝前 2 畫｜其餘
+               '鳳': [[(0, 2)], [(2, 14)]], '栽': [[(0, 3), (7, 10)], [(3, 7)]], '屆': [[(0, 3)], [(3, 8)]], '癌': [[(0, 5)], [(5, 17)]],
+               '危': [[(0, 4)], [(4, 6)]], '厭': [[(0, 2)], [(2, 14)]], '迴': [[(6, 10)], [(0, 6)]], '包': [[(0, 2)], [(2, 5)]]}
+# 交疊字（部件互相穿過，沒有「外層包裡面」）：每個部件一個方框，方框會重疊。維護者 2026-11-18 指定每個部件的筆畫（從 0 算，止不含；可以不連續；可以三個部件）
+OVERLAP = {'斥': [[(0, 4)], [(4, 5)]], '谷': [[(0, 4)], [(4, 7)]]}   # 乖乘坐夾幽爽原本也指定了三個部件，維護者後來改成不拆（改成獨體字），所以不在這裡
+OVL_MARGIN = .02   # 每個部件的方框比它的筆畫外框多留的比例
+
+
+SURR_POLY = {'包': (4, .025)}   # 維護者 2026-11-18：包的巳可以用多邊形包住、盡量不要包到上面的勹。字 → （橫切幾條帶, 每邊多留的比例）；只支援右上包圍（外層在右、上，裡面開口在左、下）
+
+
+def surround_poly(im, om, kcc, bands, margin):
+    """右上包圍的裡面那一塊 → 階梯形多邊形 [[x, y], …]（格子的比例 0～1，順時針）：
+       左邊、下面貼格子邊；上面在裡面最上面的筆畫上方多留一點；右邊每一條帶照那一條帶裡面最右邊的筆畫（多留一點），所以上面窄、下面寬，不會包到上面的外層"""
+    k, cx, cy = kcc
+    ys, xs = np.nonzero(im); ya, yb = ys.min(), ys.max() + 1
+    mx = lambda v: min(1, max(0, .5 + (v - cx) * k)); my = lambda v: min(1, max(0, .5 + (v - cy) * k))
+    edges = np.linspace(ya, yb, bands + 1).astype(int); rows = []
+    for a, b in zip(edges, edges[1:]):
+        sub = im[a:b]
+        if sub.any(): rows.append((my(a), my(b), mx(np.nonzero(sub.any(0))[0].max() + 1) + margin))
+    merged = [list(rows[0])]
+    for y0, y1, r in rows[1:]:          # 台階相差不到 5% 的合併（取比較寬的），形狀簡單一點
+        if abs(r - merged[-1][2]) < .05: merged[-1][1] = y1; merged[-1][2] = max(r, merged[-1][2])
+        else: merged.append([y0, y1, r])
+    rows = merged
+    inv = lambda v, c: c + (v - .5) / k
+    def lowest_outer(xf1, yf0, yf1):
+        """左邊貼格子邊、右邊到 xf1、y 在 yf0～yf1 之間的範圍裡，外層最下面那一點的 y（格子的比例）；沒有外層的墨回傳 None"""
+        xa, xb = max(0, int(inv(0, cx))), max(0, int(inv(xf1, cx))); ya, yb = max(0, int(inv(yf0, cy))), max(0, int(inv(yf1, cy)))
+        ys_ = np.nonzero(om[ya:yb, xa:xb].any(1))[0]
+        return None if not len(ys_) else my(ya + ys_.max() + 1) + .004
+    # 不要切到外層（維護者 2026-11-18：不要切到勹）：每一段的上緣如果碰到外層的墨，就往下移到外層下面
+    tops = []
+    for n, (y0, y1, r) in enumerate(rows):
+        top = max(0, y0 - margin) if n == 0 else y0
+        low = lowest_outer(min(1, r), top, y1)
+        if low is not None and low > top: top = low
+        tops.append(top)
+    keep = [n for n, (row, t) in enumerate(zip(rows, tops)) if t < row[1] - .01 or n == len(rows) - 1]
+    rows = [rows[n] for n in keep]; tops = [tops[n] for n in keep]
+    T = tops[0]
+    pts = [[0, T]]
+    for n, (y0, y1, r) in enumerate(rows):
+        r = min(1, r); top = T if n == 0 else tops[n]
+        pts.append([r, top]); pts.append([r, 1 if n == len(rows) - 1 else tops[n + 1]])
+    pts.append([0, 1])
+    out_ = []
+    for x, y in pts:
+        q = [round(x, 3), round(y, 3)]
+        if not out_ or out_[-1] != q: out_.append(q)
+    return out_
+
+
+SURR_COST_OVERRIDE = {'包': .15}   # 維護者指定過筆畫、方框看起來合理、但放錯的比例剛好超過門檻的字（包：巳的尾巴伸出勹外面，14%）
 SURR_MAX_COST = .12                  # 最好的方框還是有超過 12% 的墨放錯邊：部件對錯了或不是這種包圍，不收
 
 
@@ -338,11 +400,14 @@ def surround_rect(c, parts, struct, radical):
     if c in PART_STROKES and len(PART_STROKES[c]) == 2 and sum(PART_STROKES[c]) == N: known = list(PART_STROKES[c])
     unk = [i for i, k in enumerate(known) if k is None]
     if len(unk) == 1: known[unk[0]] = N - sum(k for k in known if k is not None)
-    if None in known or sum(known) != N or min(known) < 1: return None, '部件筆畫數對不上', None, None
+    if c in PART_RANGES: known = [1, 1]   # 維護者指定筆畫的字：不用部件筆畫數
+    elif None in known or sum(known) != N or min(known) < 1: return None, '部件筆畫數對不上', None, None
     masks = raster_strokes(st)
     outer_n, inner_n = known                        # 部件表第一個是外層、第二個是裡面
     # 要試的分法：每個選項＝（外層的筆畫編號們, 裡面的筆畫編號們）；維護者指定的（PART_RANGES）只有一種
-    if c in PART_RANGES:
+    if c not in PART_RANGES and struct == '全包圍' and parts[0] == '囗' and N >= 5:   # 囗：先寫豎和橫折（前 2 畫），裡面寫完最後才封口（最後 1 畫）
+        og, ig = list(range(0, 2)) + [N - 1], list(range(2, N - 1)); options = [(og, ig)]
+    elif c in PART_RANGES:
         og, ig = [[i for a, b in rg for i in range(a, b)] for rg in PART_RANGES[c]]
         if sorted(og + ig) != list(range(N)): return None, 'PART_RANGES 的筆畫沒有剛好分完', None, None
         options = [(og, ig)]
@@ -359,33 +424,32 @@ def surround_rect(c, parts, struct, radical):
         x0, x1, y0, y1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
         # 用累計和很快算出每個方框的放錯量：外層的墨掉進方框裡 ＋ 裡面的墨掉到方框外
         oc = np.pad(np.cumsum(np.cumsum(om, 0), 1), ((1, 0), (1, 0))); ic = np.pad(np.cumsum(np.cumsum(im, 0), 1), ((1, 0), (1, 0)))
-        def box(c_, xa, xb, ya, yb): return c_[yb, xb] - c_[ya, xb] - c_[yb, xa] + c_[ya, xa]
-        tot_i = im.sum(); step = 4 if len(sides) <= 2 else 8   # 外層有三邊時要找三個邊界，格子放粗一點才算得快
+        def box(c_, xa, xb, ya, yb): return c_[yb, xb] - c_[ya, xb] - c_[yb, xa] + c_[ya, xa]   # xa 等可以是陣列
+        tot_i = im.sum(); step = {1: 4, 2: 4, 3: 8, 4: 12}[len(sides)]   # 外層的邊越多，要找的邊界越多，格子放粗一點才算得快
         rng = {'l': range(x0, x1, step) if 'l' in sides else [x0], 't': range(y0, y1, step) if 't' in sides else [y0],
                'r': range(x0 + step, x1 + 1, step) if 'r' in sides else [x1], 'b': range(y0 + step, y1 + 1, step) if 'b' in sides else [y1]}
-        res = None
-        for xl in rng['l']:
-            for yt in rng['t']:
-                for xr in rng['r']:
-                    for yb in rng['b']:
-                        if xr <= xl or yb <= yt: continue
-                        bad = box(oc, xl, xr, yt, yb) + (tot_i - box(ic, xl, xr, yt, yb))
-                        if res is None or bad < res[0]: res = (bad, xl, yt, xr, yb)
+        XL, YT, XR, YB = np.meshgrid(np.array(rng['l']), np.array(rng['t']), np.array(rng['r']), np.array(rng['b']), indexing='ij')
+        bad = box(oc, XL, XR, YT, YB) + (tot_i - box(ic, XL, XR, YT, YB))   # 每一種方框的放錯量，一次算完
+        bad = np.where((XR > XL) & (YB > YT), bad, np.iinfo(np.int64).max)
+        k_ = int(np.argmin(bad)); ij = np.unravel_index(k_, bad.shape)    # 並列時取迴圈最前面那個（和原本的巢狀迴圈一樣）
+        res = (int(bad[ij]), int(XL[ij]), int(YT[ij]), int(XR[ij]), int(YB[ij]))
         cost = res[0] / max(1, allm.sum()); _, xl, yt, xr, yb = res
         # 換成格子的比例：字的外框長邊對到 88%、置中（和練習簿放字的方式一樣，shared/ruler-cell.js 的格子）；沒有外層的那幾邊貼著格子邊（0 或 1）
         k = .88 / max(x1 - x0, y1 - y0); cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
         mx = lambda v: min(1, max(0, .5 + (v - cx) * k)); my = lambda v: min(1, max(0, .5 + (v - cy) * k))
         L = mx(xl) if 'l' in sides else 0; T = my(yt) if 't' in sides else 0
         R = mx(xr) if 'r' in sides else 1; B = my(yb) if 'b' in sides else 1
-        cand = (cost, [round(L, 3), round(T, 3), round(R - L, 3), round(B - T, 3)], outer_first, o_idx, i_idx)
+        cand = (cost, [round(L, 3), round(T, 3), round(R - L, 3), round(B - T, 3)], outer_first, o_idx, i_idx, im, om, (k, cx, cy))
         if best is None or cand[0] < best[0]: best = cand
     cost, rect, outer_first = best[0], best[1], best[2]
-    if cost > SURR_MAX_COST: return None, f'放錯的墨太多（{cost * 100:.0f}%）', None, None
+    if cost > SURR_COST_OVERRIDE.get(c, SURR_MAX_COST): return None, f'放錯的墨太多（{cost * 100:.0f}%）', None, None
     L_, T_, W_, H_ = rect                            # 外層包住的每一邊，方框離格子邊至少 8%，不然外層其實沒有包住那一邊（例如感、威：戈的撇穿過整個字）
     if ('l' in sides and L_ < .08) or ('t' in sides and T_ < .08) or ('r' in sides and L_ + W_ > .92) or ('b' in sides and T_ + H_ > .92):
         return None, '外層沒有包住這一邊（方框貼著格子邊）', None, None
     og, ig = best[3], best[4]
     order = [0, 1] if min(og) < min(ig) else [1, 0]
+    if c in SURR_POLY and struct == '右上包圍':   # 維護者指定的例外：裡面那一塊用多邊形（階梯形），不要包到外層
+        rect = surround_poly(best[5], best[6], best[7], *SURR_POLY[c])
     return rect, cost, [og, ig], order
 
 
@@ -409,6 +473,21 @@ if STROKE_DIR:
         rect, cost, rng, order = surround_rect(c, parts, STRUCT[c], RADICAL_S)
         if rect is None: SSKIP[c] = cost
         else: SRECT[c] = rect; SRANGE[c] = rng; SORDER[c] = order
+    for c, rngs in OVERLAP.items():   # 交疊字：每個部件的筆畫外框 → 方框（格子的比例）
+        st = load_strokes(c)
+        if not st or sorted(i for rg in rngs for a, b in rg for i in range(a, b)) != list(range(len(st))): print(f'交疊字 {c}：沒有筆畫資料或筆畫沒有剛好分完，略過'); continue
+        allp = [p for s_ in st for p in flatten(s_['outline'], 2)]
+        x0, x1 = min(p[0] for p in allp), max(p[0] for p in allp); y0, y1 = min(p[1] for p in allp), max(p[1] for p in allp)
+        k = .88 / max(x1 - x0, y1 - y0); cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        rects, groups = [], []
+        for rg in rngs:
+            idx = [i for a, b in rg for i in range(a, b)]; groups.append(idx)
+            pts = [p for i in idx for p in flatten(st[i]['outline'], 2)]
+            l, r = [min(1, max(0, .5 + (v - cx) * k)) for v in (min(p[0] for p in pts) - OVL_MARGIN / k, max(p[0] for p in pts) + OVL_MARGIN / k)]
+            t, b = [min(1, max(0, .5 + (v - cy) * k)) for v in (min(p[1] for p in pts) - OVL_MARGIN / k, max(p[1] for p in pts) + OVL_MARGIN / k)]
+            rects.append([round(l, 3), round(t, 3), round(r - l, 3), round(b - t, 3)])
+        SRECT[c] = rects; SRANGE[c] = groups
+        firsts = [min(g) for g in groups]; SORDER[c] = [sorted(firsts).index(f) for f in firsts]   # 各部件的書寫順位（第一筆誰先）
     print(f'包圍字（{"、".join(SURR)}）：用筆畫算出 {len(SRECT)} 個字的方框；用不了的 {len(SSKIP)} 個：' + '、'.join(f'{c}（{w}）' for c, w in SSKIP.items()))
     print(f'教育部筆畫（{STROKE_DIR}）：用筆畫算出 {len(SCUTS)} 個字；用不了的 {sum(SFAIL.values())} 個，原因：{dict(SFAIL)}；偏旁筆畫數反推 {len(RADICAL)} 個')
 else:
@@ -463,6 +542,22 @@ for c, v in RULER_FIX.items():
     if v: out[c] = v
     else: out.pop(c, None)
 UNSURE = sorted(c for c, s in STRUCT.items() if s in SPLITS and c not in out)   # 不確定的字：網頁畫十字格
+
+# 放字的方式統一成「字的外框長邊對到格子的 88%、置中」（2026-11-20，練習簿和寫字考卷都這樣放）。
+# 上面算分線時是假設「沿分割方向的外框對到 6%～94%」，字又高又瘦（左右字）或又寬又扁（上下字）時，
+# 另一邊會超出格子被切到；所以最後把分線從那個框換算到長邊 88% 的框：新位置 = 0.5 + (舊位置 - 0.5) × (分割方向的長度 ÷ 長邊)。
+# 分割方向就是長邊的字不變。包圍字、交疊字本來就是長邊 88%，不用換算。
+def longside_ratio(c, axis):
+    st = load_strokes(c)
+    if not st: return 1.0
+    pts = [pt for s_ in st for pt in flatten(s_['outline'], 2)]
+    w = max(x for x, _ in pts) - min(x for x, _ in pts); h = max(y for _, y in pts) - min(y for _, y in pts)
+    return min(1.0, (w if axis == 'x' else h) / max(w, h))
+if STROKE_DIR:
+    for c in list(out):
+        if STRUCT.get(c) in SPLITS and out[c] and isinstance(out[c][0], (int, float)):
+            r_ = longside_ratio(c, SPLITS[STRUCT[c]][0])
+            out[c] = [round(.5 + (v - .5) * r_, 3) for v in out[c]]
 
 head = '''/* =========================================================
    字型尺分線位置表（自動產生，不要手改；新增課本後請 Claude 重新執行 docs/scripts/make_ruler.py）

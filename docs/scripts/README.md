@@ -19,6 +19,8 @@
 | `make_bpmf_only.py` | `shared/fonts/bpmf-only.woff2`（寫字 W1 看注音寫國字：「字嗨注音而已」字型只取課本生字；字型要先下載，見檔案開頭） | 新增課本後（和 `make_bpmf.py` 一起） |
 | `make_bpmf_read.js` | `shared/bpmf-read.js`（課本生字裡的破音字讀音，寫字考卷「調整題目」用；讀音表要先下載，見檔案開頭） | 新增課本後 |
 | `make_ruler.py 筆畫資料夾 [對照圖資料夾]` | `shared/ruler.js`（寫字考卷、練習簿「字型尺」的分線位置；用教育部筆畫資料（g0v zh-stroke-data，需要的檔案會自動下載到筆畫資料夾，要能連網、有 curl）算每個部件的範圍，算不出來的字**不收**（網頁畫十字格），並印出不確定的字清單、可以產生對照圖（候選分線：最細部件分組的綠線排前面、字型量的橘線）；量錯的字加進 `RULER_FIX`、看過確認對的加進 `RULER_OK`；揪錯方法見 `materials/ruler-review.md`） | 新增課本後（在 `make_kai.py` 之後）；部件表改了也要重跑 |
+| `make_stroke_numbers.py 筆畫資料夾 輸出資料夾 字串或@檔案 [--cols 4 --rows 3 --cell 360]`（2026-11-20 加） | 不改 repo 檔案；產生「每一畫有編號」的對照圖（`輸出資料夾/stroke-numbers-01.png`…，每張預設 12 字；顏色由藍〔第 1 畫〕到紅〔最後一畫〕、每畫中心標編號、格子下寫字和畫數）。維護者看圖用「字：外層第幾畫、裡面第幾畫（可以不連續）」回覆，Claude 再填進 `make_ruler.py` 的 `PART_RANGES`／`PART_STROKES`。筆畫資料夾和 `make_ruler.py` 共用（缺的筆畫檔自動從 g0v 下載；資料夾不要放進 repo）；標籤字型用文泉驛正黑 | 要請維護者指定哪幾畫是哪個部件時（包圍字、交疊字、部件分不開的字） |
+| `make_charinfo.py dict-revised.json` | `shared/char-info.js`（課本寫字生字的筆劃數、部首，練習簿「看」下面的欄位用；來源教育部《重編國語辭典修訂本》，用 g0v/moedict-data 的 dict-revised.json，下載方式見檔案開頭） | 新增課本後 |
 | `make_stroke.py` | `shared/stroke/`（練習簿「筆順示範」的教育部筆順圖，zip 裡的全部原樣複製；要先有維護者下載的 zip，見檔案開頭） | 教育部更新圖、換新的 zip 時 |
 | `make_kai.py` | `shared/fonts/tw-kai*` | 新增課本、部件，或改了頁面文字後 |
 | `make_conf_candidates.py` | `docs/materials/material-review.xlsx` 的「干擾字候選」頁 | 要請老師挑干擾字時 |

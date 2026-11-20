@@ -10,7 +10,7 @@
 <!-- Google 字型背景載入（2026-11-10 發布前測試）：學校網路不回應時，原本整頁要等 30 秒以上才出現；沒載到就先用電腦內建字型 -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" media="print" onload="this.media='all'">
 <!-- 標準楷書：全字庫正楷體（見 docs/scripts/make_kai.py）；不用霞鶩文楷，因為它的字形和教育部標準楷書不同 -->
-<link rel="stylesheet" href="shared/fonts/tw-kai.css?v=2026-11-20b">
+<link rel="stylesheet" href="shared/fonts/tw-kai.css?v=2026-11-20k">
 <style>
 /* 關於我們：平台介紹、資料來源與出處。內容對應 docs/materials/data-sources.md「資料來源與授權清單」
    和規格書「資料來源、授權與隱私」表一；加入新的外部資料時，這一頁要一起改。
@@ -116,6 +116,9 @@ td:first-child{font-weight:700}
       <tr><td>筆順圖</td><td>生字練習簿的「筆順示範」</td>
         <td>教育部<a href="https://stroke-order.learningweb.moe.edu.tw/" target="_blank" rel="noopener">《國字標準字體筆順學習網》</a>的全筆順圖，放在本網站裡</td>
         <td>創用 CC 姓名標示－非商業性－禁止改作 3.0 臺灣版（<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/tw/" target="_blank" rel="noopener">授權條款</a>）；教育部已回信同意本平台以免費、無廣告的公益特教教學目的使用，圖原樣放入、不變形</td></tr>
+      <tr><td>筆劃數、部首</td><td>生字練習簿「看」下面的筆劃、部首欄</td>
+        <td>教育部《重編國語辭典修訂本》（經 <a href="https://github.com/g0v/moedict-data" target="_blank" rel="noopener">g0v moedict-data</a> 整理），只取課本寫字生字的筆劃數和部首，內容原樣、放在本網站裡（「鷸」一字辭典沒有單字條目，筆劃、部首依 Unicode Unihan 並和部件筆劃相加確認）</td>
+        <td>創用 CC 姓名標示－禁止改作 3.0 臺灣版（<a href="https://creativecommons.org/licenses/by-nd/3.0/tw/" target="_blank" rel="noopener">授權條款</a>）；辭典本文著作權屬教育部，教育部解釋限制的是文字資料本身、不限制格式轉換與後續應用</td></tr>
       <tr><td>Excel 匯出元件</td><td>匯出作答紀錄、分析結果</td>
         <td><a href="https://sheetjs.com/" target="_blank" rel="noopener">SheetJS</a> 0.18.5，放在本網站裡</td>
         <td>Apache 2.0</td></tr>
