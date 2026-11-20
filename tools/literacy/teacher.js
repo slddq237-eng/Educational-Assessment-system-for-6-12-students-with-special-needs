@@ -13,7 +13,7 @@
    ========================================================= */
 const TEACH_UI = KEYS.teacher;
 const T = Object.assign({tab:"one", kid:"", metric:"acc", view:"time", axis:"date", split:"lesson", range:"term", from:"", to:"",
-  kind:"formal", goal:"", book:"", lesson:"", gap:"after", top:"300", adv:"charts", simpleLesson:"", simpleGoal:"", classKids:[], groups:[], classLesson:""}, load(TEACH_UI, {}));
+  kind:"formal", goal:"", book:"", lesson:"", gap:"after", top:"300", adv:"charts", simpleLesson:"", simpleGoal:"", classKids:[], groups:[], classLesson:"", gran:"day"}, load(TEACH_UI, {}));
 const saveT = () => store(TEACH_UI, {...T, simpleGoal:"", groups: getGroups()});   /* 組別由 getGroups／saveGroups 管，這裡不蓋掉；「評量目標比較」的目標不存，每次打開都回到整體（維護者 2026-11-11） */
 const hasFreq = () => typeof FREQ !== "undefined";
 
@@ -161,11 +161,19 @@ const sessionsOf = rs => [...groupBy(rs, r => r.session)].map(([id, list]) => ({
 const tagText = list => { const t = [...new Set(list.map(r => r.prepost).filter(Boolean))]; return t.length ? t.join("、") : ""; };
 const lessonsText2 = list => { const ks = [...new Set(list.map(r => key(r.book, r.lesson)))]; return ks.length > 3 ? `${lessonLabel(ks[0])} 等 ${ks.length} 課` : ks.map(lessonLabel).join("、"); };
 
-/* 每天一個點：x＝距離第一天幾天（相隔越久離越遠），有標前測、後測的那天在日期後面註明 */
-function dailyChart(rs, metric){
-  const g = groupBy(rs, dayOf), days = [...g.keys()].sort(), first = days[0];
+/* 每天一個點：x＝距離第一天幾天（相隔越久離越遠），有標前測、後測的那天在日期後面註明
+   gran＝看每天、每週、每月（2026-11-20 維護者要求，只有平均正確率和平均反應時間用；同一週／同一月的評量合成一個點，用 fn 重算平均，不是把每天的平均再平均） */
+const GRANS = [["day", "每天"], ["week", "每週"], ["month", "每月"]];
+const bucketOf = (d, gran) => { if(gran === "month") return d.slice(0, 7) + "-01"; if(gran !== "week") return d; const t = parse(d); t.setDate(t.getDate() - (t.getDay() + 6) % 7); return iso(t); };   /* 週＝週一到週日，用週一的日期當代表 */
+const granRow = () => `<div class="trow"><span class="tl">時間單位</span>${chipRow(GRANS, T.gran, "tgran")}</div>`;
+function dailyChart(rs, metric, gran = "day"){
+  const g = groupBy(rs, r => bucketOf(dayOf(r), gran)), days = [...g.keys()].sort(), first = days[0];
   const fn = metric === "acc" ? accOf : metric === "sec" ? secOf : fluOf, at = {};
-  const pts = days.map(d => { const list = g.get(d), t = tagText(list), x = daysBetween(first, d); at[x] = shortDay(d); return {x, day: d, label: shortDay(d) + (t ? `（${t}）` : ""), rs: list, ...fn(list)}; });
+  const pts = days.map(d => {
+    const list = g.get(d), t = tagText(list), x = daysBetween(first, d), m = parse(d).getMonth() + 1;
+    at[x] = gran === "month" ? `${m} 月` : gran === "week" ? shortDay(d) + " 起" : shortDay(d);
+    return {x, day: d, label: (gran === "month" ? `${m} 月` : gran === "week" ? `${shortDay(d)} 起那一週` : shortDay(d)) + (t ? `（${t}）` : ""), rs: list, ...fn(list)};
+  });
   return lineChart(pts, {metric, noPhase: true, xLabel: x => at[x] || "", xName: "", scroll: true});
 }
 /* 流暢性（計時挑戰、流暢性模式）：每一回合＝一位學生做完一次，每分鐘第一次就答對幾個；一天一個點，正式評量和練習的回合全部算 */
@@ -484,8 +492,8 @@ function renderSimple(){
   } else {
     const secSec = metric => metric === "sec" ? `答對的題目，從${goal === "R4" ? "畫面出現" : "題目唸完"}到答對的平均秒數${goal === "R4" ? "（部件重組沒有唸題目，所以不能和聽音選字的反應時間直接比）" : ""}。` : "";
     const summary = sec("總體紀錄（正式評量＋練習）", simpleSummary(all, partsPage));
-    const accSec = sec("每天的平均正確率", `<div class="tchart">${dailyChart(all, "acc")}</div><p class="note">正確率＝第一次就答對的比例。每個點是那一天所有評量和練習的平均；有標前測、後測的那天，日期後面會註明。</p>`);
-    const secSecH = sec("每天的平均反應時間（越低越快）", `<div class="tchart">${dailyChart(all, "sec")}</div><p class="note">${secSec("sec")}</p>`);
+    const accSec = sec("每天的平均正確率", `${granRow()}<div class="tchart">${dailyChart(all, "acc", T.gran)}</div><p class="note">正確率＝第一次就答對的比例。每個點是那一天所有評量和練習的平均；有標前測、後測的那天，日期後面會註明。</p>`);
+    const secSecH = sec("每天的平均反應時間（越低越快）", `${granRow()}<div class="tchart">${dailyChart(all, "sec", T.gran)}</div><p class="note">${secSec("sec")}</p>`);
     const common = sec("常錯的字", wrongChars(all)) + sec("反應最慢的字", slowChars(all));
     box.innerHTML = head + onlyNote + (partsPage
       ? summary + accSec + secSecH + common + sec("容易搞混的部件（是忘記部件、被干擾，還是亂猜）", partConfusion(all, T.kid)) + sec("近期練習紀錄", recentByLesson(everything, false))
@@ -496,6 +504,7 @@ function renderSimple(){
   side.querySelectorAll("[data-tkid2]").forEach(b => b.onclick = () => { T.kid = b.dataset.tkid2; T.simpleGoal = ""; re(); });   /* 換學生就回到預設的目標 */
   side.querySelectorAll("[data-tgoal2]").forEach(b => b.onclick = () => { T.simpleGoal = b.dataset.tgoal2; re(); });
   box.querySelectorAll("[data-tlsn]").forEach(b => b.onclick = () => { T.simpleLesson = b.dataset.tlsn; re(); });
+  box.querySelectorAll("[data-tgran]").forEach(b => b.onclick = () => { T.gran = b.dataset.tgran; re(); });   /* 平均正確率、平均反應時間的圖：每天／每週／每月 */
   box.querySelectorAll("[data-char]").forEach(el => el.onclick = () => openCharLog(el.dataset.kid || T.kid, el.dataset.char));
   bindChart(box);
 }
