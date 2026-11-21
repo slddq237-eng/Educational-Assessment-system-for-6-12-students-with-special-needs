@@ -154,7 +154,7 @@ function makeFillOptions(c, k, idx){
   const pickSrc = p => own.get(p) || (l => l[Math.floor(Math.random() * l.length)])(srcs(p));
   return shuffle([{ch: ans, type:"答案", ...(sp ? {src: [c, idx - 1]} : {})}, ...pool.map(ch => ({ch, type:"選到干擾部件", ...(sp ? {src: pickSrc(ch)} : {})}))]);
 }
-/* 聽音補部件的干擾部件依遮的位置找（2026-11-21 維護者提出，設計見 docs/design/parts-layers.md「部件選項池」）：回傳先試的部件 [{p, from}]，
+/* 聽音補部件的干擾部件依遮的位置找（2026-11-21 維護者提出，設計見 docs/design/parts-layers.md「部件選項池」；一題的選項從頭到尾怎麼產生見 docs/design/fill-part-options.md）：回傳先試的部件 [{p, from}]，
    甲＝同部件形近：別的課本字第一層塊數、結構一樣，只有被遮的那塊不同（清遮氵 → 晴的日、精的米），學生選了會拼成一個真的字；
      順序：這個字的形近字 → 同一課的字 → 其他課本字（各自打亂）。
    乙＝形近部件：長得像被遮那塊的部件（清遮青 → 責）。用現有資料找：被遮部件第一層有共同部件、結構一樣的部件，或被遮部件本身是字、形近字清單裡有的；
