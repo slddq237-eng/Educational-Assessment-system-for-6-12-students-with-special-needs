@@ -201,8 +201,8 @@ function tabletStart(){
      讀取條先跑滿，再出現名字。從網頁打開算起（index.html 開頭的等待畫面那時就出現了） */
   const ready = () => { setBar("#tpBar", 1, 1);
     setTimeout(() => { $("#tpLoad").hidden = true; $("#tabPick").classList.remove("loading"); tpList(); }, Math.max(300, TAB_MIN_LOAD - performance.now())); };
-  /* 聽音補部件：教育部筆畫（壓縮後約 1.8 MB）和字型一起下載，最多等 10 秒，學生點名字前就準備好（data.js 的 loadStrokeData） */
-  const strokes = goalCaps().loadStrokes ? loadStrokeData(10000) : null;
+  /* 聽音補部件：教育部筆畫（壓縮後約 1.8 MB）和字型一起下載，最多等 10 秒，學生點名字前就準備好（共用的 Strokes.load） */
+  const strokes = goalCaps().loadStrokes ? Strokes.load(10000) : null;
   if(!faces.length && !strokes) return ready();
   $("#tpPic").innerHTML = loadPic(state.themePick);   /* 讀取中（#tabPick 一開始就有 loading）：只看得到圖片和讀取條 */
   Promise.all([faces.length ? loadFonts(faces, (n, all) => setBar("#tpBar", n, all)) : true, strokes]).then(ready);

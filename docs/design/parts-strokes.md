@@ -50,7 +50,7 @@
 
 - 要先定：部件單獨出現時用哪個字的字形（代表字）、顯示在原位或放大置中、筆畫資料怎麼精簡成網頁讀的檔案、資料檔要不要放進公開 repo（依教育部回覆的範圍）。
 - 部件表要多一欄「筆畫範圍」，由程式自動填、老師看預覽圖確認。
-- **共用程式（2026-11-21 維護者決定：PR #320 合併後另開 PR，在做 R4 部件重組之前）**：練習簿（`tools/practice/index.html` 的 `loadStrokeParts`、`strokeParts`、`partImg`）和識字評量（`data.js` 的 `loadStrokeData`、`play.js` 的 `pathBox`、`partSvgHtml`）各寫了一份「下載筆畫檔」「算範圍、等比例放大置中」「把一塊部件畫成圖」，出處文字也寫死在識字評量。合成 shared 資料夾的一個新檔（預定叫 strokes-api.js，對外只用 `window.Strokes`，照 `docs/code/refactor.md` 規則 2），兩邊改用它；畫面和作答紀錄不變。聽音補部件專用的出題規則（`strokeMaskOf`、`fillIdxs`、`strokeMaskedHtml`、`partSources`）留在識字評量。
+- **共用程式（2026-11-21 維護者決定、同日做好：`shared/strokes-api.js` 的 `window.Strokes`，見 `docs/code/architecture.md`）**：原本練習簿（`tools/practice/index.html` 的 `loadStrokeParts`、`strokeParts`、`partImg`）和識字評量（`data.js` 的 `loadStrokeData`、`play.js` 的 `pathBox`、`partSvgHtml`）各寫了一份「下載筆畫檔」「算範圍、等比例放大置中」「把一塊部件畫成圖」，出處文字也寫死在識字評量。合成一個共用檔（對外只用 `window.Strokes`，照 `docs/code/refactor.md` 規則 2），兩邊改用它；畫面和作答紀錄不變（改前改後兩邊畫出來的內容逐字相同）。聽音補部件專用的出題規則（`strokeMaskOf`、`fillIdxs`、`strokeMaskedHtml`、`partSources`）留在識字評量。
 - **部件代表字表（之後做，2026-11-21）**：干擾部件現在從「第一層有這個部件、有筆畫的課本字」隨機切（結構、位置相同優先）。老師試玩發現形狀怪的再截圖，加一份小表指定「這個部件固定從哪個字切」（像 `mask-fix.js`）；怪的多了再做編號對照圖請老師勾。
 
 ## 5. 等待回覆期間（已結束）
