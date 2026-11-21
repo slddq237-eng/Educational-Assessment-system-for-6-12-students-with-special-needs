@@ -52,25 +52,11 @@ function loadMaskFix(){
     document.head.appendChild(s);
   });
 }
-/* 教育部筆畫（shared/stroke-parts.js，約 5 MB、GitHub Pages 壓縮後傳輸約 1.8 MB，2026-11-21 起聽音補部件也用）：開始前的讀取畫面才下載（play.js 的 prepareThen、tablet.js），網址帶本檔的版本號。
+/* 教育部筆畫（下載、畫法都在共用的 shared/strokes-api.js 的 Strokes；2026-11-21 起聽音補部件也用）：開始前的讀取畫面才下載（play.js 的 prepareThen、tablet.js）。
    strokeMaskOf(c)：這個字有筆畫資料、標了 l（部件分組和部件表第一層一塊對一塊、筆畫數相同，make_ruler.py 檢查的），而且塊數和現在的第一層一樣，才回傳；
    否則回傳 null，聽音補部件照舊用色塊遮擋。來源與授權見 docs/materials/stroke-data.md（教育部回信同意，要標出處、筆畫原樣）。 */
-const STROKE_SRC = document.currentScript ? new URL("../../shared/stroke-parts.js" + (document.currentScript.src.match(/\?v=[^&]*/) || [""])[0], document.currentScript.src).href : "../../shared/stroke-parts.js";
-let strokesLoading = null, strokesTried = false;
-function loadStrokeData(waitMs){
-  if(typeof STROKE_PARTS !== "undefined") return Promise.resolve();
-  strokesLoading = strokesLoading || new Promise(res => {
-    const s = document.createElement("script");
-    s.src = STROKE_SRC;
-    s.onload = () => { strokesTried = true; res(); };
-    s.onerror = () => { strokesTried = true; strokesLoading = null; s.remove(); res(); };
-    document.head.appendChild(s);
-  });
-  return waitMs ? Promise.race([strokesLoading, new Promise(res => setTimeout(() => { strokesTried = true; res(); }, waitMs))]) : strokesLoading;
-}
 function strokeMaskOf(c){
-  if(typeof STROKE_PARTS === "undefined") return null;
-  const sp = STROKE_PARTS[c], r = Parts.read(c, {from: 1});
+  const sp = Strokes.of(c), r = sp && Parts.read(c, {from: 1});
   return sp && sp.l && r && r.layer === 1 && r.parts.length === sp.p.length ? sp : null;
 }
 /* 分組名稱：同一組的字用同一個預設位置（維護者的遮擋調整工具用它分組，MASK_GROUP_FIX 的 key 也是這個；改這裡要同步改 docs/scripts/make_mask_fix.js 說明和調整工具） */
@@ -101,7 +87,7 @@ const maskIdxs = c => { const r = Parts.read(c, {from: 1}); return r && r.layer 
 const partShowable = p => [...p].length === 1 && (typeof hasKai !== "function" || hasKai(p));
 const fillIdxs = c => {
   const ps = (Parts.read(c, {from: 1}) || {parts: []}).parts;
-  const strokes = typeof STROKE_PARTS === "undefined" ? !strokesTried : !!strokeMaskOf(c);
+  const strokes = Strokes.ready() ? !!strokeMaskOf(c) : !Strokes.tried;
   return maskIdxs(c).filter(i => strokes || partShowable(ps[i - 1]));
 };
 const R6_MAX_PARTS = 5;   /* 聽音選部件：部件超過 5 個的字不出（要選的部件太多，選項會擠不下；2026-10-31 課本生字有 36 個） */
@@ -111,7 +97,7 @@ const R6_MAX_PARTS = 5;   /* 聽音選部件：部件超過 5 個的字不出（
    noBingo：不能玩賓果的原因（沒寫＝能）；
    partsAnswer：答案是部件不是字（備課分析不做字的混淆和亂猜分析）；
    skip(c)：這個字這個目標不出題（沒寫＝都出）；
-   loadMaskFix：要先載入遮擋調整資料 mask-fix.js（loadMaskFix()）；loadStrokes：要先載入教育部筆畫 shared/stroke-parts.js（loadStrokeData()，聽音補部件依筆畫畫字）；
+   loadMaskFix：要先載入遮擋調整資料 mask-fix.js（loadMaskFix()）；loadStrokes：要先載入教育部筆畫（共用的 Strokes.load()，聽音補部件依筆畫畫字）；
    writing：寫字組（大螢幕出題、學生寫在紙上，不留紀錄；設定步驟和出題畫面另外由 writing.js 處理）；
    hintUnfit：不適合的提示和原因（開發路線圖 A2，規格書「提示和題目的適配性」表裡的 ✗；△ 提示很強的還是可用，等維護者討論） */
 const GOAL_CAPS = {

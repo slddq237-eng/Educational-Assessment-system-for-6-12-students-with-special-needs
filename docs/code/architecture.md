@@ -62,6 +62,7 @@
 | `ruler-cell.js`、`ruler-cell.css` | `RulerCell.html(字, {ruler})` 畫一個格子（字型尺或十字格）、`RulerCell.blocks(字, ruler)` 回傳分區；樣式 `.excell`（格子邊長由頁面設 `--cell`）（2026-11-12 從 `exam.js` 搬來，畫面沒變） | 識字評量的寫字考卷（`exam.js` 的 `cellHtml`）；之後的直式練習簿 | 需先載入 `parts-api.js`、`ruler.js`；頁面自己的格子樣式（答案格加粗等）留在頁面 |
 | `freq.js` | `FREQ`（字→排名） | 識字評量（常用字、字頻優先、高字頻）、備課分析 | 從原始檔重新產生 |
 | `parts-api.js` | `window.Parts` 部件資料入口：`read`（從起點層往下讀）、`layer`、`struct`、`mask`、`sub`（電腦自動往下拆一層）；**只有它能讀 `PARTS_AUTO`、`PARTS_LAYERS`**（自動檢查）（2026-10-31） | 識字評量 `data.js`（部件提示、部件重組從第二層讀）、備課分析 `prep.js`（第一層、第二層、拆到最細） | 資料來源或讀取規則的改動只改這裡 |
+| `strokes-api.js` | `window.Strokes` 教育部筆畫入口：`load`（用到才下載 `stroke-parts.js`、可設最多等幾秒）、`ready`、`tried`、`of`（字的筆畫資料）、`box`（路徑外框）、`fit`（等比例縮放置中）、`svg`（畫一段筆畫）、`SOURCE`（出處文字）；練習簿、識字評量共用（2026-11-21 從兩邊合併出來） |
 | `common.js` | `esc`（防止文字變成程式碼）、`BOOK_ORDER`、`bookName`、`gradeTerm`（「二上」「六下」寫法）、`lessonName`、`lessonKeys`、`wordOf`、`sentOf`、`confOf`、`setMsg`、`loadXlsx` | 識字評量、備課分析 | 規則只寫在這裡，**改一處兩個工具都變** |
 | `themes.js`、`themes.css` | `window.Themes`：四主題、貼紙清單與圖、星等、代號、抽貼紙、作答背景 `backdrop`（新圖在 sticker-art.js） | `collect.js`、`scenes.js`、`play.js`、`rewards.js` | |
 | `rewards.js` | `window.Rewards`：頭像、貼紙收藏、`ready`、`award`、`owned`、`hasSession`、`exportAll`/`importAll`、`remove`（刪除一位學生的收藏）、`resetKids`／`afterReset`（清空勾選學生的貼紙，每位被清空的學生記 `resetAt`） | 識字評量各處（頭像）、`collect.js`（發貼紙） | 之後的新工具也可以發貼紙 |
@@ -79,7 +80,7 @@
 
 只有 `index.html` 一個檔案，**不寫任何資料**，沒有放進首頁；字從課本課次選（讀 `BOOKS`，用 `common.js` 的課本名稱、`bpmf.js` 的讀音、`char-info.js` 的筆劃數和部首），也可以自己改字；格子大小可選小（1.5 公分）、中（1.8）、大（2.2），一頁放幾個字（小 7、中 6、大 5）和獨立練習放幾格都自動算，多的字自動分頁（最多 60 個字）；欄和欄中間有一條橫的摺線（沿線往上摺，蓋住上面的字再寫獨立練習）。一個字一欄、欄由右到左：看（旁邊印注音，只給看、不用寫）、筆順示範（教育部筆順圖原樣縮放，放在 `shared/stroke/`，用 `make_stroke.py` 從教育部下載的 zip 複製，`check.js` 只放行這個資料夾的 png；沒有圖的字顯示「沒有筆順圖」）、描、褪除、獨立練習（部件示範 2026-11-12 維護者決定刪掉）；格子用共用的 `RulerCell`，部件分區用 `RulerCell.blocks`，字放的位置、大小和 `ruler.js` 量分線時一致（頁面裡的 `fit`）。部件的筆畫相連切不開的字（約一半）改用「字變淡」褪除。設計與討論結論見 `docs/plans/roadmap-plans.md`「寫字學習單」。
 
-`shared/stroke-parts.js`（約 4 MB，自動產生，`make_ruler.py` 一起產生）：`STROKE_PARTS`（字 → `b` 全部筆畫外框、`p` 每個部件的筆畫外形 SVG 路徑，座標 0～512）。練習簿的部件褪除用，開網頁時不載、用到才載（`loadStrokeParts`）；識字評量的聽音補部件也用（2026-11-21，`tools/literacy/data.js` 的 `loadStrokeData`、`strokeMaskOf`，只用標了 `l`＝部件分組和第一層對得上的字）；沒有這個字或載不到就用字型切的備案。
+`shared/stroke-parts.js`（約 4 MB，自動產生，`make_ruler.py` 一起產生）：`STROKE_PARTS`（字 → `b` 全部筆畫外框、`p` 每個部件的筆畫外形 SVG 路徑，座標 0～512）。練習簿的部件褪除用，開網頁時不載、用到才載；識字評量的聽音補部件也用（2026-11-21，`tools/literacy/data.js` 的 `strokeMaskOf`，只用標了 `l`＝部件分組和第一層對得上的字）。下載和畫法都透過 `strokes-api.js` 的 `Strokes`，不要各自寫；沒有這個字或載不到就用字型切的備案。
 
 ## 6. 資料存在哪裡
 
