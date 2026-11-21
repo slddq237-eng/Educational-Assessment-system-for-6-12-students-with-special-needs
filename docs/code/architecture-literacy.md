@@ -36,4 +36,4 @@
 
 ## 喇叭按鈕的圖案（2026-11-21）
 
-有學生怕喇叭符號，老師可以在設定畫面第 4 步「喇叭圖示」換成笑臉、小貓、小兔、星星、愛心（預設還是喇叭）。圖案清單 `SPEAKER_ICONS` 和畫圖用的 `speakerSvg()` 在 `data.js`；`play.js`（題目喇叭、提示小喇叭）和 `writing.js`（寫字評量的喇叭）都呼叫它；選項在 `setup.js` 的 `renderPlay`。設定存在 `settings.speakerIcon`（平板會跟著設定一起帶過去）。只換按鈕裡的圖，大小、位置、樣式（`.speaker`、`.hspk`、`.wspk`、`.whint`）都沒改，不影響作答紀錄。新增圖案：在 `SPEAKER_ICONS` 加一筆 24×24 的 SVG（用 `currentColor`）。
+有學生怕喇叭符號，老師可以在設定畫面第 4 步「喇叭圖示」換成笑臉、小貓、小兔、星星、愛心（預設還是喇叭）。圖案清單 `SPEAKER_ICONS` 和畫圖用的 `speakerSvg()` 在 `data.js`；`play.js`（題目喇叭、提示小喇叭）和 `writing.js`（寫字評量的喇叭）都呼叫它；選項在 `setup.js` 的 `renderPlay`。設定存在 `settings.speakerIcon`（平板會跟著設定一起帶過去）。只換按鈕裡的圖，大小、位置、樣式（`.speaker`、`.hspk`、`.wspk`、`.whint`）都沒改，不影響作答紀錄。每個圖案有自己的配色（`c` 底色、`d` 立體陰影），用 CSS 變數 `--spk`、`--spk-d` 由 `speakerStyle()` 帶進按鈕，`index.html` 的 `.speaker`、`.hspk`、`.wspk`、`.whint` 讀（沒帶變數就是原本的紅色、綠色）。新增圖案：在 `SPEAKER_ICONS` 加一筆 24×24 的 SVG（用 `currentColor`）和兩個顏色。

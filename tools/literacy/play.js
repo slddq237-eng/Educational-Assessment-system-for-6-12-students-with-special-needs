@@ -155,7 +155,7 @@ const TEACHER_BTNS = [[4,"口語提示"],[5,"示範"],[6,"肢體提示"],[7,"完
 function hintHtml(id, c, b){
   /* 語詞、句子提示加注音（3-4）：目標字挖空，不會看到它的注音；破音字依 shared/bpmf.js 的讀音 */
   /* 報讀提示：這次有開（G.read）就在語詞、句子提示旁加小喇叭，按了念出完整語詞或句子（見 showNextHint） */
-  const read = G && G.read ? `<button class="hspk" data-read="${id}" aria-label="念給我聽">${speakerSvg()}</button>` : "";
+  const read = G && G.read ? `<button class="hspk"${speakerStyle()} data-read="${id}" aria-label="念給我聽">${speakerSvg()}</button>` : "";
   const spk = read ? " withspk" : "";   /* 有喇叭的提示框右邊留位置（舊的 Safari 不支援 :has，所以用 class） */
   if(id === "word"){ const w = wordOf(c, b); return w ? `<div class="h bpmf${spk}">${esc(Bpmf.blank(w, c, "○"))}的○${read}</div>` : ""; }
   if(id === "sent"){ const t = sentOf(c, b); return t ? `<div class="h sent bpmf${spk}">${esc(Bpmf.blank(t, c, "（　）"))}${read}</div>` : ""; }
@@ -579,7 +579,7 @@ function newItem(it){
         ${fillPart ? maskedCharHtml(it.c, maskAt) : ""}
         ${regroup ? `<div class="pieces big" aria-label="拆開的部件">${regroupHtml(it.c)}</div>
         <span class="note" style="margin:0">這些部件組成哪一個字？</span>`
-        : `<button class="speaker" id="speaker" aria-label="再聽一次">${speakerSvg()}</button>
+        : `<button class="speaker"${speakerStyle()} id="speaker" aria-label="再聽一次">${speakerSvg()}</button>
         <span class="note" style="margin:0">${pickParts ? "聽聽看，這個字有哪些部件？全部選出來，再按「送出」" : fillPart ? "聽聽看，被遮住的是哪一個部件？" : "聽聽看，是哪一個字？"}</span>
         ${pickParts ? `<div class="submitrow"><button class="submit" id="submitParts" disabled>送出</button><span class="note" id="pickNote" style="margin:0" aria-live="polite"></span></div>` : ""}`}
         <div class="hintbox" id="hintbox" aria-live="polite"></div>

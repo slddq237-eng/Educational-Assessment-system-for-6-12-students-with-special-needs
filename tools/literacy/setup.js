@@ -287,7 +287,7 @@ function renderPlay(){
       : `<div class="group">${chipRow([["1", "提示可以按喇叭念出來"], ["0", "不念"]], settings.practiceRead !== false ? "1" : "0", "read")}</div>`));
   }
   /* 喇叭圖示（2026-11-21）：有學生怕喇叭符號，老師可以換成可愛圖案；練習、正式評量都用這個設定，只換圖，不影響題目和紀錄 */
-  if(state.goal !== "R4") rows.push(row("喇叭圖示", `<div class="group">${chipRow(SPEAKER_ICONS.map(i => [i.id, `${speakerSvg(i.id, "1.3em")}${i.name}`]), SPEAKER_ICONS.some(i => i.id === settings.speakerIcon) ? settings.speakerIcon : "speaker", "spk")}</div>
+  if(state.goal !== "R4") rows.push(row("喇叭圖示", `<div class="group">${chipRow(SPEAKER_ICONS.map(i => [i.id, `<span class="spkchip"${speakerStyle(i.id)}>${speakerSvg(i.id, "1.3em")}</span>${i.name}`]), SPEAKER_ICONS.some(i => i.id === settings.speakerIcon) ? settings.speakerIcon : "speaker", "spk")}</div>
     <p class="note">作答畫面上「再聽一次」的按鈕換成這個圖案，題目照樣會唸出來。</p>`));
   $("#playArea").innerHTML = rows.join("");
   const bind =(key, f) => $("#playArea").querySelectorAll(`[data-${key}]:not(:disabled)`).forEach(b => b.onclick = () => { f(b.dataset[key]); saveSettings(); render(); });
