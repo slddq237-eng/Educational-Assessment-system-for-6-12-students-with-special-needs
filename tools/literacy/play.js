@@ -141,9 +141,12 @@ function partDistractors(c, k, ans, need, visible = [], srcs = null, lead = []){
    其他從別的課本字第一層裡同名的那一塊切（partSources）。紀錄照舊只記部件名稱 */
 function makePartsPickOptions(c, k){
   const ans = partsOf(c) || [], useSp = !!(G && G.useStrokes) && ans.every(p => partSources(p).length > 0);
-  const pool = partDistractors(c, k, ans, Math.max(PICK_MIN, ans.length + 2) - ans.length, [], useSp ? p => partSources(p) : null);
+  const need = Math.max(PICK_MIN, ans.length + 2) - ans.length, lead = pickLead(c, k, need);
+  const pool = partDistractors(c, k, ans, need, [], useSp ? p => partSources(p) : null, lead.map(o => o.p));
+  /* 從哪個字切：答案部件是這個字第一層的一塊就從這個字切；甲找到的部件是那個字第一層的一塊就從那個字切；其他照 partSources 隨機 */
+  const from = new Map(lead.filter(o => o.from && strokeMaskOf(o.from) && layer1Of(o.from).includes(o.p)).map(o => [o.p, [o.from, layer1Of(o.from).indexOf(o.p)]]));
   const self = strokeMaskOf(c) ? Parts.read(c, {from: 1}).parts : [];
-  const src = p => self.includes(p) ? [c, self.indexOf(p)] : (l => l[Math.floor(Math.random() * l.length)])(partSources(p));
+  const src = p => self.includes(p) ? [c, self.indexOf(p)] : from.get(p) || (l => l[Math.floor(Math.random() * l.length)])(partSources(p));
   const opt = type => ch => ({ch, type, ...(useSp ? {src: src(ch)} : {})});
   return shuffle([...ans.map(opt("答案")), ...pool.map(opt("干擾部件"))]);
 }
@@ -169,22 +172,44 @@ function makeFillOptions(c, k, idx){
    排法：甲最多先放 2 個、留 1 個位置給乙（乙沒有就再放甲），讓兩種都有機會出現；作答紀錄不分甲乙，照舊記「選到干擾部件」 */
 let fillIndex = null;
 const layer1Of = x => { const r = Parts.read(x, {from: 1}); return r && r.layer === 1 ? r.parts : null; };
-function fillLead(c, k, idx){
+const fillIdx = () => {
   if(!fillIndex){
     fillIndex = {chars: [], parts: new Set()};
     for(const x of ALL_CHARS){ const q = layer1Of(x); if(!q) continue; fillIndex.chars.push([x, q, Parts.struct(x)]); q.forEach(y => { if([...y].length === 1) fillIndex.parts.add(y); }); }
   }
+  return fillIndex;
+};
+/* 乙、形近部件：長得像部件 X 的部件（打亂；聽音補部件、聽音選部件共用）。b＝課本（找形近字清單用） */
+const layersOf = y => new Set([1, 2, 3].flatMap(n => (Parts.layer(y, n) || {parts: []}).parts));
+function partLookalikes(X, b){
+  const idx = fillIdx(), qX = layer1Of(X) || [], stX = Parts.struct(X), inX = layersOf(X);
+  const near = [...idx.parts].filter(y => y !== X && qX.length && Parts.struct(y) === stX && (layer1Of(y) || []).length === qX.length && layer1Of(y).some((z, j) => z === qX[j]));
+  const conf = [...((confOf(X, b) || [])[1] || "")].filter(y => idx.parts.has(y));
+  return shuffle([...new Set([...near, ...conf])]).filter(y => !layersOf(y).has(X) && !inX.has(y));
+}
+function fillLead(c, k, idx){
+  fillIdx();
   const ps = layer1Of(c), st = Parts.struct(c), i = idx - 1, X = ps[i], b = splitKey(k)[0], [, shape = ""] = confOf(c, b) || [];
   const tier = x => shape.includes(x) ? 0 : charsOf(k).includes(x) ? 1 : 2;
   /* 留下的部件要是一個字：「上半」「下半」這種部件表的名稱在不同字裡是不同形狀，不能拿來比 */
   const A = ps.some((y, j) => j !== i && [...y].length !== 1) ? [] : shuffle(fillIndex.chars.filter(([x, q, s]) => x !== c && s === st && q.length === ps.length && q[i] !== X && q.every((y, j) => j === i || y === ps[j])))
     .sort((u, v) => tier(u[0]) - tier(v[0])).map(([x, q]) => ({p: q[i], from: x}));
-  const layersOf = y => new Set([1, 2, 3].flatMap(n => (Parts.layer(y, n) || {parts: []}).parts));
-  const qX = layer1Of(X) || [], stX = Parts.struct(X), inX = layersOf(X);
-  const near = [...fillIndex.parts].filter(y => y !== X && qX.length && Parts.struct(y) === stX && (layer1Of(y) || []).length === qX.length && layer1Of(y).some((z, j) => z === qX[j]));
-  const conf = [...((confOf(X, b) || [])[1] || "")].filter(y => fillIndex.parts.has(y));
-  const B = shuffle([...new Set([...near, ...conf])]).filter(y => !layersOf(y).has(X) && !inX.has(y)).map(p => ({p}));
+  const B = partLookalikes(X, b).map(p => ({p}));
   return [...A.slice(0, 2), ...B.slice(0, 1), ...A.slice(2), ...B.slice(1)];
+}
+/* 聽音選部件的干擾部件也先照甲、乙找（2026-11-21 維護者決定，見 docs/design/fill-part-options.md 第 9 節）：
+   甲＝別的課本字第二層部件數一樣、只有一塊不同，取那一塊（清＝氵龶月 → 晴的日、精的米、猜的犭）；順序：形近字 → 同一課 → 其他課本字。
+   乙＝長得像任一個答案部件的部件。need 個干擾部件裡甲最多 need－1 個、留 1 個給乙（乙沒有就再放甲）；不夠由 partDistractors 照原本的方法補 */
+let pickIndex = null;
+function pickLead(c, k, need){
+  if(!pickIndex){ pickIndex = []; for(const x of ALL_CHARS){ const q = partsOf(x); if(q) pickIndex.push([x, q]); } }
+  const ps = partsOf(c) || [], b = splitKey(k)[0], [, shape = ""] = confOf(c, b) || [];
+  const tier = x => shape.includes(x) ? 0 : charsOf(k).includes(x) ? 1 : 2;
+  const A = ps.some(y => [...y].length !== 1) ? [] : shuffle(pickIndex.filter(([x, q]) => x !== c && q.length === ps.length && q.filter((y, j) => y !== ps[j]).length === 1))
+    .sort((u, v) => tier(u[0]) - tier(v[0])).map(([x, q]) => ({p: q.find((y, j) => y !== ps[j]), from: x})).filter(o => !ps.includes(o.p));
+  const B = shuffle(ps.flatMap(X => [...X].length === 1 ? partLookalikes(X, b) : [])).map(p => ({p}));
+  const n = Math.max(1, need - 1);
+  return [...A.slice(0, n), ...B.slice(0, 1), ...A.slice(n), ...B.slice(1)];
 }
 /* 部件 p 可以從哪些字的筆畫切出來：課本字裡有筆畫資料（strokeMaskOf）、第一層有 p 的字，回傳 [字, 第幾塊（0 起算）]。
    有給結構 st、位置 idx（聽音補部件）時先找結構和位置都一樣的，沒有再找位置一樣的，再沒有就全部；沒給（聽音選部件）就是全部 */
