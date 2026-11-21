@@ -287,7 +287,7 @@ function renderPlay(){
       : `<div class="group">${chipRow([["1", "提示可以按喇叭念出來"], ["0", "不念"]], settings.practiceRead !== false ? "1" : "0", "read")}</div>`));
   }
   $("#playArea").innerHTML = rows.join("");
-  const bind = (key, f) => $("#playArea").querySelectorAll(`[data-${key}]:not(:disabled)`).forEach(b => b.onclick = () => { f(b.dataset[key]); saveSettings(); render(); });
+  const bind =(key, f) => $("#playArea").querySelectorAll(`[data-${key}]:not(:disabled)`).forEach(b => b.onclick = () => { f(b.dataset[key]); saveSettings(); render(); });
   bind("play", v => settings.practicePlay = v);
   bind("bpmf", v => settings.practiceBpmf = v === "1");
   bind("read", v => settings.practiceRead = v === "1");
@@ -836,6 +836,10 @@ function renderView(){
   $("#vUi").innerHTML = chips(UI_SIZES, settings.uiScale, "ui");
   $("#vHint").innerHTML = chips(HINT_SIDES, settings.hintSide || "right", "hs");
   $("#vHint").querySelectorAll("[data-hs]").forEach(b => b.onclick = () => { settings.hintSide = b.dataset.hs; saveSettings(); renderView(); });
+  /* 喇叭圖示（2026-11-21）：有學生怕喇叭符號，老師可以換成可愛圖案；練習、正式評量都用這個設定，只換圖和顏色 */
+  const spkCur = SPEAKER_ICONS.some(i => i.id === settings.speakerIcon) ? settings.speakerIcon : "speaker";
+  $("#vSpk").innerHTML = chips(SPEAKER_ICONS.map(i => [i.id, `<span class="spkchip"${speakerStyle(i.id)}>${speakerSvg(i.id, "1.3em")}</span>${i.name}`]), spkCur, "spk");
+  $("#vSpk").querySelectorAll("[data-spk]").forEach(b => b.onclick = () => { settings.speakerIcon = b.dataset.spk; saveSettings(); renderView(); });
   $("#vFont").querySelectorAll("[data-fs]").forEach(b => b.onclick = () => { settings.fontScale = b.dataset.fs; saveSettings(); applyDisplay(); renderView(); });
   $("#vUi").querySelectorAll("[data-ui]").forEach(b => b.onclick = () => { settings.uiScale = b.dataset.ui; saveSettings(); applyDisplay(); renderView(); });
   $("#sRate").value = settings.rate; $("#sRateV").textContent = `${settings.rate} 倍`;
