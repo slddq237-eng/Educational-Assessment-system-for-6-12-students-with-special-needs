@@ -85,6 +85,13 @@ const maskIdxs = c => { const r = Parts.read(c, {from: 1}); return r && r.layer 
    不然部件要是一個字、楷書字型有收（「上半」「龸口」這種部件表的名稱、龶這種字型沒收的部件，用文字顯示不出來）。
    筆畫還沒下載時（設定畫面算題數）先當作載得到；下載失敗才只算文字顯示得出來的 */
 const partShowable = p => [...p].length === 1 && (typeof hasKai !== "function" || hasKai(p));
+/* 聽音選部件能不能出（2026-11-21）：答案部件（第二層）都要能當選項顯示：都是字型有收的字，或都切得出教育部筆畫（play.js 的 partSources）。
+   筆畫還沒下載時（設定畫面算題數）先當作載得到；下載失敗才只算文字顯示得出來的 */
+const pickShowable = c => {
+  const ans = partsOf(c) || [];
+  if(ans.every(partShowable)) return true;
+  return Strokes.ready() ? ans.every(p => partSources(p).length > 0) : !Strokes.tried;
+};
 const fillIdxs = c => {
   const ps = (Parts.read(c, {from: 1}) || {parts: []}).parts;
   const strokes = Strokes.ready() ? !!strokeMaskOf(c) : !Strokes.tried;
@@ -97,7 +104,7 @@ const R6_MAX_PARTS = 5;   /* 聽音選部件：部件超過 5 個的字不出（
    noBingo：不能玩賓果的原因（沒寫＝能）；
    partsAnswer：答案是部件不是字（備課分析不做字的混淆和亂猜分析）；
    skip(c)：這個字這個目標不出題（沒寫＝都出）；
-   loadMaskFix：要先載入遮擋調整資料 mask-fix.js（loadMaskFix()）；loadStrokes：要先載入教育部筆畫（共用的 Strokes.load()，聽音補部件依筆畫畫字）；
+   loadMaskFix：要先載入遮擋調整資料 mask-fix.js（loadMaskFix()）；loadStrokes：要先載入教育部筆畫（共用的 Strokes.load()，聽音補部件、聽音選部件依筆畫畫字和選項）；
    writing：寫字組（大螢幕出題、學生寫在紙上，不留紀錄；設定步驟和出題畫面另外由 writing.js 處理）；
    hintUnfit：不適合的提示和原因（開發路線圖 A2，規格書「提示和題目的適配性」表裡的 ✗；△ 提示很強的還是可用，等維護者討論） */
 const GOAL_CAPS = {
@@ -107,7 +114,7 @@ const GOAL_CAPS = {
   R4: {skip: c => !partsOf(c), hintUnfit: {parts:"題目本身就是部件"}},
   R5: {loadMaskFix:true, loadStrokes:true, formal:false, flu:false, noBingo:"答案是部件，不能用賓果卡", partsAnswer:true, skip: c => !fillIdxs(c).length,
        hintUnfit: {parts:"答案就是部件之一", mask:"畫面已經是遮住的字"}},
-  R6: {formal:false, flu:false, noBingo:"答案是部件，不能用賓果卡", partsAnswer:true, skip: c => !partsOf(c) || partsOf(c).length > R6_MAX_PARTS,
+  R6: {loadStrokes:true, formal:false, flu:false, noBingo:"答案是部件，不能用賓果卡", partsAnswer:true, skip: c => !partsOf(c) || partsOf(c).length > R6_MAX_PARTS || !pickShowable(c),
        hintUnfit: {parts:"答案就是部件"}},
   R7: {},
   W1: {writing:true, formal:false, flu:false, noBingo:"寫字是紙筆作答"},

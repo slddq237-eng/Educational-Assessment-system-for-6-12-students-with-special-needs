@@ -408,7 +408,7 @@ const extraNote = q => (q.shared ? `大家共用一張賓果卡，最多 36 格�
 /* 這個評量目標不出題的字（部件重組：獨體字等沒有部件可重組），要告訴老師，不能悄悄少題（docs/code/refactor.md 規則 8） */
 function skipNote(){
   const skip = [...new Set(state.lessons.flatMap(k => wsPick(k)))].filter(c => goalSkips(c));
-  const why = state.goal === "R6" ? `沒有部件可以選（獨體字等），或部件超過 ${R6_MAX_PARTS} 個` : state.goal === "R5" ? "沒有第一層部件或沒有遮擋位置（獨體字、第一層拆不出來等）" : "沒有部件可以重組（獨體字等）";
+  const why = state.goal === "R6" ? `沒有部件可以選（獨體字等）、部件超過 ${R6_MAX_PARTS} 個，或部件顯示不出來（字型沒有、也切不出筆畫）` : state.goal === "R5" ? "沒有第一層部件或沒有遮擋位置（獨體字、第一層拆不出來等）" : "沒有部件可以重組（獨體字等）";
   return skip.length ? `${goalName(state.goal)}：所選課次有 ${skip.length} 個字${why}，不出題：${skip.join("")}。` : "";
 }
 const methodName = m => m === "all" ? "全部出題" : METHODS.find(x => x.id === m).name;
