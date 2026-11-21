@@ -177,7 +177,6 @@ function renderGoals(){
     if(isWriting() && !was) wrBack = {kind: state.kind, mode: state.mode};
     if(!isWriting() && was && wrBack){ Object.assign(state, wrBack); wrBack = null; }
     render(); if(goalCaps().loadMaskFix) loadMaskFix().then(render);
-    if(goalCaps().loadStrokes) loadStrokeData();   /* 聽音補部件：選了就先在背景下載教育部筆畫，開始作答時通常已經好了 */
   });
   if($("#goalOff")) $("#goalOff").onclick = () => { showOffGoals = !showOffGoals; renderGoals(); };
   if(AREA === "寫字" && typeof renderWrRecent === "function") renderWrRecent();   /* 寫字評量：最近的題目（writing.js） */

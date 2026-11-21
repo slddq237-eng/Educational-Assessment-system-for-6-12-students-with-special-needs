@@ -52,7 +52,7 @@ function loadMaskFix(){
     document.head.appendChild(s);
   });
 }
-/* 教育部筆畫（shared/stroke-parts.js，約 5 MB，2026-11-21 起聽音補部件也用）：用到才載入，網址帶本檔的版本號。
+/* 教育部筆畫（shared/stroke-parts.js，約 5 MB、GitHub Pages 壓縮後傳輸約 1.8 MB，2026-11-21 起聽音補部件也用）：開始前的讀取畫面才下載（play.js 的 prepareThen、tablet.js），網址帶本檔的版本號。
    strokeMaskOf(c)：這個字有筆畫資料、標了 l（部件分組和部件表第一層一塊對一塊、筆畫數相同，make_ruler.py 檢查的），而且塊數和現在的第一層一樣，才回傳；
    否則回傳 null，聽音補部件照舊用色塊遮擋。來源與授權見 docs/materials/stroke-data.md（教育部回信同意，要標出處、筆畫原樣）。 */
 const STROKE_SRC = document.currentScript ? new URL("../../shared/stroke-parts.js" + (document.currentScript.src.match(/\?v=[^&]*/) || [""])[0], document.currentScript.src).href : "../../shared/stroke-parts.js";

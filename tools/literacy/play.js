@@ -169,7 +169,7 @@ function strokeMaskedHtml(sp, idx){
   const tf = `matrix(${k} 0 0 ${k} ${.5 - (x0 + x1) / 2 * k} ${.5 - (y0 + y1) / 2 * k})`;
   const hid = sp.p[idx - 1], strokes = hid.split(/(?=M)/), [bx0, by0, bx1, by1] = pathBox(hid), pad = 14;
   const step = Math.min(.18, 1.4 / strokes.length);   /* 一筆一筆出現：全部在 charPop 停的 2 秒內寫完 */
-  return `<div class="maskedchar stroked" role="img" aria-label="有一塊部件被遮住的字"><svg class="msvg" viewBox="0 0 1 1" aria-hidden="true"><g transform="${tf}">
+  return `<div class="maskedchar" role="img" aria-label="有一塊部件被遮住的字"><svg class="msvg" viewBox="0 0 1 1" aria-hidden="true"><g transform="${tf}">
     <rect class="mframe" x="${bx0 - pad}" y="${by0 - pad}" width="${bx1 - bx0 + pad * 2}" height="${by1 - by0 + pad * 2}" rx="18"/>
     ${sp.p.map((d, i) => i === idx - 1 ? "" : `<path class="mstk" d="${d}"/>`).join("")}
     ${strokes.map((d, i) => `<path class="mhid" d="${d}" style="animation-delay:${(i * step).toFixed(2)}s"/>`).join("")}
@@ -342,10 +342,12 @@ const setBar = (sel, n, all) => { const p = all ? Math.round(n / all * 100) : 10
    （瀏覽器要「使用者剛點過」才肯唸題目，等太久就不算剛點過） */
 function prepareThen(go, texts){   /* texts：要用的字（{TWKai, BpmfKai}）；寫字組（writing.js）自己給，識字照這次的課次和選項算 */
   const faces = fontsToLoad(texts || sessionText(state.lessons, state.kind !== "formal" && !!settings.practiceBpmf));
-  if(!faces.length) return go();
+  /* 聽音補部件：教育部筆畫（壓縮後約 1.8 MB）和字型一起在讀取畫面下載，最多等 10 秒（data.js 的 loadStrokeData） */
+  const strokes = !texts && goalCaps().loadStrokes && typeof STROKE_PARTS === "undefined" ? loadStrokeData(10000) : null;
+  if(!faces.length && !strokes) return go();
   const box = $("#loadSheet"), t0 = performance.now();
   $("#ldGo").hidden = true; $("#ldPic").innerHTML = loadPic(state.theme); setBar("#ldBar", 0, 1); box.hidden = false;
-  loadFonts(faces, (n, all) => setBar("#ldBar", n, all)).then(() => {
+  Promise.all([faces.length ? loadFonts(faces, (n, all) => setBar("#ldBar", n, all)) : true, strokes]).then(() => {
     const start = () => { box.hidden = true; go(); };
     if(performance.now() - t0 < 3000) return start();
     setBar("#ldBar", 1, 1);   /* 沒下載完（網路很慢）也先讓老師開始，字會慢慢出現 */
@@ -355,7 +357,7 @@ function prepareThen(go, texts){   /* texts：要用的字（{TWKai, BpmfKai}）
 
 function startSession(){
   if(goalCaps().loadMaskFix && typeof MASK_FIX === "undefined" && !maskFixTried) return void loadMaskFix().then(startSession);   /* 聽音補部件：先載入遮擋調整資料再開始 */
-  if(goalCaps().loadStrokes && !strokesTried) return void loadStrokeData(6000).then(startSession);   /* 聽音補部件：先載入教育部筆畫（約 5 MB，最多等 6 秒；載不到就用色塊遮擋） */
+  if(goalCaps().loadStrokes && !strokesTried) return void loadStrokeData(6000).then(startSession);   /* 聽音補部件：教育部筆畫通常在讀取畫面已經下載（prepareThen、平板的 tablet.js）；沒經過讀取畫面時在這裡最多等 6 秒，載不到就用色塊遮擋 */
   const c = current(), q = quizPlan(), list = selKids();
   G = {
     session: Date.now(), cfg: c, q, kids: list,
