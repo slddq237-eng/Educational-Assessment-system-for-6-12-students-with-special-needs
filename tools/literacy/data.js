@@ -95,6 +95,15 @@ function maskShapes(c, idx){
   return b ? [[...b, 0]] : null;
 }
 const maskIdxs = c => { const r = Parts.read(c, {from: 1}); return r && r.layer === 1 ? r.parts.map((_, i) => i + 1).filter(i => maskShapes(c, i)) : []; };
+/* 聽音補部件能遮哪幾塊（2026-11-21）：被遮的部件要能當選項顯示。用筆畫畫的字（strokeMaskOf）每一塊都可以；
+   不然部件要是一個字、楷書字型有收（「上半」「龸口」這種部件表的名稱、龶這種字型沒收的部件，用文字顯示不出來）。
+   筆畫還沒下載時（設定畫面算題數）先當作載得到；下載失敗才只算文字顯示得出來的 */
+const partShowable = p => [...p].length === 1 && (typeof hasKai !== "function" || hasKai(p));
+const fillIdxs = c => {
+  const ps = (Parts.read(c, {from: 1}) || {parts: []}).parts;
+  const strokes = typeof STROKE_PARTS === "undefined" ? !strokesTried : !!strokeMaskOf(c);
+  return maskIdxs(c).filter(i => strokes || partShowable(ps[i - 1]));
+};
 const R6_MAX_PARTS = 5;   /* 聽音選部件：部件超過 5 個的字不出（要選的部件太多，選項會擠不下；2026-10-31 課本生字有 36 個） */
 /* 評量目標能力表（B12，2026-10-31）：每個目標的特性只在這裡宣告，其他程式（設定畫面、玩法、提示、備課分析）都讀這張表，不再各自寫「if 目標是 R5 或 R6」。
    新增評量目標時在這裡加一列。欄位：
@@ -110,7 +119,7 @@ const GOAL_CAPS = {
   R2: {hintUnfit: {pic:"答案就是圖片", mask:"會直接看到字"}},
   R3: {},
   R4: {skip: c => !partsOf(c), hintUnfit: {parts:"題目本身就是部件"}},
-  R5: {loadMaskFix:true, loadStrokes:true, formal:false, flu:false, noBingo:"答案是部件，不能用賓果卡", partsAnswer:true, skip: c => !maskIdxs(c).length,
+  R5: {loadMaskFix:true, loadStrokes:true, formal:false, flu:false, noBingo:"答案是部件，不能用賓果卡", partsAnswer:true, skip: c => !fillIdxs(c).length,
        hintUnfit: {parts:"答案就是部件之一", mask:"畫面已經是遮住的字"}},
   R6: {formal:false, flu:false, noBingo:"答案是部件，不能用賓果卡", partsAnswer:true, skip: c => !partsOf(c) || partsOf(c).length > R6_MAX_PARTS,
        hintUnfit: {parts:"答案就是部件"}},
