@@ -16,7 +16,7 @@
 | 查或改「哪個評量目標能搭配哪些玩法、作答方式、練習或正式」 | `design/goal-compat.md`（相容表）；規則在 `data.js` 的 `GOAL_CAPS` |
 | 改設定畫面、選項之間的限制（玩法、作答方式、主題、題數） | `code/setup-flow-audit.md`（2026-10-26 全面檢查：每兩個選項怎麼互相限制、哪些悄悄改掉）、`design/game-design.md` 第 2 節 |
 | 改識字評量的功能、畫面、玩法 | `design/literacy-design.md`；賓果整合、增強系統、部件重組讀 `design/literacy-play.md`；`plans/roadmap.md`（確認屬於哪個階段） |
-| 改部件的拆法、各功能讀哪一層部件、部件相關新玩法（聽音選部件、聽音補部件、看部件寫字） | `design/parts-layers.md`（部件三層設計，2026-10-31 討論稿；部件改用筆畫切分、教育部授權讀 `design/parts-strokes.md`；資料檔、`Parts` 入口、實作順序在 `design/parts-layers-impl.md`）、`materials/materials.md`「部件資料的狀況」；新玩法舊設計讀 `design/literacy-play.md` |
+| 改部件的拆法、各功能讀哪一層部件、部件相關新玩法（聽音選部件、聽音補部件、看部件寫字） | `design/parts-layers.md`（部件三層設計，2026-10-31 討論稿；部件改用筆畫切分、教育部授權讀 `design/parts-strokes.md`；資料檔、`Parts` 入口、實作順序在 `design/parts-layers-impl.md`）、`materials/materials.md`「部件資料的狀況」；新玩法舊設計讀 `design/literacy-play.md`；聽音補部件的選項怎麼產生讀 `design/fill-part-options.md` |
 | 改貼紙、扭蛋、星等、進化、設定步驟、玩法設定表 | `design/game-design.md` |
 | 改學生名單（代號、新增、封存、刪除、重置貼紙） | `design/kid-roster.md`、`design/records.md` |
 | 改老師專區、分析、報告、備課分析 | `design/analysis-design.md`、`design/records.md`；部件題（聽音補部件、聽音選部件）的分析讀 `design/analysis-parts-confusion.md` |
@@ -53,6 +53,7 @@
 | `design/parts-layers.md` | 部件三層設計：第一～三層定義、六個功能各從哪層讀、聽音選部件／聽音補部件／看部件寫字、遮蔽做法、實作順序、待決、無編碼部件的代號草案（第 7 節，2026-11-05）（2026-10-31 新增，討論稿） | （新） |
 | `design/parts-layers-impl.md` | 部件三層設計的資料與程式介面（`shared/parts-layers.js`、`window.Parts` 入口）、實作順序（2026-10-31 從 `design/parts-layers.md` 拆出） | （新） |
 | `design/parts-strokes.md` | 部件依筆畫切分（E17）：用教育部筆畫畫部件、本機試驗結果、要先取得教育部改作授權、拿到同意後可做的事（2026-11-02 新增，討論稿） | （新） |
+| `design/fill-part-options.md` | 聽音補部件一題的選項怎麼產生：遮哪一塊、干擾部件依遮的位置找（甲同部件形近、乙形近部件）、補的順序、排除規則、從哪個字切筆畫、想調整改哪裡（2026-11-21 新增） | （新） |
 | `design/kid-roster.md` | 學生名單管理：代號自動生成、封存、刪除、重置貼紙、新學期整理名單，分五個 PR（2026-10-31 新增） | （新） |
 | `design/records.md` | 資料怎麼存、作答紀錄 | 4 |
 | `design/a8-terms.md` | A8 名詞與時期定義：前後測、研究時期、紀錄第 3 版欄位、實作待辦（2026-10-25 從 `design/records.md` 拆出） | 3-3 的「A8 名詞與時期定義」 |

@@ -118,8 +118,9 @@ function makePartsOptions(c, k, n){
    不放：答案裡已有的部件、這個字三層裡的任何部件（例如清的「青」，選了也說得通，會讓學生疑惑）、完全由答案部件組成的部件（答案有龶、月時不放青）、
    單一筆畫、字型裡沒有的罕用字（超過 U+20000）、楷書字型沒收的部件 */
 const PICK_MIN = 6, ONE_STROKE_PARTS = new Set([..."一丨丿丶乀乙乚乛亅"]);   /* 單一筆畫的部件不當干擾部件（2026-11-21 改名：教育部筆畫檔的 STROKE_PARTS 是另一個東西，同名會讓那個檔載不進來） */
-/* 干擾部件（聽音選部件、聽音補部件共用）：回傳 need 個不重複的部件。ans＝答案部件，visible＝畫面上看得到的部件（聽音補部件沒被遮的那幾塊，也不能當干擾） */
-function partDistractors(c, k, ans, need, visible = [], srcs = null){
+/* 干擾部件（聽音選部件、聽音補部件共用）：回傳 need 個不重複的部件。ans＝答案部件，visible＝畫面上看得到的部件（聽音補部件沒被遮的那幾塊，也不能當干擾）；
+   lead＝先試的部件（聽音補部件依遮的位置找的甲、乙，見 fillLead），一樣要過下面的排除規則，不夠再用形近字、同課字、全部課本字的部件補 */
+function partDistractors(c, k, ans, need, visible = [], srcs = null, lead = []){
   const b = splitKey(k)[0], [, shape = ""] = confOf(c, b) || [];
   /* 這個字自己三層的部件都不放（2026-11-21 修：表的第一層是「上半 下半」，第二層的龶就是上半，放進選項會有兩個對的） */
   const bad = new Set([c, ...ans, ...visible, ...[1, 2, 3].flatMap(n => (Parts.layer(c, n) || {parts: []}).parts)]);
@@ -128,6 +129,7 @@ function partDistractors(c, k, ans, need, visible = [], srcs = null){
   /* srcs：聽音補部件用筆畫畫選項時，干擾部件要找得到筆畫來源（字型有沒有收就不重要了） */
   const ok = p => [...p].length === 1 && isHan(p) && p.codePointAt(0) < 0x20000 && (srcs ? srcs(p).length > 0 : inKai(p)) && !ONE_STROKE_PARTS.has(p) && !bad.has(p) && !((partsOf(p) || []).length && partsOf(p).every(q => ans.includes(q)));
   const pool = [], seen = new Set();
+  for(const p of lead) if(pool.length < need && ok(p) && !seen.has(p)){ seen.add(p); pool.push(p); }
   const fill = chars => { for(const x of chars){ for(const p of shuffle([...(partsOf(x) || [])])) if(pool.length < need && ok(p) && !seen.has(p)){ seen.add(p); pool.push(p); } if(pool.length >= need) return; } };
   fill(shuffle([...shape]));
   fill(shuffle(charsOf(k).filter(x => x !== c)));
@@ -146,9 +148,36 @@ function makeFillOptions(c, k, idx){
   /* 題目的字用筆畫畫時，選項也全部用筆畫畫（2026-11-21 維護者決定）：答案＝這個字被遮的那幾筆；干擾部件＝別的課本字第一層裡同名部件的那幾筆，
      優先挑結構相同、位置相同的字（例如遮左邊就找部件在左邊的字），形狀比例比較像。紀錄照舊只記部件名稱（ch） */
   const sp = G && G.useStrokes ? strokeMaskOf(c) : null, srcs = sp ? p => partSources(p, Parts.struct(c), idx) : null;
-  const pool = partDistractors(c, k, [ans], 3, ps.filter((_, i) => i !== idx - 1), srcs);
-  const pickSrc = p => { const l = srcs(p); return l[Math.floor(Math.random() * l.length)]; };
+  const lead = fillLead(c, k, idx), own = new Map(lead.filter(x => x.from && strokeMaskOf(x.from)).map(x => [x.p, [x.from, idx - 1]]));
+  const pool = partDistractors(c, k, [ans], 3, ps.filter((_, i) => i !== idx - 1), srcs, lead.map(x => x.p));
+  /* 甲找到的部件就從那個字切（位置一定相同）；其他的照 partSources 挑 */
+  const pickSrc = p => own.get(p) || (l => l[Math.floor(Math.random() * l.length)])(srcs(p));
   return shuffle([{ch: ans, type:"答案", ...(sp ? {src: [c, idx - 1]} : {})}, ...pool.map(ch => ({ch, type:"選到干擾部件", ...(sp ? {src: pickSrc(ch)} : {})}))]);
+}
+/* 聽音補部件的干擾部件依遮的位置找（2026-11-21 維護者提出，設計見 docs/design/parts-layers.md「部件選項池」；一題的選項從頭到尾怎麼產生見 docs/design/fill-part-options.md）：回傳先試的部件 [{p, from}]，
+   甲＝同部件形近：別的課本字第一層塊數、結構一樣，只有被遮的那塊不同（清遮氵 → 晴的日、精的米），學生選了會拼成一個真的字；
+     順序：這個字的形近字 → 同一課的字 → 其他課本字（各自打亂）。
+   乙＝形近部件：長得像被遮那塊的部件（清遮青 → 責）。用現有資料找：被遮部件第一層有共同部件、結構一樣的部件，或被遮部件本身是字、形近字清單裡有的；
+     不放包含被遮部件、或被遮部件包含它的（少 → 不放沙）。
+   排法：甲最多先放 2 個、留 1 個位置給乙（乙沒有就再放甲），讓兩種都有機會出現；作答紀錄不分甲乙，照舊記「選到干擾部件」 */
+let fillIndex = null;
+const layer1Of = x => { const r = Parts.read(x, {from: 1}); return r && r.layer === 1 ? r.parts : null; };
+function fillLead(c, k, idx){
+  if(!fillIndex){
+    fillIndex = {chars: [], parts: new Set()};
+    for(const x of ALL_CHARS){ const q = layer1Of(x); if(!q) continue; fillIndex.chars.push([x, q, Parts.struct(x)]); q.forEach(y => { if([...y].length === 1) fillIndex.parts.add(y); }); }
+  }
+  const ps = layer1Of(c), st = Parts.struct(c), i = idx - 1, X = ps[i], b = splitKey(k)[0], [, shape = ""] = confOf(c, b) || [];
+  const tier = x => shape.includes(x) ? 0 : charsOf(k).includes(x) ? 1 : 2;
+  /* 留下的部件要是一個字：「上半」「下半」這種部件表的名稱在不同字裡是不同形狀，不能拿來比 */
+  const A = ps.some((y, j) => j !== i && [...y].length !== 1) ? [] : shuffle(fillIndex.chars.filter(([x, q, s]) => x !== c && s === st && q.length === ps.length && q[i] !== X && q.every((y, j) => j === i || y === ps[j])))
+    .sort((u, v) => tier(u[0]) - tier(v[0])).map(([x, q]) => ({p: q[i], from: x}));
+  const layersOf = y => new Set([1, 2, 3].flatMap(n => (Parts.layer(y, n) || {parts: []}).parts));
+  const qX = layer1Of(X) || [], stX = Parts.struct(X), inX = layersOf(X);
+  const near = [...fillIndex.parts].filter(y => y !== X && qX.length && Parts.struct(y) === stX && (layer1Of(y) || []).length === qX.length && layer1Of(y).some((z, j) => z === qX[j]));
+  const conf = [...((confOf(X, b) || [])[1] || "")].filter(y => fillIndex.parts.has(y));
+  const B = shuffle([...new Set([...near, ...conf])]).filter(y => !layersOf(y).has(X) && !inX.has(y)).map(p => ({p}));
+  return [...A.slice(0, 2), ...B.slice(0, 1), ...A.slice(2), ...B.slice(1)];
 }
 /* 部件 p 可以從哪些字的筆畫切出來：課本字裡有筆畫資料（strokeMaskOf）、第一層有 p 的字，回傳 [字, 第幾塊（0 起算）]。
    先找結構和位置都一樣的，沒有再找位置一樣的，再沒有就全部 */
