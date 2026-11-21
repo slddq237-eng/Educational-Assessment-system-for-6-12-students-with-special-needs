@@ -115,14 +115,18 @@ function makePartsOptions(c, k, n){
 
 /* 聽音選部件（R6，2026-10-31）的選項：答案＝這個字的部件（第二層，沒有再用第三層；重複照寫，例如森＝木 木 木，選項裡就放 3 張木），
    再加干擾部件，總數至少 6 張（部件多時＝部件數＋2）。干擾部件（不重複）依序用：形近字的部件、這課其他字的部件、所有課本字的部件。
-   不放：答案裡已有的部件、這個字第一層的部件（例如清的「青」，選了也說得通，會讓學生疑惑）、完全由答案部件組成的部件（答案有龶、月時不放青）、
-   單一筆畫、字型裡沒有的罕用字（超過 U+20000） */
-const PICK_MIN = 6, STROKE_PARTS = new Set([..."一丨丿丶乀乙乚乛亅"]);
+   不放：答案裡已有的部件、這個字三層裡的任何部件（例如清的「青」，選了也說得通，會讓學生疑惑）、完全由答案部件組成的部件（答案有龶、月時不放青）、
+   單一筆畫、字型裡沒有的罕用字（超過 U+20000）、楷書字型沒收的部件 */
+const PICK_MIN = 6, ONE_STROKE_PARTS = new Set([..."一丨丿丶乀乙乚乛亅"]);   /* 單一筆畫的部件不當干擾部件（2026-11-21 改名：shared/stroke-parts.js 的 STROKE_PARTS 是另一個東西，同名會讓那個檔載不進來） */
 /* 干擾部件（聽音選部件、聽音補部件共用）：回傳 need 個不重複的部件。ans＝答案部件，visible＝畫面上看得到的部件（聽音補部件沒被遮的那幾塊，也不能當干擾） */
-function partDistractors(c, k, ans, need, visible = []){
+function partDistractors(c, k, ans, need, visible = [], srcs = null){
   const b = splitKey(k)[0], [, shape = ""] = confOf(c, b) || [];
-  const bad = new Set([...ans, ...visible, ...((Parts.read(c, {from: 1}) || {parts: []}).parts)]);
-  const ok = p => isHan(p) && p.codePointAt(0) < 0x20000 && !STROKE_PARTS.has(p) && !bad.has(p) && !((partsOf(p) || []).length && partsOf(p).every(q => ans.includes(q)));
+  /* 這個字自己三層的部件都不放（2026-11-21 修：表的第一層是「上半 下半」，第二層的龶就是上半，放進選項會有兩個對的） */
+  const bad = new Set([c, ...ans, ...visible, ...[1, 2, 3].flatMap(n => (Parts.layer(c, n) || {parts: []}).parts)]);
+  /* 楷書字型沒收的部件不放（例如龶、𧘇：會借用裝置的字型，位置跑掉或顯示不出來；hasKai 在 exam.js） */
+  const inKai = p => typeof hasKai !== "function" || hasKai(p);
+  /* srcs：聽音補部件用筆畫畫選項時，干擾部件要找得到筆畫來源（字型有沒有收就不重要了） */
+  const ok = p => [...p].length === 1 && isHan(p) && p.codePointAt(0) < 0x20000 && (srcs ? srcs(p).length > 0 : inKai(p)) && !ONE_STROKE_PARTS.has(p) && !bad.has(p) && !((partsOf(p) || []).length && partsOf(p).every(q => ans.includes(q)));
   const pool = [], seen = new Set();
   const fill = chars => { for(const x of chars){ for(const p of shuffle([...(partsOf(x) || [])])) if(pool.length < need && ok(p) && !seen.has(p)){ seen.add(p); pool.push(p); } if(pool.length >= need) return; } };
   fill(shuffle([...shape]));
@@ -139,12 +143,63 @@ function makePartsPickOptions(c, k){
    錯誤類型記「選到干擾部件」 */
 function makeFillOptions(c, k, idx){
   const ps = Parts.read(c, {from: 1}).parts, ans = ps[idx - 1];
-  const pool = partDistractors(c, k, [ans], 3, ps.filter((_, i) => i !== idx - 1));
-  return shuffle([{ch: ans, type:"答案"}, ...pool.map(ch => ({ch, type:"選到干擾部件"}))]);
+  /* 題目的字用筆畫畫時，選項也全部用筆畫畫（2026-11-21 維護者決定）：答案＝這個字被遮的那幾筆；干擾部件＝別的課本字第一層裡同名部件的那幾筆，
+     優先挑結構相同、位置相同的字（例如遮左邊就找部件在左邊的字），形狀比例比較像。紀錄照舊只記部件名稱（ch） */
+  const sp = G && G.useStrokes ? strokeMaskOf(c) : null, srcs = sp ? p => partSources(p, Parts.struct(c), idx) : null;
+  const pool = partDistractors(c, k, [ans], 3, ps.filter((_, i) => i !== idx - 1), srcs);
+  const pickSrc = p => { const l = srcs(p); return l[Math.floor(Math.random() * l.length)]; };
+  return shuffle([{ch: ans, type:"答案", ...(sp ? {src: [c, idx - 1]} : {})}, ...pool.map(ch => ({ch, type:"選到干擾部件", ...(sp ? {src: pickSrc(ch)} : {})}))]);
 }
-/* 被遮住一塊部件的字：一個部件可以有好幾個色塊、可以旋轉（data.js 的 maskShapes）；色塊裁在字格內（旋轉後超出的部分不顯示），純色、沒有外框和問號（2026-10-31 維護者決定：多色塊加了外框和「？」看起來很怪） */
-const maskedCharHtml = (c, idx) => { const sh = maskShapes(c, idx);
+/* 部件 p 可以從哪些字的筆畫切出來：課本字裡有筆畫資料（strokeMaskOf）、第一層有 p 的字，回傳 [字, 第幾塊（0 起算）]。
+   先找結構和位置都一樣的，沒有再找位置一樣的，再沒有就全部 */
+let partSrcIndex = null;
+function partSources(p, st, idx){
+  if(!partSrcIndex){
+    partSrcIndex = new Map();
+    for(const x of ALL_CHARS){ if(!strokeMaskOf(x)) continue;
+      Parts.read(x, {from: 1}).parts.forEach((q, i) => { if(!partSrcIndex.has(q)) partSrcIndex.set(q, []); partSrcIndex.get(q).push({c: x, i, st: Parts.struct(x)}); }); }
+  }
+  const all = partSrcIndex.get(p) || [], tiers = [all.filter(s => s.st === st && s.i === idx - 1), all.filter(s => s.i === idx - 1), all];
+  return (tiers.find(t => t.length) || []).map(s => [s.c, s.i]);
+}
+/* 選項卡上用筆畫畫的部件：[字, 第幾塊] 那幾筆，等比例放大到長邊占 1.4em、置中（只縮放，不變形） */
+function partSvgHtml([c, i], label){
+  const d = STROKE_PARTS[c].p[i], [x0, y0, x1, y1] = pathBox(d), k = .86 / Math.max(x1 - x0, y1 - y0, 160);
+  return `<svg class="psvg" viewBox="0 0 1 1" role="img" aria-label="${esc(label)}"><path d="${d}" transform="matrix(${k} 0 0 ${k} ${.5 - (x0 + x1) / 2 * k} ${.5 - (y0 + y1) / 2 * k})"/></svg>`;
+}
+/* 被遮住一塊部件的字：一個部件可以有好幾個色塊、可以旋轉（data.js 的 maskShapes）；色塊裁在字格內（旋轉後超出的部分不顯示），純色、沒有外框和問號（2026-10-31 維護者決定：多色塊加了外框和「？」看起來很怪）。
+   2026-11-21 起有教育部筆畫資料、而且部件分組和第一層對得上的字（data.js 的 strokeMaskOf），改用筆畫畫字：被遮的部件那幾筆不畫，
+   只留一個虛線框標出位置；答對後那幾筆一筆一筆出現（charPop 加 revealed）。筆畫外形原樣（教育部回信的條件），沒有筆畫資料的字照舊用色塊。 */
+const maskedCharHtml = (c, idx) => {
+  const sp = G && G.useStrokes ? strokeMaskOf(c) : null;
+  if(sp) return strokeMaskedHtml(sp, idx);
+  const sh = maskShapes(c, idx);
   return `<div class="maskedchar" role="img" aria-label="有一塊部件被遮住的字"><span class="mcg">${esc(c)}</span><span class="mholes">${sh.map(s => `<span class="mhole" style="left:${s[0] * 100}%;top:${s[1] * 100}%;width:${(s[2] - s[0]) * 100}%;height:${(s[3] - s[1]) * 100}%${s[4] ? `;transform:rotate(${s[4]}deg)` : ""}"></span>`).join("")}</span></div>`; };
+
+/* 依筆畫畫的「被遮住一塊部件的字」：座標 0～512，放法和練習簿一樣（筆畫外框的長邊縮放到 88%、置中）；被遮的部件每一筆分開（每筆以 M 開頭），
+   答對時依書寫順序一筆一筆出現；虛線框是被遮部件的筆畫範圍（外擴一點，不露出形狀） */
+function pathBox(d){
+  let x = 0, y = 0, x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const add = (a, b) => { x0 = Math.min(x0, a); y0 = Math.min(y0, b); x1 = Math.max(x1, a); y1 = Math.max(y1, b); };
+  for(const m of d.matchAll(/([MlqLQz])([^MlqLQz]*)/g)){
+    const n = (m[2].match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+    if(m[1] === "M"){ x = n[0]; y = n[1]; add(x, y); }
+    else if(m[1] === "l"){ x += n[0]; y += n[1]; add(x, y); }
+    else if(m[1] === "q"){ add(x + n[0], y + n[1]); x += n[2]; y += n[3]; add(x, y); }
+  }
+  return [x0, y0, x1, y1];
+}
+function strokeMaskedHtml(sp, idx){
+  const [x0, y0, x1, y1] = sp.b, k = .88 / Math.max(x1 - x0, y1 - y0);
+  const tf = `matrix(${k} 0 0 ${k} ${.5 - (x0 + x1) / 2 * k} ${.5 - (y0 + y1) / 2 * k})`;
+  const hid = sp.p[idx - 1], strokes = hid.split(/(?=M)/), [bx0, by0, bx1, by1] = pathBox(hid), pad = 14;
+  const step = Math.min(.18, 1.4 / strokes.length);   /* 一筆一筆出現：全部在 charPop 停的 2 秒內寫完 */
+  return `<div class="maskedchar" role="img" aria-label="有一塊部件被遮住的字"><svg class="msvg" viewBox="0 0 1 1" aria-hidden="true"><g transform="${tf}">
+    <rect class="mframe" x="${bx0 - pad}" y="${by0 - pad}" width="${bx1 - bx0 + pad * 2}" height="${by1 - by0 + pad * 2}" rx="18"/>
+    ${sp.p.map((d, i) => i === idx - 1 ? "" : `<path class="mstk" d="${d}"/>`).join("")}
+    ${strokes.map((d, i) => `<path class="mhid" d="${d}" style="animation-delay:${(i * step).toFixed(2)}s"/>`).join("")}
+  </g></svg></div>`;
+}
 
 /* 部件重組的題目：部件打亂成一塊一塊（拆不開的字這個目標不出，見 data.js 的 goalSkips） */
 const regroupHtml = c => shuffle([...(partsOf(c) || [])]).map(x => `<span class="ptile">${esc(x)}</span>`).join("");
@@ -312,10 +367,12 @@ const setBar = (sel, n, all) => { const p = all ? Math.round(n / all * 100) : 10
    （瀏覽器要「使用者剛點過」才肯唸題目，等太久就不算剛點過） */
 function prepareThen(go, texts){   /* texts：要用的字（{TWKai, BpmfKai}）；寫字組（writing.js）自己給，識字照這次的課次和選項算 */
   const faces = fontsToLoad(texts || sessionText(state.lessons, state.kind !== "formal" && !!settings.practiceBpmf));
-  if(!faces.length) return go();
+  /* 聽音補部件：教育部筆畫（壓縮後約 1.8 MB）和字型一起在讀取畫面下載，最多等 10 秒（data.js 的 loadStrokeData） */
+  const strokes = !texts && goalCaps().loadStrokes && typeof STROKE_PARTS === "undefined" ? loadStrokeData(10000) : null;
+  if(!faces.length && !strokes) return go();
   const box = $("#loadSheet"), t0 = performance.now();
   $("#ldGo").hidden = true; $("#ldPic").innerHTML = loadPic(state.theme); setBar("#ldBar", 0, 1); box.hidden = false;
-  loadFonts(faces, (n, all) => setBar("#ldBar", n, all)).then(() => {
+  Promise.all([faces.length ? loadFonts(faces, (n, all) => setBar("#ldBar", n, all)) : true, strokes]).then(() => {
     const start = () => { box.hidden = true; go(); };
     if(performance.now() - t0 < 3000) return start();
     setBar("#ldBar", 1, 1);   /* 沒下載完（網路很慢）也先讓老師開始，字會慢慢出現 */
@@ -325,9 +382,11 @@ function prepareThen(go, texts){   /* texts：要用的字（{TWKai, BpmfKai}）
 
 function startSession(){
   if(goalCaps().loadMaskFix && typeof MASK_FIX === "undefined" && !maskFixTried) return void loadMaskFix().then(startSession);   /* 聽音補部件：先載入遮擋調整資料再開始 */
+  if(goalCaps().loadStrokes && !strokesTried) return void loadStrokeData(6000).then(startSession);   /* 聽音補部件：教育部筆畫通常在讀取畫面已經下載（prepareThen、平板的 tablet.js）；沒經過讀取畫面時在這裡最多等 6 秒，載不到就用色塊遮擋 */
   const c = current(), q = quizPlan(), list = selKids();
   G = {
     session: Date.now(), cfg: c, q, kids: list,
+    useStrokes: !!goalCaps().loadStrokes && typeof STROKE_PARTS !== "undefined",   /* 聽音補部件依筆畫畫字（整次作答一致：開始時載到了才用） */
     goal: state.goal, kind: state.kind, mode: state.mode, answer: state.answer,
     /* 前後測（A8）：只有正式評量才標；練習一律不標 */
     prepost: state.kind === "formal" ? state.prepost : "",
@@ -562,7 +621,7 @@ function newItem(it){
   const regroup = G.goal === "R4";   /* 目標 4-1 部件重組：看部件選字，不唸題目 */
   const pickParts = G.goal === "R6";   /* 聽音選部件：聽音，選出全部部件（複選），按「送出」才算作答 */
   const fillPart = G.goal === "R5";    /* 聽音補部件：聽音，畫面上的字被遮住一塊部件，4 選 1 */
-  const maskAt = fillPart ? (() => { const l = maskIdxs(it.c); return l[Math.floor(Math.random() * l.length)]; })() : 0;
+  const maskAt = fillPart ? (() => { const l = G.useStrokes && strokeMaskOf(it.c) ? maskIdxs(it.c) : fillIdxs(it.c); return l[Math.floor(Math.random() * l.length)]; })() : 0;
   lapTime(it.kid);   /* 把上一題到現在的時間記給上一位學生（結果卡片的「這次玩了多久」，多位學生輪流時每人各自算） */
   G.cur = {it, b, board, opts: board ? board.cells.map(ch => ({ch, type: optType(it.c, ch, it.k)})) : pickParts ? makePartsPickOptions(it.c, it.k) : fillPart ? makeFillOptions(it.c, it.k, maskAt) : (regroup ? makePartsOptions : makeOptions)(it.c, it.k, G.choices),
            maskAt,
@@ -580,12 +639,12 @@ function newItem(it){
         ${regroup ? `<div class="pieces big" aria-label="拆開的部件">${regroupHtml(it.c)}</div>
         <span class="note" style="margin:0">這些部件組成哪一個字？</span>`
         : `<button class="speaker"${speakerStyle()} id="speaker" aria-label="再聽一次">${speakerSvg()}</button>
-        <span class="note" style="margin:0">${pickParts ? "聽聽看，這個字有哪些部件？全部選出來，再按「送出」" : fillPart ? "聽聽看，被遮住的是哪一個部件？" : "聽聽看，是哪一個字？"}</span>
+        <span class="note" style="margin:0">${pickParts ? "聽聽看，這個字有哪些部件？全部選出來，再按「送出」" : fillPart ? `聽聽看，被遮住的是哪一個部件？${G.useStrokes && strokeMaskOf(it.c) ? `<small class="msrc">筆畫：教育部《國字標準字體筆順學習網》</small>` : ""}` : "聽聽看，是哪一個字？"}</span>
         ${pickParts ? `<div class="submitrow"><button class="submit" id="submitParts" disabled>送出</button><span class="note" id="pickNote" style="margin:0" aria-live="polite"></span></div>` : ""}`}
         <div class="hintbox" id="hintbox" aria-live="polite"></div>
       </div>
       <div class="optsbox"><div class="opts ${board ? "bingo" : ""}" style="--cols:${cols};--rows:${rows}">
-        ${G.cur.opts.map((o, i) => `<button class="opt-big${cellClass(i)}${G.bpmf ? " bpmf" : ""}" data-i="${i}" ${board && board.marks.has(i) ? "disabled" : ""}><span class="och">${esc(G.bpmf ? Bpmf.char(o.ch, b) : o.ch)}</span>${board && board.marks.has(i) ? stampOf(i) : ""}</button>`).join("")}
+        ${G.cur.opts.map((o, i) => `<button class="opt-big${cellClass(i)}${G.bpmf ? " bpmf" : ""}" data-i="${i}" ${board && board.marks.has(i) ? "disabled" : ""}><span class="och">${o.src ? partSvgHtml(o.src, o.ch) : esc(G.bpmf ? Bpmf.char(o.ch, b) : o.ch)}</span>${board && board.marks.has(i) ? stampOf(i) : ""}</button>`).join("")}
       </div></div>
     </div>`;
   /* 分區輪流（E14）：每位學生一區並排，輪到的那一區亮起、有題目和選項，其他區變暗、選項只剩空框。

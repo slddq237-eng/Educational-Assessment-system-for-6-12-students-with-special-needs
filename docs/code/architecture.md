@@ -79,7 +79,7 @@
 
 只有 `index.html` 一個檔案，**不寫任何資料**，沒有放進首頁；字從課本課次選（讀 `BOOKS`，用 `common.js` 的課本名稱、`bpmf.js` 的讀音、`char-info.js` 的筆劃數和部首），也可以自己改字；格子大小可選小（1.5 公分）、中（1.8）、大（2.2），一頁放幾個字（小 7、中 6、大 5）和獨立練習放幾格都自動算，多的字自動分頁（最多 60 個字）；欄和欄中間有一條橫的摺線（沿線往上摺，蓋住上面的字再寫獨立練習）。一個字一欄、欄由右到左：看（旁邊印注音，只給看、不用寫）、筆順示範（教育部筆順圖原樣縮放，放在 `shared/stroke/`，用 `make_stroke.py` 從教育部下載的 zip 複製，`check.js` 只放行這個資料夾的 png；沒有圖的字顯示「沒有筆順圖」）、描、褪除、獨立練習（部件示範 2026-11-12 維護者決定刪掉）；格子用共用的 `RulerCell`，部件分區用 `RulerCell.blocks`，字放的位置、大小和 `ruler.js` 量分線時一致（頁面裡的 `fit`）。部件的筆畫相連切不開的字（約一半）改用「字變淡」褪除。設計與討論結論見 `docs/plans/roadmap-plans.md`「寫字學習單」。
 
-`shared/stroke-parts.js`（約 4 MB，自動產生，`make_ruler.py` 一起產生）：`STROKE_PARTS`（字 → `b` 全部筆畫外框、`p` 每個部件的筆畫外形 SVG 路徑，座標 0～512）。只有練習簿的部件褪除用，開網頁時不載、用到才載（`loadStrokeParts`）；沒有這個字或載不到就用字型切的備案。
+`shared/stroke-parts.js`（約 4 MB，自動產生，`make_ruler.py` 一起產生）：`STROKE_PARTS`（字 → `b` 全部筆畫外框、`p` 每個部件的筆畫外形 SVG 路徑，座標 0～512）。練習簿的部件褪除用，開網頁時不載、用到才載（`loadStrokeParts`）；識字評量的聽音補部件也用（2026-11-21，`tools/literacy/data.js` 的 `loadStrokeData`、`strokeMaskOf`，只用標了 `l`＝部件分組和第一層對得上的字）；沒有這個字或載不到就用字型切的備案。
 
 ## 6. 資料存在哪裡
 
