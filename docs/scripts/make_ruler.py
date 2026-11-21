@@ -668,9 +668,22 @@ if STROKE_DIR:
         groups, i0 = [], 0
         for k in sizes: groups.append(stroke_path(st[i0:i0 + k])); i0 += k
         sp_data[c] = {'b': [round(min(xs_) / QU), round(min(ys_) / QU), round(max(xs_) / QU), round(max(ys_) / QU)], 'p': groups}
+    # l＝1：這個字的部件分組和部件表第一層「一塊對一塊、每塊筆畫數相同」（2026-11-21 加，聽音補部件依筆畫遮擋用）。
+    # 第一層每塊的筆畫數照 make_mask_from_strokes.py 的算法：單一個字用自己的筆畫數（偏旁反推）、維護者指定的 PART_STROKES，
+    # 只有一塊不知道幾畫時用總數反推；對不上（例如字形尺用最細部件分組、維護者指定的包圍分組和第一層名稱不同）就不標，遊戲改用方框遮擋。
+    for c, d in sp_data.items():
+        ps = PARTS.get(c)
+        if not ps or len(ps) != len(d['p']): continue
+        n = sum(g.count('z') for g in d['p'])
+        sizes = [piece_count(x, RADICAL) if len(x) == 1 else None for x in ps]
+        if c in PART_STROKES and len(PART_STROKES[c]) == len(ps) and sum(PART_STROKES[c]) == n: sizes = list(PART_STROKES[c])
+        unk = [i for i, k in enumerate(sizes) if k is None]
+        if len(unk) == 1: sizes[unk[0]] = n - sum(k for k in sizes if k is not None)
+        if None not in sizes and sizes == [g.count('z') for g in d['p']]: d['l'] = 1
     sp_head = '''/* =========================================================
    依筆畫褪除用的部件筆畫外形（自動產生，不要手改；重新產生：python3 docs/scripts/make_ruler.py 筆畫資料夾）
-   每個字：b＝全部筆畫的外框 [左,上,右,下]（座標 0～512，y 向下）、p＝每個部件的筆畫外形（SVG 路徑，照書寫順序，第一個部件在前）。
+   每個字：b＝全部筆畫的外框 [左,上,右,下]（座標 0～512，y 向下）、p＝每個部件的筆畫外形（SVG 路徑，照書寫順序，第一個部件在前；包圍字照部件表順序，o＝書寫順位）、
+   l＝1 表示部件分組和部件表第一層一塊對一塊、筆畫數相同（聽音補部件依筆畫遮擋只用這些字）。
    來源：教育部《國字標準字體筆順學習網》的筆畫，經 g0v zh-stroke-data 轉成座標；筆畫外形原樣，沒有變形、沒有新造字形
    （授權與出處見 docs/materials/stroke-data.md、shared/stroke/README.md）。只放字形尺有分線、而且部件筆畫數確定的字；練習簿的部件褪除用。
    ========================================================= */

@@ -117,12 +117,12 @@ function makePartsOptions(c, k, n){
    再加干擾部件，總數至少 6 張（部件多時＝部件數＋2）。干擾部件（不重複）依序用：形近字的部件、這課其他字的部件、所有課本字的部件。
    不放：答案裡已有的部件、這個字第一層的部件（例如清的「青」，選了也說得通，會讓學生疑惑）、完全由答案部件組成的部件（答案有龶、月時不放青）、
    單一筆畫、字型裡沒有的罕用字（超過 U+20000） */
-const PICK_MIN = 6, STROKE_PARTS = new Set([..."一丨丿丶乀乙乚乛亅"]);
+const PICK_MIN = 6, ONE_STROKE_PARTS = new Set([..."一丨丿丶乀乙乚乛亅"]);   /* 單一筆畫的部件不當干擾部件（2026-11-21 改名：shared/stroke-parts.js 的 STROKE_PARTS 是另一個東西，同名會讓那個檔載不進來） */
 /* 干擾部件（聽音選部件、聽音補部件共用）：回傳 need 個不重複的部件。ans＝答案部件，visible＝畫面上看得到的部件（聽音補部件沒被遮的那幾塊，也不能當干擾） */
 function partDistractors(c, k, ans, need, visible = []){
   const b = splitKey(k)[0], [, shape = ""] = confOf(c, b) || [];
   const bad = new Set([...ans, ...visible, ...((Parts.read(c, {from: 1}) || {parts: []}).parts)]);
-  const ok = p => isHan(p) && p.codePointAt(0) < 0x20000 && !STROKE_PARTS.has(p) && !bad.has(p) && !((partsOf(p) || []).length && partsOf(p).every(q => ans.includes(q)));
+  const ok = p => isHan(p) && p.codePointAt(0) < 0x20000 && !ONE_STROKE_PARTS.has(p) && !bad.has(p) && !((partsOf(p) || []).length && partsOf(p).every(q => ans.includes(q)));
   const pool = [], seen = new Set();
   const fill = chars => { for(const x of chars){ for(const p of shuffle([...(partsOf(x) || [])])) if(pool.length < need && ok(p) && !seen.has(p)){ seen.add(p); pool.push(p); } if(pool.length >= need) return; } };
   fill(shuffle([...shape]));
@@ -142,9 +142,39 @@ function makeFillOptions(c, k, idx){
   const pool = partDistractors(c, k, [ans], 3, ps.filter((_, i) => i !== idx - 1));
   return shuffle([{ch: ans, type:"答案"}, ...pool.map(ch => ({ch, type:"選到干擾部件"}))]);
 }
-/* 被遮住一塊部件的字：一個部件可以有好幾個色塊、可以旋轉（data.js 的 maskShapes）；色塊裁在字格內（旋轉後超出的部分不顯示），純色、沒有外框和問號（2026-10-31 維護者決定：多色塊加了外框和「？」看起來很怪） */
-const maskedCharHtml = (c, idx) => { const sh = maskShapes(c, idx);
+/* 被遮住一塊部件的字：一個部件可以有好幾個色塊、可以旋轉（data.js 的 maskShapes）；色塊裁在字格內（旋轉後超出的部分不顯示），純色、沒有外框和問號（2026-10-31 維護者決定：多色塊加了外框和「？」看起來很怪）。
+   2026-11-21 起有教育部筆畫資料、而且部件分組和第一層對得上的字（data.js 的 strokeMaskOf），改用筆畫畫字：被遮的部件那幾筆不畫，
+   只留一個虛線框標出位置；答對後那幾筆一筆一筆出現（charPop 加 revealed）。筆畫外形原樣（教育部回信的條件），沒有筆畫資料的字照舊用色塊。 */
+const maskedCharHtml = (c, idx) => {
+  const sp = G && G.useStrokes ? strokeMaskOf(c) : null;
+  if(sp) return strokeMaskedHtml(sp, idx);
+  const sh = maskShapes(c, idx);
   return `<div class="maskedchar" role="img" aria-label="有一塊部件被遮住的字"><span class="mcg">${esc(c)}</span><span class="mholes">${sh.map(s => `<span class="mhole" style="left:${s[0] * 100}%;top:${s[1] * 100}%;width:${(s[2] - s[0]) * 100}%;height:${(s[3] - s[1]) * 100}%${s[4] ? `;transform:rotate(${s[4]}deg)` : ""}"></span>`).join("")}</span></div>`; };
+
+/* 依筆畫畫的「被遮住一塊部件的字」：座標 0～512，放法和練習簿一樣（筆畫外框的長邊縮放到 88%、置中）；被遮的部件每一筆分開（每筆以 M 開頭），
+   答對時依書寫順序一筆一筆出現；虛線框是被遮部件的筆畫範圍（外擴一點，不露出形狀） */
+function pathBox(d){
+  let x = 0, y = 0, x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const add = (a, b) => { x0 = Math.min(x0, a); y0 = Math.min(y0, b); x1 = Math.max(x1, a); y1 = Math.max(y1, b); };
+  for(const m of d.matchAll(/([MlqLQz])([^MlqLQz]*)/g)){
+    const n = (m[2].match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+    if(m[1] === "M"){ x = n[0]; y = n[1]; add(x, y); }
+    else if(m[1] === "l"){ x += n[0]; y += n[1]; add(x, y); }
+    else if(m[1] === "q"){ add(x + n[0], y + n[1]); x += n[2]; y += n[3]; add(x, y); }
+  }
+  return [x0, y0, x1, y1];
+}
+function strokeMaskedHtml(sp, idx){
+  const [x0, y0, x1, y1] = sp.b, k = .88 / Math.max(x1 - x0, y1 - y0);
+  const tf = `matrix(${k} 0 0 ${k} ${.5 - (x0 + x1) / 2 * k} ${.5 - (y0 + y1) / 2 * k})`;
+  const hid = sp.p[idx - 1], strokes = hid.split(/(?=M)/), [bx0, by0, bx1, by1] = pathBox(hid), pad = 14;
+  const step = Math.min(.18, 1.4 / strokes.length);   /* 一筆一筆出現：全部在 charPop 停的 2 秒內寫完 */
+  return `<div class="maskedchar stroked" role="img" aria-label="有一塊部件被遮住的字"><svg class="msvg" viewBox="0 0 1 1" aria-hidden="true"><g transform="${tf}">
+    <rect class="mframe" x="${bx0 - pad}" y="${by0 - pad}" width="${bx1 - bx0 + pad * 2}" height="${by1 - by0 + pad * 2}" rx="18"/>
+    ${sp.p.map((d, i) => i === idx - 1 ? "" : `<path class="mstk" d="${d}"/>`).join("")}
+    ${strokes.map((d, i) => `<path class="mhid" d="${d}" style="animation-delay:${(i * step).toFixed(2)}s"/>`).join("")}
+  </g></svg></div>`;
+}
 
 /* 部件重組的題目：部件打亂成一塊一塊（拆不開的字這個目標不出，見 data.js 的 goalSkips） */
 const regroupHtml = c => shuffle([...(partsOf(c) || [])]).map(x => `<span class="ptile">${esc(x)}</span>`).join("");
@@ -325,9 +355,11 @@ function prepareThen(go, texts){   /* texts：要用的字（{TWKai, BpmfKai}）
 
 function startSession(){
   if(goalCaps().loadMaskFix && typeof MASK_FIX === "undefined" && !maskFixTried) return void loadMaskFix().then(startSession);   /* 聽音補部件：先載入遮擋調整資料再開始 */
+  if(goalCaps().loadStrokes && !strokesTried) return void loadStrokeData(6000).then(startSession);   /* 聽音補部件：先載入教育部筆畫（約 5 MB，最多等 6 秒；載不到就用色塊遮擋） */
   const c = current(), q = quizPlan(), list = selKids();
   G = {
     session: Date.now(), cfg: c, q, kids: list,
+    useStrokes: !!goalCaps().loadStrokes && typeof STROKE_PARTS !== "undefined",   /* 聽音補部件依筆畫畫字（整次作答一致：開始時載到了才用） */
     goal: state.goal, kind: state.kind, mode: state.mode, answer: state.answer,
     /* 前後測（A8）：只有正式評量才標；練習一律不標 */
     prepost: state.kind === "formal" ? state.prepost : "",
@@ -580,7 +612,7 @@ function newItem(it){
         ${regroup ? `<div class="pieces big" aria-label="拆開的部件">${regroupHtml(it.c)}</div>
         <span class="note" style="margin:0">這些部件組成哪一個字？</span>`
         : `<button class="speaker"${speakerStyle()} id="speaker" aria-label="再聽一次">${speakerSvg()}</button>
-        <span class="note" style="margin:0">${pickParts ? "聽聽看，這個字有哪些部件？全部選出來，再按「送出」" : fillPart ? "聽聽看，被遮住的是哪一個部件？" : "聽聽看，是哪一個字？"}</span>
+        <span class="note" style="margin:0">${pickParts ? "聽聽看，這個字有哪些部件？全部選出來，再按「送出」" : fillPart ? `聽聽看，被遮住的是哪一個部件？${G.useStrokes && strokeMaskOf(it.c) ? `<small class="msrc">筆畫：教育部《國字標準字體筆順學習網》</small>` : ""}` : "聽聽看，是哪一個字？"}</span>
         ${pickParts ? `<div class="submitrow"><button class="submit" id="submitParts" disabled>送出</button><span class="note" id="pickNote" style="margin:0" aria-live="polite"></span></div>` : ""}`}
         <div class="hintbox" id="hintbox" aria-live="polite"></div>
       </div>

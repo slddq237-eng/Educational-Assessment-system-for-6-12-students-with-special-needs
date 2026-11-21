@@ -84,6 +84,7 @@
 - `docs/materials/data-sources.md` 的「筆順圖」一列
 - `shared/stroke/README.md`
 - 練習簿（`tools/practice/index.html`）每一頁底部：筆順圖：教育部《國字標準字體筆順學習網》
+- 識字評量聽音補部件（2026-11-21 起依筆畫畫字時）：題目說明下面小字「筆畫：教育部《國字標準字體筆順學習網》」
 
 ## 4. 之後要做的事（現在先不做）
 
