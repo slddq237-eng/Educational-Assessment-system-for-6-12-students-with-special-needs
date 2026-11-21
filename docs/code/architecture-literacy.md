@@ -33,3 +33,7 @@
 5. **結果**（第 10 節 `finish`）：中途離開的紀錄標 `quit` → `collect.js` 的 `drawStickers` 抽好寫進紀錄 → 平板送出 → `giveStickers` → 扭蛋機 `showGacha` 揭曉。
 - **寫字組（W1～W3）不走 2～5**：第 3 步按「開始出題」→ `writing.js` 的 `writingStart`（用 `play.js` 的 `pickItems` 抽字、`prepareThen` 先下載字型）→ 一題一題出 → 答案頁；不存紀錄、沒有主題和貼紙。
 6. **老師專區**（`teacher.js`、`pivot.js`）：只讀 `records`，不寫回。錯誤類型的「亂猜會佔」用 `play.js` 的 `optType`（傳入紀錄的 `goal`）替舊紀錄的選項重新分類，改 `optType` 時要一起檢查；`pivot.js` 的「目標字在語詞的位置」用 `teacher.js` 的 `wposOf`。
+
+## 喇叭按鈕的圖案（2026-11-21）
+
+有學生怕喇叭符號，老師可以在設定畫面第 4 步「喇叭圖示」換成笑臉、小貓、小兔、星星、愛心（預設還是喇叭）。圖案清單 `SPEAKER_ICONS` 和畫圖用的 `speakerSvg()` 在 `data.js`；`play.js`（題目喇叭、提示小喇叭）和 `writing.js`（寫字評量的喇叭）都呼叫它；選項在 `setup.js` 的 `renderPlay`。設定存在 `settings.speakerIcon`（平板會跟著設定一起帶過去）。只換按鈕裡的圖，大小、位置、樣式（`.speaker`、`.hspk`、`.wspk`、`.whint`）都沒改，不影響作答紀錄。新增圖案：在 `SPEAKER_ICONS` 加一筆 24×24 的 SVG（用 `currentColor`）。

@@ -286,11 +286,15 @@ function renderPlay(){
     rows.push(row("報讀", state.goal === "R4" ? `<span class="note" style="margin:0">部件重組沒有報讀（會念出答案的讀音）。</span>`
       : `<div class="group">${chipRow([["1", "提示可以按喇叭念出來"], ["0", "不念"]], settings.practiceRead !== false ? "1" : "0", "read")}</div>`));
   }
+  /* 喇叭圖示（2026-11-21）：有學生怕喇叭符號，老師可以換成可愛圖案；練習、正式評量都用這個設定，只換圖，不影響題目和紀錄 */
+  if(state.goal !== "R4") rows.push(row("喇叭圖示", `<div class="group">${chipRow(SPEAKER_ICONS.map(i => [i.id, `${speakerSvg(i.id, "1.3em")}${i.name}`]), SPEAKER_ICONS.some(i => i.id === settings.speakerIcon) ? settings.speakerIcon : "speaker", "spk")}</div>
+    <p class="note">作答畫面上「再聽一次」的按鈕換成這個圖案，題目照樣會唸出來。</p>`));
   $("#playArea").innerHTML = rows.join("");
-  const bind = (key, f) => $("#playArea").querySelectorAll(`[data-${key}]:not(:disabled)`).forEach(b => b.onclick = () => { f(b.dataset[key]); saveSettings(); render(); });
+  const bind =(key, f) => $("#playArea").querySelectorAll(`[data-${key}]:not(:disabled)`).forEach(b => b.onclick = () => { f(b.dataset[key]); saveSettings(); render(); });
   bind("play", v => settings.practicePlay = v);
   bind("bpmf", v => settings.practiceBpmf = v === "1");
   bind("read", v => settings.practiceRead = v === "1");
+  bind("spk", v => settings.speakerIcon = v);
 }
 const themeText = () => !state.themePick ? null : state.themePick === "none" ? "不用主題" : themeName(state.themePick);
 /* 摘要的提示：有學生個別設定時，分行列出 */

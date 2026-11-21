@@ -195,6 +195,20 @@ const ROW_ICONS = {
   "注音": `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" fill="#2c7a69"/><text x="12" y="17" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">ㄅ</text></svg>`,
   "報讀": `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#2a78d6" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>`
 };
+/* 作答畫面「喇叭」按鈕上的圖案（2026-11-21：有學生怕喇叭符號，老師可以換成可愛圖案；設定 speakerIcon，預設 speaker）。
+   全部是 24×24 的 SVG、用文字顏色（currentColor）畫，大小和按鈕樣式不變，只換裡面的圖。 */
+const SPK_LINE = `fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"`;
+const SPEAKER_ICONS = [
+  {id:"speaker", name:"喇叭", body:`<path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/>`},
+  {id:"smile", name:"笑臉", body:`<g ${SPK_LINE}><circle cx="12" cy="12" r="9"/><path d="M7.8 14.2q4.2 4.2 8.4 0"/></g><circle cx="9" cy="9.8" r="1.3" fill="currentColor"/><circle cx="15" cy="9.8" r="1.3" fill="currentColor"/>`},
+  {id:"cat", name:"小貓", body:`<path ${SPK_LINE} d="M4.5 4.5l4 3h7l4-3v9a7.5 7.5 0 0 1-15 0z"/><circle cx="9" cy="13" r="1.2" fill="currentColor"/><circle cx="15" cy="13" r="1.2" fill="currentColor"/><path ${SPK_LINE} d="M10.5 16.3q1.5 1.3 3 0"/>`},
+  {id:"bunny", name:"小兔", body:`<g ${SPK_LINE}><ellipse cx="9" cy="5.5" rx="2" ry="4"/><ellipse cx="15" cy="5.5" rx="2" ry="4"/><circle cx="12" cy="15" r="6.5"/><path d="M10.5 17.3q1.5 1.3 3 0"/></g><circle cx="9.7" cy="14" r="1.1" fill="currentColor"/><circle cx="14.3" cy="14" r="1.1" fill="currentColor"/>`},
+  {id:"star", name:"星星", body:`<path fill="currentColor" d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2 9.2l7.1-.6z"/>`},
+  {id:"heart", name:"愛心", body:`<path fill="currentColor" d="M12 21S3 15.5 3 9.2A4.6 4.6 0 0 1 12 7.4 4.6 4.6 0 0 1 21 9.2C21 15.5 12 21 12 21z"/>`}
+];
+/* 喇叭按鈕裡的圖（size 預設 55%，和原本一樣）；設定裡的代號找不到就用喇叭 */
+const speakerSvg = (id = settings.speakerIcon, size = "55%") =>
+  `<svg viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true">${(SPEAKER_ICONS.find(i => i.id === id) || SPEAKER_ICONS[0]).body}</svg>`;
 /* 提示層級草案：0 無提示；1–3 系統給；4–7 老師給（作答畫面上的按鈕） */
 const LEVELS = [
   {n:1, who:"系統", items:[["word","語詞挖空（○瓜的○）"],["sent","句子"]]},
@@ -311,6 +325,8 @@ const settings = Object.assign({choices:"4", rate:0.85, formalTheme:true,
   /* 報讀提示：語詞、句子提示旁的小喇叭，按了念出完整語詞或句子。練習在第 4 步開關（預設開）；
      正式評量看「評量設定」（預設關，從基線期起維持同一個設定）；部件重組（4-1）一律沒有 */
   practiceRead:true,
+  /* 作答畫面喇叭按鈕的圖案（SPEAKER_ICONS 的代號；有學生怕喇叭符號時老師換掉，練習和正式評量都用同一個，不影響成績與紀錄） */
+  speakerIcon:"speaker",
   /* 作答畫面「老師提示紀錄」欄固定在螢幕的哪一邊：right／left（細部設定 → 畫面與聲音；預設右邊，2026-10-25 維護者要求，老師比較好按） */
   hintSide:"right"},
   load(KEYS.settings, {}));
