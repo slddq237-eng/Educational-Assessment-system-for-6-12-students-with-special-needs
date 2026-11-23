@@ -66,7 +66,7 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 .labels .sec{align-items:center;justify-content:center;font-size:8pt;color:#666;border-left:1px solid #bbb;line-height:1}
 .v{display:block;width:1.1em;text-align:center;word-break:break-all;line-height:1.25}
 .zb{flex:none;width:var(--zw);height:var(--cell);border:1px solid #888;border-left:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff}
-.zg{font-family:"BpmfOnly";font-size:calc(var(--cell) * .5);line-height:1;white-space:nowrap}   /* 注音字型：字本身看不見，只畫注音；用畫布量出注音的位置再移到格子正中央（zyFit） */
+.zg{font-family:"BpmfOnly";font-size:calc(var(--cell) * .5);line-height:1;white-space:nowrap}   /* 注音字型：字本身看不見，只畫注音（位置已在字型裡置中） */
 /* 格子裡的字（淡灰、遮罩）：疊在字形尺格子上，用 clip-path 只露出某一塊部件 */
 .gl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .gs{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}.gs text{font-family:var(--kai);fill:#000;white-space:pre}
@@ -231,31 +231,15 @@ function loadStrokeParts(){   /* 筆畫外形檔很大（約 5 MB），開網頁
 }
 const partImg = (u, opacity) => typeof u !== "string" ? Strokes.svg(u.d, {cls: "pi", tf: u.tf, fill: "#000", style: opacity < 1 ? `opacity:${opacity}` : ""}) : `<img class="pi" src="${u}" alt="" style="${opacity < 1 ? `opacity:${opacity}` : ""}">`;
 
-/* 注音那一格：注音字型（BpmfOnly）畫在字的右半邊，所以先用畫布量出注音的筆畫外框中心，再用 translate 移到格子正中央 */
-const ZY = {};
-const zyReady = () => document.fonts.check('40px "BpmfOnly"');   /* 注音字型載好了嗎（沒載好時畫布會改用別的字型，量出來的位置是錯的） */
-function zyFit(c){   /* c 可以是「字＋讀音記號」（破音字用這本課本的讀音） */
-  if(ZY[c]) return ZY[c];
-  const N = 200, fs = 100, cv = document.createElement("canvas"); cv.width = cv.height = N;
-  const g = cv.getContext("2d", {willReadFrequently: true});
-  g.font = `${fs}px BpmfOnly`; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = "#000";
-  const m = g.measureText(c), A = m.fontBoundingBoxAscent, D = m.fontBoundingBoxDescent;
-  g.fillText(c, N / 2, (N - fs) / 2 + (fs - (A + D)) / 2 + A);
-  const d = g.getImageData(0, 0, N, N).data;
-  let x0 = N, y0 = N, x1 = -1, y1 = -1;
-  for(let y = 0; y < N; y++) for(let x = 0; x < N; x++) if(d[(y * N + x) * 4 + 3] > 55){ if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y; }
-  const r = x1 < 0 ? {ox: 0, oy: 0} : {ox: (N / 2 - (x0 + x1 + 1) / 2) / fs, oy: (N / 2 - (y0 + y1 + 1) / 2) / fs};
-  if(zyReady()) ZY[c] = r;   /* 字型沒載好就不記下來，不然之後一直歪 */
-  return r;
-}
+/* 注音那一格：修正版注音字型（bpmf-only-fix.woff2）已經把每個字的注音放在字框正中央，直接顯示即可，不用再量位置 */
 const zyText = c => typeof Bpmf !== "undefined" && SRC.book[c] ? Bpmf.char(c, SRC.book[c]) : c;   /* 有選課本就用那本的讀音 */
-const zyBox = (c, op) => { const s = zyText(c), f = zyFit(s); return `<span class="zb"><span class="zg" style="${op ? `opacity:${op};` : ""}transform:translate(${f.ox.toFixed(3)}em, ${f.oy.toFixed(3)}em)">${s}</span></span>`; };
+const zyBox = (c, op) => `<span class="zb"><span class="zg"${op ? ` style="opacity:${op}"` : ""}>${zyText(c)}</span></span>`;
 
-/* 這個字有沒有注音（注音字型只收課本生字；沒有的字畫面會退回別的字型，不要顯示） */
+/* 這個字有沒有注音（注音字型只收課本生字，也就是各課的 write、read；用課本生字表直接判斷，不靠字型有沒有載好） */
+let ZYSET = null;
 function hasZy(c){
-  if(!zyReady()) return true;   /* 字型還沒載好，先當作有（載好後會重畫），不要先判成「沒有注音」 */
-  const t = f => { const cv = document.createElement("canvas"); cv.width = cv.height = 64; const g = cv.getContext("2d", {willReadFrequently: true}); g.font = f; g.fillText(c, 4, 48); return g.getImageData(0, 0, 64, 64).data.join(); };
-  return t('40px "BpmfOnly", sans-serif') !== t('40px sans-serif');
+  if(!ZYSET){ ZYSET = new Set(); for(const b of Object.values(BOOKS)) for(const L of Object.values(b.lessons)) for(const ch of (L.write || "") + (L.read || "")) ZYSET.add(ch); }
+  return ZYSET.has(c);
 }
 
 /* 筆劃數、部首（教育部《重編國語辭典修訂本》，shared/char-info.js）；沒有資料的字（自己加的非課本字）留空白 */
@@ -370,12 +354,8 @@ for(const id of ["#size", "#solo", "#res", "#info", "#zyfmt", "#nm", "#mode"]) $
 $("#print").onclick = () => window.print();
 function loadFonts(){
   const t = [...$("#chars").value].join("");
-  return Promise.all([document.fonts.load("40px TWKai", t), document.fonts.load("40px BpmfOnly", t), loadStrokeParts()]).then(() => document.fonts.ready).catch(() => {});
+  return Promise.all([document.fonts.load("40px TWKai", t), document.fonts.load("40px BpmfOnly", t), loadStrokeParts()]).catch(() => {});
 }
-/* 注音字型是在畫面出來之後才載好的話：清掉量到的位置、重畫一次 */
-let zyWas = zyReady();
-document.fonts.addEventListener("loadingdone", () => { const r = zyReady(); if(r && !zyWas){ for(const k in ZY) delete ZY[k]; render(); } zyWas = r; });
-window.addEventListener("beforeprint", () => { if(zyReady() && !Object.keys(ZY).length) render(); });
 fillBooks();
 loadFonts().then(render);
 </script>
