@@ -140,14 +140,17 @@ function partDistractors(c, k, ans, need, visible = [], srcs = null, lead = []){
    干擾部件也要切得出筆畫；有一個答案部件切不出來就整題用文字（一題裡不混用）。答案部件剛好是這個字第一層的一塊時，直接從這個字切（形狀最準），
    其他從別的課本字第一層裡同名的那一塊切（partSources）。紀錄照舊只記部件名稱 */
 function makePartsPickOptions(c, k){
-  const ans = partsOf(c) || [], useSp = !!(G && G.useStrokes) && ans.every(p => partSources(p).length > 0);
+  /* 2026-11-23 起有第二層筆畫分組（data.js 的 pickStrokesOf）的字，答案部件直接從這個字的第二層切（一塊對一塊，形狀最準） */
+  const own = G && G.useStrokes ? pickStrokesOf(c) : null;
+  const ans = partsOf(c) || [], useSp = !!(G && G.useStrokes) && (!!own || ans.every(p => partSources(p).length > 0));
   const need = Math.max(PICK_MIN, ans.length + 2) - ans.length, lead = pickLead(c, k, need);
   const pool = partDistractors(c, k, ans, need, [], useSp ? p => partSources(p) : null, lead.map(o => o.p));
   /* 從哪個字切：答案部件是這個字第一層的一塊就從這個字切；甲找到的部件是那個字第一層的一塊就從那個字切；其他照 partSources 隨機 */
   const from = new Map(lead.filter(o => o.from && strokeMaskOf(o.from) && layer1Of(o.from).includes(o.p)).map(o => [o.p, [o.from, layer1Of(o.from).indexOf(o.p)]]));
+  lead.forEach(o => { const q = o.from && !from.has(o.p) && pickStrokesOf(o.from); if(q) from.set(o.p, [o.from, partsOf(o.from).indexOf(o.p), "q"]); });   /* 甲找到的字有第二層筆畫分組，也從那個字切 */
   const self = strokeMaskOf(c) ? Parts.read(c, {from: 1}).parts : [];
   const src = p => self.includes(p) ? [c, self.indexOf(p)] : from.get(p) || (l => l[Math.floor(Math.random() * l.length)])(partSources(p));
-  const opt = type => ch => ({ch, type, ...(useSp ? {src: src(ch)} : {})});
+  const opt = type => (ch, j) => ({ch, type, ...(useSp ? {src: type === "答案" && own ? [c, j, "q"] : src(ch)} : {})});
   return shuffle([...ans.map(opt("答案")), ...pool.map(opt("干擾部件"))]);
 }
 /* 聽音補部件（R5，2026-10-31）：畫面上的字被遮住第一層的一塊部件（idx 第幾塊，1 起算），選出被遮的部件，4 選 1（1 個答案、3 個干擾部件）。
@@ -205,7 +208,8 @@ function pickLead(c, k, need){
   if(!pickIndex){ pickIndex = []; for(const x of ALL_CHARS){ const q = partsOf(x); if(q) pickIndex.push([x, q]); } }
   const ps = partsOf(c) || [], b = splitKey(k)[0], [, shape = ""] = confOf(c, b) || [];
   const tier = x => shape.includes(x) ? 0 : charsOf(k).includes(x) ? 1 : 2;
-  const A = ps.some(y => [...y].length !== 1) ? [] : shuffle(pickIndex.filter(([x, q]) => x !== c && q.length === ps.length && q.filter((y, j) => y !== ps[j]).length === 1))
+  /* 名稱部件：第二層的名稱是小部件接起來的（亠丷冖），各字形狀一樣，可以比；「上半」這種位置名稱在不同字裡形狀不同，不比 */
+  const A = ps.some(y => /半|中間|外框|裡面|上面|下面|左邊|右邊/.test(y)) ? [] : shuffle(pickIndex.filter(([x, q]) => x !== c && q.length === ps.length && q.filter((y, j) => y !== ps[j]).length === 1))
     .sort((u, v) => tier(u[0]) - tier(v[0])).map(([x, q]) => ({p: q.find((y, j) => y !== ps[j]), from: x})).filter(o => !ps.includes(o.p));
   const B = shuffle(ps.flatMap(X => [...X].length === 1 ? partLookalikes(X, b) : [])).map(p => ({p}));
   const n = Math.max(1, need - 1);
@@ -218,14 +222,18 @@ function partSources(p, st, idx){
   if(!Strokes.ready()) return [];   /* 筆畫還沒載好時不要建索引（建了會是空的、而且一直留著） */
   if(!partSrcIndex){
     partSrcIndex = new Map();
-    for(const x of ALL_CHARS){ if(!strokeMaskOf(x)) continue;
-      Parts.read(x, {from: 1}).parts.forEach((q, i) => { if(!partSrcIndex.has(q)) partSrcIndex.set(q, []); partSrcIndex.get(q).push({c: x, i, st: Parts.struct(x)}); }); }
+    const add = (q, s) => { if(!partSrcIndex.has(q)) partSrcIndex.set(q, []); partSrcIndex.get(q).push(s); };
+    for(const x of ALL_CHARS){
+      if(strokeMaskOf(x)) Parts.read(x, {from: 1}).parts.forEach((q, i) => add(q, {c: x, i, st: Parts.struct(x)}));
+      if(pickStrokesOf(x)) partsOf(x).forEach((q, i) => add(q, {c: x, i, q: true}));   /* 第二層筆畫分組（2026-11-23）：只給聽音選部件用（沒給結構、位置時） */
+    }
   }
-  const all = partSrcIndex.get(p) || [], tiers = st === undefined ? [all] : [all.filter(s => s.st === st && s.i === idx - 1), all.filter(s => s.i === idx - 1), all];
-  return (tiers.find(t => t.length) || []).map(s => [s.c, s.i]);
+  const all = (partSrcIndex.get(p) || []).filter(s => st === undefined || !s.q);
+  const tiers = st === undefined ? [all] : [all.filter(s => s.st === st && s.i === idx - 1), all.filter(s => s.i === idx - 1), all];
+  return (tiers.find(t => t.length) || []).map(s => s.q ? [s.c, s.i, "q"] : [s.c, s.i]);
 }
-/* 選項卡上用筆畫畫的部件：[字, 第幾塊] 那幾筆，等比例放大置中（只縮放，不變形；共用的 Strokes.svg 預設長邊 86%） */
-const partSvgHtml = ([c, i], label) => Strokes.svg(Strokes.of(c).p[i], {cls: "psvg", label});
+/* 選項卡上用筆畫畫的部件：[字, 第幾塊, 哪一種分組] 那幾筆（p＝第一層／字形尺的分組，q＝第二層，2026-11-23），等比例放大置中（只縮放，不變形；共用的 Strokes.svg 預設長邊 86%） */
+const partSvgHtml = ([c, i, k = "p"], label) => Strokes.svg(Strokes.of(c)[k][i], {cls: "psvg", label});
 /* 被遮住一塊部件的字：一個部件可以有好幾個色塊、可以旋轉（data.js 的 maskShapes）；色塊裁在字格內（旋轉後超出的部分不顯示），純色、沒有外框和問號（2026-10-31 維護者決定：多色塊加了外框和「？」看起來很怪）。
    2026-11-21 起有教育部筆畫資料、而且部件分組和第一層對得上的字（data.js 的 strokeMaskOf），改用筆畫畫字：被遮的部件那幾筆不畫，
    只留一個虛線框標出位置；答對後那幾筆一筆一筆出現（charPop 加 revealed）。筆畫外形原樣（教育部回信的條件），沒有筆畫資料的字照舊用色塊。 */
