@@ -12,7 +12,7 @@
   https://github.com/ButTaiwan/bpmfvs/releases/download/v1.500/BpmfSpecial.zip
 授權：bpmfvs 注音 IVS 字型規格 Apache 2.0（zip 內 NOTICE.txt）；字型本身 zip 內的授權文件沒有單獨寫明，
   依同系列（字嗨注音標楷：漢字 CC BY 4.0、其餘 SIL OFL 1.1；這個字型只有注音、沒有漢字字形）判斷為 SIL OFL 1.1，
-  見 docs/materials/data-sources.md（待作者確認）。
+  見 docs/materials/data-sources.md（2026-11-23 維護者確認可用）。
 執行（在 repo 最上層）：
   python3 docs/scripts/make_bpmf_only.py <BpmfZihiOnly-R.ttf>
 """
