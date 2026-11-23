@@ -872,7 +872,8 @@ $("#vTryWrong").onclick = () => sfx.wrong(true);
 $("#vTryTurn").onclick = () => { const s = settings.turnStyle || "chime"; if(s === "chime" || s === "both") sfx.turn(true); if(s === "voice" || s === "both") setTimeout(() => { if(!speak("換小明", null, null, true)){ if(s === "voice") sfx.turn(true); $("#vTurnMsg").textContent = "這台電腦找不到內建的中文語音，為了保護學生個資不唸名字，改成只播提示音。"; } }, s === "both" ? 450 : 0); };
 
 /* 找不到中文語音時，在設定畫面上方提醒（語音清單是慢慢載入的，等一下再檢查） */
-function checkVoice(){ $("#voiceWarn").hidden = "speechSynthesis" in window && hasZhVoice(); }
+/* hasZhVoice 在 play.js（比這個檔晚載入）：語音清單比 play.js 先準備好時（voiceschanged 很早就觸發），等一下再檢查（2026-11-23 修：GitHub 自動檢查偶爾出現「hasZhVoice is not defined」） */
+function checkVoice(){ if(typeof hasZhVoice !== "function") return void setTimeout(checkVoice, 300); $("#voiceWarn").hidden = "speechSynthesis" in window && hasZhVoice(); }
 setTimeout(checkVoice, 1500);
 if("speechSynthesis" in window) speechSynthesis.addEventListener && speechSynthesis.addEventListener("voiceschanged", () => setTimeout(checkVoice, 0));
 applyDisplay();
