@@ -142,14 +142,23 @@ function fit(c){
   const w = (x1 - x0 + 1) / N, h = (y1 - y0 + 1) / N;
   const len = Math.max(w, h);   /* 一律長邊對到 88%（2026-11-20 修：原本左右字照寬、上下字照高，又高又瘦的字〔印、消、肩…〕另一邊會超出格子被切到；代價是這類字的分線略偏，完整修法要連 make_ruler.py 一起改） */
   const k = .88 / len, cx = (x0 + x1 + 1) / 2 / N, cy = (y0 + y1 + 1) / 2 / N;
-  return FIT[c] = {k, tx: -(cx - .5) * k, ty: -(cy - .5) * k};
+  return FIT[c] = {k, cx, cy, tx: -(cx - .5) * k, ty: -(cy - .5) * k};
+}
+/* 放大倍率的上限（2026-11-23 維護者決定）：筆畫少的簡單字（口、山、目…）原本在字型裡就比較小，一律拉到長邊 88% 會被放大過頭（口約 1.8 倍）。
+   字型畫的字，倍率最多是「教育部筆畫的原始大小」的 1.1 倍：字型字大小 80%，筆畫座標是字型的 1.25 倍，所以上限 = 1.25 × 1.1。
+   只用在「沒有筆畫資料、用字型畫」的整字（layer()）；有筆畫資料的字大小和字形尺分線不變（沒有字形尺的字也不受影響）。 */
+const K_MAX = 1.25 * 1.1;
+function shownFit(c){
+  const f = fit(c);
+  if(f.cx === undefined || f.k <= K_MAX) return f;
+  return {k: K_MAX, tx: -(f.cx - .5) * K_MAX, ty: -(f.cy - .5) * K_MAX};
 }
 /* 整個字（文字，列印時是向量，最清楚） */
 function layer(c, opacity){
   /* 有教育部筆畫的字（共用的 Strokes，字形尺有分線的字）：整個字也用教育部筆畫畫，和部件圖、筆順圖同一種畫法同一個縮放，位置大小不靠字型（2026-11-20 維護者要求） */
   const sp = Strokes.of(c);
   if(sp) return `<span class="gl" style="${opacity < 1 ? `opacity:${opacity}` : ""}">${Strokes.svg(sp.p.join(""), {cls: "gs", tf: strokeParts(c, sp)[0].tf, fill: "#000"})}</span>`;
-  const f = fit(c), esc = {"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c] || c;
+  const f = shownFit(c), esc = {"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c] || c;
   /* SVG 文字：座標 0～100、字大小 80（格子的 80%）、基線 BASE、水平置中；先縮放（以格子中心為準）再平移，和畫布 fit() 量的一樣。列印時還是向量 */
   return `<span class="gl" style="${opacity < 1 ? `opacity:${opacity}` : ""}"><svg class="gs" viewBox="0 0 100 100"><text x="50" y="${BASE * 100}" font-size="80" text-anchor="middle" transform="translate(${(f.tx * 100).toFixed(3)} ${(f.ty * 100).toFixed(3)}) translate(50 50) scale(${f.k.toFixed(4)}) translate(-50 -50)">${esc}</text></svg></span>`;
 }
