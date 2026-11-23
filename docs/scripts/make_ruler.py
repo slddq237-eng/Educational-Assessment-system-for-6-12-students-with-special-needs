@@ -652,6 +652,12 @@ def stroke_path(st):
 if STROKE_DIR:
     SP_OUT = 'shared/stroke-parts.js'
     sp_data, sp_skip = {}, []
+    # 部件筆畫數程式數不出來（厽、𦣻 這類部件沒有單獨的筆畫資料），但看過分組圖、和部件表第一層一塊對一塊的字（2026-11-23 Claude 看過，維護者可再確認）
+    L1_CHECKED = set('夏參羞危厭同迴')
+    def sp_box(st):
+        pts = [pt for s_ in st for pt in flatten(s_['outline'], 2)]
+        xs_, ys_ = [x for x, _ in pts], [y for _, y in pts]
+        return [round(min(xs_) / QU), round(min(ys_) / QU), round(max(xs_) / QU), round(max(ys_) / QU)]
     for c in sorted(out):
         st = load_strokes(c)
         if c in SRECT:   # 包圍字：部件表順序（外層、裡面）；o＝各部件的書寫順位（0＝最先寫），褪除要照書寫順序
@@ -675,17 +681,56 @@ if STROKE_DIR:
         ps = PARTS.get(c)
         if not ps or len(ps) != len(d['p']): continue
         n = sum(g.count('z') for g in d['p'])
-        sizes = [piece_count(x, RADICAL) if len(x) == 1 else None for x in ps]
+        # 包圍字的偏旁（辶、廴…）要用包圍字那張偏旁表數（2026-11-23 修：原本都用左右、上下那張，辶數錯，迎、遊、邊這類字沒標到）
+        sizes = [piece_count(x, RADICAL_S if c in SRECT else RADICAL) if len(x) == 1 else None for x in ps]
         if c in PART_STROKES and len(PART_STROKES[c]) == len(ps) and sum(PART_STROKES[c]) == n: sizes = list(PART_STROKES[c])
         unk = [i for i, k in enumerate(sizes) if k is None]
         if len(unk) == 1: sizes[unk[0]] = n - sum(k for k in sizes if k is not None)
         if None not in sizes and sizes == [g.count('z') for g in d['p']]: d['l'] = 1
+        if c in L1_CHECKED: d['l'] = 1
+    # 2026-11-23：課本生字有教育部筆畫、但字形尺沒有分線的字（例如失、四、友：部件分不開或切到太多墨），照部件表第一層分組加進來、標 l（聽音補部件用）。
+    # 筆畫照書寫順序一塊一塊分；包圍字只收兩塊的全包圍（外框先寫 2 畫、裡面、最後封口，例如四）和左下包圍（裡面先寫、辶等最後寫），其他包圍不確定、不收。
+    # 名稱部件（「上半」等）當作不知道幾畫，只有一塊不知道時用總數反推。練習簿沒有字形尺的字不褪除，只是整個字改用教育部筆畫畫。
+    TEXTBOOK = json.loads(subprocess.run(['node', '-e', r'''
+const src=require("./docs/scripts/lessons-src.js")();const o={window:{}};new Function("window",src+";this.B=BOOKS;").call(o,o.window);
+const s=new Set();for(const b of Object.values(o.B))for(const L of Object.values(b.lessons))for(const c of (L.write||"")+(L.read||""))s.add(c);
+process.stdout.write(JSON.stringify([...s]));'''], capture_output=True, text=True, check=True).stdout)
+    # 部件的筆畫交錯、照書寫順序一塊一塊分會分錯的字不收（2026-11-23 Claude 看過補進來的分組圖；乖乘坐夾幽爽也是維護者決定字形尺不拆的字）
+    SP_EXTRA_NO = set('乖乘坐夾幽爽必成')
+    extra = sorted(c for c in set(TEXTBOOK) if c not in sp_data and c not in SP_EXTRA_NO and PARTS.get(c) and len(PARTS[c]) >= 2)
+    fetch_strokes(sorted(set(extra) | {x for c in extra for x in PARTS[c] if len(x) == 1}))
+    sp_added, sp_extra_skip = [], []
+    for c in extra:
+        st, ps = load_strokes(c), PARTS[c]
+        if not st: continue
+        n, s_ = len(st), STRUCT.get(c, '')
+        rad = RADICAL_S if s_ in SURR else RADICAL
+        sizes = [piece_count(x, rad) if len(x) == 1 else None for x in ps]
+        if c in PART_STROKES and len(PART_STROKES[c]) == len(ps) and sum(PART_STROKES[c]) == n: sizes = list(PART_STROKES[c])
+        unk = [i for i, k in enumerate(sizes) if k is None]
+        if len(unk) == 1: sizes[unk[0]] = n - sum(k for k in sizes if k is not None)
+        if None in sizes or sum(sizes) != n or min(sizes) < 1: sp_extra_skip.append(c); continue
+        order = None
+        if s_ in SURR:
+            m = sizes[0]
+            if len(ps) == 2 and s_ == '全包圍' and m >= 3: groups = [list(range(2)) + list(range(n - (m - 2), n)), list(range(2, n - (m - 2)))]; order = [0, 1]
+            elif len(ps) == 2 and s_ == '左下包圍': groups = [list(range(n - m, n)), list(range(n - m))]; order = [1, 0]
+            else: sp_extra_skip.append(c); continue
+        else:
+            groups, at = [], 0
+            for k in sizes: groups.append(list(range(at, at + k))); at += k
+        sp_data[c] = {'b': sp_box(st), 'p': [stroke_path([st[i] for i in g]) for g in groups], 'l': 1}
+        if order: sp_data[c]['o'] = order
+        sp_added.append(c)
+    sp_data = dict(sorted(sp_data.items()))
+    print(f'課本生字沒有分線、照第一層補進來的 {len(sp_added)} 個：' + ''.join(sp_added) + f'；筆畫數對不上或包圍不確定、沒補的 {len(sp_extra_skip)} 個：' + ''.join(sp_extra_skip))
     sp_head = '''/* =========================================================
    依筆畫褪除用的部件筆畫外形（自動產生，不要手改；重新產生：python3 docs/scripts/make_ruler.py 筆畫資料夾）
    每個字：b＝全部筆畫的外框 [左,上,右,下]（座標 0～512，y 向下）、p＝每個部件的筆畫外形（SVG 路徑，照書寫順序，第一個部件在前；包圍字照部件表順序，o＝書寫順位）、
    l＝1 表示部件分組和部件表第一層一塊對一塊、筆畫數相同（聽音補部件依筆畫遮擋只用這些字）。
    來源：教育部《國字標準字體筆順學習網》的筆畫，經 g0v zh-stroke-data 轉成座標；筆畫外形原樣，沒有變形、沒有新造字形
-   （授權與出處見 docs/materials/stroke-data.md、shared/stroke/README.md）。只放字形尺有分線、而且部件筆畫數確定的字；練習簿的部件褪除用。
+   （授權與出處見 docs/materials/stroke-data.md、shared/stroke/README.md）。放字形尺有分線、而且部件筆畫數確定的字（練習簿的部件褪除用），
+   和 2026-11-23 起照部件表第一層補進來的課本生字（沒有分線，聽音補部件用）。
    ========================================================= */
 '''
     with open(SP_OUT, 'w', encoding='utf-8') as f:
