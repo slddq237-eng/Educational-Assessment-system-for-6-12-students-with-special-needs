@@ -90,8 +90,13 @@ const partShowable = p => [...p].length === 1 && (typeof hasKai !== "function" |
 const pickShowable = c => {
   const ans = partsOf(c) || [];
   if(ans.every(partShowable)) return true;
-  return Strokes.ready() ? ans.every(p => partSources(p).length > 0) : !Strokes.tried;
+  return Strokes.ready() ? !!pickStrokesOf(c) || ans.every(p => partSources(p).length > 0) : !Strokes.tried;
 };
+/* 這個字第二層每塊的教育部筆畫（shared/stroke-parts.js 的 q，維護者 2026-11-23 看對照圖確認過筆畫範圍的字才有），塊數要和現在的第二層一樣；沒有回傳 null */
+function pickStrokesOf(c){
+  const sp = Strokes.of(c), ps = partsOf(c);
+  return sp && sp.q && ps && sp.q.length === ps.length ? sp.q : null;
+}
 const fillIdxs = c => {
   const ps = (Parts.read(c, {from: 1}) || {parts: []}).parts;
   const strokes = Strokes.ready() ? !!strokeMaskOf(c) : !Strokes.tried;
