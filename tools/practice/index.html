@@ -11,8 +11,8 @@
   格子畫法用 shared/ruler-cell.js（字形尺）；部件分區和字形尺同一份，所以示範、褪除、字形尺三者的分塊一致。
   這是雛形：只有這一頁，沒有接課本資料、沒有存任何東西；不放進首頁。示範區只留「筆順示範」；部件示範 2026-11-12 維護者決定刪掉。筆順圖放在 shared/stroke/（檔名是國字.png），沒有圖的字顯示「沒有筆順圖」。
 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-23d">
-<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-23d">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-23e">
+<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-23e">
 <style>
 @font-face{font-family:"BpmfOnly";font-display:swap;src:url(../../shared/fonts/bpmf-only-fix.woff2) format("woff2")}   /* 修正版：原字型的「左邊留白」資料是 0，各系統解讀不同（有的把注音畫在左半邊、有的畫在右半邊），位置會跑掉；修正版把留白改成字形真正的位置 */
 :root{--cell:1.8cm;--zw:8mm;--g:1.2mm;--sg:2.5mm;--k:6;--kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;color-scheme:light}
@@ -103,16 +103,16 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 <div id="pages"></div>
 
 <!-- 課本資料（shared/lessons.js 會自己載入各本）和注音讀音表、課本名稱（shared/common.js） -->
-<script src="../../shared/lessons.js?v=2026-11-23d"></script>
-<script src="../../shared/char-info.js?v=2026-11-23d"></script>
-<script src="../../shared/bpmf.js?v=2026-11-23d"></script>
-<script src="../../shared/parts.js?v=2026-11-23d"></script>
-<script src="../../shared/parts-layers.js?v=2026-11-23d"></script>
-<script src="../../shared/parts-api.js?v=2026-11-23d"></script>
-<script src="../../shared/ruler.js?v=2026-11-23d"></script>
-<script src="../../shared/ruler-cell.js?v=2026-11-23d"></script>
-<script src="../../shared/strokes-api.js?v=2026-11-23d"></script>
-<script src="../../shared/common.js?v=2026-11-23d"></script>
+<script src="../../shared/lessons.js?v=2026-11-23e"></script>
+<script src="../../shared/char-info.js?v=2026-11-23e"></script>
+<script src="../../shared/bpmf.js?v=2026-11-23e"></script>
+<script src="../../shared/parts.js?v=2026-11-23e"></script>
+<script src="../../shared/parts-layers.js?v=2026-11-23e"></script>
+<script src="../../shared/parts-api.js?v=2026-11-23e"></script>
+<script src="../../shared/ruler.js?v=2026-11-23e"></script>
+<script src="../../shared/ruler-cell.js?v=2026-11-23e"></script>
+<script src="../../shared/strokes-api.js?v=2026-11-23e"></script>
+<script src="../../shared/common.js?v=2026-11-23e"></script>
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
@@ -258,9 +258,10 @@ function cellWith(c, parts, opacity){
 const empty = c => RulerCell.html(c, {ruler: true});
 
 /* 褪除兩格，照部件出現（書寫）的順序逆向褪除（2026-11-16 維護者決定）：兩塊 → 先蓋最後一塊、再蓋第一塊（例如清：第一格留水、補青；第二格留青、補水）；三塊 → 先蓋最後一塊、再蓋後兩塊；切不開的字 → 字變淡 */
+const TRACE = .22;   /* 描的字有多淡（切不開、不拆的字褪除格也用這個） */
 function fadeCells(c){
   const sp = splitParts(c);
-  if(!sp) return [cellWith(c, "all", .5), cellWith(c, "all", .2)];
+  if(!sp) return [cellWith(c, "all", TRACE), cellWith(c, "all", TRACE)];   /* 切不開、不拆的字：兩格都和描一樣淡（2026-11-23 維護者決定：原本 50%、20% 一下深一下淺，改成維持描寫） */
   const n = sp.length, w = sp.ord ? [...Array(n).keys()].sort((a, b) => sp.ord[a] - sp.ord[b]) : [...Array(n).keys()];   /* w：部件照書寫順序排（部件表的編號） */
   if(n === 2) return [cellWith(c, [w[0]], .3), cellWith(c, [w[1]], .3)];
   return [cellWith(c, w.slice(0, n - 1), .3), cellWith(c, w.slice(0, n - 2), .3)];
@@ -325,7 +326,7 @@ function render(){
     <div class="sec look">${cellWith(c, "all", 1)}${zyOn && hasZy(c) ? zyBox(c) : ""}</div>
     ${info ? `<div class="sec info"><div class="ir">${esc(infoOf(c)[0])}畫</div><div class="ir">${esc(infoOf(c)[1])}部</div></div>` : ""}
     ${res ? `<div class="sec res"><div class="box"><img src="../../shared/stroke/${encodeURIComponent(c)}.png" alt="${c}的筆順" onerror="this.parentNode.classList.add('no');this.replaceWith(Object.assign(document.createElement('span'),{className:'v',textContent:'沒有筆順圖'}))"></div></div>` : ""}
-    <div class="sec trace">${wt(cellWith(c, "all", .22))}${wt(cellWith(c, "all", .22))}</div>
+    <div class="sec trace">${wt(cellWith(c, "all", TRACE))}${wt(cellWith(c, "all", TRACE))}</div>
     <div class="sec fade">${(wordMode ? fadeCells(c).slice(0, 1) : fadeCells(c)).map(wz).join("")}</div>
     <div class="sec fold"></div>
     <div class="sec solo">${Array.from({length: k}, (_, i) => wz(i === 0 ? empty(c) : `<span class="excell cross"></span>`)).join("")}</div></div>`);   /* 獨立練習：固定只有第一格是字形尺，其餘都是十字格 */
