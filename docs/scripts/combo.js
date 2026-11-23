@@ -28,6 +28,10 @@ const IN_PAGE = async ({goal, kind, mode, play, answer}) => {
   if(miss || (!formal && playWhy(play)) || (play === "game" && !window.Scenes)) return {skip: miss || playWhy(play)};
   const snd = {right:0, wrong:0};   /* 數對錯音效被叫了幾次（A3-8）；音效關著時 sfx 也會被呼叫，所以設定怎麼開都數得到 */
   if(formal) for (const k of ["right", "wrong"]){ const f = sfx[k]; sfx[k] = (...a) => { snd[k]++; return f(...a); }; }
+  /* 要先下載資料的目標（聽音補部件、聽音選部件的教育部筆畫，聽音補部件的遮擋調整）：真的作答時在開始前的讀取畫面就下載好了（play.js 的 prepareThen），
+     這裡直接呼叫 startSession，所以先等下載完；不然 startSession 會先去下載（最多等 6 秒），下面只等 0.7 秒就會誤判成「沒有出題」（2026-11-21 修） */
+  if(goalCaps(goal).loadStrokes) await Strokes.load();
+  if(goalCaps(goal).loadMaskFix) await loadMaskFix();
   try { startSession(); } catch(e) { return {err: `startSession 出錯：${e.stack.split('\n').slice(0,3).join(' | ')}`}; }
   await wait(play === "game" ? SCENE_MS + 500 : answer === "oneround" ? TURN_MS + 700 : 700);   /* 接力有兩位學生，開頭先出現 1.6 秒的「先從 ○○ 開始」 */
   if(G.mode === "flu"){ const go = document.querySelector("#roundGo"); if(!go) return {err: "流暢性沒有「開始」按鈕"}; go.click(); await wait(300); }
