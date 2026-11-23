@@ -43,7 +43,7 @@ function partsApiErrors(){
     let n = 0;
     for (const [c, d] of Object.entries(L)) {
       n++;
-      for (const k of [1, 2]) if (!!P.layer(c, k) !== !!(d[k] && (d[k].m || d[k].a))) errs.push(`${c} 第 ${k} 層：Parts.layer 和資料檔不一致`);
+      for (const k of [1, 2]) if (!!P.layer(c, k) !== !!(d[k] && (d[k].m || d[k].a) && !(k === 1 && d[k].m === c))) errs.push(`${c} 第 ${k} 層：Parts.layer 和資料檔不一致`);   /* 第一層人工手動寫字自己＝不拆，Parts.layer 回傳 null（2026-11-23） */
       if (!!P.layer(c, 3) !== !!P.sub(c).length) errs.push(`${c} 第 3 層：Parts.layer 和 Parts.sub 不一致`);   /* 第三層不存檔，從 parts.js 算 */
       const r1 = P.read(c, { from: 1 }), r2 = P.read(c, { from: 2 }), r3 = P.read(c, { from: 3 });
       if (r2 && r2.layer < 2) errs.push(`${c}：從第 2 層開始讀卻回傳第 ${r2.layer} 層`);
