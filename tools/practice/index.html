@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-21k">
 <link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-21k">
 <style>
-@font-face{font-family:"BpmfOnly";font-display:swap;src:url(../../shared/fonts/bpmf-only.woff2) format("woff2")}
+@font-face{font-family:"BpmfOnly";font-display:swap;src:url(../../shared/fonts/bpmf-only-fix.woff2) format("woff2")}   /* 修正版：原字型的「左邊留白」資料是 0，各系統解讀不同（有的把注音畫在左半邊、有的畫在右半邊），位置會跑掉；修正版把留白改成字形真正的位置 */
 :root{--cell:1.8cm;--zw:8mm;--g:1.2mm;--sg:2.5mm;--k:6;--kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;color-scheme:light}
 *{box-sizing:border-box}
 body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft JhengHei",sans-serif;color:#222}

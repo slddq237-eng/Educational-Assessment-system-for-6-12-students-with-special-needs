@@ -38,3 +38,16 @@ sub.subset(font)
 font.flavor = 'woff2'
 font.save(OUT)
 print(f'{OUT}：{len(chars)} 個字，{os.path.getsize(OUT)} bytes' + (f'；字型裡沒有的 {len(miss)} 個：{"".join(miss)}' if miss else ''))
+
+# 修正版（練習簿用）：原字型每個字的左邊留白（hmtx 的 lsb）都是 0，但字形其實從 x≈360 開始。
+# FreeType 會把字形平移到 lsb=0（注音畫在左半邊），有些系統不平移（畫在右半邊），位置因系統而異，
+# 練習簿的「軟」就因此跑掉（2026-11-23）。修正版把 lsb 改成字形左邊界，各系統一致。寫字考卷（W1）仍用原字型。
+fix = TTFont(OUT)
+glyf, hm = fix['glyf'], fix['hmtx']
+for g in fix.getGlyphOrder():
+    if glyf[g].numberOfContours == 0: continue
+    glyf[g].recalcBounds(glyf)
+    hm[g] = (hm[g][0], glyf[g].xMin)
+fix.flavor = 'woff2'
+fix.save('shared/fonts/bpmf-only-fix.woff2')
+print('shared/fonts/bpmf-only-fix.woff2（練習簿用）')
