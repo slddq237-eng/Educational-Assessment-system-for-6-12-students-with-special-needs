@@ -346,6 +346,21 @@ PART_RANGES = {'載': [[(0, 3), (10, 13)], [(3, 10)]], '戴': [[(0, 3), (14, 17)
 # 交疊字（部件互相穿過，沒有「外層包裡面」）：每個部件一個方框，方框會重疊。維護者 2026-11-18 指定每個部件的筆畫（從 0 算，止不含；可以不連續；可以三個部件）
 OVERLAP = {'斥': [[(0, 4)], [(4, 5)]], '谷': [[(0, 4)], [(4, 7)]]}   # 乖乘坐夾幽爽原本也指定了三個部件，維護者後來改成不拆（改成獨體字），所以不在這裡
 OVL_MARGIN = .02   # 每個部件的方框比它的筆畫外框多留的比例
+# 維護者看編號對照圖確認的第一層筆畫範圍（2026-11-23，docs/materials/stroke-ranges-confirmed.json，docs/design/parts-strokes.md 第 6 節）：
+#   每塊連續、照部件表順序的 → PART_STROKES（字形尺照這個算分線）；包圍字 → PART_RANGES（第一塊是外層，其他合起來是裡面，裡面的方框照這個算）；
+#   其他（筆畫交錯，例如夾、坐）字形尺不變。shared/stroke-parts.js 的分組全部照確認的（下面 sp_data），標 l。原本就有指定的不蓋掉。
+CONF1 = {c: [[i - 1 for part in rg.split(',') for i in range(int(part.split('-')[0]), int(part.split('-')[-1]) + 1)] for _, rg in v]
+         for c, v in json.load(open('docs/materials/stroke-ranges-confirmed.json', encoding='utf-8'))['第一層'].items() if v}
+def _runs(g):
+    out, a = [], g[0]
+    for x, y in zip(g, g[1:] + [None]):
+        if y != x + 1: out.append((a, x + 1)); a = y
+    return out
+for c, gs in CONF1.items():
+    if [i for g in gs for i in g] == list(range(sum(len(g) for g in gs))) and all(len(_runs(g)) == 1 for g in gs):
+        if c not in PART_RANGES: PART_STROKES.setdefault(c, [len(g) for g in gs])
+    elif STRUCT.get(c) in SURR and len(gs) >= 2:   # 包圍字：第一塊是外層，其他合起來是裡面（原＝厂｜白小、司＝司外｜一口）
+        PART_RANGES.setdefault(c, [_runs(gs[0]), _runs(sorted(i for g in gs[1:] for i in g))])
 
 
 SURR_POLY = {'包': (4, .025)}   # 維護者 2026-11-18：包的巳可以用多邊形包住、盡量不要包到上面的勹。字 → （橫切幾條帶, 每邊多留的比例）；只支援右上包圍（外層在右、上，裡面開口在左、下）
@@ -402,7 +417,7 @@ def surround_rect(c, parts, struct, radical):
     """回傳 (方框, 放錯的墨比例, 各部件的筆畫範圍, 各部件的書寫順位) 或 (None, 失敗原因, None, None)"""
     st = load_strokes(c)
     if st is None: return None, '沒有筆畫資料', None, None
-    if not parts or len(parts) != 2: return None, '沒有對應的部件（要 2 塊：外層、裡面）', None, None
+    if not parts or (len(parts) != 2 and c not in PART_RANGES): return None, '沒有對應的部件（要 2 塊：外層、裡面）', None, None   # 維護者指定筆畫的（PART_RANGES）可以是 3 塊，第一塊外層、其他合起來是裡面
     N = len(st)
     known = [piece_count(p, radical) for p in parts]
     if c in PART_STROKES and len(PART_STROKES[c]) == 2 and sum(PART_STROKES[c]) == N: known = list(PART_STROKES[c])
@@ -736,6 +751,19 @@ process.stdout.write(JSON.stringify([...s]));'''], capture_output=True, text=Tru
         if c not in sp_data: sp_data[c] = {'b': sp_box(st), 'p': q}   # 原本沒有的字：p 也用第二層分組（練習簿整個字畫、沒有字形尺不褪除）
         sp_data[c]['q'] = q
     print(f'第二層筆畫分組（q）：{len(L2_RANGES) - len(l2_bad)} 個字；筆畫數對不上、沒收的：' + (''.join(l2_bad) or '無'))
+    # 維護者確認的第一層（CONF1）：分組照確認的，部件表順序；不是照書寫順序的標 o（各塊第一筆的先後），全部標 l
+    fetch_strokes(sorted(CONF1))
+    c1_bad = []
+    for c, gs in CONF1.items():
+        st, ps = load_strokes(c), PARTS.get(c)
+        if not st or not ps or len(ps) != len(gs) or sorted(i for g in gs for i in g) != list(range(len(st))): c1_bad.append(c); continue
+        old = sp_data.get(c, {})
+        d = {'b': sp_box(st), 'p': [stroke_path([st[i] for i in g]) for g in gs], 'l': 1}
+        firsts = [g[0] for g in gs]
+        if firsts != sorted(firsts) or any(len(_runs(g)) > 1 for g in gs): d['o'] = [sorted(firsts).index(f) for f in firsts]
+        if 'q' in old: d['q'] = old['q']
+        sp_data[c] = d
+    print(f'維護者確認的第一層：{len(CONF1) - len(c1_bad)} 個字照確認的分組；對不上、沒用的：' + (''.join(c1_bad) or '無'))
     sp_data = dict(sorted(sp_data.items()))
     print(f'課本生字沒有分線、照第一層補進來的 {len(sp_added)} 個：' + ''.join(sp_added) + f'；筆畫數對不上或包圍不確定、沒補的 {len(sp_extra_skip)} 個：' + ''.join(sp_extra_skip))
     sp_head = '''/* =========================================================

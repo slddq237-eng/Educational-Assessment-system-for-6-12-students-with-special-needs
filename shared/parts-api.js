@@ -24,6 +24,7 @@ window.Parts = (() => {
     if(n === 3){ const t = third(c); return t ? {parts: t, source: "auto", status: ""} : null; }
     const d = data(), x = d && d[c] && d[c][n];
     if(!x) return null;
+    if(x.m && n === 1 && x.m === c) return null;   /* 第一層人工手動寫字自己＝不拆（2026-11-23 起，例如丫、了、力）：當作沒有第一層 */
     if(x.m) return {parts: words(x.m), source: "manual", status: x.t || "待確認"};
     if(x.a) return {parts: words(x.a), source: "auto", status: ""};
     return null;

@@ -11,8 +11,8 @@
   格子畫法用 shared/ruler-cell.js（字形尺）；部件分區和字形尺同一份，所以示範、褪除、字形尺三者的分塊一致。
   這是雛形：只有這一頁，沒有接課本資料、沒有存任何東西；不放進首頁。示範區只留「筆順示範」；部件示範 2026-11-12 維護者決定刪掉。筆順圖放在 shared/stroke/（檔名是國字.png），沒有圖的字顯示「沒有筆順圖」。
 -->
-<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-23b">
-<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-23b">
+<link rel="stylesheet" href="../../shared/fonts/tw-kai.css?v=2026-11-23d">
+<link rel="stylesheet" href="../../shared/ruler-cell.css?v=2026-11-23d">
 <style>
 @font-face{font-family:"BpmfOnly";font-display:swap;src:url(../../shared/fonts/bpmf-only-fix.woff2) format("woff2")}   /* 修正版：原字型的「左邊留白」資料是 0，各系統解讀不同（有的把注音畫在左半邊、有的畫在右半邊），位置會跑掉；修正版把留白改成字形真正的位置 */
 :root{--cell:1.8cm;--zw:8mm;--g:1.2mm;--sg:2.5mm;--k:6;--kai:"TWKai","BiauKai","DFKai-SB","標楷體",serif;color-scheme:light}
@@ -103,16 +103,16 @@ body{margin:0;background:#e6e6e6;font-family:system-ui,"Noto Sans TC","Microsoft
 <div id="pages"></div>
 
 <!-- 課本資料（shared/lessons.js 會自己載入各本）和注音讀音表、課本名稱（shared/common.js） -->
-<script src="../../shared/lessons.js?v=2026-11-23b"></script>
-<script src="../../shared/char-info.js?v=2026-11-23b"></script>
-<script src="../../shared/bpmf.js?v=2026-11-23b"></script>
-<script src="../../shared/parts.js?v=2026-11-23b"></script>
-<script src="../../shared/parts-layers.js?v=2026-11-23b"></script>
-<script src="../../shared/parts-api.js?v=2026-11-23b"></script>
-<script src="../../shared/ruler.js?v=2026-11-23b"></script>
-<script src="../../shared/ruler-cell.js?v=2026-11-23b"></script>
-<script src="../../shared/strokes-api.js?v=2026-11-23b"></script>
-<script src="../../shared/common.js?v=2026-11-23b"></script>
+<script src="../../shared/lessons.js?v=2026-11-23d"></script>
+<script src="../../shared/char-info.js?v=2026-11-23d"></script>
+<script src="../../shared/bpmf.js?v=2026-11-23d"></script>
+<script src="../../shared/parts.js?v=2026-11-23d"></script>
+<script src="../../shared/parts-layers.js?v=2026-11-23d"></script>
+<script src="../../shared/parts-api.js?v=2026-11-23d"></script>
+<script src="../../shared/ruler.js?v=2026-11-23d"></script>
+<script src="../../shared/ruler-cell.js?v=2026-11-23d"></script>
+<script src="../../shared/strokes-api.js?v=2026-11-23d"></script>
+<script src="../../shared/common.js?v=2026-11-23d"></script>
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
@@ -164,9 +164,12 @@ function layer(c, opacity){
 let SPLIT = {}, INSIDE_MIN = .98, CUT_MAX = .1, CUTINK = {};   /* 每一塊筆畫至少多少比例要落在自己的部件範圍裡；沿線切開時最多切到多少比例的墨 */
 function splitParts(c){
   if(c in SPLIT) return SPLIT[c];
+  const sp = Strokes.of(c);   /* 有教育部筆畫的字：每一筆屬於哪個部件是確定的，直接用筆畫（見 strokeParts） */
+  /* 2026-11-23：筆畫分組和部件表第一層對得上（l，含維護者看對照圖確認的）的字，沒有字形尺、或字形尺塊數不同也照部件褪除
+     （例如四、失、友沒有字形尺；原、司部件表是 3 塊、字形尺是外層＋裡面 2 塊） */
+  if(sp && sp.l) return SPLIT[c] = strokeParts(c, sp);
   const bl = RulerCell.blocks(c, true);
   if(!bl) return SPLIT[c] = null;
-  const sp = Strokes.of(c);   /* 有教育部筆畫的字：每一筆屬於哪個部件是確定的，直接用筆畫（見 strokeParts） */
   if(sp && sp.p.length === bl.length) return SPLIT[c] = strokeParts(c, sp);
   const N = 512, img = glyphCanvas(c, N, fit(c)).getImageData(0, 0, N, N), d = img.data;
   const sur = bl.length === 2 && bl[0][2] === 1 && bl[0][3] === 1;   /* 包圍：第 0 塊是外框（整格去掉裡面），第 1 塊是裡面 */

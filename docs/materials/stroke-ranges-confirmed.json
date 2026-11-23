@@ -1,5 +1,5 @@
 {
- "說明": "維護者看編號對照圖確認過的部件筆畫範圍（2026-11-23 起）。範圍是教育部筆順的第幾畫（1 起算），同一部件不連續用逗號；null＝不拆。名稱空白＝照部件表。第二層確認過的 61 字目前在 docs/scripts/make_ruler.py 的 L2_RANGES（shared/stroke-parts.js 的 q）。之後要搬進部件表的「筆畫範圍」欄（docs/design/parts-strokes.md 第 6 節）。",
+ "說明": "維護者看編號對照圖確認過的部件筆畫範圍（2026-11-23 起）。範圍是教育部筆順的第幾畫（1 起算），同一部件不連續用逗號；null＝不拆。名稱空白＝照部件表。第二層確認過的 61 字目前在 docs/scripts/make_ruler.py 的 L2_RANGES（shared/stroke-parts.js 的 q）。第一層 docs/scripts/make_ruler.py 直接讀（2026-11-23 起，字形尺、shared/stroke-parts.js 照這個分組）；部件表第一層的名稱也照這裡改了。之後要搬進部件表的「筆畫範圍」欄（docs/design/parts-strokes.md 第 6 節）。",
  "第一層": {
   "丫": null,
   "串": [
