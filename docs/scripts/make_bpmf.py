@@ -30,7 +30,9 @@
 單獨一個字（沒有組成詞）用字型的預設讀音；「一」「不」照課本標變調（2026-10-22 維護者查課本確定，規則見 sandhi()）；
 「們、麼、個、和」詞庫常收口語讀音，一律用預設讀音。
 """
-import json, math, re, subprocess, sys, unicodedata
+import json, math, os, re, subprocess, sys, unicodedata
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from fontname import rename
 from fontTools import subset
 from fontTools.ttLib import TTFont
 
@@ -211,7 +213,7 @@ for i, g in enumerate(groups):
     opts = subset.Options(); opts.flavor = 'woff2'; opts.layout_features = []; opts.drop_tables += ['vhea', 'vmtx', 'BASE']
     font = TTFont(FONT)
     sub = subset.Subsetter(opts); sub.populate(unicodes=[ord(c) for c in g] + list(range(0xE01E0, 0xE01F0)))
-    sub.subset(font); name = f'bpmf-kai-{i + 1}.woff2'; font.save(os.path.join(OUT_DIR, name))
+    sub.subset(font); rename(font, 'Bpmf Kai', 'Bpmf Zihi Kai Std (But Ko, bpmfvs)'); name = f'bpmf-kai-{i + 1}.woff2'; font.save(os.path.join(OUT_DIR, name))
     total += os.path.getsize(os.path.join(OUT_DIR, name))
     rng = ','.join(f'U+{ord(c):X}' for c in sorted(g)) + ',U+E01E0-E01EF'
     css.append(f'@font-face{{font-family:"BpmfKai";font-display:swap;src:url({name}) format("woff2");unicode-range:{rng}}}')

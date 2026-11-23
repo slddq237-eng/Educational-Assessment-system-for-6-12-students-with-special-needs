@@ -12,13 +12,15 @@
   https://github.com/ButTaiwan/bpmfvs/releases/download/v1.500/BpmfSpecial.zip
 授權：bpmfvs 注音 IVS 字型規格 Apache 2.0（zip 內 NOTICE.txt）；字型本身 zip 內的授權文件沒有單獨寫明，
   依同系列（字嗨注音標楷：漢字 CC BY 4.0、其餘 SIL OFL 1.1；這個字型只有注音、沒有漢字字形）判斷為 SIL OFL 1.1，
-  見 docs/materials/data-sources.md（待作者確認）。
+  見 docs/materials/data-sources.md（2026-11-23 維護者確認可用）。
 執行（在 repo 最上層）：
   python3 docs/scripts/make_bpmf_only.py <BpmfZihiOnly-R.ttf>
 """
 import os, subprocess, sys
 from fontTools import subset
 from fontTools.ttLib import TTFont
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from fontname import rename
 
 SRC = sys.argv[1]
 OUT = 'shared/fonts/bpmf-only.woff2'
@@ -35,6 +37,7 @@ opts = subset.Options(); opts.flavor = 'woff2'; opts.layout_features = []; opts.
 sub = subset.Subsetter(opts)
 sub.populate(unicodes=[ord(c) for c in chars] + list(range(0xE01E0, 0xE01F0)))   # 生字＋異體字選擇子（破音字的其他讀音）
 sub.subset(font)
+rename(font, 'Bpmf Only', 'Bpmf Zihi Only (But Ko, bpmfvs)')
 font.flavor = 'woff2'
 font.save(OUT)
 print(f'{OUT}：{len(chars)} 個字，{os.path.getsize(OUT)} bytes' + (f'；字型裡沒有的 {len(miss)} 個：{"".join(miss)}' if miss else ''))
@@ -64,6 +67,7 @@ def make_fix(font):
         hm[n] = (hm[n][0], g.xMin)               # 左邊留白＝字形左邊界，各系統一致
     return font
 fix = make_fix(TTFont(OUT))
+rename(fix, 'Bpmf Only Fix', 'Bpmf Zihi Only (But Ko, bpmfvs)')
 fix.flavor = 'woff2'
 fix.save('shared/fonts/bpmf-only-fix.woff2')
 print('shared/fonts/bpmf-only-fix.woff2（練習簿用，注音已置中）')
