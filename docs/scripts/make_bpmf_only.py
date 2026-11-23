@@ -38,3 +38,32 @@ sub.subset(font)
 font.flavor = 'woff2'
 font.save(OUT)
 print(f'{OUT}：{len(chars)} 個字，{os.path.getsize(OUT)} bytes' + (f'；字型裡沒有的 {len(miss)} 個：{"".join(miss)}' if miss else ''))
+
+# 修正版（練習簿用）：原字型每個字的左邊留白（hmtx 的 lsb）都是 0，但字形其實從 x≈360 開始。
+# FreeType 會把字形平移到 lsb=0（注音畫在左半邊），有些系統不平移（畫在右半邊），位置因系統而異，
+# 練習簿的「軟」就因此跑掉（2026-11-23）；原字型在 FreeType 下三個符號的字（ㄨㄢ…）還會互相擠在一起，也是這個原因。修正版：每個字的注音直接在字型裡放到字框正中央（左右、上下），
+# 並把 lsb 改成字形左邊界，網頁不用再量位置，各系統一致。寫字考卷（W1）仍用原字型。
+def make_fix(font):
+    from fontTools.pens.boundsPen import BoundsPen
+    from fontTools.pens.transformPen import TransformPen
+    from fontTools.pens.ttGlyphPen import TTGlyphPen
+    glyf, hm, hh = font['glyf'], font['hmtx'], font['hhea']
+    gs = font.getGlyphSet()
+    ty = (hh.ascent + hh.descent) / 2        # 行高 1 時，字框正中央離基線的高度（hhea.descent 為負數）
+    for n in font.getGlyphOrder():
+        if glyf[n].numberOfContours == 0: continue
+        adv = hm[n][0] or 1024
+        bp = BoundsPen(gs); gs[n].draw(bp)
+        if not bp.bounds: continue
+        x0, y0, x1, y1 = bp.bounds
+        dx, dy = adv / 2 - (x0 + x1) / 2, ty - (y0 + y1) / 2
+        pen = TTGlyphPen(gs)                     # 把組合字形攤平成單一輪廓，順便平移到字框正中央
+        gs[n].draw(TransformPen(pen, (1, 0, 0, 1, dx, dy)))
+        g = pen.glyph(); glyf[n] = g
+        g.recalcBounds(glyf)
+        hm[n] = (hm[n][0], g.xMin)               # 左邊留白＝字形左邊界，各系統一致
+    return font
+fix = make_fix(TTFont(OUT))
+fix.flavor = 'woff2'
+fix.save('shared/fonts/bpmf-only-fix.woff2')
+print('shared/fonts/bpmf-only-fix.woff2（練習簿用，注音已置中）')
