@@ -121,17 +121,22 @@ function makePartsOptions(c, k, n){
 const PICK_MIN = 6, ONE_STROKE_PARTS = new Set([..."一丨丿丶乀乙乚乛亅"]);   /* 單一筆畫的部件不當干擾部件（2026-11-21 改名：教育部筆畫檔的 STROKE_PARTS 是另一個東西，同名會讓那個檔載不進來） */
 /* 干擾部件（聽音選部件、聽音補部件共用）：回傳 need 個不重複的部件。ans＝答案部件，visible＝畫面上看得到的部件（聽音補部件沒被遮的那幾塊，也不能當干擾）；
    lead＝先試的部件（聽音補部件依遮的位置找的甲、乙，見 fillLead），一樣要過下面的排除規則，不夠再用形近字、同課字、全部課本字的部件補 */
+/* 看起來一樣（或是同一個部件當字旁時的寫法）的部件，挑干擾選項時當成同一個。用筆畫畫選項時，別的字裡切出來的「竹」「金」就是竹字頭、金字旁的樣子，
+   會和答案的「⺮」「釒」長得一模一樣（2026-11-24 維護者回報：康軒六上第 8 課「策」兩個竹字頭、康軒三上第 7 課「鐵」兩個金字旁） */
+const PART_SAME = {"⺮": "竹", "𥫗": "竹", "糹": "糸", "艹": "艸", "⺼": "月", "釒": "金", "訁": "言", "飠": "食", "扌": "手", "亻": "人",
+  "氵": "水", "忄": "心", "犭": "犬", "礻": "示", "衤": "衣", "⻊": "足", "𧾷": "足", "罒": "网", "耂": "老", "刂": "刀", "攵": "攴"};
+const partKey = p => PART_SAME[p] || p;
 function partDistractors(c, k, ans, need, visible = [], srcs = null, lead = []){
   const b = splitKey(k)[0], [, shape = ""] = confOf(c, b) || [];
-  /* 這個字自己三層的部件都不放（2026-11-21 修：表的第一層是「上半 下半」，第二層的龶就是上半，放進選項會有兩個對的） */
-  const bad = new Set([c, ...ans, ...visible, ...[1, 2, 3].flatMap(n => (Parts.layer(c, n) || {parts: []}).parts)]);
+  /* 這個字自己三層的部件都不放（2026-11-21 修：表的第一層是「上半 下半」，第二層的龶就是上半，放進選項會有兩個對的）；看起來一樣的寫法也不放（PART_SAME） */
+  const bad = new Set([c, ...ans, ...visible, ...[1, 2, 3].flatMap(n => (Parts.layer(c, n) || {parts: []}).parts)].map(partKey));
   /* 楷書字型沒收的部件不放（例如龶、𧘇：會借用裝置的字型，位置跑掉或顯示不出來；hasKai 在 exam.js） */
   const inKai = p => typeof hasKai !== "function" || hasKai(p);
   /* srcs：聽音補部件用筆畫畫選項時，干擾部件要找得到筆畫來源（字型有沒有收就不重要了） */
-  const ok = p => [...p].length === 1 && isHan(p) && p.codePointAt(0) < 0x20000 && (srcs ? srcs(p).length > 0 : inKai(p)) && !ONE_STROKE_PARTS.has(p) && !bad.has(p) && !((partsOf(p) || []).length && partsOf(p).every(q => ans.includes(q)));
+  const ok = p => [...p].length === 1 && isHan(p) && p.codePointAt(0) < 0x20000 && (srcs ? srcs(p).length > 0 : inKai(p)) && !ONE_STROKE_PARTS.has(p) && !bad.has(partKey(p)) && !((partsOf(p) || []).length && partsOf(p).every(q => ans.includes(q)));
   const pool = [], seen = new Set();
-  for(const p of lead) if(pool.length < need && ok(p) && !seen.has(p)){ seen.add(p); pool.push(p); }
-  const fill = chars => { for(const x of chars){ for(const p of shuffle([...(partsOf(x) || [])])) if(pool.length < need && ok(p) && !seen.has(p)){ seen.add(p); pool.push(p); } if(pool.length >= need) return; } };
+  for(const p of lead) if(pool.length < need && ok(p) && !seen.has(partKey(p))){ seen.add(partKey(p)); pool.push(p); }
+  const fill = chars => { for(const x of chars){ for(const p of shuffle([...(partsOf(x) || [])])) if(pool.length < need && ok(p) && !seen.has(partKey(p))){ seen.add(partKey(p)); pool.push(p); } if(pool.length >= need) return; } };
   fill(shuffle([...shape]));
   fill(shuffle(charsOf(k).filter(x => x !== c)));
   fill(shuffle(ALL_CHARS.filter(x => x !== c)));
