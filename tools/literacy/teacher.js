@@ -200,6 +200,34 @@ function errorTile(rs, partsPage){
   if(v.state === "few") return ["常見錯誤類型", "資料不夠", `錯的字 ${st.units} 個，要至少 ${NO_BIAS_MIN_CHARS} 個不同的字才能判斷`];
   return ["常見錯誤類型", "沒有特定偏向", `正確率 ${pc100(ab.acc)}%，錯的 ${st.units} 個字分散在各類`];
 }
+/* 前後測進步（維護者 2026-11-27 同意，docs/plans/goal-review-r3.md「前後測檢定」）：
+   配對＝（課，字）；只用標了前測、後測的正式評量，不含練習和流暢性。同一課同一個字有多次前測或後測時取最近一次（暫定，待維護者決定，只要改 pickLast）。
+   檢定用 McNemar 精確檢定（只看「前錯後對」b 和「前對後錯」c，雙尾）；配對少於 PP_MIN_PAIRS 組只顯示進步幅度。 */
+const PP_MIN_PAIRS = 20;
+function mcnemarP(b, c){
+  const n = b + c; if(!n) return 1;
+  const k = Math.min(b, c); let t = 0, term = Math.pow(0.5, n);   /* term＝C(n,i)/2^n，從 i=0 往上算 */
+  for(let i = 0; i <= k; i++){ t += term; term = term * (n - i) / (i + 1); }
+  return Math.min(1, 2 * t);
+}
+function prePostGain(all){
+  const f = all.filter(r => r.kind === "formal" && r.mode !== "flu" && (r.prepost === "前測" || r.prepost === "後測"));
+  const pickLast = l => l.reduce((a, r) => r.at > a.at ? r : a);
+  const pairs = [], byLesson = new Map();
+  for(const [k, l] of groupBy(f, r => r.lesson + "|" + r.char)){
+    const pre = l.filter(r => r.prepost === "前測"), post = l.filter(r => r.prepost === "後測");
+    if(!pre.length || !post.length) continue;
+    const a = pickLast(pre).firstCorrect ? 1 : 0, b = pickLast(post).firstCorrect ? 1 : 0;
+    pairs.push([a, b]);
+    const ls = byLesson.get(l[0].lesson) || {a: 0, b: 0, n: 0}; ls.a += a; ls.b += b; ls.n++; byLesson.set(l[0].lesson, ls);
+  }
+  const n = pairs.length; if(!n) return null;
+  const pre = pairs.reduce((s, x) => s + x[0], 0), post = pairs.reduce((s, x) => s + x[1], 0);
+  const up = pairs.filter(x => !x[0] && x[1]).length, down = pairs.filter(x => x[0] && !x[1]).length;
+  const lessons = [...byLesson.values()];
+  return {n, preP: Math.round(pre / n * 100), postP: Math.round(post / n * 100), up, down, p: n >= PP_MIN_PAIRS ? mcnemarP(up, down) : null,
+    better: lessons.filter(x => x.b > x.a).length, worse: lessons.filter(x => x.b < x.a).length, lessons: lessons.length};
+}
 function simpleSummary(rs, partsPage){
   const sess = sessionsOf(rs), days = [...new Set(rs.map(dayOf))].sort(), a = accOf(rs), secs = secList(rs);
   const lastDay = days[days.length - 1], lastAcc = accOf(rs.filter(r => dayOf(r) === lastDay));
@@ -210,7 +238,21 @@ function simpleSummary(rs, partsPage){
   }
   const tile = (label, value, sub) => `<div class="tstat"><span>${label}</span><b>${esc(value)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</div>`;
   return `<div class="tstats">${tile("做過", `${sess.length} 次`, `${days.length} 天・${rs.length} 題`)}${tile("整體正確率", a.v == null ? "—" : `${a.v}%`, `最近一天 ${lastAcc.v == null ? "—" : lastAcc.v + "%"}`)}
-    ${tile("平均反應時間", secs.length ? `${avg(secs)} 秒` : "—", secs.length ? `中位數 ${median(secs)} 秒` : "")}${tile("反應速度變化", speed[0], speed[1])}${tile(...errorTile(rs, partsPage))}</div>`;
+    ${tile("平均反應時間", secs.length ? `${avg(secs)} 秒` : "—", secs.length ? `中位數 ${median(secs)} 秒` : "")}${tile("反應速度變化", speed[0], speed[1])}${tile(...errorTile(rs, partsPage))}${gainTile(rs, partsPage)}</div>`
+    + (partsPage ? "" : gainNote(rs));
+}
+function gainTile(rs, partsPage){
+  if(partsPage) return "";
+  const g = prePostGain(rs), tile = (v, sub) => `<div class="tstat"><span>前後測進步</span><b>${esc(v)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</div>`;
+  if(!g) return tile("—", "還沒有同一個字的前測和後測");
+  const d = g.postP - g.preP;
+  return tile(`${d > 0 ? "+" : ""}${d} 個百分點`, `前測 ${g.preP}% → 後測 ${g.postP}%（共 ${g.n} 個字）`);
+}
+function gainNote(rs){
+  const g = prePostGain(rs); if(!g) return "";
+  const test = g.p == null ? `字數太少（要約 ${PP_MIN_PAIRS} 個字以上），不做檢定。`
+    : `前錯後對 ${g.up} 個、前對後錯 ${g.down} 個，p = ${g.p < 0.001 ? "小於 0.001" : g.p.toFixed(3)}：${g.p < 0.05 ? "前後測有顯著差異，可能與教學有關，但也可能是其他因素（家裡或其他課堂的學習、自然成長）。" : "沒有看到顯著差異（可能是真的沒進步，也可能是字數還不夠多）。"}`;
+  return `<p class="note">前後測進步：同一課同一個字的前測、後測配成一組（同一個字有多次時用最近一次），只算正式評量，不含練習和計時挑戰。共 ${g.lessons} 課，${g.better} 課進步、${g.worse} 課退步。${test}「顯著」的意思是只靠運氣看到這麼大進步的機率小於 5%，不代表教學有效，也不代表進步很大。</p>`;
 }
 const SIMPLE_CHIPS = 24, SIMPLE_ROWS = 10;
 /* 做過哪些評量目標（依 GOALS 的順序，不認得的舊代號排最後）；「看哪個目標」按鈕用（個人、多位學生，維護者 2026-11-11） */
