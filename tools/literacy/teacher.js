@@ -249,6 +249,19 @@ function prePostGain(all){
     better: lessons.filter(x => x.b > x.a + 1e-9).length, worse: lessons.filter(x => x.b < x.a - 1e-9).length, lessons: lessons.length,
     later: [...later.values()].sort((x, y) => x.i - y.i)};
 }
+function simpleSummary(rs, partsPage){
+  const sess = sessionsOf(rs), days = [...new Set(rs.map(dayOf))].sort(), a = accOf(rs), secs = secList(rs);
+  const lastDay = days[days.length - 1], lastAcc = accOf(rs.filter(r => dayOf(r) === lastDay));
+  let speed = ["—", "資料還不到一週"];
+  if(daysBetween(days[0], lastDay) >= 7){
+    const w1 = avg(secList(rs.filter(r => daysBetween(days[0], dayOf(r)) < 7))), w2 = avg(secList(rs.filter(r => daysBetween(dayOf(r), lastDay) < 7)));
+    if(w1 != null && w2 != null){ const d = Math.round((w2 - w1) * 10) / 10; speed = [d < 0 ? `快 ${-d} 秒` : d > 0 ? `慢 ${d} 秒` : "一樣快", `第一週 ${w1} → 最近一週 ${w2}`]; }
+  }
+  const tile = (label, value, sub) => `<div class="tstat"><span>${label}</span><b>${esc(value)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</div>`;
+  return `<div class="tstats">${tile("做過", `${sess.length} 次`, `${days.length} 天・${rs.length} 題`)}${tile("整體正確率", a.v == null ? "—" : `${a.v}%`, `最近一天 ${lastAcc.v == null ? "—" : lastAcc.v + "%"}`)}
+    ${tile("平均反應時間", secs.length ? `${avg(secs)} 秒` : "—", secs.length ? `中位數 ${median(secs)} 秒` : "")}${tile("反應速度變化", speed[0], speed[1])}${tile(...errorTile(rs, partsPage))}${gainTile(rs, partsPage)}</div>`
+    + (partsPage ? "" : gainNote(rs));
+}
 function gainTile(rs, partsPage){
   if(partsPage) return "";
   const g = prePostGain(rs), tile = (v, sub) => `<div class="tstat"><span>前後測進步</span><b>${esc(v)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</div>`;
