@@ -36,7 +36,7 @@ const PHASE_ORDER = [...PREPOST, "未標記"];
 const isPartsGoal = r => !!goalCaps(r.goal).partsAnswer;
 const ETYPES = ["同詞易混","同音","形近","同部件","課文字","其他字","少選","選到干擾部件"];   /* 同部件只出現在目標 4-1 部件重組 */
 const GAP_BUCKETS = {
-  after: {name:"教學後天數", what:"該課教學結束到這次評量隔幾天", list:["教學結束前或沒填日期","0～6 天","7～13 天","14～29 天","30 天以上"]},
+  after: {name:"教學後天數", what:"該課教學結束到這次評量隔幾天", list:["教學結束前或沒填日期","0～6 天","7～13 天","14～24 天","25 天以上"]},
   prev:  {name:"距上次評量天數", what:"同一個字上次考到這次隔幾天", list:["第一次考","同一天","1～6 天","7～13 天","14～29 天","30 天以上"]}
 };
 
@@ -72,11 +72,14 @@ function prevGap(r){
   }
   return prevCache.get(r);
 }
+/* 教學後天數的分界（維護者 2026-11-28 決定：一週內含當下 0～6、隔一週 7～13、隔兩週 14～24、隔一個月 25 天以上；「隔一個月」常常是第 28 天左右，所以界線放 25）；
+   老師專區的間隔分組、教學結束後的直立線、前後測進步卡都用這一組 */
+const AFTER_CUTS = [7, 14, 25], AFTER_NAMES = ["一週內（含當下）", "隔一週", "隔兩週", "隔一個月"];
 function gapBucket(r, type){
   if(type === "after"){
     const d = r.daysAfter;
     if(d === "" || d == null) return "教學結束前或沒填日期";
-    return d < 7 ? "0～6 天" : d < 14 ? "7～13 天" : d < 30 ? "14～29 天" : "30 天以上";
+    return d < AFTER_CUTS[0] ? "0～6 天" : d < AFTER_CUTS[1] ? "7～13 天" : d < AFTER_CUTS[2] ? "14～24 天" : "25 天以上";
   }
   const d = prevGap(r);
   if(d == null) return "第一次考";
@@ -215,34 +218,36 @@ function mcnemarP(b, c){
 function prePostGain(all){
   const f = all.filter(r => r.kind === "formal" && r.mode !== "flu" && (r.prepost === "前測" || r.prepost === "後測"));
   const mean = l => l.reduce((s, r) => s + (r.firstCorrect ? 1 : 0), 0) / l.length;
-  const pairs = [], byLesson = new Map();
+  /* 後測分時間點（維護者 2026-11-28）：這一課的後測都有「教學後天數」就照 AFTER_CUTS 分四段；沒輸入教學結束日（有任何一筆沒有天數）就照日期順序分「第 N 次後測」，不猜隔多久。
+     卡片的主數字只用第一個時間點（一週內、第 1 次後測），後面的時間點只看維持。 */
+  const tpOf = new Map(), tpName = new Map();
+  for(const [lk, l] of groupBy(f.filter(r => r.prepost === "後測"), r => key(r.book, r.lesson))){
+    const dated = l.every(r => Number.isFinite(r.daysAfter)), days = [...new Set(l.map(dayOf))].sort();
+    l.forEach(r => { const i = dated ? AFTER_CUTS.filter(c => r.daysAfter >= c).length : days.indexOf(dayOf(r)); tpOf.set(r, i); tpName.set(r, dated ? AFTER_NAMES[i] : `第 ${i + 1} 次後測`); });
+  }
+  const pairs = [], byLesson = new Map(), later = new Map();
   for(const [k, l] of groupBy(f, r => key(r.book, r.lesson) + "|" + r.char)){
     const start = teachFor(key(l[0].book, l[0].lesson), l[0].kid).start;
-    const pre = l.filter(r => r.prepost === "前測" && (!start || daysBetween(start, dayOf(r)) <= 0)), post = l.filter(r => r.prepost === "後測");
-    if(!pre.length || !post.length) continue;
-    const a = mean(pre), b = mean(post);
+    const pre = l.filter(r => r.prepost === "前測" && (!start || daysBetween(start, dayOf(r)) <= 0));
+    const posts = groupBy(l.filter(r => r.prepost === "後測"), r => tpOf.get(r));
+    if(!pre.length || !posts.get(0)) continue;
+    const a = mean(pre), b = mean(posts.get(0));
     pairs.push([a, b]);
     const lk = key(l[0].book, l[0].lesson), ls = byLesson.get(lk) || {a: 0, b: 0}; ls.a += a; ls.b += b; byLesson.set(lk, ls);
+    for(const [i, pl] of posts){
+      if(i === 0) continue;
+      const name = tpName.get(pl[0]), m = mean(pl), e = later.get(name) || {i, name, main: tpName.get(posts.get(0)[0]), n: 0, above: 0, below: 0, drop: 0};
+      e.n++; if(m > a + 1e-9) e.above++; else if(m < a - 1e-9) e.below++; if(m < b - 1e-9) e.drop++;
+      later.set(name, e);
+    }
   }
   const n = pairs.length; if(!n) return null;
   const pre = pairs.reduce((s, x) => s + x[0], 0), post = pairs.reduce((s, x) => s + x[1], 0);
   const up = pairs.filter(x => x[1] > x[0] + 1e-9).length, down = pairs.filter(x => x[1] < x[0] - 1e-9).length;
   const lessons = [...byLesson.values()];
   return {n, preP: Math.round(pre / n * 100), postP: Math.round(post / n * 100), up, down, same: n - up - down, p: n >= PP_MIN_PAIRS ? mcnemarP(up, down) : null,
-    better: lessons.filter(x => x.b > x.a + 1e-9).length, worse: lessons.filter(x => x.b < x.a - 1e-9).length, lessons: lessons.length};
-}
-function simpleSummary(rs, partsPage){
-  const sess = sessionsOf(rs), days = [...new Set(rs.map(dayOf))].sort(), a = accOf(rs), secs = secList(rs);
-  const lastDay = days[days.length - 1], lastAcc = accOf(rs.filter(r => dayOf(r) === lastDay));
-  let speed = ["—", "資料還不到一週"];
-  if(daysBetween(days[0], lastDay) >= 7){
-    const w1 = avg(secList(rs.filter(r => daysBetween(days[0], dayOf(r)) < 7))), w2 = avg(secList(rs.filter(r => daysBetween(dayOf(r), lastDay) < 7)));
-    if(w1 != null && w2 != null){ const d = Math.round((w2 - w1) * 10) / 10; speed = [d < 0 ? `快 ${-d} 秒` : d > 0 ? `慢 ${d} 秒` : "一樣快", `第一週 ${w1} → 最近一週 ${w2}`]; }
-  }
-  const tile = (label, value, sub) => `<div class="tstat"><span>${label}</span><b>${esc(value)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</div>`;
-  return `<div class="tstats">${tile("做過", `${sess.length} 次`, `${days.length} 天・${rs.length} 題`)}${tile("整體正確率", a.v == null ? "—" : `${a.v}%`, `最近一天 ${lastAcc.v == null ? "—" : lastAcc.v + "%"}`)}
-    ${tile("平均反應時間", secs.length ? `${avg(secs)} 秒` : "—", secs.length ? `中位數 ${median(secs)} 秒` : "")}${tile("反應速度變化", speed[0], speed[1])}${tile(...errorTile(rs, partsPage))}${gainTile(rs, partsPage)}</div>`
-    + (partsPage ? "" : gainNote(rs));
+    better: lessons.filter(x => x.b > x.a + 1e-9).length, worse: lessons.filter(x => x.b < x.a - 1e-9).length, lessons: lessons.length,
+    later: [...later.values()].sort((x, y) => x.i - y.i)};
 }
 function gainTile(rs, partsPage){
   if(partsPage) return "";
@@ -255,7 +260,8 @@ function gainNote(rs){
   const g = prePostGain(rs); if(!g) return "";
   const test = g.p == null ? `字數太少（要約 ${PP_MIN_PAIRS} 個字以上），不做檢定。`
     : `進步 ${g.up} 個字、退步 ${g.down} 個字，p = ${g.p < 0.001 ? "小於 0.001" : g.p.toFixed(3)}：${g.p < 0.05 ? "前後測有顯著差異，可能與教學有關，但也可能是其他因素（家裡或其他課堂的學習、自然成長）。" : "沒有看到顯著差異（可能是真的沒進步，也可能是字數還不夠多）。"}`;
-  return `<p class="note">前後測進步：同一課同一個字的前測、後測配成一組，有多次時各取平均，有輸入教學開始日的課，前測只算教學開始前；只算正式評量，不含練習和計時挑戰。「進步」是這個字後測平均比前測平均高。共 ${g.n} 個字、${g.lessons} 課，${g.better} 課進步、${g.worse} 課退步。${test}「顯著」的意思是只靠運氣看到這麼大進步的機率小於 5%，不代表教學有效，也不代表進步很大。</p>`;
+  const keep = g.later.length ? "維持情形：" + g.later.map(e => `${e.name}高於前測 ${e.above} 個字、低於前測 ${e.below} 個字，比${e.main}退步 ${e.drop} 個字（${e.n} 個字）`).join("；") + "。" : "";
+  return `<p class="note">前後測進步：同一課同一個字的前測、後測配成一組，有多次時各取平均，有輸入教學開始日的課，前測只算教學開始前；只算正式評量，不含練習和計時挑戰。後測只用第一個時間點（有教學結束日：教學結束後 0～6 天，一週內含當下；沒有：第 1 次後測）算進步，隔一週、隔兩週、隔一個月的後測另外看維持，不混在一起平均。「進步」是這個字後測平均比前測平均高。共 ${g.n} 個字、${g.lessons} 課，${g.better} 課進步、${g.worse} 課退步。${test}${keep}「顯著」的意思是只靠運氣看到這麼大進步的機率小於 5%，不代表教學有效，也不代表進步很大。</p>`;
 }
 const SIMPLE_CHIPS = 24, SIMPLE_ROWS = 10;
 /* 做過哪些評量目標（依 GOALS 的順序，不認得的舊代號排最後）；「看哪個目標」按鈕用（個人、多位學生，維護者 2026-11-11） */
@@ -469,7 +475,7 @@ function evText(e, x, yBase){
 /* 教學結束後的時間線：橫軸是「每次評量一格」，所以線畫在兩格中間（第 i 格前面＝i - 0.5）；那段時間沒有評量就不畫。days＝每一格的日期（由早到晚） */
 function afterEvents(end, days){
   const byIdx = new Map();
-  [[0, "教學結束"], [7, "1 週"], [14, "2 週"], [30, "1 個月"]].forEach(([d, name]) => {
+  [[0, "教學結束"], [AFTER_CUTS[0], "1 週"], [AFTER_CUTS[1], "2 週"], [AFTER_CUTS[2], "1 個月"]].forEach(([d, name]) => {
     const i = days.findIndex(day => daysBetween(end, day) >= d);
     /* 同一次評量同時滿 1 週和 2 週（沒有另外一次 2 週的資料）時，只標最短的那個（2026-11-20 維護者要求）；教學結束照常標 */
     if(i > 0 && !(name !== "教學結束" && (byIdx.get(i) || []).some(n => n !== "教學結束"))) byIdx.set(i, [...(byIdx.get(i) || []), name]);
