@@ -153,8 +153,8 @@ try {
   }
   const sctx = {};
   new Function(read('shared/bpmf.js') + ';this.SAY=BPMF_SAY').call(sctx);
-  for (const [t, where] of texts) for (const [w, [from, to]] of Object.entries(sctx.SAY))
-    if (t !== w && t.includes(w) && !SAY_OK.has(t))
+  for (const [t, where] of texts) for (const [w, [from, to, only]] of Object.entries(sctx.SAY))
+    if (only !== 'end' && t !== w && t.includes(w) && !SAY_OK.has(t))   /* 'end'＝只換題目最後的字，例句不受影響 */
       warn(where, `「${t}」裡有語音替換詞「${w}」，唸的時候「${from}」會換成「${to}」；讀音一樣就把這句加進 check.js 的 SAY_OK，不一樣請改 make_bpmf.py 的 SAY`);
   if (few) warn('shared/lessons.js', `${few} 個字的干擾字少於 2 個，出題時會用課文字補（例如 ${fewEx.join('、')}；候選干擾字在 docs/materials/material-review.xlsx「干擾字候選」頁；怎麼處理見規格書 A3）`);
 } catch (e) {
