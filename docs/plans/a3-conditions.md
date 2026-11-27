@@ -45,7 +45,7 @@
 |---|---|---|
 | 出題方式 | 純平均隨機；常錯優先、字頻優先只給練習 | `docs/design/literacy-design.md` |
 | 20% 常用字加題 | 只用在練習，不用在正式評量 | 同上 |
-| 預設題數 | 一課的量（所選版本每課生字數的平均） **（2026-11-27 維護者提議改成所選各課字數加總，待夥伴確認，見 `pending.md`）** | 同上 |
+| 預設題數 | 正式評量：所選課次、所勾字組的全部字（2026-11-27 改，見 `docs/decisions/2026-11-27-formal-all-chars.md`；原本是一課的量） | `docs/design/literacy-design.md` |
 | 合作模式 | 正式評量不能用 | `docs/design/game-design.md` |
 | 獎勵（主題、貼紙、扭蛋、星等） | 預設開；要做研究的老師可關，但同一位學生從第一次評量起要維持同一個設定 | `docs/design/game-design.md` |
 | 前測、後測條件 | 完全一樣 | `docs/design/a8-terms.md` 第 13 點 |

@@ -381,9 +381,12 @@ function quizPlan(){
   const pool = bingo ? Math.min(shared ? Math.floor(36 / nKids) : 36, new Set(state.lessons.flatMap(k => testChars(k))).size) : state.lessons.reduce((s,k) => s + lessonSize(k), 0);
   const one = Math.min(oneLesson(), pool);
   /* 預設題數；寫字評量預設所選的課全部出題（2026-11-10 維護者決定），不要的字在第 3 步「調整題目」拿掉 */
-  const def = isWriting() ? pool : state.kind === "formal" ? one : Math.min(PRACTICE_COUNT, pool);
+  /* 正式評量（前測、後測）固定考所選課次、所勾字組的全部字（2026-11-27 維護者決定）：一課 15 字、選兩課就是 30 題；
+     以前只抽「一課的量」，每次抽到的字不同，前後測不是同一批字，進步幅度和檢定不合理。只有老師主動調整字組（第 2 步「只考有教的字」）題數才會變 */
+  const fixedAll = state.kind === "formal" && !isWriting();
+  const def = isWriting() || fixedAll ? pool : Math.min(PRACTICE_COUNT, pool);
   /* state.qCount：null＝預設、"all"＝全部（換課次後仍是全部）、數字＝老師自己輸入的題數 */
-  const count = state.qCount === "all" ? pool : Math.min(pool, state.qCount ?? def);
+  const count = fixedAll || state.qCount === "all" ? pool : Math.min(pool, state.qCount ?? def);
   const isAll = count === pool, isDefault = count === def;
   /* 題數等於預設（練習 10 個字、正式評量一課的量）或全部出題時，不需要選出題方式；正式評量固定平均隨機 */
   const canChoose = state.kind !== "formal" && !isAll && !isDefault;
@@ -399,7 +402,7 @@ function quizPlan(){
     if(!moved) break; }
   const n = isWriting() ? 1 : Math.max(1, selKids().length);   /* 寫字：全班一起寫同一題，不分人 */
   const sec = isWriting() ? count * WRITE_SEC : count * (SEC_PER_ITEM[state.answer] || 8) * (isTurnLike(state.answer) ? n : 1);
-  return {pool, one, def, count, isAll, isDefault, canChoose, method, freqN, per, sec, n, bingo, shared};
+  return {fixedAll, pool, one, def, count, isAll, isDefault, canChoose, method, freqN, per, sec, n, bingo, shared};
 }
 /* 題數旁的補充說明：賓果卡的上限、只考部分字（練習和正式評量各自點選的字組，題數以點選的字為準） */
 const extraNote = q => (q.shared ? `大家共用一張賓果卡，最多 36 格，全隊合計最多 36 題（每人最多 ${Math.floor(36 / q.n)} 題），同一個字只考一次。` : q.bingo ? "生字賓果卡最多 36 格，每人最多 36 題，同一個字只考一次。" : "")
@@ -427,7 +430,7 @@ function renderQuiz(){
       <button class="chip ${q.isAll ? "" : "on"}" data-qq="def" aria-pressed="${!q.isAll}">快速隨選</button>
       <button class="chip ${q.isAll ? "on" : ""}" data-qq="all" aria-pressed="${q.isAll}">全課生字</button></div>`;
     /* 剛好 10 個字：兩個按鈕一樣，不顯示也不說明；真的不到 10 個字才寫明 */
-    const note = (practice ? (q.pool < PRACTICE_COUNT ? "不到 10 個字，全課生字都考。" : "") : "要改題數，請切換到「進階設定」。") + extraNote(q);
+    const note = (practice ? (q.pool < PRACTICE_COUNT ? "不到 10 個字，全課生字都考。" : "") : q.fixedAll ? "前測、後測固定考所選課次的全部字，前後才能比較；要少考請在第 2 步「只考有教的字」調整。" : "要改題數，請切換到「進階設定」。") + extraNote(q);
     box.innerHTML = `${pick}<p class="time"><b>${q.count} 題，${minutes(q.sec)}</b><span class="note" style="margin:0">${selKids().length > 1 && !isWriting() ? "（學生輪流作答）" : ""}${note}</span></p>`;
     box.querySelectorAll("[data-qq]").forEach(b => b.onclick = () => { state.qCount = b.dataset.qq === "all" ? "all" : null; render(); });
     return;
@@ -449,6 +452,11 @@ function renderQuiz(){
       ? `<p class="note" style="margin:0">${m.okText}。</p>`
       : `<p class="note warn" style="margin:0">${m.desc}。${m.need}，目前會先用平均隨機。</p>`;
     how = head + detail;
+  }
+  if(q.fixedAll){
+    box.innerHTML = `<div class="locked"><span class="lock">固定</span><span>正式評量（前測、後測）固定考所選課次的全部 ${q.pool} 個字，順序隨機。每次考同一批字，前後測才能比較；要少考，請在第 2 步「只考有教的字」調整。</span></div>
+    <p class="time"><b>${minutes(q.sec)}</b>　<span class="note" style="margin:0">${isTurnLike(state.answer) && q.n > 1 ? `${q.n} 位學生輪流，每人 ${q.count} 題，` : ""}每題約 ${SEC_PER_ITEM[state.answer] || 8} 秒估算${extraNote(q)}</span></p>`;
+    return;
   }
   box.innerHTML = `
     <label class="group" for="qCount">題數 <input id="qCount" type="number" min="1" max="${q.pool}" value="${q.count}"> 題
